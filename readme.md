@@ -1,1 +1,1 @@
-This is the monorepo for Weave, a data visualization library.
+This is the monorepo for Weave, a data visualization module.
