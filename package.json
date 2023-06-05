@@ -1,0 +1,16 @@
+{
+	"name": "@weave/monorepo",
+	"version": "1.0.0",
+	"description": "A diagramming library",
+	"main": "index.js",
+	"scripts": {
+		"start": "pnpm --stream -r --parallel run start",
+		"start:dev": "pnpm --stream -r run start:dev"
+	},
+	"workspaces": [
+		"apps/**",
+		"packages/**"
+	],
+	"author": "Ketib Oldiais",
+	"license": "ISC"
+}

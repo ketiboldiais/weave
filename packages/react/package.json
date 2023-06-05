@@ -1,0 +1,47 @@
+{
+  "name": "@weave/react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "start": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.0",
+    "@types/d3-force": "^3.0.4",
+    "@types/d3-shape": "^3.1.1",
+    "@types/node": "^20.2.5",
+    "@types/react": "^18.0.37",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9",
+    "vite-plugin-dts": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@visx/axis": "^3.1.0",
+    "d3": "^7.8.5",
+    "d3-force": "^3.0.0",
+    "d3-shape": "^3.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "katex": "^0.16.7"
+  },
+  "dependencies": {
+    "@weave/twill": "workspace:^",
+    "@weave/twine": "workspace:^",
+    "katex": "^0.16.7"
+  }
+}
