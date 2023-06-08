@@ -1,0 +1,123 @@
+import { ascii, list, many, maybe, one, skip, word, ws } from "@weave/reed";
+import { typed } from "./typed.js";
+import { colorable } from "./colorable.js";
+import { FigNode, Space } from "./index.js";
+import { unsafe } from "./aux.js";
+import { SimulationNodeDatum } from "d3-force";
+
+interface Vertex extends SimulationNodeDatum {}
+class Vertex {
+  value: string;
+  constructor(value: string) {
+    this.value = value;
+  }
+  /**
+   * Equivalent to {@link Vertex.link}, but
+   * may take strings and number as arguments
+   * (alongside a {@link VertexNode}).
+   */
+  __(target: VertexNode | string | number) {
+    return this.link(
+      typeof target === "string" || typeof target === "number"
+        ? vertex(target)
+        : target,
+    );
+  }
+  /**
+   * Given the target {@link VertexNode},
+   * returns an {@link EdgeNode}.
+   */
+  link(target: VertexNode) {
+    const source = vertex(this.value);
+    return edge(
+      source,
+      target,
+    );
+  }
+}
+
+export const vertex = (value: string | number) => {
+  const fig = typed(colorable(Vertex));
+  return new fig(`${value}`).typed("vertex");
+};
+export type VertexNode = ReturnType<typeof vertex>;
+
+export const isVertex = (node: FigNode): node is VertexNode => {
+  if (unsafe(node)) return false;
+  return node.type === "vertex";
+};
+class Edge {
+  source: VertexNode;
+  target: VertexNode;
+  isDirected: boolean;
+  isCurved: boolean;
+  constructor(source: VertexNode, target: VertexNode) {
+    this.source = source;
+    this.target = target;
+    this.isDirected = false;
+    this.isCurved = false;
+  }
+  curved() {
+    this.isCurved=true;
+    return this;
+  }
+
+  /**
+   * If called, defines this edge
+   * as a directed edge. _See also_
+   * {@link Edge.isDirected}.
+   */
+  directed() {
+    this.isDirected = true;
+    return this;
+  }
+}
+
+export const edge = (source: VertexNode, target: VertexNode) => {
+  const fig = typed(colorable(Edge));
+  return new fig(source, target).typed("edge");
+};
+export type EdgeNode = ReturnType<typeof edge>;
+export const isEdge = (node: FigNode): node is EdgeNode => {
+  if (unsafe(node)) return false;
+  return node.type === "edge";
+};
+
+class Graph extends Space {
+  edges: EdgeNode[];
+  nodes: Record<string, VertexNode> = {};
+  constructor(edges: EdgeNode[]) {
+    super();
+    this.edges = [];
+    edges.forEach((e) => {
+      this.edges.push(e);
+    });
+    this.edges.forEach((link) => {
+      const source = link.source;
+      const target = link.target;
+      const ns = this.nodes[source.value];
+      link.source = ns || (this.nodes[source.value] = source);
+      const ts = this.nodes[target.value];
+      link.target = ts || (this.nodes[target.value] = target);
+    });
+  }
+}
+export const graph = (edges: EdgeNode[]) => {
+  const fig = typed(colorable(Graph));
+  return new fig(edges).typed("graph");
+};
+export type GraphNode = ReturnType<typeof graph>;
+export const isGraph = (node: FigNode): node is GraphNode => {
+  if (unsafe(node)) return false;
+  return node.type === "graph";
+};
+
+const network = (src: string) => {
+  const arrowRight = word([skip(ws), one("->"), skip(ws)]);
+  const variable = skip(ws).or(ascii()).tie();
+  const link = list([variable, arrowRight, variable]).map((
+    [source, _, target],
+  ) => ({ source, target }));
+  const out = many(maybe(ws).chain(() => link));
+  return out.parse(src).result.unwrap([]).flat();
+};

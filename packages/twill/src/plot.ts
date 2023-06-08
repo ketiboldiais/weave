@@ -2,12 +2,18 @@ import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
 import { Space } from "./space.js";
 import { compile, engine } from "@weave/twine";
-import { safer, tuple } from "./aux.js";
+import { safer, unsafe } from "./aux.js";
 import { line } from "d3-shape";
+import { FigNode, Plottable } from "./node.types.js";
 
 export class Plot {
   fn: string;
   samples: number = 300;
+  children: Plottable[] = [];
+  and(child: Plottable) {
+    this.children.push(child.scope(this));
+    return this;
+  }
   sampled(n: number) {
     this.samples = n;
     return this;
@@ -15,7 +21,7 @@ export class Plot {
   constructor(fn: string) {
     this.fn = fn;
   }
-  private space: () => Space = () => new Space();
+  space: () => Space = () => new Space();
   scope(space: Space) {
     this.space = () => space;
     return this;
@@ -30,6 +36,12 @@ export class Plot {
     this.ran = interval;
     return this;
   }
+  xyScales() {
+    const space = this.space();
+    const ys = space.scaleOf("y");
+    const xs = space.scaleOf("x");
+    return [xs, ys];
+  }
 
   path() {
     const space = this.space();
@@ -39,14 +51,8 @@ export class Plot {
     const xmax = safer(domain[1], space.xmax());
     const ymin = safer(range[0], space.ymin());
     const ymax = safer(range[1], space.ymax());
-    const width = space.boxed("width");
-    const height = space.boxed("height");
-    const xdomain = tuple(0, width);
-    const ydomain = tuple(height, 0);
-    const scale = space.scale();
-    const ys = scale().domain(range).range(ydomain);
-    const xs = scale().domain(domain).range(xdomain);
-    const out = { curve: "" };
+    const [xs, ys] = this.xyScales();
+    let out = "";
     const fn = this.fn;
     const f = compile(engine().parse("fn " + fn + ";"));
     if (f.isLeft()) return out;
@@ -54,10 +60,10 @@ export class Plot {
     const dataset: [number, number][] = [];
     for (let i = -samples; i < samples; i++) {
       const x = (i / samples) * xmax;
-      const y = f.map((n:any) => n(x)).unwrap();
+      const y = f.map((n: any) => n(x)).unwrap();
       if (typeof y !== "number") continue;
       const point: [number, number] = [x, y];
-      if (isNaN(y) || y < ymin || ymax < y) point[0] = NaN;
+      if (isNaN(y) || y < ymin || ymax < y) point[1] = NaN;
       if (x < xmin || xmax < x) continue;
       else dataset.push(point);
     }
@@ -65,14 +71,19 @@ export class Plot {
       .y((d) => ys(d[1]))
       .defined((d) => !isNaN(d[1]))
       .x((d) => xs(d[0]))(dataset);
-    out.curve = p === null ? "" : p;
+    out = p === null ? "" : p;
     return out;
   }
 }
 
+const PLOT_NODE = typed(colorable(Plot));
 export const plot = (fn: string) => {
-  const fig = typed(colorable(Plot));
-  return new fig(fn).typed("plot");
+  return new PLOT_NODE(fn).typed("plot");
 };
 
 export type PlotNode = ReturnType<typeof plot>;
+
+export const isPlot = (node: FigNode): node is PlotNode => {
+  if (unsafe(node)) return false;
+  return node.type === "plot";
+};

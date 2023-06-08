@@ -31,3 +31,17 @@ export const safer = <T>(
 export const tuple = <T extends any[]>(...data: T) => data;
 export const isNumber = (x: any): x is number => typeof x === "number";
 export const sq = (x: number) => x * x;
+export const unsafe = (x: any) => (
+  x === undefined || x === null
+);
+export const arraySplit = <T>(array: T[]) => {
+  const L = array.length;
+  const half = Math.ceil(L / 2);
+  const left = array.slice(0, half);
+  const right = array.slice(half);
+  return [left, right] as [T[], T[]];
+};
+export const isnil = (x: any): x is null => x === null;
+export type SafeObj<T> = {
+  [P in keyof T]: NonNullable<T[P]>;
+};

@@ -1,0 +1,16 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"pipeline": {
+		"build": {
+			"dependsOn": ["^build"]
+		},
+		"start": {
+			"dependsOn": ["^start"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true,
+			"dependsOn": ["@weave/twine#start", "@weave/twill#start"]
+		}
+	}
+}

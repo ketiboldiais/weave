@@ -1,7 +1,7 @@
-import { FigNode, label, Space, TextNode } from ".";
-import { tuple } from "./aux";
-import { colorable } from "./colorable";
-import { typed } from "./typed";
+import { FigNode, label, shift, Space, TextNode } from "./index.js";
+import { tuple, unsafe } from "./aux.js";
+import { colorable } from "./colorable.js";
+import { typed } from "./typed.js";
 
 export class Axis {
   /**
@@ -57,6 +57,28 @@ export class Axis {
     const out = space.scale()().domain(domain).range(range);
     return out;
   }
+  xScale() {
+    const space = this.space();
+    const domain = space.axisDomain("x");
+    const range = space.axisRange("x");
+    return space.scale()().domain(domain).range(range);
+  }
+  yScale() {
+    const space = this.space();
+    const domain = space.axisDomain("y");
+    const range = space.axisRange("y");
+    return space.scale()().domain(domain).range(range);
+  }
+  translationXY() {
+    const xscale = this.xScale();
+    const yscale = this.yScale();
+    if (this.is("y")) {
+      return shift(xscale(0), 0);
+    } else {
+      return shift(0, yscale(0));
+    }
+  }
+  
 
   tickCount: number = 5;
 
@@ -69,10 +91,37 @@ export class Axis {
     return this;
   }
 
-  TickLength: number = 6;
-  
+  TickLength: number = 3;
+
   tickLength(value: number) {
     this.TickLength = value;
+    return this;
+  }
+  TickLabels: TextNode[] = [];
+
+  /**
+   * Sets the axis tick labels. An optional
+   * callback function may be provided to
+   * target each tick.
+   */
+  labelTicks(f?: (tick: TextNode, index: number) => TextNode) {
+    const scale = this.scaleFn();
+    const n = this.tickCount;
+    const isXAxis = this.is("x");
+    const ticks = scale.ticks(n).map((value, index) => {
+      let txt = label(`${value}`);
+      if (isXAxis) {
+        txt.x = scale(value);
+        txt.y = scale(0);
+      } else {
+        txt.x = scale(0);
+        txt.y = scale(value);
+      }
+      if (f) txt = f(txt, index);
+      txt.anchor = txt.anchor ? txt.anchor : this.tickLabelAnchor;
+      return txt;
+    });
+    this.TickLabels = ticks;
     return this;
   }
 
@@ -80,22 +129,10 @@ export class Axis {
    * Returns an array of tick
    * objects.
    */
-  axisTicks(f?: (tick: TextNode) => TextNode): TextNode[] {
-    const scale = this.scaleFn();
-    const n = this.tickCount;
-    const ticks = scale.ticks(n).map((value) => {
-      let txt = label(`${value}`);
-      if (this.is("x")) {
-        txt.x = scale(value);
-        txt.y = scale(0);
-      } else {
-        txt.x = scale(0);
-        txt.y = scale(value);
-      }
-      if (f) txt = f(txt);
-      return txt;
-    });
-    return ticks;
+  axisTicks(): TextNode[] {
+    if (this.TickLabels.length !== 0) return this.TickLabels;
+    this.labelTicks();
+    return this.TickLabels;
   }
 
   /** The axis’s placement. */
@@ -112,6 +149,11 @@ export class Axis {
     this.orientation = orientation;
     return this;
   }
+  tickLabelAnchor?: "start" | "middle" | "end";
+  ticksAnchored(on: "start" | "middle" | "end") {
+    this.tickLabelAnchor = on;
+    return this;
+  }
 }
 
 export const axis = (of: "x" | "y" | "z") => {
@@ -120,6 +162,7 @@ export const axis = (of: "x" | "y" | "z") => {
 };
 
 export type AxisNode = ReturnType<typeof axis>;
-export const isAxis = (node: FigNode): node is AxisNode => (
-  node.type === "axis"
-);
+export const isAxis = (node: FigNode): node is AxisNode => {
+  if (unsafe(node)) return false;
+  return node.type === "axis";
+};

@@ -1,13 +1,27 @@
 import {
   AxisNode,
+  IntegralNode,
   isPlane,
+  isPlot,
+  isTextNode,
+  isTreeNode,
   LayoutNode,
   PlaneNode,
+  PlotNode,
+  SubtreeNode,
   TextNode,
+  TreeNode,
 } from "@weave/twill";
-import { isAxis } from "@weave/twill";
-import { CSSProperties, Fragment, useMemo } from "react";
-import { scaleLinear } from "d3";
+import { isAxis, isIntegral } from "@weave/twill";
+import {
+  CSSProperties,
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 type FigureProps = {
   of: LayoutNode;
@@ -37,10 +51,32 @@ export const Figure = ({ of: data, className }: FigureProps) => {
   };
   const par = "xMidYMid meet";
   const cname = "weave" + " " + className;
+  const gridlines = data.GridLines;
+  const shift = data.center();
   return (
     <div style={boxcss} className={cname}>
       <svg viewBox={viewbox} preserveAspectRatio={par} style={svgcss}>
-        {isPlane(data) && <Plane2D of={data} />}
+        <g transform={shift}>
+          {gridlines.length !== 0 && (
+            <g>
+              {gridlines.map((d, i) => (
+                <line
+                  key={"grid-line" + d.id + i}
+                  x1={d.x1}
+                  y1={d.y1}
+                  x2={d.x2}
+                  y2={d.y2}
+                  stroke={d.strokeColor ? d.strokeColor : "currentColor"}
+                  strokeWidth={d.strokeWidth || 1}
+                  opacity={d.opacityValue || 0.1}
+                />
+              ))}
+            </g>
+          )}
+
+          {isPlane(data) && <Plane2D of={data} />}
+          {isTreeNode(data) && <TreeFigure of={data} />}
+        </g>
       </svg>
     </div>
   );
@@ -51,17 +87,133 @@ type Plane2DProps = {
 };
 export const Plane2D = ({ of }: Plane2DProps) => {
   const children = of.children();
-  const shift = of.center();
   return (
-    <g transform={shift}>
+    <g>
       {children.map((c) => (
         <Fragment key={c.id}>
           {isAxis(c) && <Axis2D of={c} />}
+          {isPlot(c) && <Curve2D of={c} />}
+          {isTextNode(c) && <Label of={c} />}
         </Fragment>
       ))}
     </g>
   );
 };
+
+export const TreeFigure = ({ of }: { of: TreeNode }) => {
+  const { edges, nodes, annotations } = of.datum();
+  const X = of.scaleOf("x");
+  const Y = of.scaleOf("y");
+  console.log({ edges, nodes, annotations });
+  return (
+    <g>
+      <g className={"weave-tree-edges"}>
+        {edges.map((edge, i) => (
+          <line
+            x1={X(edge.source.x)}
+            y1={Y(edge.source.y)}
+            x2={X(edge.target.x)}
+            y2={Y(edge.target.y)}
+            key={"tree-edge" + edge.id + i}
+            strokeWidth={edge.strokeWidth || 1}
+            strokeDasharray={edge.strokeDashArray || 0}
+            stroke={edge.strokeColor || "currentColor"}
+            opacity={edge.opacityValue || 0.2}
+          />
+        ))}
+      </g>
+      <g className={"weave-tree-annotations"}>
+        {annotations.map((L, i) => (
+          <line
+            x1={X(L.x1)}
+            y1={Y(L.y1)}
+            x2={X(L.x2)}
+            y2={Y(L.y2)}
+            stroke={"red"}
+            key={"tree-annotation" + L.id + i}
+          />
+        ))}
+      </g>
+      <g className={"weave-tree-nodes"}>
+        {nodes.map((node, i) => (
+          <g
+            key={"tree-node" + node.id + i}
+            transform={`translate(${X(node.x)},${Y(node.y)})`}
+          >
+            <circle
+              r={node.r}
+              fill={node.fillColor || "white"}
+              stroke={node.strokeColor || "currentColor"}
+              strokeWidth={node.strokeWidth || 1}
+              strokeDasharray={node.strokeDashArray || 0}
+            />
+            <text
+              fontSize={"8px"}
+              fill={"teal"}
+              dx={-12}
+              dy={-2}
+              fontFamily={"system-ui"}
+            >
+              {node.depth}
+            </text>
+            <text
+              fontSize={"10px"}
+              fill={"tomato"}
+              dx={12}
+              dy={-2}
+              fontFamily={"system-ui"}
+              opacity={0.4}
+            >
+              {node.value}
+            </text>
+          </g>
+        ))}
+      </g>
+    </g>
+  );
+};
+
+type Curve2DProps = {
+  of: PlotNode;
+};
+export const Curve2D = ({ of }: Curve2DProps) => {
+  const d = of.path();
+  const hasChildren = of.children.length !== 0;
+  return (
+    <Fragment>
+      <g>
+        <path
+          d={d}
+          fill={of.fillColor || "none"}
+          stroke={of.strokeColor || "tomato"}
+          strokeWidth={of.strokeWidth || 1}
+        />
+      </g>
+      {hasChildren && (of.children.map((c) => (
+        <Fragment key={c.id}>
+          {isIntegral(c) && <Integration of={c} />}
+        </Fragment>
+      )))}
+    </Fragment>
+  );
+};
+
+type IntegrationProps = {
+  of: IntegralNode;
+};
+const Integration = ({ of }: IntegrationProps) => {
+  return (
+    <g className={of.klasse()}>
+      <path
+        d={of.area()}
+        opacity={of.opacityValue || 0.3}
+        strokeWidth={of.strokeWidth || 1}
+        fill={of.fillColor || "gold"}
+      />
+    </g>
+  );
+};
+
 type Axis2DProps = {
   of: AxisNode;
 };
@@ -69,77 +221,139 @@ export const Axis2D = ({ of }: Axis2DProps) => {
   const domain = of.domain();
   const range = of.range();
   const tickLength = of.TickLength;
+  const isX = of.is("x");
   const ticks = useMemo(() => {
     return of.axisTicks();
-    // const xscale = of.scaleFn();
-    // const width = range[1] - range[0];
-    // const px = 30;
-    // const nticks = Math.max(1, Math.floor(width / px));
-    // return xscale.ticks(nticks).map((value) => ({
-    // value,
-    // xoffset: xscale(value),
-    // }));
   }, [domain.join("-"), range.join("-")]);
-  const d = [
-    "M",
-    range[0],
-    tickLength,
-    "v",
-    -tickLength,
-    "H",
-    range[1],
-    "v",
-    tickLength,
-  ].join(" ");
+  const translation = (
+    text: TextNode,
+    other: number = 0,
+    dx: number = 0,
+    dy: number = 0,
+  ) => {
+    if (isX) return `translate(${text.x + dx}, ${other + dy})`;
+    return `translate(${0 + dx}, ${text.y + dy})`;
+  };
+  const rotate = isX ? "rotate(0)" : "rotate(90)";
+  const translateXY = of.translationXY();
   return (
-    <g>
-      <path
-        d={d}
-        fill={"none"}
-        stroke={"currentColor"}
-      />
-      {ticks.map((text) => (
+    <g transform={translateXY}>
+      <g transform={rotate}>
+        {!of.hasNo("axis-line") && (
+          <path
+            d={[
+              "M",
+              range[0],
+              tickLength,
+              "v",
+              -tickLength,
+              "H",
+              range[1],
+              "v",
+              tickLength,
+            ].join(" ")}
+            fill={"none"}
+            stroke={"currentColor"}
+          />
+        )}
+      </g>
+      {!of.hasNo("ticks") && ticks.map((text) => (
         <g key={text.id}>
           <line
+            y1={-tickLength}
             y2={tickLength}
             stroke={text.FontColor}
-            transform={`translate(${text.x}, ${0})`}
+            transform={translation(text) + " " + rotate}
           />
-          <Label of={text} />
+          <Label
+            of={text}
+            anchor={text.anchor ? text.anchor : (isX ? "middle" : "end")}
+            position={translation(text, 20, isX ? 0 : -10, isX ? 0 : 3)}
+          />
         </g>
       ))}
     </g>
   );
 };
 
-// <g key={value} transform={`translate(${xoffset},0)`}>
-// <line y2={"6"} stroke={"currentColor"} />
-// <text
-// style={{
-// fontSize: "12px",
-// textAnchor: "middle",
-// transform: "translateY(20px)",
-// }}
-// >
-// {value}
-// </text>
-// </g>
 export type LabelProps = {
   of: TextNode;
+  anchor?: "start" | "middle" | "end";
+  position?: string;
 };
-export const Label = ({ of: data }: LabelProps) => {
-  const x = data.x;
-  const y = data.y;
+export const Label = (
+  { of: data, anchor = "middle", position }: LabelProps,
+) => {
+  const content = data.content;
+  const space = data.space();
+  const xscale = space.scaleOf("x");
+  const yscale = space.scaleOf("y");
+  const x = xscale(data.x);
+  const y = yscale(data.y);
+  const mode = data.mode;
+  const translate = position ? position : `translate(${x},${y})`;
+  if (mode === "latex-block" || mode === "latex-inline") {
+    return (
+      <g transform={translate}>
+        <foreignObject width={"1"} height={"1"} overflow={"visible"}>
+          <Tex
+            of={data}
+            style={{
+              height: "fit-content",
+              width: "fit-content",
+              fontSize: data.FontSize,
+              color: data.FontColor,
+              margin: "-1em 0",
+            }}
+          />
+        </foreignObject>
+      </g>
+    );
+  }
   return (
-    <g transform={`translate(${x},${20})`}>
+    <g transform={translate}>
       <text
         fontSize={data.FontSize}
         fontFamily={data.FontFamily}
         fill={data.FontColor}
-        textAnchor={data.anchor}
+        textAnchor={anchor}
       >
-        {data.content}
+        {content}
       </text>
     </g>
   );
+};
+import katex from "katex";
+type Html = { __html: string };
+const html = (__html: string): Html => ({ __html });
+export const Tex = ({
+  of: data,
+  style,
+}: {
+  of: TextNode;
+  style?: CSSProperties;
+}) => {
+  const content = data.content;
+  const mode = data.mode === "latex-block" ? "block" : "inline";
+  const Component = (mode === "block") ? "div" : "span";
+  const displayMode = mode === "block";
+  const [state, enstate] = useState(html(""));
+  useEffect(() => {
+    try {
+      const data = katex.renderToString(content, {
+        displayMode,
+        throwOnError: false,
+        output: "mathml",
+        errorColor: "tomato",
+      });
+      enstate(html(data));
+    } catch (error) {
+      if (error instanceof Error) {
+        enstate(html(error.message));
+      } else {
+        enstate(html(""));
+      }
+    }
+  }, [mode, content]);
+  return <Component style={style} dangerouslySetInnerHTML={state} />;
 };

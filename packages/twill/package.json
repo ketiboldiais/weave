@@ -14,8 +14,7 @@
     }
   },
   "scripts": {
-    "start": "vite build --watch",
-    "dev": "vite",
+    "dev": "vite build --watch && tsc --watch",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
@@ -34,6 +33,7 @@
     "d3-shape": "^3.2.0"
   },
   "dependencies": {
-    "@weave/twine": "workspace:^"
+    "@weave/twine": "workspace:^",
+    "@weave/reed": "workspace:^"
   }
 }

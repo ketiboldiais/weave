@@ -14,9 +14,9 @@ export class Plane extends Space {
   }
 }
 
+const PLANE_NODE = typed(Plane);
 export const plane = (nodes: Node2D[]) => {
-  const fig = typed(Plane);
-  return new fig(nodes).typed("plane");
+  return new PLANE_NODE(nodes).typed("plane");
 };
 
 export type PlaneNode = ReturnType<typeof plane>;

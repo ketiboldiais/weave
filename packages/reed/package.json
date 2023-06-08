@@ -1,5 +1,5 @@
 {
-  "name": "@weave/twine",
+  "name": "@weave/reed",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,22 +16,13 @@
   "scripts": {
     "dev": "vite build --watch && tsc --watch",
     "build": "tsc && vite build",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@types/d3-force": "^3.0.4",
-    "@types/d3-shape": "^3.1.1",
     "@types/node": "^20.2.5",
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
     "vite-plugin-dts": "^2.3.0"
-  },
-  "peerDependencies": {
-    "d3": "^7.8.5",
-    "d3-force": "^3.0.0",
-    "d3-shape": "^3.2.0"
-  },
-  "dependencies": {
-    "@types/d3": "^7.4.0"
   }
 }

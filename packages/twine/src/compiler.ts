@@ -45,7 +45,6 @@ const evalNum1 = (op: tkn, x: number) => {
 
 const isnum = (x: any): x is number => typeof x === "number";
 const isbool = (x: any): x is boolean => typeof x === "boolean";
-const isstr = (x: any): x is string => typeof x === "string";
 
 const evalBool2 = (x: boolean, op: tkn, y: boolean) => {
   // deno-fmt-ignore
