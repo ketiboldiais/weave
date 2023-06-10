@@ -8,7 +8,6 @@ import {
   LayoutNode,
   PlaneNode,
   PlotNode,
-  SubtreeNode,
   TextNode,
   TreeNode,
 } from "@weave/twill";
@@ -16,10 +15,8 @@ import { isAxis, isIntegral } from "@weave/twill";
 import {
   CSSProperties,
   Fragment,
-  useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -101,10 +98,11 @@ export const Plane2D = ({ of }: Plane2DProps) => {
 };
 
 export const TreeFigure = ({ of }: { of: TreeNode }) => {
-  const { edges, nodes, annotations } = of.datum();
+  const datum = useMemo(()=>of.datum(), [of.id])
+  const { edges, nodes, annotations } = datum;
   const X = of.scaleOf("x");
   const Y = of.scaleOf("y");
-  console.log({ edges, nodes, annotations });
+  console.log(datum);
   return (
     <g>
       <g className={"weave-tree-edges"}>
@@ -118,7 +116,7 @@ export const TreeFigure = ({ of }: { of: TreeNode }) => {
             strokeWidth={edge.strokeWidth || 1}
             strokeDasharray={edge.strokeDashArray || 0}
             stroke={edge.strokeColor || "currentColor"}
-            opacity={edge.opacityValue || 0.2}
+            opacity={edge.opacityValue || 1}
           />
         ))}
       </g>
@@ -129,8 +127,11 @@ export const TreeFigure = ({ of }: { of: TreeNode }) => {
             y1={Y(L.y1)}
             x2={X(L.x2)}
             y2={Y(L.y2)}
-            stroke={"red"}
+            stroke={L.strokeColor || "tomato"}
+            strokeDasharray={L.strokeDashArray || 0}
             key={"tree-annotation" + L.id + i}
+            opacity={L.opacityValue || 0.5}
+            strokeWidth={L.strokeWidth||3}
           />
         ))}
       </g>
@@ -148,21 +149,30 @@ export const TreeFigure = ({ of }: { of: TreeNode }) => {
               strokeDasharray={node.strokeDashArray || 0}
             />
             <text
-              fontSize={"8px"}
+              fontSize={"7px"}
+              fill={"blue"}
+              dx={0}
+              dy={-10}
+              fontFamily={"system-ui"}
+            >
+              {`(${node.x},${node.y})`}
+            </text>
+            <text
+              fontSize={"5px"}
               fill={"teal"}
               dx={-12}
               dy={-2}
               fontFamily={"system-ui"}
             >
-              {node.depth}
+              {/* {node.hx > 0 ? `+${node.hx}` : `${node.hx}`} */}
             </text>
             <text
-              fontSize={"10px"}
-              fill={"tomato"}
-              dx={12}
-              dy={-2}
+              fontSize={"7px"}
+              fill={"currentColor"}
+              dx={-2.5}
+              dy={2.5}
               fontFamily={"system-ui"}
-              opacity={0.4}
+              opacity={0.9}
             >
               {node.value}
             </text>

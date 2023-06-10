@@ -54,7 +54,7 @@ const item = <T>(data?: T) => {
   return data === undefined ? ListItem.none<T>() : ListItem.some<T>(data);
 };
 
-class LinkedList<T> {
+export class LinkedList<T> {
   #head: ListItem<T>;
   #tail: ListItem<T>;
   #length: number;
@@ -89,7 +89,11 @@ class LinkedList<T> {
       return current;
     }
   }
-  item(index: number) {
+  ith(index:number, fallback:T): T {
+    const out = this.#item(index).data
+    return out === null ? fallback : out;
+  }
+  item<T>(index: number) {
     return this.#item(index).data;
   }
   unshift(element: T) {
