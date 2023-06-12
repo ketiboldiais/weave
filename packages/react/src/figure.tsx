@@ -7,6 +7,7 @@ import {
   isTextNode,
   isTree,
   LayoutNode,
+  line,
   LineNode,
   PlaneNode,
   PlotNode,
@@ -85,9 +86,59 @@ export const Figure = ({
             </g>
           )}
           {isPlane(data) && <Plane2D of={data} />}
+          {isTree(data) && <TreeFig of={data} />}
         </g>
       </svg>
     </div>
+  );
+};
+
+const TreeFig = ({ of }: { of: TreeNode }) => {
+  const { nodes, edges, notes } = of.figure();
+  const xs = of.scaleOf("x");
+  const ys = of.scaleOf("y");
+  return (
+    <g>
+      <g>
+        {notes.map((note) => (
+          <Fragment key={note.id}>
+            {isAxis(note) && <Axis2D of={note} />}
+            {isTextNode(note) && <Label of={note} />}
+          </Fragment>
+        ))}
+      </g>
+      <g>
+        {edges.map((edge) => (
+          <Line
+            of={line(
+              edge.source.x,
+              edge.source.y,
+              edge.target.x,
+              edge.target.y
+            )}
+            xs={xs}
+            ys={ys}
+            key={edge.id}
+          />
+        ))}
+      </g>
+      <g>
+        {nodes.map((node) => (
+          <g
+            key={node.id}
+            transform={`translate(${xs(node.x)}, ${ys(
+              node.y
+            )})`}
+          >
+            <circle
+              r={5}
+              fill={node.fillColor || "white"}
+            />
+            <text>{node.name}</text>
+          </g>
+        ))}
+      </g>
+    </g>
   );
 };
 
@@ -224,7 +275,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
             <line
               y1={-tickLength}
               y2={tickLength}
-              stroke={text.FontColor}
+              stroke={text.FontColor || "currentColor"}
               transform={translation(text) + " " + rotate}
             />
             <Label

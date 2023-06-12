@@ -76,18 +76,6 @@ class Tree extends Space {
     this.children = [...current, ...nodes];
     return this;
   }
-  nodeNote?: (node: LeafNode) => TextNode | string | number;
-
-  /**
-   * Given the provided callback adds a text
-   * annotation to each node.
-   */
-  forEachNode(
-    callback: (node: LeafNode) => TextNode | string | number
-  ) {
-    this.nodeNote = callback;
-    return this;
-  }
 
   private notes: Partial<EdgeNotes> = {};
 
@@ -332,12 +320,8 @@ class Tree extends Space {
       wetherellShannon();
     }
 
-    if (this.nodemapFn !== undefined) {
-      const { f, order } = this.nodemapFn;
-      this[order]((node, index) => {
-        f(node, index);
-      });
-    }
+    
+
     this.bfs((node) => {
       output.nodes.push(node);
       if (node.parent) {
@@ -345,6 +329,7 @@ class Tree extends Space {
         output.edges.push(link(node, p.root));
       }
     });
+
     this.bfsNote((lineFn) => {
       const list = linkedList<LeafNode>();
       this.bfs((node) => {
@@ -413,20 +398,10 @@ class Tree extends Space {
           output.notes.push(lfn(line(a.x, a.y, b.x, b.y)))
         );
     });
-    if (this.nodeNote) {
-      const c = this.nodeNote;
-      output.nodes.forEach((node) => {
-        const note = c(node);
-        if (
-          typeof note === "string" ||
-          typeof note === "number"
-        ) {
-          output.notes.push(
-            label(`${note}`)
-              .position("x", node.x)
-              .position("y", node.y)
-          );
-        } else output.notes.push(note);
+    if (this.nodemapFn !== undefined) {
+      const { f, order } = this.nodemapFn;
+      this[order]((node, index) => {
+        f(node, index);
       });
     }
     if (this.notes["threads"]) {
