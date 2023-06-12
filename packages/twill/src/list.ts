@@ -150,26 +150,16 @@ export class LinkedList<T> {
     this.#length++;
     return this;
   }
-  add(element: T) {
-    return ({
-      before: (index: number) => this.insert(element, index - 1),
-      at: (index: number) => this.insert(element, index),
-      after: (index: number) => this.insert(element, index + 1),
-    });
-  }
   tail(fallback: T) {
     return this.last ? this.last : fallback;
   }
-
   public static from<T>(iterable: Iterable<T>) {
     return new LinkedList().append(...iterable);
   }
-
   append(...elements: T[]) {
     elements.forEach((e) => this.push(e));
     return this;
   }
-
   cdr() {
     const list = this.clone();
     if (list.isEmpty) return list;

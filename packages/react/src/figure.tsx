@@ -1,13 +1,16 @@
 import {
   AxisNode,
   IntegralNode,
+  isLine,
   isPlane,
   isPlot,
   isTextNode,
-  isTreeNode,
+  isTree,
   LayoutNode,
+  LineNode,
   PlaneNode,
   PlotNode,
+  Scaler,
   TextNode,
   TreeNode,
 } from "@weave/twill";
@@ -21,11 +24,14 @@ import {
 } from "react";
 
 type FigureProps = {
-  of: LayoutNode;
+  of: LayoutNode | TreeNode;
   className?: string;
 };
 
-export const Figure = ({ of: data, className }: FigureProps) => {
+export const Figure = ({
+  of: data,
+  className,
+}: FigureProps) => {
   const width = data.width;
   const height = data.height;
   const viewbox = `0 0 ${width} ${height}`;
@@ -52,7 +58,11 @@ export const Figure = ({ of: data, className }: FigureProps) => {
   const shift = data.center();
   return (
     <div style={boxcss} className={cname}>
-      <svg viewBox={viewbox} preserveAspectRatio={par} style={svgcss}>
+      <svg
+        viewBox={viewbox}
+        preserveAspectRatio={par}
+        style={svgcss}
+      >
         <g transform={shift}>
           {gridlines.length !== 0 && (
             <g>
@@ -63,19 +73,43 @@ export const Figure = ({ of: data, className }: FigureProps) => {
                   y1={d.y1}
                   x2={d.x2}
                   y2={d.y2}
-                  stroke={d.strokeColor ? d.strokeColor : "currentColor"}
+                  stroke={
+                    d.strokeColor
+                      ? d.strokeColor
+                      : "currentColor"
+                  }
                   strokeWidth={d.strokeWidth || 1}
                   opacity={d.opacityValue || 0.1}
                 />
               ))}
             </g>
           )}
-
           {isPlane(data) && <Plane2D of={data} />}
-          {isTreeNode(data) && <TreeFigure of={data} />}
         </g>
       </svg>
     </div>
+  );
+};
+
+const Line = ({
+  of,
+  xs,
+  ys,
+}: {
+  of: LineNode;
+  xs: Scaler;
+  ys: Scaler;
+}) => {
+  return (
+    <line
+      x1={xs(of.x1)}
+      y1={ys(of.y1)}
+      x2={xs(of.x2)}
+      y2={ys(of.y2)}
+      stroke={of.strokeColor || "currentColor"}
+      strokeWidth={of.strokeWidth || 1}
+      opacity={of.opacityValue || 1}
+    />
   );
 };
 
@@ -97,92 +131,6 @@ export const Plane2D = ({ of }: Plane2DProps) => {
   );
 };
 
-export const TreeFigure = ({ of }: { of: TreeNode }) => {
-  const datum = useMemo(()=>of.datum(), [of.id])
-  const { edges, nodes, annotations } = datum;
-  const X = of.scaleOf("x");
-  const Y = of.scaleOf("y");
-  console.log(datum);
-  return (
-    <g>
-      <g className={"weave-tree-edges"}>
-        {edges.map((edge, i) => (
-          <line
-            x1={X(edge.source.x)}
-            y1={Y(edge.source.y)}
-            x2={X(edge.target.x)}
-            y2={Y(edge.target.y)}
-            key={"tree-edge" + edge.id + i}
-            strokeWidth={edge.strokeWidth || 1}
-            strokeDasharray={edge.strokeDashArray || 0}
-            stroke={edge.strokeColor || "currentColor"}
-            opacity={edge.opacityValue || 1}
-          />
-        ))}
-      </g>
-      <g className={"weave-tree-annotations"}>
-        {annotations.map((L, i) => (
-          <line
-            x1={X(L.x1)}
-            y1={Y(L.y1)}
-            x2={X(L.x2)}
-            y2={Y(L.y2)}
-            stroke={L.strokeColor || "tomato"}
-            strokeDasharray={L.strokeDashArray || 0}
-            key={"tree-annotation" + L.id + i}
-            opacity={L.opacityValue || 0.5}
-            strokeWidth={L.strokeWidth||3}
-          />
-        ))}
-      </g>
-      <g className={"weave-tree-nodes"}>
-        {nodes.map((node, i) => (
-          <g
-            key={"tree-node" + node.id + i}
-            transform={`translate(${X(node.x)},${Y(node.y)})`}
-          >
-            <circle
-              r={node.r}
-              fill={node.fillColor || "white"}
-              stroke={node.strokeColor || "currentColor"}
-              strokeWidth={node.strokeWidth || 1}
-              strokeDasharray={node.strokeDashArray || 0}
-            />
-            <text
-              fontSize={"7px"}
-              fill={"blue"}
-              dx={0}
-              dy={-10}
-              fontFamily={"system-ui"}
-            >
-              {`(${node.x},${node.y})`}
-            </text>
-            <text
-              fontSize={"5px"}
-              fill={"teal"}
-              dx={-12}
-              dy={-2}
-              fontFamily={"system-ui"}
-            >
-              {/* {node.hx > 0 ? `+${node.hx}` : `${node.hx}`} */}
-            </text>
-            <text
-              fontSize={"7px"}
-              fill={"currentColor"}
-              dx={-2.5}
-              dy={2.5}
-              fontFamily={"system-ui"}
-              opacity={0.9}
-            >
-              {node.value}
-            </text>
-          </g>
-        ))}
-      </g>
-    </g>
-  );
-};
-
 type Curve2DProps = {
   of: PlotNode;
 };
@@ -199,11 +147,12 @@ export const Curve2D = ({ of }: Curve2DProps) => {
           strokeWidth={of.strokeWidth || 1}
         />
       </g>
-      {hasChildren && (of.children.map((c) => (
-        <Fragment key={c.id}>
-          {isIntegral(c) && <Integration of={c} />}
-        </Fragment>
-      )))}
+      {hasChildren &&
+        of.children.map((c) => (
+          <Fragment key={c.id}>
+            {isIntegral(c) && <Integration of={c} />}
+          </Fragment>
+        ))}
     </Fragment>
   );
 };
@@ -239,9 +188,11 @@ export const Axis2D = ({ of }: Axis2DProps) => {
     text: TextNode,
     other: number = 0,
     dx: number = 0,
-    dy: number = 0,
+    dy: number = 0
   ) => {
-    if (isX) return `translate(${text.x + dx}, ${other + dy})`;
+    if (isX) {
+      return `translate(${text.x + dx}, ${other + dy})`;
+    }
     return `translate(${0 + dx}, ${text.y + dy})`;
   };
   const rotate = isX ? "rotate(0)" : "rotate(90)";
@@ -267,21 +218,33 @@ export const Axis2D = ({ of }: Axis2DProps) => {
           />
         )}
       </g>
-      {!of.hasNo("ticks") && ticks.map((text) => (
-        <g key={text.id}>
-          <line
-            y1={-tickLength}
-            y2={tickLength}
-            stroke={text.FontColor}
-            transform={translation(text) + " " + rotate}
-          />
-          <Label
-            of={text}
-            anchor={text.anchor ? text.anchor : (isX ? "middle" : "end")}
-            position={translation(text, 20, isX ? 0 : -10, isX ? 0 : 3)}
-          />
-        </g>
-      ))}
+      {!of.hasNo("ticks") &&
+        ticks.map((text) => (
+          <g key={text.id}>
+            <line
+              y1={-tickLength}
+              y2={tickLength}
+              stroke={text.FontColor}
+              transform={translation(text) + " " + rotate}
+            />
+            <Label
+              of={text}
+              anchor={
+                text.anchor
+                  ? text.anchor
+                  : isX
+                  ? "middle"
+                  : "end"
+              }
+              position={translation(
+                text,
+                20,
+                isX ? 0 : -10,
+                isX ? 0 : 3
+              )}
+            />
+          </g>
+        ))}
     </g>
   );
 };
@@ -291,9 +254,11 @@ export type LabelProps = {
   anchor?: "start" | "middle" | "end";
   position?: string;
 };
-export const Label = (
-  { of: data, anchor = "middle", position }: LabelProps,
-) => {
+export const Label = ({
+  of: data,
+  anchor = "middle",
+  position,
+}: LabelProps) => {
   const content = data.content;
   const space = data.space();
   const xscale = space.scaleOf("x");
@@ -301,11 +266,17 @@ export const Label = (
   const x = xscale(data.x);
   const y = yscale(data.y);
   const mode = data.mode;
-  const translate = position ? position : `translate(${x},${y})`;
+  const translate = position
+    ? position
+    : `translate(${x},${y})`;
   if (mode === "latex-block" || mode === "latex-inline") {
     return (
       <g transform={translate}>
-        <foreignObject width={"1"} height={"1"} overflow={"visible"}>
+        <foreignObject
+          width={"1"}
+          height={"1"}
+          overflow={"visible"}
+        >
           <Tex
             of={data}
             style={{
@@ -344,8 +315,9 @@ export const Tex = ({
   style?: CSSProperties;
 }) => {
   const content = data.content;
-  const mode = data.mode === "latex-block" ? "block" : "inline";
-  const Component = (mode === "block") ? "div" : "span";
+  const mode =
+    data.mode === "latex-block" ? "block" : "inline";
+  const Component = mode === "block" ? "div" : "span";
   const displayMode = mode === "block";
   const [state, enstate] = useState(html(""));
   useEffect(() => {
@@ -365,5 +337,10 @@ export const Tex = ({
       }
     }
   }, [mode, content]);
-  return <Component style={style} dangerouslySetInnerHTML={state} />;
+  return (
+    <Component
+      style={style}
+      dangerouslySetInnerHTML={state}
+    />
+  );
 };

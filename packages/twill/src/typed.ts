@@ -2,6 +2,7 @@ import { And, Axiom, NodeType } from "./index.js";
 import { uid } from "./index.js";
 
 export interface Typed {
+  copyTypes(node:Typed): this;
   /** The type name for this renderable node. */
   type: NodeType;
   /**
@@ -41,6 +42,7 @@ export interface Typed {
    * where `typename` is the node’s named {@link Typed.type}.
    */
   klasse(): string;
+  isType(type:NodeType): boolean;
 }
 
 export function typed<Klass extends Axiom>(
@@ -50,6 +52,14 @@ export function typed<Klass extends Axiom>(
     className?: string;
     type: NodeType = "unknown";
     id: string = uid(5);
+    copyTypes(node:Typed) {
+      this.className=node.className;
+      this.id=node.id;
+      return this;
+    }
+    isType(type:NodeType) {
+      return this.type===type;
+    }
     typed(name: NodeType) {
       if (this.type === "unknown") {
         this.type = name;
