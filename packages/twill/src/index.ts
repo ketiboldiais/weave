@@ -3,6 +3,10 @@ export type { Scaler } from "./space.js";
 export { line, isLine } from "./line.js";
 export type { LineNode } from "./line.js";
 export { arrowDef } from "./arrow.js";
+
+export {} from './tree.js';
+export type {} from './tree.js';
+
 export type { ArrowDefNode } from "./arrow.js";
 export { link } from "./dlink.js";
 export type { LinkNode, Linkable } from "./dlink.js";

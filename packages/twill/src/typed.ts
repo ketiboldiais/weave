@@ -2,7 +2,9 @@ import { And, Axiom, NodeType } from "./index.js";
 import { uid } from "./index.js";
 
 export interface Typed {
-  copyTypes(node:Typed): this;
+  name(value: string): this;
+  label: string;
+  copyTypes(node: Typed): this;
   /** The type name for this renderable node. */
   type: NodeType;
   /**
@@ -42,23 +44,23 @@ export interface Typed {
    * where `typename` is the node’s named {@link Typed.type}.
    */
   klasse(): string;
-  isType(type:NodeType): boolean;
+  isType(type: NodeType): boolean;
 }
 
 export function typed<Klass extends Axiom>(
-  nodetype: Klass,
+  nodetype: Klass
 ): And<Klass, Typed> {
   return class extends nodetype {
     className?: string;
     type: NodeType = "unknown";
     id: string = uid(5);
-    copyTypes(node:Typed) {
-      this.className=node.className;
-      this.id=node.id;
+    copyTypes(node: Typed) {
+      this.className = node.className;
+      this.id = node.id;
       return this;
     }
-    isType(type:NodeType) {
-      return this.type===type;
+    isType(type: NodeType) {
+      return this.type === type;
     }
     typed(name: NodeType) {
       if (this.type === "unknown") {
@@ -78,6 +80,11 @@ export function typed<Klass extends Axiom>(
     klasse() {
       const type = this.type;
       return `weave-${type}`;
+    }
+    label: string = "";
+    name(value: string) {
+      this.label = value;
+      return this;
     }
   };
 }
