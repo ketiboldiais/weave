@@ -12,6 +12,8 @@ import { line, LineNode, shift } from "./index.js";
 import { tuple } from "./aux.js";
 import { Referable } from "./node.types.js";
 
+
+
 export type ScaleName = "linear" | "power" | "radial" | "log";
 export type LinearScale = ScaleLinear<number, number, never>;
 export type PowerScale = ScalePower<number, number, never>;

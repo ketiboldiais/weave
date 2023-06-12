@@ -1,4 +1,6 @@
+import {unsafe} from "./aux.js";
 import { colorable } from "./colorable";
+import {FigNode} from "./node.types.js";
 import { typed } from "./typed.js";
 
 class Line {
@@ -56,3 +58,6 @@ export const line = (x1: number, y1: number, x2: number, y2: number) => {
   return new fig(x1, y1, x2, y2).typed("line");
 };
 export type LineNode = ReturnType<typeof line>;
+export const isLine = (node:FigNode): node is LineNode => (
+  !unsafe(node) && node.isType('line')
+)

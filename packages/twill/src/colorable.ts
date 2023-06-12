@@ -31,7 +31,7 @@ export interface Colorable {
   /**
    * Sets the renderable node’s stroke width.
    */
-  sw(value: number): this;
+  weight(value: number): this;
 
   /**
    * The renderable node’s dash property.
@@ -52,14 +52,26 @@ export interface Colorable {
    */
   opacityValue?: number;
   opacity(value: number): this;
-  copy(node: Colorable): this;
+  copyColors(node: Colorable): this;
+}
+
+
+const clamp = (min:number,input:number,max:number) => (
+  Math.min(Math.max(input,min),max)
+)
+
+const rgb = (r:number,g:number,b:number) => {
+  const red = clamp(0,r,255);
+  const green = clamp(0,g,255);
+  const blue = clamp(0,b,255);
+  return `rgb(${r},${g},${b})`;
 }
 
 export function colorable<NodeClass extends Axiom>(
   nodetype: NodeClass,
 ): And<NodeClass, Colorable> {
   return class extends nodetype {
-    copy(node: Colorable) {
+    copyColors(node: Colorable) {
       this.strokeColor = node.strokeColor;
       this.fillColor = node.fillColor;
       this.strokeDashArray = node.strokeDashArray;
@@ -94,7 +106,7 @@ export function colorable<NodeClass extends Axiom>(
     /**
      * Sets the renderable node’s stroke width.
      */
-    sw(value: number): this {
+    weight(value: number): this {
       this.strokeWidth = safer(this.strokeWidth, value);
       return this;
     }

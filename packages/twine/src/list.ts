@@ -260,12 +260,11 @@ export class List<T> {
    * @param items - An array of items to insert.
    */
   add(items: T[]) {
-    const list = this;
     const count = items.length;
     for (let i = 0; i < count; i++) {
-      list.push(items[i]);
+      this.push(items[i]);
     }
-    return list;
+    return this;
   }
 
   clone() {

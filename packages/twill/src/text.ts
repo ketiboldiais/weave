@@ -14,9 +14,9 @@ export class Text {
   constructor(content: string) {
     this.content = content;
   }
-  FontColor: string = "currentColor";
-  FontFamily: string = "inherit";
-  FontSize: string = "0.8rem";
+  FontColor?: string;
+  FontFamily?: string;
+  FontSize?: string;
   font(prop: "color" | "family" | "size", value: string) {
     // deno-fmt-ignore
     switch (prop) {
