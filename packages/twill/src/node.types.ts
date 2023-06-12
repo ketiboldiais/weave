@@ -5,11 +5,8 @@ import {
   PlotNode,
   TextNode,
   ArrowDefNode,
-  LineNode,
-  LeafNode,
-  TreeNode,
-  SubtreeNode,
   LinkNode,
+  LineNode,
 } from "./index.js";
 
 export type FigNode =
@@ -18,9 +15,6 @@ export type FigNode =
   | AxisNode
   | TextNode
   | LinkNode
-  | SubtreeNode
-  | TreeNode
-  | LeafNode
   | LineNode
   | ArrowDefNode
   | IntegralNode;

@@ -4,15 +4,6 @@ export { line, isLine } from "./line.js";
 export type { LineNode } from "./line.js";
 export { arrowDef } from "./arrow.js";
 export type { ArrowDefNode } from "./arrow.js";
-export { tree, isTree } from "./tree.js";
-export type { TreeNode, TreeData } from "./tree.js";
-export {
-  leaf,
-  subtree,
-  isBranch,
-  isLeaf,
-} from "./treenodes.js";
-export type { LeafNode, SubtreeNode } from "./treenodes.js";
 export { link } from "./dlink.js";
 export type { LinkNode, Linkable } from "./dlink.js";
 export { isPlane, Plane, plane } from "./plane.js";

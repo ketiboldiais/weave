@@ -7,8 +7,6 @@ import {
   isTextNode,
   isTree,
   LayoutNode,
-  line,
-  LineNode,
   PlaneNode,
   PlotNode,
   Scaler,
@@ -86,81 +84,9 @@ export const Figure = ({
             </g>
           )}
           {isPlane(data) && <Plane2D of={data} />}
-          {isTree(data) && <TreeFig of={data} />}
         </g>
       </svg>
     </div>
-  );
-};
-
-const TreeFig = ({ of }: { of: TreeNode }) => {
-  const { nodes, edges, notes } = of.figure();
-  const xs = of.scaleOf("x");
-  const ys = of.scaleOf("y");
-  return (
-    <g>
-      <g>
-        {notes.map((note) => (
-          <Fragment key={note.id}>
-            {isAxis(note) && <Axis2D of={note} />}
-            {isTextNode(note) && <Label of={note} />}
-          </Fragment>
-        ))}
-      </g>
-      <g>
-        {edges.map((edge) => (
-          <Line
-            of={line(
-              edge.source.x,
-              edge.source.y,
-              edge.target.x,
-              edge.target.y
-            )}
-            xs={xs}
-            ys={ys}
-            key={edge.id}
-          />
-        ))}
-      </g>
-      <g>
-        {nodes.map((node) => (
-          <g
-            key={node.id}
-            transform={`translate(${xs(node.x)}, ${ys(
-              node.y
-            )})`}
-          >
-            <circle
-              r={5}
-              fill={node.fillColor || "white"}
-            />
-            <text>{node.name}</text>
-          </g>
-        ))}
-      </g>
-    </g>
-  );
-};
-
-const Line = ({
-  of,
-  xs,
-  ys,
-}: {
-  of: LineNode;
-  xs: Scaler;
-  ys: Scaler;
-}) => {
-  return (
-    <line
-      x1={xs(of.x1)}
-      y1={ys(of.y1)}
-      x2={xs(of.x2)}
-      y2={ys(of.y2)}
-      stroke={of.strokeColor || "currentColor"}
-      strokeWidth={of.strokeWidth || 1}
-      opacity={of.opacityValue || 1}
-    />
   );
 };
 
@@ -269,33 +195,21 @@ export const Axis2D = ({ of }: Axis2DProps) => {
           />
         )}
       </g>
-      {!of.hasNo("ticks") &&
-        ticks.map((text) => (
-          <g key={text.id}>
-            <line
-              y1={-tickLength}
-              y2={tickLength}
-              stroke={text.FontColor || "currentColor"}
-              transform={translation(text) + " " + rotate}
-            />
-            <Label
-              of={text}
-              anchor={
-                text.anchor
-                  ? text.anchor
-                  : isX
-                  ? "middle"
-                  : "end"
-              }
-              position={translation(
-                text,
-                20,
-                isX ? 0 : -10,
-                isX ? 0 : 3
-              )}
-            />
-          </g>
-        ))}
+      {!of.hasNo("ticks") && ticks.map((text) => (
+        <g key={text.id}>
+          <line
+            y1={-tickLength}
+            y2={tickLength}
+            stroke={text.FontColor}
+            transform={translation(text) + " " + rotate}
+          />
+          <Label
+            of={text}
+            anchor={text.anchor ? text.anchor : (isX ? "middle" : "end")}
+            position={translation(text, 20, isX ? 0 : -10, isX ? 0 : 3)}
+          />
+        </g>
+      ))}
     </g>
   );
 };
