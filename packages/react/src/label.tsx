@@ -1,4 +1,4 @@
-import { CSSProperties, useState, useEffect } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { TextNode } from "@weave/twill";
 
 export type LabelProps = {
@@ -15,12 +15,10 @@ export const Label = ({
   const space = data.space();
   const xscale = space.scaleOf("x");
   const yscale = space.scaleOf("y");
-  const x = xscale(data.x);
-  const y = yscale(data.y);
+  const x = xscale(data.cx);
+  const y = yscale(data.cy);
   const mode = data.mode;
-  const translate = position
-    ? position
-    : `translate(${x},${y})`;
+  const translate = position !== undefined ? position : `translate(${x},${y})`;
   if (mode === "latex-block" || mode === "latex-inline") {
     return (
       <g transform={translate}>
@@ -46,10 +44,10 @@ export const Label = ({
   return (
     <g transform={translate}>
       <text
-        fontSize={data.FontSize}
-        fontFamily={data.FontFamily}
-        fill={data.FontColor}
-        textAnchor={data.anchor || "middle"}
+        fontSize={data.FontSize ? data.FontSize : "9px"}
+        fontFamily={data.FontFamily ? data.FontFamily : "system-ui"}
+        fill={data.FontColor ? data.FontColor : "currentColor"}
+        textAnchor={data.anchor ? data.anchor : "middle"}
       >
         {content}
       </text>
@@ -67,8 +65,7 @@ export const Tex = ({
   style?: CSSProperties;
 }) => {
   const content = data.content;
-  const mode =
-    data.mode === "latex-block" ? "block" : "inline";
+  const mode = data.mode === "latex-block" ? "block" : "inline";
   const Component = mode === "block" ? "div" : "span";
   const displayMode = mode === "block";
   const [state, enstate] = useState(html(""));

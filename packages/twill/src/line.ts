@@ -1,9 +1,19 @@
-import {unsafe} from "./aux.js";
+import { unsafe } from "./aux.js";
 import { colorable } from "./colorable";
-import {FigNode} from "./node.types.js";
+import { FigNode } from "./node.types.js";
 import { typed } from "./typed.js";
 
 class Line {
+  start(x: number, y: number) {
+    this.x1 = x;
+    this.y1 = y;
+    return this;
+  }
+  end(x: number, y: number) {
+    this.x2 = x;
+    this.y2 = y;
+    return this;
+  }
   /**
    * The line’s starting x-coordiante.
    */
@@ -26,7 +36,12 @@ class Line {
    * if any.
    */
   arrowed?: "start" | "end" | "none";
-  constructor(x1: number, y1: number, x2: number, y2: number) {
+  constructor(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ) {
     this.x1 = x1;
     this.y1 = y1;
     this.x2 = x2;
@@ -53,11 +68,15 @@ class Line {
  *
  * All lines are {@link typed} `line` and {@link colorable}.
  */
-export const line = (x1: number, y1: number, x2: number, y2: number) => {
+export const line = (
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+) => {
   const fig = typed(colorable(Line));
   return new fig(x1, y1, x2, y2).typed("line");
 };
 export type LineNode = ReturnType<typeof line>;
-export const isLine = (node:FigNode): node is LineNode => (
-  !unsafe(node) && node.isType('line')
-)
+export const isLine = (node: FigNode): node is LineNode =>
+  !unsafe(node) && node.isType("line");

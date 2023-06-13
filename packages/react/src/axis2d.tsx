@@ -20,15 +20,15 @@ export const Axis2D = ({ of }: Axis2DProps) => {
     dy: number = 0
   ) => {
     if (isX) {
-      return `translate(${text.x + dx}, ${other + dy})`;
+      return `translate(${text.cx + dx}, ${other + dy})`;
     }
-    return `translate(${0 + dx}, ${text.y + dy})`;
+    return `translate(${0 + dx}, ${text.cy + dy})`;
   };
   const rotate = isX ? "rotate(0)" : "rotate(90)";
   const translateXY = of.translationXY();
   return (
     <g transform={translateXY}>
-      <g transform={rotate}>
+      <g transform={rotate} opacity={of.opacityValue||0.3}>
         {!of.hasNo("axis-line") && (
           <path
             d={[
@@ -43,17 +43,18 @@ export const Axis2D = ({ of }: Axis2DProps) => {
               tickLength,
             ].join(" ")}
             fill={"none"}
-            stroke={"currentColor"}
+            stroke={of.strokeColor||'currentColor'}
+            strokeDasharray={of.strokeDashArray||0}
           />
         )}
       </g>
       {!of.hasNo("ticks") &&
         ticks.map((text) => (
-          <g key={text.id}>
+          <g key={text.id} opacity={of.opacityValue||0.5}>
             <line
               y1={-tickLength}
               y2={tickLength}
-              stroke={text.FontColor}
+              stroke={text.FontColor||'currentColor'}
               transform={translation(text) + " " + rotate}
             />
             <Label

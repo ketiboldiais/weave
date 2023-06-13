@@ -2,10 +2,12 @@ import { Plane2D } from "./plane2d";
 import {
   AxisNode,
   IntegralNode,
+  isArrow,
   isLine,
   isPlane,
   isPlot,
   isTextNode,
+  isTreeSpace,
   LayoutNode,
   PlaneNode,
   PlotNode,
@@ -20,6 +22,9 @@ import {
   useMemo,
   useState,
 } from "react";
+import { Tree } from "./tree";
+import { Arrow } from "./arrow";
+import { Axis2D } from "./axis2d";
 
 type FigureProps = {
   of: LayoutNode;
@@ -54,6 +59,7 @@ export const Figure = ({
   const cname = "weave" + " " + className;
   const gridlines = data.GridLines;
   const shift = data.center();
+  const axes = data.Axes;
   return (
     <div style={boxcss} className={cname}>
       <svg
@@ -62,6 +68,9 @@ export const Figure = ({
         style={svgcss}
       >
         <g transform={shift}>
+          {axes.map((a) => (
+            <Axis2D key={a.id} of={a} />
+          ))}
           {gridlines.length !== 0 && (
             <g>
               {gridlines.map((d, i) => (
@@ -83,12 +92,9 @@ export const Figure = ({
             </g>
           )}
           {isPlane(data) && <Plane2D of={data} />}
+          {isTreeSpace(data) && <Tree of={data} />}
         </g>
       </svg>
     </div>
   );
 };
-
-
-
-

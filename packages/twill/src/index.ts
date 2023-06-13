@@ -1,15 +1,9 @@
-export { Space } from "./space.js";
 export type { Scaler } from "./space.js";
+export { Space } from "./space.js";
 export { line, isLine } from "./line.js";
 export type { LineNode } from "./line.js";
-export { arrowDef } from "./arrow.js";
-
-export {} from './tree.js';
-export type {} from './tree.js';
-
+export { arrowDef, isArrow } from "./arrow.js";
 export type { ArrowDefNode } from "./arrow.js";
-export { link } from "./dlink.js";
-export type { LinkNode, Linkable } from "./dlink.js";
 export { isPlane, Plane, plane } from "./plane.js";
 export type { PlaneNode } from "./plane.js";
 export { isPlot, Plot, plot } from "./plot.js";
@@ -33,8 +27,20 @@ export type {
 } from "./node.types.js";
 export type { TextNode } from "./text.js";
 export { isTextNode, label, latex, tex } from "./text.js";
-export type { Spatial2D } from "./spatial2D.js";
-export { spatial2D } from "./spatial2D.js";
+export { tree, isTreeSpace } from "./tree.js";
+export type { TreeSpaceNode } from "./tree.js";
+export {
+  leaf,
+  subtree,
+  isLeaf,
+  isTree,
+} from "./treenode.js";
+export type {
+  LeafNode,
+  Tree,
+  TreeChild,
+} from "./treenode.js";
+
 export type NodeType =
   | "plane"
   | "matrix"
@@ -55,4 +61,5 @@ export type NodeType =
   | "text"
   | "line"
   | "vector2D"
+  | "arrow"
   | "unknown";

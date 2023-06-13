@@ -111,11 +111,11 @@ export class Axis {
     const ticks = scale.ticks(n).map((value, index) => {
       let txt = label(`${value}`);
       if (isXAxis) {
-        txt.x = scale(value);
-        txt.y = scale(0);
+        txt.cx = scale(value);
+        txt.cy = scale(0);
       } else {
-        txt.x = scale(0);
-        txt.y = scale(value);
+        txt.cx = scale(0);
+        txt.cy = scale(value);
       }
       if (f) txt = f(txt, index);
       txt.anchor = txt.anchor ? txt.anchor : this.tickLabelAnchor;

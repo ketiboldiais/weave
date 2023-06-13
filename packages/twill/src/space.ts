@@ -8,7 +8,7 @@ import {
   ScaleRadial,
   scaleRadial,
 } from "d3";
-import { line, LineNode, shift } from "./index.js";
+import { axis, AxisNode, line, LineNode, shift } from "./index.js";
 import { tuple } from "./aux.js";
 import { Referable } from "./node.types.js";
 
@@ -24,7 +24,13 @@ export type Scaler = LinearScale | PowerScale | RadialScale | LogScale;
 export class Space {
   scaletype: ScaleName = "linear";
   GridLines: LineNode[] = [];
-  
+  Axes:AxisNode[]=[];
+  axis(on:'x'|'y') {
+    const Axis = axis(on);
+    Axis.scope(this);
+    this.Axes.push(Axis);
+    return this;
+  }
   /**
    * An array of {@link Referable} nodes.
    * Definitions provide data objects for
