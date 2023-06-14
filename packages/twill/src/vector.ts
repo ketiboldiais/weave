@@ -4,16 +4,27 @@ export class Vector {
   ox: number = 0;
   oy: number = 0;
   oz: number = 0;
-  origin(coord: [number, number, number] | [number, number]) {
-    this.ox = coord[0];
-    this.oy = coord[1];
-    this.oz = coord[2] !== undefined ? coord[2] : 0;
-    return this;
+  origin(
+    coord: [number, number, number] | [number, number]
+  ) {
+    const x = this.x;
+    const y = this.y;
+    const z = this.z;
+    const ox = coord[0];
+    const oy = coord[1];
+    const oz = coord[2] !== undefined ? coord[2] : 0;
+    const out = new Vector([x, y, z]);
+    out.ox = ox;
+    out.oy = oy;
+    out.oz = oz;
+    return out;
   }
   x: number;
   y: number;
   z: number;
-  constructor(coord: [number, number, number] | [number, number]) {
+  constructor(
+    coord: [number, number, number] | [number, number]
+  ) {
     this.x = coord[0];
     this.y = coord[1];
     this.z = coord[2] !== undefined ? coord[2] : 0;
@@ -47,14 +58,19 @@ export class Vector {
       z: number,
       originX: number,
       originY: number,
-      originZ: number,
-    ) => number,
+      originZ: number
+    ) => number
   ) {
     const v = this.clone();
     return f(v.x, v.y, v.z, v.ox, v.oy, v.oz);
   }
-  binaryOp(vector: Vector | number, f: (a: number, b: number) => number) {
-    const other = isNumber(vector) ? Vector.from(vector) : vector;
+  binaryOp(
+    vector: Vector | number,
+    f: (a: number, b: number) => number
+  ) {
+    const other = isNumber(vector)
+      ? Vector.from(vector)
+      : vector;
     const ax = this.x;
     const bx = other.x;
     const x = f(ax, bx);
@@ -69,15 +85,21 @@ export class Vector {
     return other.copy([x, y, z]);
   }
   unaryOp(f: (element: number, index: number) => number) {
-    const array = this.array().map((element, i) => f(element, i)) as [
-      number,
-      number,
-      number,
-    ];
+    const array = this.array().map((element, i) =>
+      f(element, i)
+    ) as [number, number, number];
     return this.copy(array);
   }
   div(arg: Vector | number) {
-    return this.binaryOp(arg, (a, b) => a / b);
+    return this.binaryOp(arg, (a, b) =>
+      b === 0 ? 0 : a / b
+    );
+  }
+  static random() {
+    const x = 10 * (Math.random()-.5);
+    const y = 10 * (Math.random()-.5);
+    const z = 10 * (Math.random()-.5);
+    return new Vector([x,y,z]);
   }
   minus(arg: Vector | number) {
     return this.binaryOp(arg, (a, b) => a - b);
@@ -89,10 +111,10 @@ export class Vector {
     return this.binaryOp(arg, (a, b) => a + b);
   }
   pos() {
-    return this.unaryOp((e) => e === 0 ? 0 : +e);
+    return this.unaryOp((e) => (e === 0 ? 0 : Math.abs(e)));
   }
   neg() {
-    return this.unaryOp((e) => e === 0 ? 0 : -e);
+    return this.unaryOp((e) => (e === 0 ? 0 : -e));
   }
   zero() {
     return this.unaryOp((_) => 0);
@@ -112,14 +134,13 @@ export class Vector {
     });
   }
   isZero() {
-    return (
-      this.x === 0 &&
-      this.y === 0 &&
-      this.z === 0
-    );
+    return this.x === 0 && this.y === 0 && this.z === 0;
+  }
+  normal() {
+    return new Vector([-this.y, this.x, this.z]);
   }
 
-  normal() {
+  normalized() {
     if (this.isZero()) return this;
     const magnitude = this.magnitude();
     return this.div(magnitude);
@@ -137,6 +158,8 @@ export class Vector {
   }
 }
 
-export const vector = (coord: [number, number, number] | [number, number]) => {
+export const vector = (
+  coord: [number, number, number] | [number, number]
+) => {
   return new Vector(coord);
 };

@@ -118,12 +118,19 @@ export const box = <T>(value?: T | null): Box<T> =>
     ? new None<T>()
     : new Some<T>(value);
 
-export const randInt = (min:number, max:number) => {
+export const randInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-export const randFloat = (min:number, max:number) => {
+};
+export const randFloat = (min: number, max: number) => {
   return Math.random() * (max - min) + min;
-}
-export const clamp = (min:number,input:number,max:number) => (
-  Math.min(Math.max(input,min),max)
-)
+};
+export const clamp = (
+  min: number,
+  input: number,
+  max: number
+) => Math.min(Math.max(input, min), max);
+export type O<K extends string, T> = Record<K, T>;
+export const isnum = (x: any): x is number =>
+  typeof x === "number";
+export const isstr = (x: any): x is string =>
+  typeof x === "string";

@@ -16,6 +16,8 @@ export { uid } from "./aux.js";
 export { shift } from "./path.js";
 export type Axiom<T = {}> = new (...args: any[]) => T;
 export type { Colorable } from "./colorable.js";
+export { textual } from "./textual.js";
+export type { Textual } from "./textual.js";
 export type And<DataClass, Extender> = DataClass &
   Axiom<Extender>;
 export type { PlotNode } from "./plot.js";
@@ -42,15 +44,13 @@ export type {
   Tree,
   TreeChild,
 } from "./treenode.js";
-export {
-  edge,
-  vertex,
-  graph,
-  isVertex,
-  isEdge,
-  isGraph,
-} from "./graph.js";
-export type { Edge, Vertex, Graph } from "./graph.js";
+export { graph, isGraph } from "./graph/graph.js";
+export { vertex, isVertex } from "./graph/vertex.js";
+export { edge } from "./graph/edge.js";
+export { isEdge } from "./graph/edge.js";
+export type { Edge } from "./graph/edge.js";
+export type { Vertex } from "./graph/vertex.js";
+export type { Graph } from "./graph/graph.js";
 
 export type NodeType =
   | "plane"
