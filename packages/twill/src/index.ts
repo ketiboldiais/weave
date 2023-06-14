@@ -2,6 +2,8 @@ export type { Scaler } from "./space.js";
 export { Space } from "./space.js";
 export { line, isLine } from "./line.js";
 export type { LineNode } from "./line.js";
+export { vector } from "./vector.js";
+export type { Vector } from "./vector.js";
 export { arrowDef, isArrow } from "./arrow.js";
 export type { ArrowDefNode } from "./arrow.js";
 export { isPlane, Plane, plane } from "./plane.js";
@@ -40,6 +42,15 @@ export type {
   Tree,
   TreeChild,
 } from "./treenode.js";
+export {
+  edge,
+  vertex,
+  graph,
+  isVertex,
+  isEdge,
+  isGraph,
+} from "./graph.js";
+export type { Edge, Vertex, Graph } from "./graph.js";
 
 export type NodeType =
   | "plane"

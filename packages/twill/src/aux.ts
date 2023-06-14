@@ -117,3 +117,13 @@ export const box = <T>(value?: T | null): Box<T> =>
   value === null || value === undefined
     ? new None<T>()
     : new Some<T>(value);
+
+export const randInt = (min:number, max:number) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+export const randFloat = (min:number, max:number) => {
+  return Math.random() * (max - min) + min;
+}
+export const clamp = (min:number,input:number,max:number) => (
+  Math.min(Math.max(input,min),max)
+)

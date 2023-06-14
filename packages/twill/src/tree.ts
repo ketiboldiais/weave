@@ -1,4 +1,4 @@
-import { unsafe } from "./aux.js";
+import { tuple, unsafe } from "./aux.js";
 import {
   FigNode,
   LineNode,
@@ -18,6 +18,7 @@ import { typed } from "./typed.js";
 type TreeLayout =
   | "knuth"
   | "wetherell-shannon"
+  | "buccheim-unger-leipert"
   | "reingold-tilford";
 type Traversal =
   | "preorder"
@@ -32,6 +33,37 @@ type LinkFunction = (
 class TreeSpace extends Space {
   tree: Tree;
   layout: TreeLayout = "knuth";
+  /**
+   * Sets the layout algorithm for this tree.
+   * Valid options include:
+   * 1. `knuth` - The default option,
+   *    drawing the tree using Knuth’s algorithm.
+   *    This the fastest algorithm among the options, but
+   *    ignores any possible collisions between subtrees.
+   *    This algorithm should only be used on binary trees
+   *    (trees with a maximum of two child nodes), as it
+   *    it isn’t designed to handle n-ary trees. Knuth’s
+   *    algorithm is best-suited for perfect binary trees, running
+   *    in O(n) time and O(1) memory.
+   * 2. `wetherell-shannon` - Draws the tree using the Wetherell-Shannon
+   *    algorithm. The algorithm takes possible collisions into consideration,
+   *    offsetting as needed. While the algorithm is designed for binary trees,
+   *    it can handle n-ary trees, but with increased risks of collision. Because
+   *    the algorithm doesn’t consider the position of neighboring trees,
+   *    degenerate subtrees have a high risk of collision. The algorithm also
+   *    consumes more horizontal space as compared to the Reingold-Tilford
+   *    algorithm. The Wetherell-Shannon algorithm is best suited
+   *    for complete binary trees. The algorithm runs on O(n) time and O(n) memory.
+   * 3. `reingold-tilford` - Draws the tree using the Reingold-Tilford algorithm.
+   *    This is arguably the best algorithm for drawing binary trees, given its
+   *    consideration for the relative positions of neighboring subtrees. This
+   *    algorithm, however, is _not_ designed to handle n-ary trees. Reingold-Tilford’s
+   *    algorithm runs on O(n) time and O(n) memory.
+   * 4. `buccheim-unger-leipert` - Draws the tree using the Buccheim-Unger-Leipert algorithm.
+   *    This algorithm should be used if the tree is an n-ary tree. Although the algorithm
+   *    runs in O(n) time, it is the least performant of the four, having to perform at least
+   *    four traversals to tidy the tree.
+   */
   ala(option: TreeLayout) {
     this.layout = option;
     return this;
@@ -51,9 +83,291 @@ class TreeSpace extends Space {
     nodes.forEach((n) => this.tree.child(n));
     return this;
   }
+
+  private buccheim() {
+    const leftBrother = (self: TreeChild) => {
+      let n = null;
+      if (self.parent) {
+        for (const node of self.parent.children) {
+          if (node.id === self.id) return n;
+          else n = node;
+        }
+      }
+      return n;
+    };
+    const get_lmost_sibling = (self: TreeChild) => {
+      if (
+        !self.leftmost_sibling &&
+        self.parent &&
+        self.id != self.parent.children[0].id
+      ) {
+        self.leftmost_sibling = self.parent.children[0];
+        return self.parent.children[0];
+      }
+      return self.leftmost_sibling;
+    };
+    const movesubtree = (
+      wl: TreeChild,
+      wr: TreeChild,
+      shift: number
+    ) => {
+      const st = wr.index - wl.index;
+      wr.change -= shift / st;
+      wr.shift += shift;
+      wl.change += shift / st;
+      wr.cx += shift;
+      wr.dx += shift;
+    };
+    const ancestor = (
+      vil: TreeChild,
+      v: TreeChild,
+      default_ancestor: TreeChild
+    ) => {
+      if (v.parent && v.parent.hasChild(vil.id)) {
+        return vil.ancestor;
+      }
+      return default_ancestor;
+    };
+    const apportion = (
+      v: TreeChild,
+      default_ancestor: TreeChild,
+      distance: number
+    ) => {
+      const w = leftBrother(v);
+      let vol = get_lmost_sibling(v);
+      if (w !== null && vol !== null) {
+        let vir = v;
+        let vor = v;
+        let vil = w;
+        let sir = v.dx;
+        let sor = v.dx;
+        let sil = vil.dx;
+        let sol = vol.dx;
+        let VIL: TreeChild | null = vil;
+        let VIR: TreeChild | null = vir;
+        let VOL: TreeChild | null = vol;
+        let VOR: TreeChild | null = vor;
+        while (VIL?.right() && VIR?.left()) {
+          VIL = vil.right();
+          if (VIL) vil = VIL;
+          VIR = vir.left();
+          if (VIR) vir = VIR;
+          VOL = vol.left();
+          if (VOL) vol = VOL;
+          VOR = vor.right();
+          if (VOR) {
+            vor = VOR;
+            vor.ancestor = v;
+          }
+          let shift =
+            (vil.cx + sil) - (vir.cx + sir) + distance;
+          if (shift > 0) {
+            let a = ancestor(vil, v, default_ancestor);
+            movesubtree(a, v, shift);
+            sir = sir + shift;
+            sor = sor + shift;
+          }
+          sil += vil.dx;
+          sir += vir.dx;
+          sol += vol.dx;
+          sor += vor.dx;
+        }
+        if (vil.right() && !vor.right()) {
+          vor.thread = vil.right();
+          vor.dx += sil - sor;
+        } else {
+          if (vir.left() && !vol.left()) {
+            vol.thread = vir.left();
+            vol.dx += sir - sol;
+          }
+          default_ancestor = v;
+        }
+      }
+      return default_ancestor;
+    };
+    const execShifts = (v: TreeChild) => {
+      let shift = 0;
+      let change = 0;
+      for (const w of v.children) {
+        w.cx += shift;
+        w.dx += shift;
+        change += w.change;
+        shift += w.shift + change;
+      }
+    };
+    const firstwalk = (
+      v: TreeChild,
+      distance: number = 1
+    ) => {
+      if (v.children.length === 0) {
+        if (v.leftmost_sibling) {
+          const lb = leftBrother(v);
+          if (lb) v.cx = lb.cx + distance;
+        } else v.cx = 0;
+      } else {
+        let default_ancestor = v.children[0];
+        for (const w of v.children) {
+          firstwalk(w);
+          default_ancestor = apportion(
+            w,
+            default_ancestor,
+            distance
+          );
+        }
+        execShifts(v);
+        const L = v.children[0];
+        const R = v.children[v.children.length - 1];
+        let midpoint = (L.cx + R.cx) / 2;
+        const w = leftBrother(v);
+        if (w) {
+          v.cx = w.cx + distance;
+          v.dx = v.cx - midpoint;
+        } else {
+          v.cx = midpoint;
+        }
+      }
+      return v;
+    };
+    const secondwalk = (
+      v: TreeChild,
+      m: number = 0,
+      depth: number = 0,
+      min: number | null = null
+    ): number => {
+      v.cx += m;
+      v.cy = -depth;
+      if (min === null || v.cx < min) {
+        min = v.cx;
+      }
+      for (const w of v.children) {
+        min = secondwalk(w, m + v.dx, depth + 1, min);
+      }
+      return min;
+    };
+    const thirdwalk = (tree: TreeChild, n: number) => {
+      tree.cx += n;
+      for (const w of tree.children) {
+        thirdwalk(w, n);
+      }
+    };
+    const buccheim = () => {
+      this.tree.sketch();
+      firstwalk(this.tree);
+      const min = secondwalk(this.tree);
+      if (min < 0) {
+        thirdwalk(this.tree, -min);
+      }
+    };
+    buccheim();
+    const x = this.tree.cx;
+    this.tree.bfs((n) => {
+      n.cx -= x;
+    });
+  }
+
   private reingoldTilford() {
-    this.wetherellShannon();
-		
+    const contour = (
+      left: TreeChild,
+      right: TreeChild,
+      max_offset: number | null = null,
+      left_offset: number = 0,
+      right_offset: number = 0,
+      left_outer: TreeChild | null = null,
+      right_outer: TreeChild | null = null
+    ): [
+      TreeChild | null,
+      TreeChild | null,
+      number,
+      number,
+      number,
+      TreeChild,
+      TreeChild
+    ] => {
+      let delta =
+        left.cx + left_offset - (right.cx + right_offset);
+      if (max_offset === null || delta > max_offset)
+        max_offset = delta;
+      if (left_outer === null) left_outer = left;
+      if (right_outer === null) right_outer = right;
+      let lo = left_outer.left();
+      let li = left.right();
+      let ri = right.left();
+      let ro = right_outer.right();
+      if (li && ri) {
+        left_offset += left.dx;
+        right_offset += right.dx;
+        return contour(
+          li,
+          ri,
+          max_offset,
+          left_offset,
+          right_offset,
+          lo,
+          ro
+        );
+      }
+      const out = tuple(
+        li,
+        ri,
+        max_offset,
+        left_offset,
+        right_offset,
+        left_outer,
+        right_outer
+      );
+      return out;
+    };
+    const fixSubtrees = (
+      left: TreeChild,
+      right: TreeChild
+    ) => {
+      let [li, ri, diff, loffset, roffset, lo, ro] =
+        contour(left, right);
+      diff += 1;
+      diff += (right.cx + diff + left.cx) % 2;
+      right.dx = diff;
+      right.cx += diff;
+      if (right.children.length) {
+        roffset += diff;
+      }
+      if (ri && !li) {
+        lo.thread = ri;
+        lo.dx = roffset - loffset;
+      } else if (li && !ri) {
+        ro.thread = li;
+        ro.dx = loffset - roffset;
+      }
+      const out = Math.floor((left.cx + right.cx) / 2);
+      return out;
+    };
+    const addmods = (tree: TreeChild, mod: number = 0) => {
+      tree.cx += mod;
+      tree.children.forEach((c) =>
+        addmods(c, mod + tree.dx)
+      );
+      return tree;
+    };
+    const setup = (tree: TreeChild, depth: number = 0) => {
+      tree.sketch(-depth);
+      if (tree.children.length === 0) {
+        tree.cx = 0;
+        return tree;
+      }
+      if (tree.children.length === 1) {
+        tree.cx = setup(tree.children[0], depth + 1).cx;
+        return tree;
+      }
+      const left = setup(tree.children[0], depth + 1);
+      const right = setup(tree.children[1], depth + 1);
+      tree.cx = fixSubtrees(left, right);
+      return tree;
+    };
+    setup(this.tree);
+    addmods(this.tree);
+    let x = this.tree.cx;
+    this.tree.bfs((n) => {
+      n.cx -= x;
+    });
   }
 
   private wetherellShannon() {
@@ -111,10 +425,10 @@ class TreeSpace extends Space {
     };
     lay(this.tree, 0);
     addDXs(this.tree);
-		const x = this.tree.cx;
-		this.tree.bfs(n => {
-			n.cx-=x;
-		})
+    const x = this.tree.cx;
+    this.tree.bfs((n) => {
+      n.cx -= x;
+    });
   }
   private knuth() {
     this.tree.bfs((node, level) => {
@@ -123,6 +437,10 @@ class TreeSpace extends Space {
     });
     this.tree.inorder((node, index) => {
       node.x(index);
+    });
+    const x = this.tree.cx;
+    this.tree.bfs((n) => {
+      n.cx -= x;
     });
     return this;
   }
@@ -134,6 +452,8 @@ class TreeSpace extends Space {
       this.wetherellShannon();
     } else if (layout === "reingold-tilford") {
       this.reingoldTilford();
+    } else if (layout === "buccheim-unger-leipert") {
+      this.buccheim();
     }
   }
   figure() {

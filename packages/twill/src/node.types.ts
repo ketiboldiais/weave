@@ -8,6 +8,9 @@ import {
   LineNode,
   TreeSpaceNode,
   TreeChild,
+  Vertex,
+  Edge,
+  Graph,
 } from "./index.js";
 
 export type FigNode =
@@ -19,6 +22,9 @@ export type FigNode =
   | TreeSpaceNode
   | TreeChild
   | ArrowDefNode
+  | Vertex
+  | Edge
+  | Graph
   | IntegralNode;
 
 /**
@@ -34,7 +40,7 @@ export type Node2D =
   | AxisNode
   | TextNode
 export type Plottable = IntegralNode;
-export type LayoutNode = PlaneNode | TreeSpaceNode;
+export type LayoutNode = PlaneNode | TreeSpaceNode | Graph;
 export type Coord = {
   x1: number;
   y1: number;

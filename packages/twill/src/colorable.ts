@@ -56,9 +56,7 @@ export interface Colorable {
 }
 
 
-const clamp = (min:number,input:number,max:number) => (
-  Math.min(Math.max(input,min),max)
-)
+import { clamp } from "./aux.js";
 
 const rgb = (r:number,g:number,b:number) => {
   const red = clamp(0,r,255);

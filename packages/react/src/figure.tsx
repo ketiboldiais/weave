@@ -1,30 +1,16 @@
 import { Plane2D } from "./plane2d";
 import {
-  AxisNode,
-  IntegralNode,
-  isArrow,
-  isLine,
+  Graph,
+  isGraph,
   isPlane,
-  isPlot,
-  isTextNode,
   isTreeSpace,
   LayoutNode,
-  PlaneNode,
-  PlotNode,
-  Scaler,
-  TextNode,
 } from "@weave/twill";
-import { isAxis, isIntegral } from "@weave/twill";
-import {
-  CSSProperties,
-  Fragment,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { CSSProperties, Fragment } from "react";
 import { Tree } from "./tree";
-import { Arrow } from "./arrow";
 import { Axis2D } from "./axis2d";
+import {Label} from "./label";
+import {Line} from "packages/twill/dist/line";
 
 type FigureProps = {
   of: LayoutNode;
@@ -93,8 +79,50 @@ export const Figure = ({
           )}
           {isPlane(data) && <Plane2D of={data} />}
           {isTreeSpace(data) && <Tree of={data} />}
+          {isGraph(data) && <GraphFig of={data}/>}
         </g>
       </svg>
     </div>
+  );
+};
+
+export const GraphFig = ({ of }: { of: Graph }) => {
+  const nodes = of.data.nodes;
+  const edges = of.data.edges;
+  const xs = of.scaleOf("x");
+  const ys = of.scaleOf("y");
+  const shift = (x: number, y: number) =>
+    `translate(${xs(x)},${ys(y)})`;
+  console.log({nodes,edges});
+  return (
+    <g>
+      <g>
+        {edges.map(e => (
+          <Fragment key={e.id}>
+            <line
+              x1={xs(e.source.cx)}
+              y1={ys(e.source.cy)}
+              x2={xs(e.target.cx)}
+              y2={ys(e.target.cy)}
+              stroke={e.strokeColor||'currentColor'}
+              strokeWidth={e.strokeWidth||1}
+              strokeDasharray={e.strokeDashArray||0}
+            />
+          </Fragment>
+        ))}
+      </g>
+      <g>
+        {nodes.map((v) => (
+          <g key={v.id} transform={shift(v.cx, v.cy)}>
+            <circle
+              r={v.r}
+              fill={v.fillColor || "white"}
+              stroke={v.strokeColor || "currentColor"}
+            />
+            <Label of={v} position={`translate(0,-6)`}/>
+          </g>
+        ))}
+      </g>
+    </g>
   );
 };

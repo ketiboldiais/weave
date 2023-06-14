@@ -3,7 +3,7 @@ import { colorable } from "./colorable";
 import { FigNode } from "./node.types.js";
 import { typed } from "./typed.js";
 
-class Line {
+export class Line {
   start(x: number, y: number) {
     this.x1 = x;
     this.y1 = y;

@@ -1,5 +1,4 @@
-import { And, Axiom } from "./index.js";
-import { isNumber, safer, sq } from "./aux.js";
+import { isNumber, sq } from "./aux.js";
 
 export class Vector {
   ox: number = 0;
@@ -51,7 +50,8 @@ export class Vector {
       originZ: number,
     ) => number,
   ) {
-    return f(this.x, this.y, this.z, this.ox, this.oy, this.oz);
+    const v = this.clone();
+    return f(v.x, v.y, v.z, v.ox, v.oy, v.oz);
   }
   binaryOp(vector: Vector | number, f: (a: number, b: number) => number) {
     const other = isNumber(vector) ? Vector.from(vector) : vector;
@@ -66,7 +66,6 @@ export class Vector {
     const az = this.z;
     const bz = other.z;
     const z = f(az, bz);
-
     return other.copy([x, y, z]);
   }
   unaryOp(f: (element: number, index: number) => number) {
@@ -107,7 +106,10 @@ export class Vector {
   }
 
   magnitude() {
-    return this.fold((x, y, z) => Math.sqrt(sq(x) + sq(y) + sq(z)));
+    return this.fold((x, y, z) => {
+      const out = Math.sqrt(sq(x) + sq(y) + sq(z));
+      return out;
+    });
   }
   isZero() {
     return (
