@@ -2,8 +2,6 @@ import { And, Axiom, NodeType } from "./index.js";
 import { uid } from "./index.js";
 
 export interface Typed {
-  name(value: string): this;
-  label: string;
   copyTypes(node: Typed): this;
   /** The type name for this renderable node. */
   type: NodeType;
@@ -80,11 +78,6 @@ export function typed<Klass extends Axiom>(
     klasse() {
       const type = this.type;
       return `weave-${type}`;
-    }
-    label: string = "";
-    name(value: string) {
-      this.label = value;
-      return this;
     }
   };
 }

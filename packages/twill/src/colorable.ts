@@ -55,18 +55,8 @@ export interface Colorable {
   copyColors(node: Colorable): this;
 }
 
-
-import { clamp } from "./aux.js";
-
-const rgb = (r:number,g:number,b:number) => {
-  const red = clamp(0,r,255);
-  const green = clamp(0,g,255);
-  const blue = clamp(0,b,255);
-  return `rgb(${r},${g},${b})`;
-}
-
 export function colorable<NodeClass extends Axiom>(
-  nodetype: NodeClass,
+  nodetype: NodeClass
 ): And<NodeClass, Colorable> {
   return class extends nodetype {
     copyColors(node: Colorable) {
@@ -119,7 +109,10 @@ export function colorable<NodeClass extends Axiom>(
      * Sets the renderable node’s dash property.
      */
     dash(value: number): this {
-      this.strokeDashArray = safer(this.strokeDashArray, value);
+      this.strokeDashArray = safer(
+        this.strokeDashArray,
+        value
+      );
       return this;
     }
   };

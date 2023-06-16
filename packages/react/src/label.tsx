@@ -11,7 +11,7 @@ export const Label = ({
   of: data,
   position,
 }: LabelProps) => {
-  const content = data.content;
+  const content = data.text;
   const space = data.space();
   const xscale = space.scaleOf("x");
   const yscale = space.scaleOf("y");
@@ -64,7 +64,7 @@ export const Tex = ({
   of: TextNode;
   style?: CSSProperties;
 }) => {
-  const content = data.content;
+  const content = data.text;
   const mode = data.mode === "latex-block" ? "block" : "inline";
   const Component = mode === "block" ? "div" : "span";
   const displayMode = mode === "block";

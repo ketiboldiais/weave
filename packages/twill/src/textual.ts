@@ -1,7 +1,7 @@
 import { And, Axiom, Space } from "./index.js";
 
 export interface Textual {
-  content: string;
+  text: string;
   space: () => Space;
   scope(space: Space): this;
   FontColor?: string;
@@ -17,13 +17,18 @@ export interface Textual {
   format(
     value: "normal" | "latex-inline" | "latex-block"
   ): this;
+  write(text:string): this;
 }
 
 export function textual<NodeClass extends Axiom>(
   nodetype: NodeClass
 ): And<NodeClass, Textual> {
   return class extends nodetype {
-    content: string = "";
+    text: string = "";
+    write(text:string) {
+      this.text=text;
+      return this;
+    }
     space: () => Space = () => new Space();
     scope(space: Space) {
       this.space = () => space;

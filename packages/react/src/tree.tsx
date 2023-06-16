@@ -55,7 +55,7 @@ export const Tree = ({ of }: { of: TreeSpaceNode }) => {
             />
             {/* <Label of={n} position={`translate(0,15)`} /> */}
             <Label
-              of={label(n.content)}
+              of={label(n.text)}
               position={`translate(0,15)`}
             />
           </g>
@@ -65,7 +65,7 @@ export const Tree = ({ of }: { of: TreeSpaceNode }) => {
   );
 };
 
-const Line = ({ of }: { of: LineNode }) => {
+export const Line = ({ of }: { of: LineNode }) => {
   return (
     <line
       id={of.id}

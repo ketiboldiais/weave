@@ -10,6 +10,7 @@ export class Text extends TEXT {
   constructor(content: string) {
     super(content);
     this.type = "text";
+    this.text=content;
   }
 }
 

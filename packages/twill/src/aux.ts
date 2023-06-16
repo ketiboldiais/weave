@@ -32,8 +32,12 @@ export const tuple = <T extends any[]>(...data: T) => data;
 export const isNumber = (x: any): x is number =>
   typeof x === "number";
 export const sq = (x: number) => x * x;
-export const unsafe = (x: any) =>
-  x === undefined || x === null;
+
+export const dne = (x:any): x is undefined => (x === undefined);
+export const nil = (x:any): x is null => (x === null);
+export const unsafe = (x: any) => dne(x) || nil(x);
+export const safe = (x:any) => !dne(x) && !nil(x);
+
 export const arraySplit = <T>(array: T[]) => {
   const L = array.length;
   const half = Math.ceil(L / 2);
