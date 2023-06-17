@@ -1,13 +1,13 @@
 import {
   leaf,
-  LineNode,
+  Line,
   subtree,
   tree,
 } from "@weave/twill";
 
 import { Figure } from "./figure";
 
-const redline = (line: LineNode) => line.stroke("red");
+const redline = (line: Line) => line.stroke("red");
 const bleft = subtree("5")
   .nodes([leaf("7"), leaf("y"), leaf("8")]);
 const cleft = subtree("4")

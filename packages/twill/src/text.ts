@@ -8,7 +8,7 @@ const TEXT = typed(textual(Circle));
 
 export class Text extends TEXT {
   constructor(content: string) {
-    super(content);
+    super(0);
     this.type = "text";
     this.text=content;
   }

@@ -6,8 +6,11 @@ import { Plot } from "./plot.js";
 import { compile, engine } from "@weave/twine";
 import { area } from "d3-shape";
 import { unsafe } from "./aux.js";
+import { Base } from "./base.js";
 
-export class Integral {
+const INTEGRAL_BASE = typed(colorable(Base));
+
+export class Integral extends INTEGRAL_BASE {
   bounds: [number, number];
   private space: () => Plot = () => new Plot("");
   scope(space: Plot) {
@@ -15,7 +18,9 @@ export class Integral {
     return this;
   }
   constructor(bounds: [number, number]) {
+    super();
     this.bounds = bounds;
+    this.type = "integral";
   }
   samples: number = 100;
   sampled(n: number) {
@@ -62,11 +67,10 @@ export class Integral {
 }
 
 export const integral = (bounds: [number, number]) => {
-  const fig = typed(colorable(Integral));
-  return new fig(bounds).typed("integral");
+  return new Integral(bounds);
 };
-export type IntegralNode = ReturnType<typeof integral>;
-export const isIntegral = (node: FigNode): node is IntegralNode => {
+
+export const isIntegral = (node: FigNode): node is Integral => {
   if (unsafe(node)) return false;
   return node.type === "integral";
 };

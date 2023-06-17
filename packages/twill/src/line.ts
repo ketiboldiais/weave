@@ -1,17 +1,44 @@
-import { isnum, isstr, unsafe } from "./aux.js";
+import { isnum, isstr, safer, unsafe } from "./aux.js";
+import { Base } from "./base.js";
 import { colorable } from "./colorable";
 import { FigNode } from "./node.types.js";
+import {scopable} from './scopable.js';
 import { Space } from "./space.js";
 import { label, TextNode } from "./text.js";
 import { typed } from "./typed.js";
-import {vector} from './vector.js';
+import { Vector, vector } from "./vector.js";
 
-export class Line {
-  space: () => Space;
+const LINE = typed(colorable(scopable(Base)));
+
+export class Line extends LINE {
   text?: string | number | TextNode;
   label(text: TextNode | string | number) {
     this.text = text;
     return this;
+  }
+  get x1() {
+    return this.start.x;
+  }
+  set x1(value: number) {
+    this.start.x = value;
+  }
+  get y1() {
+    return this.start.y;
+  }
+  set y1(value: number) {
+    this.start.y = value;
+  }
+  get x2() {
+    return this.end.x;
+  }
+  set x2(value: number) {
+    this.end.x = value;
+  }
+  get y2() {
+    return this.end.y;
+  }
+  set y2(value: number) {
+    this.end.y = value;
   }
   /**
    * Returns a vector corresponding
@@ -20,7 +47,7 @@ export class Line {
   midpoint() {
     const x = this.y2 - this.y2 / 2;
     const y = this.x2 - this.x2 / 2;
-    return vector(x,y);
+    return vector(x, y);
   }
   /**
    * Returns the x-distance or y-distance
@@ -29,53 +56,18 @@ export class Line {
   d(of: "x" | "y") {
     return (of === "x" ? (this.x2 - this.x1) : this.y2 - this.y1);
   }
-  scope(space: Space) {
-    this.space = () => space;
-    return this;
-  }
-  start(x: number, y: number) {
-    this.x1 = x;
-    this.y1 = y;
-    return this;
-  }
-  end(x: number, y: number) {
-    this.x2 = x;
-    this.y2 = y;
-    return this;
-  }
-  /**
-   * The line’s starting x-coordiante.
-   */
-  x1: number;
-  /**
-   * The line’s starting y-coordinate.
-   */
-  y1: number;
-  /**
-   * The line’s ending x-coordinate.
-   */
-  x2: number;
-  /**
-   * The line’s ending y-coordinate.
-   */
-  y2: number;
-
+  start: Vector;
+  end: Vector;
   /**
    * The position of this line’s arrow,
    * if any.
    */
-  arrowed?: "start" | "end" | "none" = 'none';
-  constructor(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-  ) {
-    this.x1 = x1;
-    this.y1 = y1;
-    this.x2 = x2;
-    this.y2 = y2;
-    this.space = () => new Space();
+  arrowed: "start" | "end" | "none" = "none";
+  constructor(start: Vector, end: Vector) {
+    super();
+    this.start = start;
+    this.end = end;
+    this.type = "line";
   }
   /**
    * Defines the line object as having
@@ -87,26 +79,18 @@ export class Line {
     return this;
   }
 }
-
-/**
- * Returns a new {@link LineNode}.
- *
- * @param x1 - The starting x-coordinate of the line.
- * @param y1 - The starting y-coordinate of the line.
- * @param x2 - The ending x-coordinate of the line.
- * @param y2 - The ending y-coordinate of the line.
- *
- * All lines are {@link typed} `line` and {@link colorable}.
- */
-const LINE = typed(colorable(Line));
-export const line = (
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-) => {
-  return new LINE(x1, y1, x2, y2).typed("line");
+export const line = (start: Vector | number[], end: Vector | number[]) => {
+  const START: Vector = Array.isArray(start)
+    ? vector(safer(start[0], 0), safer(start[1], 0))
+    : start;
+  const END: Vector = Array.isArray(end)
+    ? vector(safer(end[0], 0), safer(end[1], 0))
+    : end;
+  return new Line(START, END);
 };
-export type LineNode = ReturnType<typeof line>;
-export const isLine = (node: FigNode): node is LineNode =>
-  !unsafe(node) && node.isType("line");
+export const isLine = (node: FigNode): node is Line => (
+  !unsafe(node) && node.isType("line")
+);
+
+export const ray = (start: Vector | number[], end: Vector | number[]) =>
+  line(start, end).arrow("end");

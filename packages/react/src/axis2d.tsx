@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { AxisNode, TextNode } from "@weave/twill";
+import { Axis, TextNode } from "@weave/twill";
 import { Label } from "./label";
 
 type Axis2DProps = {
-  of: AxisNode;
+  of: Axis;
 };
 export const Axis2D = ({ of }: Axis2DProps) => {
   const domain = of.domain();

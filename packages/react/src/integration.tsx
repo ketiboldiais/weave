@@ -1,7 +1,7 @@
-import { IntegralNode } from "@weave/twill";
+import { Integral } from "@weave/twill";
 
 type IntegrationProps = {
-  of: IntegralNode;
+  of: Integral;
 };
 export const Integration = ({ of }: IntegrationProps) => {
   return (

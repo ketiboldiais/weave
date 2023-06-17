@@ -1,31 +1,33 @@
 import {
   ArrowDefNode,
-  AxisNode,
-  CircleNode,
+  Axis,
+  Circle,
   Eades,
-  IntegralNode,
-  LineNode,
-  PlaneNode,
-  PlotNode,
+  Integral,
+  Line,
+  Path,
+  Plane,
+  Plot,
   Polygon,
   TextNode,
   TreeChild,
-  TreeSpaceNode,
+  TreeSpace,
 } from "./index.js";
 
 export type FigNode =
-  | PlotNode
-  | CircleNode
-  | PlaneNode
-  | AxisNode
+  | Plot
+  | Circle
+  | Plane
+  | Axis
   | TextNode
-  | LineNode
-  | TreeSpaceNode
+  | Line
+  | TreeSpace
   | TreeChild
   | ArrowDefNode
   | Eades
   | Polygon
-  | IntegralNode;
+  | Path
+  | Integral;
 
 /**
  * A referable is any FigNode that
@@ -35,9 +37,16 @@ export type FigNode =
  * 1. {@link ArrowDefNode} - an arrow definition node.
  */
 export type Referable = ArrowDefNode;
-export type Node2D = PlotNode | AxisNode | TextNode | CircleNode | LineNode | Polygon;
-export type Plottable = IntegralNode;
-export type LayoutNode = PlaneNode | TreeSpaceNode | Eades;
+export type Node2D =
+  | Plot
+  | Axis
+  | TextNode
+  | Circle
+  | Line
+  | Path
+  | Polygon;
+export type Plottable = Integral;
+export type LayoutNode = Plane | TreeSpace | Eades;
 export type Coord = {
   x1: number;
   y1: number;

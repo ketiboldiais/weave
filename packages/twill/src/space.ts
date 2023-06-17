@@ -1,5 +1,5 @@
 import { scaleLinear, scaleLog, scalePow, scaleRadial, scaleSqrt } from "d3";
-import { axis, AxisNode, line, LineNode, shift } from "./index.js";
+import { axis, Axis, line, Line, shift } from "./index.js";
 import { tuple } from "./aux.js";
 import { Referable } from "./node.types.js";
 
@@ -57,8 +57,8 @@ export type Scaler =
   | LogScale;
 export class Space {
   scaletype: ScaleName = "linear";
-  GridLines: LineNode[] = [];
-  Axes: AxisNode[] = [];
+  GridLines: Line[] = [];
+  Axes: Axis[] = [];
   axis(on: "x" | "y") {
     const Axis = axis(on);
     Axis.scope(this);
@@ -90,7 +90,7 @@ export class Space {
    * _before scaling_. Thus, the values are as they would appear
    * visually, depending on the domain and range.
    */
-  gridlines(on: "x" | "y" | "xy", callback?: (line: LineNode) => LineNode) {
+  gridlines(on: "x" | "y" | "xy", callback?: (line: Line) => Line) {
     const xmin = this.xmin();
     const xmax = this.xmax();
     const ymin = this.ymin();
@@ -101,7 +101,7 @@ export class Space {
       const xi = Math.floor(xmin);
       const xf = Math.floor(xmax);
       for (let i = xi; i <= xf; i++) {
-        let gridline = line(i, ymin, i, ymax);
+        let gridline = line([i, ymin], [i, ymax]);
         if (callback) {
           gridline = callback(gridline);
         }
@@ -116,7 +116,7 @@ export class Space {
       const yi = Math.floor(ymin);
       const yf = Math.floor(ymax);
       for (let j = yi; j <= yf; j++) {
-        let gridline = line(xmin, j, xmax, j);
+        let gridline = line([xmin, j], [xmax, j]);
         if (callback) {
           gridline = callback(gridline);
         }

@@ -2,10 +2,10 @@ import { isnum, isstr, randFloat, randInt, unsafe } from "./aux.js";
 import { Edge, Graph, graph, Vertex } from "./graph.js";
 import {
   circle,
-  CircleNode,
+  Circle,
   FigNode,
   line,
-  LineNode,
+  Line,
   Space,
   vector,
 } from "./index.js";
@@ -145,16 +145,16 @@ export class Eades extends GSPACE {
     }
   }
 
-  edges(): LineNode[] {
-    const out: LineNode[] = [];
+  edges(): Line[] {
+    const out: Line[] = [];
     const keys = new Set<string>();
     Object.values(this.springs).forEach((spring) => {
     });
     return out;
   }
 
-  vertices(): CircleNode[] {
-    const out: CircleNode[] = [];
+  vertices(): Circle[] {
+    const out: Circle[] = [];
     Object.values(this.nodes).forEach((mass) => {
     });
     return out;

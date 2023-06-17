@@ -1,6 +1,8 @@
 import {unsafe} from './aux.js';
+import {Base} from './base.js';
 import {colorable} from './colorable.js';
 import {FigNode} from './node.types.js';
+import {scopable} from './scopable.js';
 import {Space} from './space.js';
 import {typed} from './typed.js';
 import { Vector } from "./vector.js";
@@ -9,11 +11,12 @@ export const area = (radius:number) => (
   Math.PI * (radius ** 2)
 )
 
-export class Circle extends Vector {
+const CIRCLE_BASE = scopable(typed(colorable(Vector)));
+
+export class Circle extends CIRCLE_BASE {
   r: number = 5;
   dx: number = 0;
   dy: number = 0;
-  space: () => Space;
   
   /**
    * Returns the diameter of this circle,
@@ -38,10 +41,6 @@ export class Circle extends Vector {
   area() {
     return (Math.PI) * (this.r**2)
   }
-  scope(space:Space) {
-    this.space = () => space;
-    return this;
-  }
   Dy(value: number) {
     this.dy = value;
     return this;
@@ -50,11 +49,11 @@ export class Circle extends Vector {
     this.dx = value;
     return this;
   }
-  label: string;
-  constructor(name: string) {
+  constructor(radius:number) {
     super(0, 0, 0);
-    this.label = name;
     this.space=()=>new Space();
+    this.r=radius;
+    this.type = 'circle';
   }
   radius(value: number) {
     this.r = value;
@@ -62,12 +61,10 @@ export class Circle extends Vector {
   }
 }
 
-const CIRCLE = typed(colorable(Circle));
 export const circle = (radius:number) => (
-  new CIRCLE("").radius(radius).typed('circle')
+  new Circle(radius)
 )
-export type CircleNode = ReturnType<typeof circle>;
-export const isCircle = (node:FigNode): node is CircleNode => (
+export const isCircle = (node:FigNode): node is Circle => (
   !unsafe(node) && node.isType('circle')
 )
 

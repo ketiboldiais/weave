@@ -1,12 +1,12 @@
-import { CircleNode, linearScale } from "@weave/twill";
+import { Circle, linearScale } from "@weave/twill";
 import { useMemo } from "react";
 
-export const Circle = ({
+export const Circ = ({
   of,
   shift,
   radius,
 }: {
-  of: CircleNode;
+  of: Circle;
   shift?: string;
   radius?: number;
 }) => {

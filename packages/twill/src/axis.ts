@@ -2,8 +2,12 @@ import { FigNode, label, shift, Space, TextNode } from "./index.js";
 import { tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
+import {scopable} from './scopable.js';
+import {Base} from './base.js';
 
-export class Axis {
+const AXIS_BASE = scopable(typed(colorable(Base)));
+
+export class Axis extends AXIS_BASE {
   /**
    * @property
    * Indicates whether this axis runs
@@ -12,6 +16,8 @@ export class Axis {
   readonly direction: "x" | "y" | "z";
 
   constructor(direction: "x" | "y" | "z") {
+    super();
+    this.type = 'axis';
     this.direction = direction;
   }
 
@@ -30,11 +36,6 @@ export class Axis {
   }
   hasNo(option: "ticks" | "zero" | "axis-line") {
     return this.hiddens.has(option);
-  }
-  private space: () => Space = () => new Space();
-  scope(space: Space) {
-    this.space = () => space;
-    return this;
   }
   domain() {
     const space = this.space();
@@ -163,12 +164,10 @@ export class Axis {
 }
 
 export const axis = (of: "x" | "y" | "z") => {
-  const fig = colorable(typed(Axis));
-  return new fig(of).typed("axis");
+  return new Axis(of);
 };
 
-export type AxisNode = ReturnType<typeof axis>;
-export const isAxis = (node: FigNode): node is AxisNode => {
+export const isAxis = (node: FigNode): node is Axis => {
   if (unsafe(node)) return false;
   return node.type === "axis";
 };

@@ -2,19 +2,15 @@ import { unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable.js";
 import { FigNode } from "./node.types.js";
+import {scopable} from './scopable.js';
 import { Space } from "./space.js";
 import { typed } from "./typed.js";
 import { Vector, vector } from "./vector.js";
 
-const polygonBase = typed(colorable(Base));
+const polygonBase = typed(colorable(scopable(Base)));
 
 export class Polygon extends polygonBase {
   points: Vector[];
-  space: () => Space;
-  scope(space: Space) {
-    this.space = () => space;
-    return this;
-  }
   constructor() {
     super();
     this.points = [];

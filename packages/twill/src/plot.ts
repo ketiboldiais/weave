@@ -5,8 +5,12 @@ import { compile, engine } from "@weave/twine";
 import { safer, unsafe } from "./aux.js";
 import { line } from "d3-shape";
 import { FigNode, Plottable } from "./node.types.js";
+import {scopable} from './scopable.js';
+import {Base} from './base.js';
 
-export class Plot {
+const PLOT_BASE = scopable(typed(colorable(Base)));
+
+export class Plot extends PLOT_BASE {
   fn: string;
   samples: number = 300;
   children: Plottable[] = [];
@@ -19,12 +23,9 @@ export class Plot {
     return this;
   }
   constructor(fn: string) {
+    super();
     this.fn = fn;
-  }
-  space: () => Space = () => new Space();
-  scope(space: Space) {
-    this.space = () => space;
-    return this;
+    this.type = 'plot';
   }
   dom?: [number, number];
   domain(interval: [number, number]) {
@@ -76,14 +77,11 @@ export class Plot {
   }
 }
 
-const PLOT_NODE = typed(colorable(Plot));
 export const plot = (fn: string) => {
-  return new PLOT_NODE(fn).typed("plot");
+  return new Plot(fn);
 };
 
-export type PlotNode = ReturnType<typeof plot>;
-
-export const isPlot = (node: FigNode): node is PlotNode => {
+export const isPlot = (node: FigNode): node is Plot => {
   if (unsafe(node)) return false;
   return node.type === "plot";
 };

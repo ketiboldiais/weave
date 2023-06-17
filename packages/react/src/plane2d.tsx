@@ -6,18 +6,18 @@ import {
   isPlot,
   isPolygon,
   isTextNode,
-  PlaneNode,
+  Plane,
   Polygon,
 } from "@weave/twill";
 import { Label } from "./label";
 import { Curve2D } from "./curve2d";
 import { Axis2D } from "./axis2d";
-import { Circle } from "./circle";
-import { Line } from "./tree";
+import { Circ } from "./circle";
+import { Line2D } from "./tree";
 import { Arrow } from "./arrow";
 
 type Plane2DProps = {
-  of: PlaneNode;
+  of: Plane;
 };
 export const Plane2D = ({ of }: Plane2DProps) => {
   const children = of.nodes;
@@ -32,8 +32,8 @@ export const Plane2D = ({ of }: Plane2DProps) => {
           {isAxis(c) && <Axis2D of={c} />}
           {isPlot(c) && <Curve2D of={c} />}
           {isTextNode(c) && <Label of={c} />}
-          {isCircle(c) && <Circle of={c} />}
-          {isLine(c) && <Line of={c} />}
+          {isCircle(c) && <Circ of={c} />}
+          {isLine(c) && <Line2D of={c} />}
           {isPolygon(c) && <Poly of={c} />}
         </Fragment>
       ))}
@@ -48,9 +48,9 @@ export const Poly = ({ of }: { of: Polygon }) => {
       points={d}
       stroke={of.strokeColor || "currentColor"}
       fill={of.fillColor || "none"}
-      strokeDasharray={of.strokeDashArray||0}
-      opacity={of.opacityValue||1}
-      strokeWidth={of.strokeWidth||1}
+      strokeDasharray={of.strokeDashArray || 0}
+      opacity={of.opacityValue || 1}
+      strokeWidth={of.strokeWidth || 1}
     />
   );
 };

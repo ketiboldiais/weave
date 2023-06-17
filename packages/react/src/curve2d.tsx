@@ -1,10 +1,10 @@
 import { Fragment } from "react";
-import { PlotNode } from "@weave/twill";
+import { Plot } from "@weave/twill";
 import { isIntegral } from "@weave/twill";
 import { Integration } from "./integration";
 
 type Curve2DProps = {
-  of: PlotNode;
+  of: Plot;
 };
 export const Curve2D = ({ of }: Curve2DProps) => {
   const d = of.path();

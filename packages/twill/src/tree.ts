@@ -4,7 +4,7 @@ import {
   FigNode,
   line,
   linearScale,
-  LineNode,
+  Line,
   Space,
 } from "./index.js";
 import { linkedList } from "./list.js";
@@ -22,11 +22,13 @@ type Traversal =
   | "postorder"
   | "bfs";
 type LinkFunction = (
-  line: LineNode,
+  line: Line,
   source: TreeChild,
   target: TreeChild,
-) => LineNode;
-class TreeSpace extends Space {
+) => Line;
+const TREEBASE = typed(Space);
+
+export class TreeSpace extends TREEBASE {
   tree: Tree;
   layout: TreeLayout = "knuth";
   /**
@@ -74,6 +76,7 @@ class TreeSpace extends Space {
   constructor(tree: Tree) {
     super();
     this.tree = tree;
+    this.type = 'tree';
   }
   nodes(nodes: TreeChild[]) {
     nodes.forEach((n) => this.tree.child(n));
@@ -451,21 +454,19 @@ class TreeSpace extends Space {
   figure() {
     this.lay();
     const nodes: TreeChild[] = [];
-    const edges: LineNode[] = [];
+    const edges: Line[] = [];
     this.tree.bfs((node) => nodes.push(node));
     this.tree.bfs((node) => {
       const parent = node.parent;
       if (parent) {
         const l = line(
-          parent.x,
-          parent.y,
-          node.x,
-          node.y,
+          [parent.x, parent.y],
+          [node.x, node.y],
         );
         edges.push(l);
       }
     });
-    const edgeNotes: LineNode[] = [];
+    const edgeNotes: Line[] = [];
     const markEdge = (
       option: Traversal,
       callback: LinkFunction,
@@ -477,12 +478,12 @@ class TreeSpace extends Space {
       const rest = list.cdr();
       list.zip(rest).forEach(([a, b]) => {
         const r = 1/b.r + 0.05;
-        const gamma = b.angleBetween(a);
+        const gamma = b.gamma(a);
         const ox = (Math.cos(gamma) * r);
         const oy = (Math.sin(gamma) * r);
         const tx = b.x - (b.x < 0 ? ox : ox);
         const ty = b.y - (b.y < 0 ? oy : oy);
-        const l = line(a.x, a.y, tx, ty).arrow("end")
+        const l = line([a.x, a.y], [tx, ty]).arrow("end")
         const c = callback(l, a, b).uid(l.id);
         const arrow = arrowDef()
           .uid(c.id)
@@ -512,12 +513,10 @@ class TreeSpace extends Space {
   }
 }
 
-const TREESPACE = typed(TreeSpace);
 
 export const tree = (name: string) => {
-  return new TREESPACE(subtree(name)).typed("tree");
+  return new TreeSpace(subtree(name)).typed("tree");
 };
 export const isTreeSpace = (
   node: FigNode,
-): node is TreeSpaceNode => !unsafe(node) && node.isType("tree");
-export type TreeSpaceNode = ReturnType<typeof tree>;
+): node is TreeSpace => !unsafe(node) && node.isType("tree");
