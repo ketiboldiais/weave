@@ -54,20 +54,26 @@ export class Axis {
     const space = this.space();
     const domain = this.domain();
     const range = this.range();
-    const out = space.scale()().domain(domain).range(range);
+    const scale = space.scale()
+    // const out = space.scale()().domain(domain).range(range);
+    const out = scale(domain, range);
     return out;
   }
   xScale() {
     const space = this.space();
     const domain = space.axisDomain("x");
     const range = space.axisRange("x");
-    return space.scale()().domain(domain).range(range);
+    const scale = space.scale();
+    // return space.scale()().domain(domain).range(range);
+    return scale(domain, range);
   }
   yScale() {
     const space = this.space();
     const domain = space.axisDomain("y");
     const range = space.axisRange("y");
-    return space.scale()().domain(domain).range(range);
+    // return space.scale()().domain(domain).range(range);
+    const scale = space.scale();
+    return scale(domain, range);
   }
   translationXY() {
     const xscale = this.xScale();
@@ -111,11 +117,11 @@ export class Axis {
     const ticks = scale.ticks(n).map((value, index) => {
       let txt = label(`${value}`);
       if (isXAxis) {
-        txt.cx = scale(value);
-        txt.cy = scale(0);
+        txt.x = scale(value);
+        txt.y = scale(0);
       } else {
-        txt.cx = scale(0);
-        txt.cy = scale(value);
+        txt.x = scale(0);
+        txt.y = scale(value);
       }
       if (f) txt = f(txt, index);
       txt.anchor = txt.anchor ? txt.anchor : this.tickLabelAnchor;

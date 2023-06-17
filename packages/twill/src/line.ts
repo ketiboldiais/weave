@@ -1,9 +1,38 @@
-import { unsafe } from "./aux.js";
+import { isnum, isstr, unsafe } from "./aux.js";
 import { colorable } from "./colorable";
 import { FigNode } from "./node.types.js";
+import { Space } from "./space.js";
+import { label, TextNode } from "./text.js";
 import { typed } from "./typed.js";
+import {vector} from './vector.js';
 
 export class Line {
+  space: () => Space;
+  text?: string | number | TextNode;
+  label(text: TextNode | string | number) {
+    this.text = text;
+    return this;
+  }
+  /**
+   * Returns a vector corresponding
+   * to the midpoint of this line.
+   */
+  midpoint() {
+    const x = this.y2 - this.y2 / 2;
+    const y = this.x2 - this.x2 / 2;
+    return vector(x,y);
+  }
+  /**
+   * Returns the x-distance or y-distance
+   * of this line.
+   */
+  d(of: "x" | "y") {
+    return (of === "x" ? (this.x2 - this.x1) : this.y2 - this.y1);
+  }
+  scope(space: Space) {
+    this.space = () => space;
+    return this;
+  }
   start(x: number, y: number) {
     this.x1 = x;
     this.y1 = y;
@@ -35,17 +64,18 @@ export class Line {
    * The position of this line’s arrow,
    * if any.
    */
-  arrowed?: "start" | "end" | "none";
+  arrowed?: "start" | "end" | "none" = 'none';
   constructor(
     x1: number,
     y1: number,
     x2: number,
-    y2: number
+    y2: number,
   ) {
     this.x1 = x1;
     this.y1 = y1;
     this.x2 = x2;
     this.y2 = y2;
+    this.space = () => new Space();
   }
   /**
    * Defines the line object as having
@@ -68,14 +98,14 @@ export class Line {
  *
  * All lines are {@link typed} `line` and {@link colorable}.
  */
+const LINE = typed(colorable(Line));
 export const line = (
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
 ) => {
-  const fig = typed(colorable(Line));
-  return new fig(x1, y1, x2, y2).typed("line");
+  return new LINE(x1, y1, x2, y2).typed("line");
 };
 export type LineNode = ReturnType<typeof line>;
 export const isLine = (node: FigNode): node is LineNode =>

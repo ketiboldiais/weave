@@ -21,15 +21,6 @@ export interface Typed {
    */
   uid(value: string): this;
 
-  /**
-   * The node’s class name.
-   */
-  className?: string;
-
-  /**
-   * Sets the node’s class name.
-   */
-  classed(value: string): this;
 
   /**
    * Returns the node’s class name.
@@ -49,11 +40,9 @@ export function typed<Klass extends Axiom>(
   nodetype: Klass
 ): And<Klass, Typed> {
   return class extends nodetype {
-    className?: string;
     type: NodeType = "unknown";
     id: string = uid(5);
     copyTypes(node: Typed) {
-      this.className = node.className;
       this.id = node.id;
       return this;
     }
@@ -70,11 +59,6 @@ export function typed<Klass extends Axiom>(
       this.id = value;
       return this;
     }
-    classed(value: string) {
-      this.className = value;
-      return this;
-    }
-
     klasse() {
       const type = this.type;
       return `weave-${type}`;

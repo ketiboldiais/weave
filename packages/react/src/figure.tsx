@@ -1,9 +1,9 @@
 import { Plane2D } from './plane2d';
-import { isPlane, isSpringGraph, isTreeSpace, LayoutNode } from '@weave/twill';
+import { isEades, isPlane, isTreeSpace, LayoutNode } from '@weave/twill';
 import { CSSProperties } from 'react';
 import { Tree } from './tree';
 import { Axis2D } from './axis2d';
-import { GraphFigure } from './graph';
+import { SpringGraph } from './graph';
 
 type FigureProps = {
   of: LayoutNode;
@@ -61,7 +61,7 @@ export const Figure = ({ of: data, className }: FigureProps) => {
           )}
           {isPlane(data) && <Plane2D of={data} />}
           {isTreeSpace(data) && <Tree of={data} />}
-          {isSpringGraph(data) && <GraphFigure of={data}/>}
+          {isEades(data) && <SpringGraph of={data}/>}
         </g>
       </svg>
     </div>

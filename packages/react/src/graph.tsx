@@ -1,33 +1,37 @@
-import { SpringGraph, line } from '@weave/twill';
-import { Fragment } from 'react';
-import { Line } from './tree';
+import { Eades } from "@weave/twill";
+import { Line } from "./tree";
 
-export const GraphFigure = ({ of }: { of: SpringGraph }) => {
-  const nodes = Object.values(of.nodes);
-  const edges = of.edges;
+export const SpringGraph = ({ of }: { of: Eades }) => {
+  const nodes: any[] = of.vertices();
+  const edges = of.edges();
+  const translate = (
+    x: number, 
+    y: number
+  ) => `translate(${x},${y})`;
   console.log({ nodes, edges });
-  const xs = of.scaleOf('x');
-  const ys = of.scaleOf('y');
-  const shift = (x: number, y: number) => `translate(${((x))},${(y)})`;
   return (
     <g>
-      {edges.map((e) => (
-        <Fragment key={e.id}>
-          <line
-            x1={(e.source.position.x)}
-            y1={(e.source.position.y)}
-            x2={(e.target.position.x)}
-            y2={(e.target.position.y)}
-            stroke={'currentColor'}
-            strokeWidth={1}
-          />
-        </Fragment>
+      {edges.map((line, i) => (
+        <g key={of.id + "spring" + i}>
+          <Line of={line} noscale />
+        </g>
       ))}
-      {nodes.map((n) => (
-        <g key={n.id} transform={shift(n.position.x, n.position.y)}>
-          <circle r={n.r} stroke={'currentColor'} strokeWidth={1} fill={'tomato'} />
-          <text fontSize={'11px'} fontFamily={'system-ui'} dy={10}>
-            {n.label}
+      {nodes.map((mass, i) => (
+        <g key={of.id + "mass" + i} transform={translate(mass.x, mass.y)}>
+          <circle
+            r={mass.r}
+            fill={mass.fillColor || "white"}
+            stroke={mass.strokeColor || "currentColor"}
+            strokeWidth={mass.strokeWidth || 1}
+            strokeDasharray={mass.strokeDashArray || 0}
+          />
+          <text
+            fontFamily={"system-ui"}
+            fontSize={"12px"}
+            fill={"firebrick"}
+            dy={-8}
+          >
+            {mass.label}
           </text>
         </g>
       ))}

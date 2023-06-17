@@ -20,9 +20,9 @@ export const Axis2D = ({ of }: Axis2DProps) => {
     dy: number = 0
   ) => {
     if (isX) {
-      return `translate(${text.cx + dx}, ${other + dy})`;
+      return `translate(${text.x + dx}, ${other + dy})`;
     }
-    return `translate(${0 + dx}, ${text.cy + dy})`;
+    return `translate(${0 + dx}, ${text.y + dy})`;
   };
   const rotate = isX ? "rotate(0)" : "rotate(90)";
   const translateXY = of.translationXY();

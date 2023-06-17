@@ -1,10 +1,10 @@
 import { unsafe } from "./aux.js";
 import { FigNode } from "./node.types.js";
-import { RadialPoint } from "./point.js";
+import { Circle } from "./circle.js";
 import { textual } from "./textual.js";
 import { typed } from "./typed.js";
 
-const TEXT = typed(textual(RadialPoint));
+const TEXT = typed(textual(Circle));
 
 export class Text extends TEXT {
   constructor(content: string) {

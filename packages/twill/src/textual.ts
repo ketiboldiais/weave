@@ -44,10 +44,10 @@ export function textual<NodeClass extends Axiom>(
           this.FontColor = value;
           break;
         case "family":
-          this.FontSize = value;
+          this.FontFamily = value;
           break;
         case "size":
-          this.FontFamily = value;
+          this.FontSize = value;
           break;
       }
       return this;

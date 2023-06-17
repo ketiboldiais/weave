@@ -1,18 +1,14 @@
 import { tuple, unsafe } from "./aux.js";
 import {
+  arrowDef,
   FigNode,
+  line,
+  linearScale,
   LineNode,
   Space,
-  arrowDef,
-  line,
 } from "./index.js";
 import { linkedList } from "./list.js";
-import {
-  Tree,
-  TreeChild,
-  leaf,
-  subtree,
-} from "./treenode.js";
+import { leaf, subtree, Tree, TreeChild } from "./treenode.js";
 import { typed } from "./typed.js";
 
 type TreeLayout =
@@ -28,7 +24,7 @@ type Traversal =
 type LinkFunction = (
   line: LineNode,
   source: TreeChild,
-  target: TreeChild
+  target: TreeChild,
 ) => LineNode;
 class TreeSpace extends Space {
   tree: Tree;
@@ -109,19 +105,19 @@ class TreeSpace extends Space {
     const movesubtree = (
       wl: TreeChild,
       wr: TreeChild,
-      shift: number
+      shift: number,
     ) => {
       const st = wr.index - wl.index;
       wr.change -= shift / st;
       wr.shift += shift;
       wl.change += shift / st;
-      wr.cx += shift;
+      wr.x += shift;
       wr.dx += shift;
     };
     const ancestor = (
       vil: TreeChild,
       v: TreeChild,
-      default_ancestor: TreeChild
+      default_ancestor: TreeChild,
     ) => {
       if (v.parent && v.parent.hasChild(vil.id)) {
         return vil.ancestor;
@@ -131,7 +127,7 @@ class TreeSpace extends Space {
     const apportion = (
       v: TreeChild,
       default_ancestor: TreeChild,
-      distance: number
+      distance: number,
     ) => {
       const w = leftBrother(v);
       let vol = get_lmost_sibling(v);
@@ -159,8 +155,7 @@ class TreeSpace extends Space {
             vor = VOR;
             vor.ancestor = v;
           }
-          let shift =
-            (vil.cx + sil) - (vir.cx + sir) + distance;
+          let shift = (vil.x + sil) - (vir.x + sir) + distance;
           if (shift > 0) {
             let a = ancestor(vil, v, default_ancestor);
             movesubtree(a, v, shift);
@@ -189,7 +184,7 @@ class TreeSpace extends Space {
       let shift = 0;
       let change = 0;
       for (const w of v.children) {
-        w.cx += shift;
+        w.x += shift;
         w.dx += shift;
         change += w.change;
         shift += w.shift + change;
@@ -197,13 +192,13 @@ class TreeSpace extends Space {
     };
     const firstwalk = (
       v: TreeChild,
-      distance: number = 1
+      distance: number = 1,
     ) => {
       if (v.children.length === 0) {
         if (v.leftmost_sibling) {
           const lb = leftBrother(v);
-          if (lb) v.cx = lb.cx + distance;
-        } else v.cx = 0;
+          if (lb) v.x = lb.x + distance;
+        } else v.x = 0;
       } else {
         let default_ancestor = v.children[0];
         for (const w of v.children) {
@@ -211,19 +206,19 @@ class TreeSpace extends Space {
           default_ancestor = apportion(
             w,
             default_ancestor,
-            distance
+            distance,
           );
         }
         execShifts(v);
         const L = v.children[0];
         const R = v.children[v.children.length - 1];
-        let midpoint = (L.cx + R.cx) / 2;
+        let midpoint = (L.x + R.x) / 2;
         const w = leftBrother(v);
         if (w) {
-          v.cx = w.cx + distance;
-          v.dx = v.cx - midpoint;
+          v.x = w.x + distance;
+          v.dx = v.x - midpoint;
         } else {
-          v.cx = midpoint;
+          v.x = midpoint;
         }
       }
       return v;
@@ -232,12 +227,12 @@ class TreeSpace extends Space {
       v: TreeChild,
       m: number = 0,
       depth: number = 0,
-      min: number | null = null
+      min: number | null = null,
     ): number => {
-      v.cx += m;
-      v.cy = -depth;
-      if (min === null || v.cx < min) {
-        min = v.cx;
+      v.x += m;
+      v.y = -depth;
+      if (min === null || v.x < min) {
+        min = v.x;
       }
       for (const w of v.children) {
         min = secondwalk(w, m + v.dx, depth + 1, min);
@@ -245,7 +240,7 @@ class TreeSpace extends Space {
       return min;
     };
     const thirdwalk = (tree: TreeChild, n: number) => {
-      tree.cx += n;
+      tree.x += n;
       for (const w of tree.children) {
         thirdwalk(w, n);
       }
@@ -259,9 +254,9 @@ class TreeSpace extends Space {
       }
     };
     buccheim();
-    const x = this.tree.cx;
+    const x = this.tree.x;
     this.tree.bfs((n) => {
-      n.cx -= x;
+      n.x -= x;
     });
   }
 
@@ -273,7 +268,7 @@ class TreeSpace extends Space {
       left_offset: number = 0,
       right_offset: number = 0,
       left_outer: TreeChild | null = null,
-      right_outer: TreeChild | null = null
+      right_outer: TreeChild | null = null,
     ): [
       TreeChild | null,
       TreeChild | null,
@@ -281,12 +276,12 @@ class TreeSpace extends Space {
       number,
       number,
       TreeChild,
-      TreeChild
+      TreeChild,
     ] => {
-      let delta =
-        left.cx + left_offset - (right.cx + right_offset);
-      if (max_offset === null || delta > max_offset)
+      let delta = left.x + left_offset - (right.x + right_offset);
+      if (max_offset === null || delta > max_offset) {
         max_offset = delta;
+      }
       if (left_outer === null) left_outer = left;
       if (right_outer === null) right_outer = right;
       let lo = left_outer.left();
@@ -303,7 +298,7 @@ class TreeSpace extends Space {
           left_offset,
           right_offset,
           lo,
-          ro
+          ro,
         );
       }
       const out = tuple(
@@ -313,20 +308,19 @@ class TreeSpace extends Space {
         left_offset,
         right_offset,
         left_outer,
-        right_outer
+        right_outer,
       );
       return out;
     };
     const fixSubtrees = (
       left: TreeChild,
-      right: TreeChild
+      right: TreeChild,
     ) => {
-      let [li, ri, diff, loffset, roffset, lo, ro] =
-        contour(left, right);
+      let [li, ri, diff, loffset, roffset, lo, ro] = contour(left, right);
       diff += 1;
-      diff += (right.cx + diff + left.cx) % 2;
+      diff += (right.x + diff + left.x) % 2;
       right.dx = diff;
-      right.cx += diff;
+      right.x += diff;
       if (right.children.length) {
         roffset += diff;
       }
@@ -337,36 +331,34 @@ class TreeSpace extends Space {
         ro.thread = li;
         ro.dx = loffset - roffset;
       }
-      const out = Math.floor((left.cx + right.cx) / 2);
+      const out = Math.floor((left.x + right.x) / 2);
       return out;
     };
     const addmods = (tree: TreeChild, mod: number = 0) => {
-      tree.cx += mod;
-      tree.children.forEach((c) =>
-        addmods(c, mod + tree.dx)
-      );
+      tree.x += mod;
+      tree.children.forEach((c) => addmods(c, mod + tree.dx));
       return tree;
     };
     const setup = (tree: TreeChild, depth: number = 0) => {
       tree.sketch(-depth);
       if (tree.children.length === 0) {
-        tree.cx = 0;
+        tree.x = 0;
         return tree;
       }
       if (tree.children.length === 1) {
-        tree.cx = setup(tree.children[0], depth + 1).cx;
+        tree.x = setup(tree.children[0], depth + 1).x;
         return tree;
       }
       const left = setup(tree.children[0], depth + 1);
       const right = setup(tree.children[1], depth + 1);
-      tree.cx = fixSubtrees(left, right);
+      tree.x = fixSubtrees(left, right);
       return tree;
     };
     setup(this.tree);
     addmods(this.tree);
-    let x = this.tree.cx;
+    let x = this.tree.x;
     this.tree.bfs((n) => {
-      n.cx -= x;
+      n.x -= x;
     });
   }
 
@@ -375,12 +367,12 @@ class TreeSpace extends Space {
       tree: TreeChild,
       depth: number,
       nexts: number[] = [0],
-      offsets: number[] = [0]
+      offsets: number[] = [0],
     ) => {
       tree.children.forEach((c) => {
         lay(c, depth + 1, nexts, offsets);
       });
-      tree.y(-depth);
+      tree.y = -depth;
       if (nexts[depth] === undefined) {
         nexts[depth] = 0;
       }
@@ -390,57 +382,57 @@ class TreeSpace extends Space {
       let x = nexts[depth];
       if (tree.degree === 0) {
         x = nexts[depth];
-        tree.x(x);
+        tree.x = x;
       } else if (tree.degree === 1) {
-        x = tree.children[0].cx + 1;
+        x = tree.children[0].x + 1;
       } else {
         let lx = 0;
         tree.onFirstChild((n) => {
-          lx = n.cx;
+          lx = n.x;
         });
         let rx = 0;
         tree.onLastChild((n) => {
-          rx = n.cx;
+          rx = n.x;
         });
         const X = lx + rx;
         x = X / 2;
       }
       offsets[depth] = Math.max(
         offsets[depth],
-        nexts[depth] - x
+        nexts[depth] - x,
       );
       if (tree.degree !== 0) {
         const d = x + offsets[depth];
-        tree.x(d);
+        tree.x = d;
       } else {
-        tree.x(x);
+        tree.x = x;
       }
       nexts[depth] += 2;
       tree.dx = offsets[depth];
     };
     const addDXs = (tree: TreeChild, sum: number = 0) => {
-      tree.x(tree.cx + sum);
+      tree.x = tree.x + sum;
       sum += tree.dx;
       tree.children.forEach((c) => addDXs(c, sum));
     };
     lay(this.tree, 0);
     addDXs(this.tree);
-    const x = this.tree.cx;
+    const x = this.tree.x;
     this.tree.bfs((n) => {
-      n.cx -= x;
+      n.x -= x;
     });
   }
   private knuth() {
     this.tree.bfs((node, level) => {
       const y = 0 - level;
-      node.y(y);
+      node.y = y;
     });
     this.tree.inorder((node, index) => {
-      node.x(index);
+      node.x = index;
     });
-    const x = this.tree.cx;
+    const x = this.tree.x;
     this.tree.bfs((n) => {
-      n.cx -= x;
+      n.x -= x;
     });
     return this;
   }
@@ -465,10 +457,10 @@ class TreeSpace extends Space {
       const parent = node.parent;
       if (parent) {
         const l = line(
-          parent.cx,
-          parent.cy,
-          node.cx,
-          node.cy
+          parent.x,
+          parent.y,
+          node.x,
+          node.y,
         );
         edges.push(l);
       }
@@ -476,7 +468,7 @@ class TreeSpace extends Space {
     const edgeNotes: LineNode[] = [];
     const markEdge = (
       option: Traversal,
-      callback: LinkFunction
+      callback: LinkFunction,
     ) => {
       const list = linkedList<TreeChild>();
       this.tree[option]((node) => {
@@ -484,12 +476,21 @@ class TreeSpace extends Space {
       });
       const rest = list.cdr();
       list.zip(rest).forEach(([a, b]) => {
-        const l = line(a.cx, a.cy, b.cx, b.cy)
-          .arrow("end")
-          .opacity(0.5)
-          .weight(0.9);
+        const r = 1/b.r + 0.05;
+        const gamma = b.angleBetween(a);
+        const ox = (Math.cos(gamma) * r);
+        const oy = (Math.sin(gamma) * r);
+        const tx = b.x - (b.x < 0 ? ox : ox);
+        const ty = b.y - (b.y < 0 ? oy : oy);
+        const l = line(a.x, a.y, tx, ty).arrow("end")
         const c = callback(l, a, b).uid(l.id);
-        const arrow = arrowDef().uid(c.id).copyColors(c);
+        const arrow = arrowDef()
+          .uid(c.id)
+          .ref("x", b.r * 2)
+          .sized(b.r, b.r)
+          .viewbox(`0 -${b.r} ${b.r * 2} ${b.r * 2}`)
+          .path(`M0,-${b.r}L${b.r * 2},0L0,${b.r}Z`)
+          .copyColors(c);
         edgeNotes.push(c);
         this.define(arrow);
       });
@@ -517,7 +518,6 @@ export const tree = (name: string) => {
   return new TREESPACE(subtree(name)).typed("tree");
 };
 export const isTreeSpace = (
-  node: FigNode
-): node is TreeSpaceNode =>
-  !unsafe(node) && node.isType("tree");
+  node: FigNode,
+): node is TreeSpaceNode => !unsafe(node) && node.isType("tree");
 export type TreeSpaceNode = ReturnType<typeof tree>;

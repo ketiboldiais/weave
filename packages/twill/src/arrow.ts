@@ -6,37 +6,38 @@ import { typed } from "./typed.js";
 class ArrowDefinition {
   refX: number | string = 8;
   refY: number | string = 0;
+  ref(of:'x'|'y', value:number|string) {
+    if (of==='x') {
+      this.refX = value;
+    } else if (of === 'y') {
+      this.refY = value;
+    }
+    return this;
+  }
+  viewbox(value: string) {
+    this.viewBox = value;
+    return this;
+  }
+  path(value:string) {
+    this.d = value;
+    return this;
+  }
   constructor(
     public markerWidth: string | number = 6,
     public markerHeight: string | number = 6,
     public viewBox: string = `0 -5 10 10`,
-    public path: string = `M0,-5L10,0L0,5Z`,
-    public orient: string = "auto"
+    public d: string = `M0,-5L10,0L0,5Z`,
+    public orient: string = "auto",
   ) {}
   /**
    * Sets the arrow head’s width and height.
    */
   sized(
     width: string | number,
-    height: string | number = width
+    height: string | number = width,
   ) {
     this.markerWidth = width;
     this.markerHeight = height;
-    return this;
-  }
-
-  set(
-    prop: Exclude<
-      keyof ArrowDefinition,
-      | "set"
-      | "mark"
-      | "markerWidth"
-      | "markerHeight"
-      | "sized"
-    >,
-    value: string
-  ) {
-    this[prop] = value;
     return this;
   }
 }
@@ -48,18 +49,17 @@ export const arrowDef = (
   markerHeight: string | number = 6,
   viewBox: string = `0 -5 10 10`,
   path: string = `M0,-5L10,0L0,5Z`,
-  orient: string = "auto"
+  orient: string = "auto",
 ) => {
   return new ARROW_NODE(
     markerWidth,
     markerHeight,
     viewBox,
     path,
-    orient
-  ).typed('arrow');
+    orient,
+  ).typed("arrow");
 };
 export type ArrowDefNode = ReturnType<typeof arrowDef>;
 export const isArrow = (
-  node: FigNode
-): node is ArrowDefNode =>
-  !unsafe(node) && node.isType("arrow");
+  node: FigNode,
+): node is ArrowDefNode => !unsafe(node) && node.isType("arrow");

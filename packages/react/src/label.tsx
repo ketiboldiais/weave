@@ -15,8 +15,8 @@ export const Label = ({
   const space = data.space();
   const xscale = space.scaleOf("x");
   const yscale = space.scaleOf("y");
-  const x = xscale(data.cx);
-  const y = yscale(data.cy);
+  const x = xscale(data.x);
+  const y = yscale(data.y);
   const mode = data.mode;
   const translate = position !== undefined ? position : `translate(${x},${y})`;
   if (mode === "latex-block" || mode === "latex-inline") {
@@ -32,8 +32,8 @@ export const Label = ({
             style={{
               height: "fit-content",
               width: "fit-content",
-              fontSize: data.FontSize,
-              color: data.FontColor,
+              fontSize: data.FontSize ? data.FontSize : "9px",
+              color: data.FontColor || "currentcolor",
               margin: "-1em 0",
             }}
           />
@@ -74,7 +74,7 @@ export const Tex = ({
       const data = katex.renderToString(content, {
         displayMode,
         throwOnError: false,
-        output: "mathml",
+        output: 'mathml',
         errorColor: "tomato",
       });
       enstate(html(data));

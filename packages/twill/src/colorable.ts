@@ -1,5 +1,4 @@
 import { And, Axiom } from "./index.js";
-import { safer } from "./aux.js";
 
 export interface Colorable {
   /**
@@ -68,12 +67,12 @@ export function colorable<NodeClass extends Axiom>(
     }
     opacityValue?: number;
     opacity(value: number) {
-      this.opacityValue = safer(this.opacityValue, value);
+      this.opacityValue = value;
       return this;
     }
     strokeColor?: string;
     stroke(color: string): this {
-      this.strokeColor = safer(this.strokeColor, color);
+      this.strokeColor = color;
       return this;
     }
     fillColor?: string;
@@ -81,7 +80,7 @@ export function colorable<NodeClass extends Axiom>(
      * Sets the renderable node’s fill color.
      */
     fill(color: string): this {
-      this.fillColor = safer(this.fillColor, color);
+      this.fillColor = color;
       return this;
     }
 
@@ -95,7 +94,7 @@ export function colorable<NodeClass extends Axiom>(
      * Sets the renderable node’s stroke width.
      */
     weight(value: number): this {
-      this.strokeWidth = safer(this.strokeWidth, value);
+      this.strokeWidth = value;
       return this;
     }
 
@@ -109,10 +108,7 @@ export function colorable<NodeClass extends Axiom>(
      * Sets the renderable node’s dash property.
      */
     dash(value: number): this {
-      this.strokeDashArray = safer(
-        this.strokeDashArray,
-        value
-      );
+      this.strokeDashArray = value;
       return this;
     }
   };

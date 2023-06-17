@@ -1,31 +1,65 @@
-import {
-  ScaleLinear,
-  scaleLinear,
-  scaleLog,
-  ScaleLogarithmic,
-  scalePow,
-  ScalePower,
-  ScaleRadial,
-  scaleRadial,
-} from "d3";
+import { scaleLinear, scaleLog, scalePow, scaleRadial, scaleSqrt } from "d3";
 import { axis, AxisNode, line, LineNode, shift } from "./index.js";
 import { tuple } from "./aux.js";
 import { Referable } from "./node.types.js";
 
-
-
 export type ScaleName = "linear" | "power" | "radial" | "log";
-export type LinearScale = ScaleLinear<number, number, never>;
-export type PowerScale = ScalePower<number, number, never>;
-export type RadialScale = ScaleRadial<number, number, never>;
-export type LogScale = ScaleLogarithmic<number, number, never>;
-export type Scaler = LinearScale | PowerScale | RadialScale | LogScale;
 
+/**
+ * Returns a d3 linear scale.
+ */
+export const linearScale = (domain: number[], range: number[]) => (
+  scaleLinear().domain(domain).range(range)
+);
+type LinearScale = typeof linearScale;
+
+/**
+ * Returns a d3 power scale. An optional power value maybe passed 
+ * (the exponent the domain values will be raised to). By default,
+ * the exponent is set to 2. Note that a power of 1 is simply a linear
+ * scale. Power scales are seldom used, but they’re necessary for
+ * circle-like figures that require scaling via radius.
+ */
+export const powerScale = (domain: number[], range: number[], power:number=2) => (
+  scalePow().exponent(power).domain(domain).range(range)
+);
+type PowerScale = typeof powerScale;
+
+/**
+ * Returns a d3 radial scale.
+ */
+export const radialScale = (domain: number[], range: number[]) => (
+  scaleRadial().domain(domain).range(range)
+);
+type RadialScale = typeof radialScale;
+
+/**
+ * Return a d3 sqrt scale.
+ */
+export const sqrtScale = (domain: number[], range: number[]) => (
+  scaleSqrt().domain(domain).range(range)
+);
+type SqrtScale = typeof sqrtScale;
+
+/**
+ * Returns a d3 log scale.
+ */
+export const logScale = (domain: number[], range: number[]) => (
+  scaleLog().domain(domain).range(range)
+);
+type LogScale = typeof logScale;
+
+export type Scaler =
+  | LinearScale
+  | PowerScale
+  | RadialScale
+  | SqrtScale
+  | LogScale;
 export class Space {
   scaletype: ScaleName = "linear";
   GridLines: LineNode[] = [];
-  Axes:AxisNode[]=[];
-  axis(on:'x'|'y') {
+  Axes: AxisNode[] = [];
+  axis(on: "x" | "y") {
     const Axis = axis(on);
     Axis.scope(this);
     this.Axes.push(Axis);
@@ -43,7 +77,7 @@ export class Space {
    * Inserts the provided {@link Referable} node
    * in the {@link Space.definitions}.
    */
-  define(node:Referable) {
+  define(node: Referable) {
     this.definitions.push(node);
     return this;
   }
@@ -108,19 +142,19 @@ export class Space {
   ymax() {
     return this.ran[1];
   }
-  scale() {
+  scale(): Scaler {
     const type = this.scaletype;
     switch (type) {
       case "linear":
-        return scaleLinear;
+        return linearScale;
       case "log":
-        return scaleLog;
+        return logScale;
       case "power":
-        return scalePow;
+        return powerScale;
       case "radial":
-        return scaleRadial;
+        return radialScale;
       default:
-        return scaleLinear;
+        return linearScale;
     }
   }
   scaled(type: ScaleName) {
@@ -204,18 +238,28 @@ export class Space {
       return tuple(this.boxed("height"), 0);
     }
   }
+
+  /**
+   * Returns a scale along either the x- or y-axis, based 
+   * on the current scale type. Two optional
+   * parameters may be passed: An interval domain, and an interval range.
+   * If a domain is passed, that domain will be used for the scaling function.
+   * Likewise, if a range is passed, that range will be used for the scaling
+   * function. If neither parameters are passed, this space’s current domain
+   * and range are used.
+   */
   scaleOf(of: "x" | "y", Domain?: [number, number], Range?: [number, number]) {
     const domain = Domain ? Domain : this.dom;
     const range = Range ? Range : this.ran;
     const width = this.boxed("width");
     const height = this.boxed("height");
-    const xdomain = tuple(0, width);
-    const ydomain = tuple(height, 0);
+    const xdomain = [0, width];
+    const ydomain = [height, 0];
     const scale = this.scale();
     if (of === "y") {
-      return scale().domain(range).range(ydomain);
+      return scale(range, ydomain);
     } else {
-      return scale().domain(domain).range(xdomain);
+      return scale(domain, xdomain);
     }
   }
 }

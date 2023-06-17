@@ -1,6 +1,7 @@
 export class Datum {
-  label: string;
-  constructor(label: string) {
-    this.label = label;
+  key: string;
+  constructor(key: string) {
+    this.key=key;
   }
 }
+export class Base {}

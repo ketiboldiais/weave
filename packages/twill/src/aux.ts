@@ -18,25 +18,24 @@ export function uid(length: number = 4, base = 36) {
  */
 export const safer = <T>(
   value: null | undefined | T,
-  fallback: T
+  fallback: T,
 ) =>
   value !== undefined &&
-  value !== null &&
-  value !== "" &&
-  !Number.isNaN(value)
+    value !== null &&
+    value !== "" &&
+    !Number.isNaN(value)
     ? (value as unknown as T)
     : (fallback as unknown as T);
 
 /** Returns a tuple of type `T`. */
 export const tuple = <T extends any[]>(...data: T) => data;
-export const isNumber = (x: any): x is number =>
-  typeof x === "number";
+export const isNumber = (x: any): x is number => typeof x === "number";
 export const sq = (x: number) => x * x;
 
-export const dne = (x:any): x is undefined => (x === undefined);
-export const nil = (x:any): x is null => (x === null);
+export const dne = (x: any): x is undefined => (x === undefined);
+export const nil = (x: any): x is null => (x === null);
 export const unsafe = (x: any) => dne(x) || nil(x);
-export const safe = (x:any) => !dne(x) && !nil(x);
+export const safe = (x: any) => !dne(x) && !nil(x);
 
 export const arraySplit = <T>(array: T[]) => {
   const L = array.length;
@@ -118,9 +117,7 @@ export class None<T> extends Box<T> {
 }
 
 export const box = <T>(value?: T | null): Box<T> =>
-  value === null || value === undefined
-    ? new None<T>()
-    : new Some<T>(value);
+  value === null || value === undefined ? new None<T>() : new Some<T>(value);
 
 export const randInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -131,10 +128,17 @@ export const randFloat = (min: number, max: number) => {
 export const clamp = (
   min: number,
   input: number,
-  max: number
+  max: number,
 ) => Math.min(Math.max(input, min), max);
 export type O<K extends string, T> = Record<K, T>;
-export const isnum = (x: any): x is number =>
-  typeof x === "number";
-export const isstr = (x: any): x is string =>
-  typeof x === "string";
+export const isnum = (x: any): x is number => typeof x === "number";
+export const isstr = (x: any): x is string => typeof x === "string";
+
+
+export const toDeg = (radians: number) => radians * (180 / Math.PI);
+export const toRadians = (degrees: number) => degrees * (Math.PI / 180);
+export const cc = "currentColor";
+export const round = (value: number, to: number = 2) => {
+  const cap = 10 ** (Math.abs(Math.floor(to)));
+  return Math.round((value + Number.EPSILON) * cap) / cap;
+};

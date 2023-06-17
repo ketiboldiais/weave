@@ -20,8 +20,8 @@ abstract class TreeNode extends TREENODE {
     this.parent = parent;
   }
   sketch(depth: number = 0) {
-    this.cx = -1;
-    this.cy = depth;
+    this.x = -1;
+    this.y = depth;
     this.dx = 0;
     this.change = 0;
     this.shift = 0;
@@ -65,7 +65,7 @@ export class LeafNode extends TreeNode {
     super(name, parent);
     this.ancestor = this;
     this.type = "leaf";
-    this.cx = -1;
+    this.x = -1;
   }
   get isLeaf() {
     return true;
@@ -121,7 +121,7 @@ export class Tree extends TreeNode {
     super(name, parent);
     this.type = "subtree";
     this.ancestor = this;
-    this.cx = -1;
+    this.x = -1;
   }
   childOf(parent: Tree) {
     this.index = parent.degree;

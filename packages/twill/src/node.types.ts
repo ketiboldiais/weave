@@ -1,30 +1,30 @@
 import {
+  ArrowDefNode,
   AxisNode,
+  CircleNode,
+  Eades,
   IntegralNode,
-  SpringGraph,
+  LineNode,
   PlaneNode,
   PlotNode,
+  Polygon,
   TextNode,
-  ArrowDefNode,
-  LineNode,
-  TreeSpaceNode,
   TreeChild,
-  Particle,
-  Spring,
-} from './index.js';
+  TreeSpaceNode,
+} from "./index.js";
 
 export type FigNode =
   | PlotNode
+  | CircleNode
   | PlaneNode
   | AxisNode
   | TextNode
   | LineNode
   | TreeSpaceNode
   | TreeChild
-  | Particle
-  | Spring
-  | SpringGraph
   | ArrowDefNode
+  | Eades
+  | Polygon
   | IntegralNode;
 
 /**
@@ -35,9 +35,9 @@ export type FigNode =
  * 1. {@link ArrowDefNode} - an arrow definition node.
  */
 export type Referable = ArrowDefNode;
-export type Node2D = PlotNode | AxisNode | TextNode;
+export type Node2D = PlotNode | AxisNode | TextNode | CircleNode | LineNode | Polygon;
 export type Plottable = IntegralNode;
-export type LayoutNode = PlaneNode | TreeSpaceNode | SpringGraph;
+export type LayoutNode = PlaneNode | TreeSpaceNode | Eades;
 export type Coord = {
   x1: number;
   y1: number;
