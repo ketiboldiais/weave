@@ -1,5 +1,6 @@
 import {
   Angle,
+  Arc,
   ArrowDefNode,
   Axis,
   Circle,
@@ -15,6 +16,7 @@ import {
 
 export type FigNode =
   | Plot
+  | Arc
   | Angle
   | Circle
   | Plane
@@ -41,9 +43,10 @@ export type Node2D =
   | TextNode
   | Circle
   | Line
+  | Arc
   | Angle
   | Polygon;
-  
+
 export type Plottable = Integral;
 export type LayoutNode = Plane | TreeSpace;
 export type Coord = {

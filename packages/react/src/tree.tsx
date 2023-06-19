@@ -1,8 +1,4 @@
-import {
-  Line,
-  TreeSpace,
-  label,
-} from "@weave/twill";
+import { label, Line, TreeSpace } from "@weave/twill";
 import { Label } from "./label";
 import { Arrow } from "./arrow";
 
@@ -15,21 +11,19 @@ export const Tree = ({ of }: { of: TreeSpace }) => {
   return (
     <g>
       <defs>
-        {definitions.map((a) => (
-          <Arrow key={a.id} of={a} />
-        ))}
+        {definitions.map((a) => <Arrow key={a.id} of={a} />)}
       </defs>
       <g>
         {edges.map((e) => (
           <g key={e.id}>
-            <Line2D of={e}/>
+            <Line2D of={e} />
           </g>
         ))}
       </g>
       <g>
         {edgeNotes.map((e) => (
           <g key={e.id}>
-            <Line2D of={e}/>
+            <Line2D of={e} />
           </g>
         ))}
       </g>
@@ -53,10 +47,10 @@ export const Tree = ({ of }: { of: TreeSpace }) => {
   );
 };
 
-export const Line2D = ({ of, noscale }: { of: Line, noscale?:boolean }) => {
+export const Line2D = ({ of, noscale }: { of: Line; noscale?: boolean }) => {
   const space = of.space();
-  const xs = noscale ? (x:number) => x : space.scaleOf('x');
-  const ys = noscale ? (x:number) => x : space.scaleOf('y');
+  const xs = noscale ? (x: number) => x : space.scaleOf("x");
+  const ys = noscale ? (x: number) => x : space.scaleOf("y");
   return (
     <line
       x1={xs(of.x1)}
@@ -64,7 +58,7 @@ export const Line2D = ({ of, noscale }: { of: Line, noscale?:boolean }) => {
       x2={xs(of.x2)}
       y2={ys(of.y2)}
       stroke={of.strokeColor || "currentColor"}
-      strokeWidth={of.strokeWidth ? of.strokeWidth : 1}
+      strokeWidth={of.strokeWidth ? `${of.strokeWidth}px` : `1px`}
       strokeDasharray={of.strokeDashArray || 0}
       opacity={of.opacityValue || 1}
       markerEnd={`url(#${of.id})`}

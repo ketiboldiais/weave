@@ -71,6 +71,7 @@ export function colorable<NodeClass extends Axiom>(
         this.fillColor = node.fillColor;
         this.strokeDashArray = node.strokeDashArray;
         this.opacityValue = node.opacityValue;
+        this.strokeWidth = node.strokeWidth;
       }
       return this;
     }

@@ -78,4 +78,12 @@ describe('vector', () => {
 		const exp = -15;
 		expect(dot).toEqual(exp);
 	})
+
+	it('should return the cross product of the two 3d-vectors', () => {
+		const a = vector(2,3,4);
+		const b = vector(5,6,7);
+		const cp = a.cross(b);
+		const exp = vector(-3,6,-3);
+		expect(cp).toEqual(exp);
+	})
 })

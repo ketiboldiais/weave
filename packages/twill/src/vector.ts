@@ -1,4 +1,6 @@
+import {Angle, AngleUnit} from './angle.js';
 import { isNumber, round, safer } from "./aux.js";
+import { ray } from "./line.js";
 
 export class Vector {
   x: number;
@@ -11,9 +13,37 @@ export class Vector {
   }
 
   /**
-   * Returns
+   * Returns this vector as a renderable
+   * ray. The ray’s starting coordiantes
+   * may be passed. By default, these
+   * coordinates are set to `(0,0)`.
    */
-  theta() {}
+  ray(origin: Vector | number[]=[0,0,0]) {
+    const start = Vector.from(origin);
+    const end = new Vector(this.x, this.y);
+    return ray(start, end);
+  }
+  
+  toCart(radius:number, angle:Angle|[number,AngleUnit]) {
+    const a = Angle.from(angle).toRadians()
+    const radians = a.value;
+    const cx = a.cx;
+    const cy = a.cy;
+    const x = (cx) + (radius * Math.cos(radians));
+    const y = (cy) + (radius * Math.sin(radians));
+    return vector(x,y);
+  }
+
+  /**
+   * Returns the angle between the two
+   * provided vectors.
+   */
+  theta(other: Vector) {
+    const ab = this.dot(other);
+    const mag = this.mag();
+    const factor = ab / (mag);
+    return Math.acos(factor);
+  }
 
   /**
    * Returns the angle between (a) the difference
@@ -31,15 +61,16 @@ export class Vector {
    * Returns a vector where each component is the
    * provided value.
    */
-  static from(value: number | number[]) {
+  static from(value: number | number[] | Vector) {
     if (Array.isArray(value)) {
       return new Vector(
         safer(value[0], 0),
         safer(value[1], 0),
         safer(value[2], 0),
       );
-    }
-    return new Vector(value, value, value);
+    } else if (value instanceof Vector) {
+      return new Vector(value.x, value.y, value.z);
+    } else return new Vector(value, value, value);
   }
 
   /**
@@ -314,6 +345,37 @@ export class Vector {
   }
 
   /**
+   * __Non-mutating Method__. Returns
+   * the cross product of this
+   * vector against the provided
+   * vector as a new vector.
+   */
+  cross(other: Vector) {
+    return this.copy().CROSS(other);
+  }
+
+  /**
+   * __Mutating Method__. Returns
+   * the cross product of this
+   * vector in-place.
+   */
+  CROSS(other: Vector) {
+    const ax = this.x;
+    const ay = this.y;
+    const az = this.z;
+    const bx = other.x;
+    const by = other.y;
+    const bz = other.z;
+    const cx = (ay * bz) - (az * by);
+    const cy = (az * bx) - (ax * bz);
+    const cz = (ax * by) - (ay * bx);
+    this.x = cx;
+    this.y = cy;
+    this.z = cz;
+    return this;
+  }
+
+  /**
    * Returns the distance between this
    * vector and the provided vector.
    */
@@ -333,11 +395,33 @@ export class Vector {
   }
 }
 
+/**
+ * Returns the distance between the
+ * two provided vectors.
+ */
+export const distance = (
+  vector1: Vector | number[],
+  vector2: Vector | number[],
+) => (
+  (Vector.from(vector1)).distance(Vector.from(vector2))
+);
+
 export const vector = (
   x: number,
   y: number = x,
   z: number = 0,
 ) => new Vector(x, y, z);
 
-export const magnitude = (v: Vector) => {
+export const cross = (
+  a: Vector | number[],
+  b: Vector | number[],
+  origin: Vector | number[] = [0, 0, 0],
+) => {
+  const A = Vector.from(a);
+  const B = Vector.from(b);
+  const O = Vector.from(origin);
+  const r_A = A.ray(O);
+  const r_B = B.ray(O);
+  const r_AB = A.cross(B).ray(O);
+  return [r_A, r_B, r_AB];
 };

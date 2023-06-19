@@ -1,5 +1,9 @@
 import { Fragment } from "react";
 import {
+  Angle,
+  Arc,
+  isAngle,
+  isArc,
   isAxis,
   isCircle,
   isLine,
@@ -22,7 +26,7 @@ type Plane2DProps = {
 export const Plane2D = ({ of }: Plane2DProps) => {
   const children = of.nodes;
   const definitions = of.definitions;
-  console.log(children)
+  console.log(children);
   return (
     <g>
       <defs>
@@ -36,8 +40,45 @@ export const Plane2D = ({ of }: Plane2DProps) => {
           {isCircle(c) && <Circ of={c} />}
           {isLine(c) && <Line2D of={c} />}
           {isPolygon(c) && <Poly of={c} />}
+          {isAngle(c) && <Angle2D of={c} />}
+          {isArc(c) && <Arc2D of={c} />}
         </Fragment>
       ))}
+    </g>
+  );
+};
+
+export const Arc2D = ({ of }: { of: Arc }) => {
+  const children = of.children;
+  return (
+    <g>
+      <path
+        d={of.d()}
+        fill={of.fillColor || "none"}
+        stroke={of.strokeColor || "currentColor"}
+        strokeWidth={of.strokeWidth !== undefined ? of.strokeWidth : 1}
+        opacity={of.opacityValue||1}
+        strokeDasharray={of.strokeDashArray||0}
+      />
+      {children.map(c => (
+        <g key={c.id}>
+          {isCircle(c) && <Circ of={c}/>}
+          {isTextNode(c) && <Label of={c}/>}
+          {isLine(c) && <Line2D of={c}/>}
+        </g>
+      ))}
+    </g>
+  );
+};
+
+export const Angle2D = ({ of }: { of: Angle }) => {
+  const initial = of.initial;
+  const terminal = of.terminal;
+  return (
+    <g>
+      <Line2D of={initial} />
+      <Line2D of={terminal} />
+      {of.marker && <Arc2D of={of.marker}/>}
     </g>
   );
 };

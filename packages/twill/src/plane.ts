@@ -1,4 +1,4 @@
-import { Space } from "./index.js";
+import { isAngle, isArc, Space, Vector } from "./index.js";
 import { typed } from "./typed.js";
 import { FigNode, Node2D } from "./node.types.js";
 import { isLine, Line } from "./line.js";
@@ -14,23 +14,42 @@ export class Plane extends PLANE {
     this.nodes = nodes;
     this.type = "plane";
   }
-  handleLine(l: Line) {
-    l.scope(this);
-    if (l.arrowed !== "none") {
-    }
-  }
   /**
    * If called, ensures all child nodes
    * of this figure are properly formatted.
    */
   figure() {
+    const arrowDefine = (n: Line) => {
+      (n.arrowed !== "none") &&
+        this.define(
+          arrowDef()
+            .uid(n.id)
+            .copyColors(n),
+        );
+    };
     this.nodes.forEach((n) => {
       n.scope(this);
-      if (isLine(n) && n.arrowed!=='none') {
-        this.define(arrowDef()
-          .uid(n.id)
-          .copyColors(n)
-        );
+      // handle arc children
+      if (isArc(n)) {
+        n.children.forEach(c => {
+          c.scope(this);
+        })
+      }
+      // handle angles
+      if (isAngle(n)) {
+        n.initial.copyColors(n);
+        n.terminal.copyColors(n);
+        n.initial.scope(this);
+        n.terminal.scope(this);
+        arrowDefine(n.terminal);
+        arrowDefine(n.initial);
+        if (n.marker) {
+          n.marker.scope(this);
+        }
+      }
+      // handle lines
+      if (isLine(n)) {
+        arrowDefine(n);
       }
     });
     return this;

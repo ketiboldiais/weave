@@ -37,6 +37,21 @@ export class Line extends LINE {
     l.end = vector(nx, ny);
     return l;
   }
+  zero() {
+    const x0 = this.x1;
+    const y0 = this.y1;
+    return vector(x0,y0);
+  }
+  vector() {
+    const x1 = this.x2;
+    const y1 = this.y1;
+    return vector(x1,y1);
+  }
+  displacement() {
+    const o = this.zero();
+    const v = this.vector();
+    return v.sub(o);
+  }
   get x1() {
     return this.start.x;
   }
@@ -61,13 +76,19 @@ export class Line extends LINE {
   set y2(value: number) {
     this.end.y = value;
   }
+  get x() {
+    return this.end.x;
+  }
+  get y() {
+    return this.end.y;
+  }
   /**
    * Returns a vector corresponding
    * to the midpoint of this line.
    */
   midpoint() {
-    const x = this.y2 - this.y2 / 2;
-    const y = this.x2 - this.x2 / 2;
+    const x = (this.x2 + this.x1) / 2;
+    const y = (this.y2 + this.y2) / 2;
     return vector(x, y);
   }
   /**
@@ -115,3 +136,4 @@ export const isLine = (node: FigNode): node is Line => (
 
 export const ray = (start: Vector | number[], end: Vector | number[]) =>
   line(start, end).arrow("end");
+
