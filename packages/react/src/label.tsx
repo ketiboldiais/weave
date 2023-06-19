@@ -17,8 +17,10 @@ export const Label = ({
   const yscale = space.scaleOf("y");
   const x = xscale(data.x);
   const y = yscale(data.y);
+  const dx = (data.dx)
+  const dy = (data.dy)
   const mode = data.mode;
-  const translate = position !== undefined ? position : `translate(${x},${y})`;
+  const translate = position !== undefined ? position : `translate(${x+dx},${y+dy})`;
   if (mode === "latex-block" || mode === "latex-inline") {
     return (
       <g transform={translate}>

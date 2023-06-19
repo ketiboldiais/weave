@@ -64,7 +64,6 @@ export type O<K extends string, T> = Record<K, T>;
 export const isnum = (x: any): x is number => typeof x === "number";
 export const isstr = (x: any): x is string => typeof x === "string";
 
-
 export const toDeg = (radians: number) => radians * (180 / Math.PI);
 export const toRadians = (degrees: number) => degrees * (Math.PI / 180);
 export const cc = "currentColor";
@@ -72,7 +71,6 @@ export const round = (value: number, to: number = 2) => {
   const cap = 10 ** (Math.abs(Math.floor(to)));
   return Math.round((value + Number.EPSILON) * cap) / cap;
 };
-
 
 /**
  * Returns a `translate` string for use with the `g`
@@ -82,3 +80,25 @@ export const shift = (
   x: number = 0,
   y: number = 0,
 ) => `translate(${x},${y})`;
+
+export const toFrac = (x0:number) => {
+  let eps = 1.0E-15;
+  let h, h1, h2, k, k1, k2, a, x;
+  x = x0;
+  a = Math.floor(x);
+  h1 = 1;
+  k1 = 0;
+  h = a;
+  k = 1;
+  while (x - a > eps * k * k) {
+    x = 1 / (x - a);
+    a = Math.floor(x);
+    h2 = h1;
+    h1 = h;
+    k2 = k1;
+    k1 = k;
+    h = h2 + a * h1;
+    k = k2 + a * k1;
+  }
+  return [h,k];
+};

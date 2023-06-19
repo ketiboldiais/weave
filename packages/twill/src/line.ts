@@ -1,10 +1,9 @@
-import { isnum, isstr, safer, unsafe } from "./aux.js";
+import { safer, toRadians, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable";
 import { FigNode } from "./node.types.js";
-import {scopable} from './scopable.js';
-import { Space } from "./space.js";
-import { label, TextNode } from "./text.js";
+import { scopable } from "./scopable.js";
+import { TextNode } from "./text.js";
 import { typed } from "./typed.js";
 import { Vector, vector } from "./vector.js";
 
@@ -15,6 +14,28 @@ export class Line extends LINE {
   label(text: TextNode | string | number) {
     this.text = text;
     return this;
+  }
+  clone() {
+    const start = this.start;
+    const end = this.end;
+    const copy = new Line(start,end);
+    copy.arrowed = this.arrowed;
+    copy.copyColors(this);
+    return copy;
+  }
+  rotate(value: number, unit: "deg" | "rad") {
+    const l = this.clone();
+    const mag = l.end.mag();
+    // deno-fmt-ignore
+    const val = (unit === "deg") 
+      ? (toRadians(value)) 
+      : value;
+    const dx = Math.cos(val);
+    const dy = Math.sin(val);
+    const nx = mag * dx;
+    const ny = mag * dy;
+    l.end = vector(nx, ny);
+    return l;
   }
   get x1() {
     return this.start.x;

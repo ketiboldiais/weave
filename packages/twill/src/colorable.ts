@@ -1,6 +1,8 @@
 import { And, Axiom } from "./index.js";
 
 export interface Colorable {
+  locked: boolean;
+  lock(): this;
   /**
    * The renderable node’s stroke color.
    */
@@ -55,14 +57,21 @@ export interface Colorable {
 }
 
 export function colorable<NodeClass extends Axiom>(
-  nodetype: NodeClass
+  nodetype: NodeClass,
 ): And<NodeClass, Colorable> {
   return class extends nodetype {
+    locked: boolean = false;
+    lock() {
+      this.locked = true;
+      return this;
+    }
     copyColors(node: Colorable) {
-      this.strokeColor = node.strokeColor;
-      this.fillColor = node.fillColor;
-      this.strokeDashArray = node.strokeDashArray;
-      this.opacityValue = node.opacityValue;
+      if (!this.locked) {
+        this.strokeColor = node.strokeColor;
+        this.fillColor = node.fillColor;
+        this.strokeDashArray = node.strokeDashArray;
+        this.opacityValue = node.opacityValue;
+      }
       return this;
     }
     opacityValue?: number;

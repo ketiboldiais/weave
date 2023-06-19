@@ -1,5 +1,5 @@
-import { FigNode, label, shift, Space, TextNode } from "./index.js";
-import { tuple, unsafe } from "./aux.js";
+import { FigNode, label, shift, Space, tex, TextNode } from "./index.js";
+import { toFrac, tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
 import {scopable} from './scopable.js';
@@ -14,6 +14,8 @@ export class Axis extends AXIS_BASE {
    * along the x, y, or z direction.
    */
   readonly direction: "x" | "y" | "z";
+  
+  tickFormat: 'F'|'Q' = 'Q'
 
   constructor(direction: "x" | "y" | "z") {
     super();
@@ -56,7 +58,6 @@ export class Axis extends AXIS_BASE {
     const domain = this.domain();
     const range = this.range();
     const scale = space.scale()
-    // const out = space.scale()().domain(domain).range(range);
     const out = scale(domain, range);
     return out;
   }
@@ -65,14 +66,12 @@ export class Axis extends AXIS_BASE {
     const domain = space.axisDomain("x");
     const range = space.axisRange("x");
     const scale = space.scale();
-    // return space.scale()().domain(domain).range(range);
     return scale(domain, range);
   }
   yScale() {
     const space = this.space();
     const domain = space.axisDomain("y");
     const range = space.axisRange("y");
-    // return space.scale()().domain(domain).range(range);
     const scale = space.scale();
     return scale(domain, range);
   }
@@ -116,7 +115,12 @@ export class Axis extends AXIS_BASE {
     const n = this.tickCount;
     const isXAxis = this.is("x");
     const ticks = scale.ticks(n).map((value, index) => {
-      let txt = label(`${value}`);
+      let x = `${value}`
+      if (!Number.isInteger(value)) {
+        const [a,b] = toFrac(value);
+        x = `${a}/${b}`;
+      }
+      let txt = label(x);
       if (isXAxis) {
         txt.x = scale(value);
         txt.y = scale(0);

@@ -60,8 +60,8 @@ export const Line2D = ({ of, noscale }: { of: Line, noscale?:boolean }) => {
   return (
     <line
       x1={xs(of.x1)}
-      x2={xs(of.x2)}
       y1={ys(of.y1)}
+      x2={xs(of.x2)}
       y2={ys(of.y2)}
       stroke={of.strokeColor || "currentColor"}
       strokeWidth={of.strokeWidth ? of.strokeWidth : 1}

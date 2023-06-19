@@ -1,11 +1,10 @@
 import {
+  Angle,
   ArrowDefNode,
   Axis,
   Circle,
-  Eades,
   Integral,
   Line,
-  Path,
   Plane,
   Plot,
   Polygon,
@@ -16,6 +15,7 @@ import {
 
 export type FigNode =
   | Plot
+  | Angle
   | Circle
   | Plane
   | Axis
@@ -24,9 +24,7 @@ export type FigNode =
   | TreeSpace
   | TreeChild
   | ArrowDefNode
-  | Eades
   | Polygon
-  | Path
   | Integral;
 
 /**
@@ -43,10 +41,11 @@ export type Node2D =
   | TextNode
   | Circle
   | Line
-  | Path
+  | Angle
   | Polygon;
+  
 export type Plottable = Integral;
-export type LayoutNode = Plane | TreeSpace | Eades;
+export type LayoutNode = Plane | TreeSpace;
 export type Coord = {
   x1: number;
   y1: number;

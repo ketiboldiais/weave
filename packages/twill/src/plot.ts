@@ -1,6 +1,5 @@
 import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
-import { Space } from "./space.js";
 import { compile, engine } from "@weave/twine";
 import { safer, unsafe } from "./aux.js";
 import { line } from "d3-shape";

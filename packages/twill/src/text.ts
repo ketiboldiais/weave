@@ -24,7 +24,6 @@ export const latex = (content: string | number) =>
 export type TextNode = ReturnType<typeof label>;
 export const isTextNode = (
   node: FigNode
-): node is TextNode => {
-  if (unsafe(node)) return false;
-  return node.type === "text";
-};
+): node is TextNode => (
+  !unsafe(node) && node.isType('text')
+)

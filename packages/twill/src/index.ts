@@ -33,12 +33,10 @@ export { isLeaf, isTree, leaf, subtree } from "./treenode.js";
 export type { LeafNode, Tree, TreeChild } from "./treenode.js";
 export { area, circle, isCircle, Circle } from "./circle.js";
 export { edge, graph, vertex } from "./graph.js";
-export { eades, isEades } from "./graph.spring.js";
-export type { Eades } from "./graph.spring.js";
 export { isPolygon, polygon } from "./polygon.js";
 export type { Polygon } from "./polygon.js";
 export { clamp, randFloat, randInt, round, toDeg, toRadians } from "./aux.js";
-export {path, Path, isPath} from './path.js'
+export {angle, Angle} from './angle.js';
 export type NodeType =
   | "plane"
   | "matrix"

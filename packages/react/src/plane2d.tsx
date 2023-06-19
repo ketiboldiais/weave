@@ -22,6 +22,7 @@ type Plane2DProps = {
 export const Plane2D = ({ of }: Plane2DProps) => {
   const children = of.nodes;
   const definitions = of.definitions;
+  console.log(children)
   return (
     <g>
       <defs>

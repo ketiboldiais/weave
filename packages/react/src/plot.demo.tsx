@@ -1,30 +1,22 @@
 import {
   axis,
-  line,
-  path,
-  plot,
-  polygon,
+  circle,
   ray,
-  tex,
-  vector,
 } from "@weave/twill";
-
 import { Figure } from "./figure";
-
 import { plane } from "@weave/twill";
-const a = vector(1, 1);
-const b = vector(2, 2);
+
+const r1 = ray([0,0],[1,0]);
 const plot1 = plane([
-  axis("x"),
-  axis("y"),
-  path([0,0])
-    .M([0,1])
-    .M([2,2])
-    .M([3,3])
-    .z()
+  axis("x").stroke('lightgrey'),
+  axis("y").stroke('lightgrey'),
+  r1,
+  r1.rotate(45,'deg').dash(2),
+  r1.rotate(85,'deg').dash(2),
+  circle(1).fill('none').stroke('teal'),
 ])
-  .domain([-10, 10])
-  .range([-10, 10])
+  .domain([-2,2])
+  .range([-2,2])
   .gridlines("xy")
   .figure();
 
