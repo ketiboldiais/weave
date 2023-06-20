@@ -36,7 +36,7 @@ export { isPolygon, polygon } from "./polygon.js";
 export type { Polygon } from "./polygon.js";
 export { clamp, randFloat, randInt, round, toDeg, toRadians } from "./aux.js";
 export { Angle, angle, isAngle } from "./angle.js";
-export { Arc, arc, isArc, carc } from "./arc.js";
+export {Arc, arc, isArc} from './arc.js';
 export type NodeType =
   | "plane"
   | "arc"

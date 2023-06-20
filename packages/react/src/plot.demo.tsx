@@ -1,4 +1,4 @@
-import { angle, arc, axis, carc, circle, ray, toRadians } from "@weave/twill";
+import { angle, arc, axis, circle, ray, toRadians } from "@weave/twill";
 import { Figure } from "./figure";
 import { plane } from "@weave/twill";
 import { Fragment } from "react";
@@ -8,8 +8,10 @@ const r1 = ray([0, 0], [1, 0]);
 const plot1 = plane([
   axis("x"),
   axis("y"),
-  circle(1).fill('none').stroke('lightgrey'),
-  angle(45, "deg").stroke("firebrick").weight(1.2),
+  circle(1).stroke('tomato'),
+  arc(angle('45deg')).stroke('lightblue').weight(3),
+  angle('45deg'),
+  angle('134deg'),
 ])
   .domain([-2, 2])
   .range([-2, 2])

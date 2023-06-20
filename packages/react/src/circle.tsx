@@ -24,7 +24,7 @@ export const Circ = ({
     <g transform={data.translate}>
       <circle
         r={data.r}
-        fill={of.fillColor || "white"}
+        fill={of.fillColor || "none"}
         stroke={of.strokeColor || "currentColor"}
         strokeWidth={of.strokeWidth || 1}
         strokeDasharray={of.strokeDashArray || 0}

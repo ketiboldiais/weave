@@ -16,13 +16,13 @@ import {
 
 export type FigNode =
   | Plot
-  | Arc
   | Angle
   | Circle
   | Plane
   | Axis
   | TextNode
   | Line
+  | Arc
   | TreeSpace
   | TreeChild
   | ArrowDefNode

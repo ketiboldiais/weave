@@ -1,4 +1,4 @@
-import { isAngle, isArc, Space, Vector } from "./index.js";
+import { isAngle,  isArc,  Space, Vector } from "./index.js";
 import { typed } from "./typed.js";
 import { FigNode, Node2D } from "./node.types.js";
 import { isLine, Line } from "./line.js";
@@ -29,12 +29,6 @@ export class Plane extends PLANE {
     };
     this.nodes.forEach((n) => {
       n.scope(this);
-      // handle arc children
-      if (isArc(n)) {
-        n.children.forEach(c => {
-          c.scope(this);
-        })
-      }
       // handle angles
       if (isAngle(n)) {
         n.initial.copyColors(n);
@@ -43,9 +37,10 @@ export class Plane extends PLANE {
         n.terminal.scope(this);
         arrowDefine(n.terminal);
         arrowDefine(n.initial);
-        if (n.marker) {
-          n.marker.scope(this);
-        }
+        n.children.forEach((l) => {
+          l.scope(this);
+          arrowDefine(l);
+        })
       }
       // handle lines
       if (isLine(n)) {

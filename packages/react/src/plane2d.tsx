@@ -26,9 +26,8 @@ type Plane2DProps = {
 export const Plane2D = ({ of }: Plane2DProps) => {
   const children = of.nodes;
   const definitions = of.definitions;
-  console.log(children);
   return (
-    <g>
+    <Fragment>
       <defs>
         {definitions.map((a, i) => <Arrow key={"arrow" + a.id + i} of={a} />)}
       </defs>
@@ -44,29 +43,20 @@ export const Plane2D = ({ of }: Plane2DProps) => {
           {isArc(c) && <Arc2D of={c} />}
         </Fragment>
       ))}
-    </g>
+    </Fragment>
   );
 };
 
 export const Arc2D = ({ of }: { of: Arc }) => {
-  const children = of.children;
+  const d = of.d();
   return (
     <g>
       <path
-        d={of.d()}
-        fill={of.fillColor || "none"}
+        d={d}
         stroke={of.strokeColor || "currentColor"}
-        strokeWidth={of.strokeWidth !== undefined ? of.strokeWidth : 1}
-        opacity={of.opacityValue||1}
-        strokeDasharray={of.strokeDashArray||0}
+        strokeWidth={of.strokeWidth || 1}
+        fill={of.fillColor || "none"}
       />
-      {children.map(c => (
-        <g key={c.id}>
-          {isCircle(c) && <Circ of={c}/>}
-          {isTextNode(c) && <Label of={c}/>}
-          {isLine(c) && <Line2D of={c}/>}
-        </g>
-      ))}
     </g>
   );
 };
@@ -78,7 +68,9 @@ export const Angle2D = ({ of }: { of: Angle }) => {
     <g>
       <Line2D of={initial} />
       <Line2D of={terminal} />
-      {of.marker && <Arc2D of={of.marker}/>}
+      {of.children.map((l) => (
+        isLine(l) && <Line2D of={l} />
+      ))}
     </g>
   );
 };

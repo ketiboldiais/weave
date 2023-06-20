@@ -1,3 +1,4 @@
+
 export function uid(length: number = 4, base = 36) {
   return Math.random()
     .toString(base)
@@ -102,3 +103,11 @@ export const toFrac = (x0:number) => {
   }
   return [h,k];
 };
+
+export const pi = Math.PI;
+export const cos = Math.cos;
+export const sin = Math.sin;
+export const tan = Math.tan;
+export const arctan = Math.atan;
+export const arctan2 = Math.atan2;
+
