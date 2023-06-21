@@ -1,8 +1,8 @@
 import { AngleUnit } from "./angle.js";
-import { cos, sin, toRadians, unsafe } from "./aux.js";
+import { cos, pi, sin, toRadians, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable.js";
-import { Angle, angle, FigNode } from "./index.js";
+import { Angle, angle, FigNode, linearScale, radialScale } from "./index.js";
 import { scopable } from "./scopable.js";
 import { typed } from "./typed.js";
 
@@ -11,20 +11,27 @@ const ARC = typed(colorable(scopable(Base)));
 export class Arc extends ARC {
   startAngle: Angle;
   endAngle: Angle;
+  radius: number;
   constructor(startAngle: Angle, endAngle: Angle) {
     super();
     this.type = "arc";
     this.startAngle = startAngle;
     this.endAngle = endAngle;
+    this.radius = 1;
   }
   d() {
     const sp = this.space();
     const x = sp.scaleOf("x");
     const y = sp.scaleOf("y");
+    const xlen = sp.xmax() - sp.xmin();
+    const r = linearScale(
+      [0, xlen / 4],
+      [0, sp.boxed("width") / 2],
+    );
     const mx = x(cos(this.startAngle.rads()));
     const my = y(sin(this.startAngle.rads()));
-    const ax = x(0) / 2;
-    const ay = x(0) / 2;
+    const ax = r(this.radius / 2);
+    const ay = r(this.radius / 2);
     const ex = x(cos(this.endAngle.rads()));
     const ey = y(sin(this.endAngle.rads()));
     let laf = this.endAngle.value <= 180 ? 0 : 1;

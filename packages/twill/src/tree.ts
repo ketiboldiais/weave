@@ -1,12 +1,5 @@
 import { tuple, unsafe } from "./aux.js";
-import {
-  arrowDef,
-  FigNode,
-  line,
-  linearScale,
-  Line,
-  Space,
-} from "./index.js";
+import { arrowDef, FigNode, Line, line, linearScale, Space } from "./index.js";
 import { linkedList } from "./list.js";
 import { leaf, subtree, Tree, TreeChild } from "./treenode.js";
 import { typed } from "./typed.js";
@@ -76,7 +69,7 @@ export class TreeSpace extends TREEBASE {
   constructor(tree: Tree) {
     super();
     this.tree = tree;
-    this.type = 'tree';
+    this.type = "tree";
   }
   nodes(nodes: TreeChild[]) {
     nodes.forEach((n) => this.tree.child(n));
@@ -455,7 +448,10 @@ export class TreeSpace extends TREEBASE {
     this.lay();
     const nodes: TreeChild[] = [];
     const edges: Line[] = [];
-    this.tree.bfs((node) => nodes.push(node));
+    const edgeNotes: Line[] = [];
+    this.tree.bfs((node) => {
+      nodes.push(node);
+    });
     this.tree.bfs((node) => {
       const parent = node.parent;
       if (parent) {
@@ -466,7 +462,6 @@ export class TreeSpace extends TREEBASE {
         edges.push(l);
       }
     });
-    const edgeNotes: Line[] = [];
     const markEdge = (
       option: Traversal,
       callback: LinkFunction,
@@ -477,13 +472,13 @@ export class TreeSpace extends TREEBASE {
       });
       const rest = list.cdr();
       list.zip(rest).forEach(([a, b]) => {
-        const r = 1/b.r + 0.05;
+        const r = 1 / b.r + 0.05;
         const gamma = b.gamma(a);
-        const ox = (Math.cos(gamma) * r);
-        const oy = (Math.sin(gamma) * r);
+        const ox = Math.cos(gamma) * r;
+        const oy = Math.sin(gamma) * r;
         const tx = b.x - (b.x < 0 ? ox : ox);
         const ty = b.y - (b.y < 0 ? oy : oy);
-        const l = line([a.x, a.y], [tx, ty]).arrow("end")
+        const l = line([a.x, a.y], [tx, ty]).arrow("end");
         const c = callback(l, a, b).uid(l.id);
         const arrow = arrowDef()
           .uid(c.id)
@@ -509,10 +504,10 @@ export class TreeSpace extends TREEBASE {
     if (this.edgeNotes["preorder"]) {
       markEdge("preorder", this.edgeNotes["preorder"]);
     }
-    return { nodes, edges, edgeNotes };
+    const out = { nodes, edges, edgeNotes };
+    return out;
   }
 }
-
 
 export const tree = (name: string) => {
   return new TreeSpace(subtree(name)).typed("tree");

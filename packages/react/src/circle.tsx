@@ -14,10 +14,8 @@ export const Circ = ({
     const space = of.space();
     const xs = space.scaleOf("x");
     const ys = space.scaleOf("y");
-    const max = (space.xmax() - space.xmin()) / 2;
-    const rs = linearScale([0, max], [0, space.boxed('width')/2]);
-    const r = radius !== undefined ? radius : rs(of.r);
-    const translate = shift ? shift : `translate(${xs(of.x)}, ${ys(of.y)})`;
+    const r = of.scaledRadius;
+    const translate = of.pxy;
     return { r, translate };
   }, [of.id]);
   return (

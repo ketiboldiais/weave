@@ -1,7 +1,7 @@
 import { toDeg, toRadians, unsafe } from "./aux.js";
 import { Base } from "./base";
 import { colorable } from "./colorable";
-import { FigNode, Line, line, ray } from "./index.js";
+import { Arc, FigNode, Line, arc, line, ray } from "./index.js";
 import { anglevalue } from "./parsers.js";
 import { scopable } from "./scopable.js";
 import { typed } from "./typed";
@@ -15,21 +15,65 @@ export class Angle extends ANGLE {
   origin: Vector;
   initial: Line;
   terminal: Line;
-  children: Line[] = [];
-  static from(data: [number, AngleUnit] | Angle): Angle {
-    if (Array.isArray(data)) {
-      return new Angle(data[0], data[1]);
-    } else return data;
+  children: (Arc|Line)[] = [];
+  armLength: number = 1;
+  
+  /**
+   * Includes an arc marking this angle.
+   */
+  mark() {
+    const a = arc(angle(this.value, this.unit));
+    this.children.push(a);
+    return this;
   }
 
-  opp() {
-    const c = this.copy();
-    const x1 = c.terminal.x;
-    const y1 = c.terminal.y;
-    const x2 = c.terminal.x;
-    const y2 = 0;
-    c.children.push(line([x1, y1], [x2, y2]));
-    return c;
+  /**
+   * Adds another arm to this angle. If a number
+   * is passed, the angle is quantified with the
+   * angle’s current unit (either degrees or radians).
+   * If a string is passed, the angle will be parsed
+   * and quantified according to the passed unit. A failed
+   * parsing will include an arm angle at 0 radians.
+   * An optional callback may be passed
+   * to modify the resulting line’s properties.
+   */
+  arm(angle: string | number, callback?: (line: Line) => Line) {
+    if (typeof angle === "string") {
+      const { value, unit } = anglevalue.parse(angle).result.unwrap({
+        value: 0,
+        unit: "rad",
+      });
+      const r = ray(this.origin, [this.armLength, this.origin.y])
+        .rotate(value, unit);
+      this.children.push(
+        callback ? callback(r).lock() : r.opacity(0.2).lock(),
+      );
+    } else {
+      const r = ray(this.origin, [this.armLength, this.origin.y])
+        .rotate(angle, this.unit);
+      this.children.push(
+        callback ? callback(r).lock() : r.opacity(0.2).lock(),
+      );
+    }
+    return this;
+  }
+
+  /**
+   * Includes a line corresponding to the side
+   * opposite this angle. An optional callback
+   * may be provided to modify the resulting
+   * line’s properties.
+   */
+  opp(callback?: (line: Line) => Line) {
+    const x1 = this.terminal.x;
+    const y1 = this.terminal.y;
+    const x2 = this.terminal.x;
+    const y2 = this.origin.y;
+    const l = line([x1, y1], [x2, y2]);
+    this.children.push(
+      callback ? callback(l).lock() : l.dash(2).lock(),
+    );
+    return this;
   }
 
   copy() {
@@ -60,8 +104,11 @@ export class Angle extends ANGLE {
     this.value = value;
     this.unit = unit;
     this.origin = vector(0, 0);
-    this.initial = ray(this.origin, [1, 0]);
-    this.terminal = ray(this.origin, [1, 0]).rotate(value, unit);
+    this.initial = ray(this.origin, [this.armLength, this.origin.y]);
+    this.terminal = ray(this.origin, [this.armLength, this.origin.y]).rotate(
+      value,
+      unit,
+    );
   }
   degs() {
     if (this.unit === "rad") return toDeg(this.value);
@@ -111,9 +158,10 @@ export const angle = (
   unit: AngleUnit = "rad",
 ): Angle => {
   if (typeof value === "string") {
-    return anglevalue.parse(value).result.unwrap(
-      new Angle(0, unit),
+    const parsing = anglevalue.parse(value).result.unwrap(
+      { value: 0, unit: "rad" },
     );
+    return new Angle(parsing.value, parsing.unit);
   } else {
     return new Angle(value, unit);
   }

@@ -17,7 +17,8 @@
     "dev": "vite build --watch && tsc --watch",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "mtx": "vitest --run matrix"
   },
   "devDependencies": {
     "@types/d3": "^7.4.0",

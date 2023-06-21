@@ -4,9 +4,9 @@ import { Arrow } from "./arrow";
 
 export const Tree = ({ of }: { of: TreeSpace }) => {
   const { nodes, edges, edgeNotes } = of.figure();
-  const xs = of.scaleOf("x");
-  const ys = of.scaleOf("y");
-  const t = (x: number, y: number) => `translate(${xs(x)},${ys(y)})`;
+  // const nodes = of.children.nodes;
+  // const edges = of.children.edges;
+  // const edgeNotes = of.children.edgeNotes;
   const definitions = of.definitions;
   return (
     <g>
@@ -29,7 +29,7 @@ export const Tree = ({ of }: { of: TreeSpace }) => {
       </g>
       <g>
         {nodes.map((n) => (
-          <g key={n.id} transform={t(n.x, n.y)}>
+          <g key={n.id} transform={n.pxy}>
             <circle
               r={n.r}
               stroke={n.strokeColor || "currentColor"}

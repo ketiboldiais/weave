@@ -15,9 +15,7 @@ const cleft = subtree("4")
 const tree1 = tree("1").nodes([
   subtree("2").nodes([cleft, leaf("9")]),
   subtree("3").nodes([bleft, leaf("b")]),
-]).ala("buccheim-unger-leipert").edges("inorder", redline)
-  .gridlines("xy");
-
+]).ala("buccheim-unger-leipert").gridlines('xy');
 export const Tree = () => {
   return <Figure of={tree1} />;
 };

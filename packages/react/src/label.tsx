@@ -1,5 +1,6 @@
 import { CSSProperties, useEffect, useState } from "react";
 import { TextNode } from "@weave/twill";
+import 'katex/dist/katex.min.css';
 
 export type LabelProps = {
   of: TextNode;
@@ -76,7 +77,7 @@ export const Tex = ({
       const data = katex.renderToString(content, {
         displayMode,
         throwOnError: false,
-        output: 'mathml',
+        output: 'html',
         errorColor: "tomato",
       });
       enstate(html(data));

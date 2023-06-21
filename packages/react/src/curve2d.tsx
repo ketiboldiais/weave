@@ -7,11 +7,13 @@ type Curve2DProps = {
   of: Plot;
 };
 export const Curve2D = ({ of }: Curve2DProps) => {
-  const d = of.path();
+  const {d,t} = of.path();
+  // const d = '';
   const hasChildren = of.children.length !== 0;
+  // const translate = `translate(200,200)`
   return (
     <Fragment>
-      <g>
+      <g translate={t}>
         <path
           d={d}
           fill={of.fillColor || "none"}

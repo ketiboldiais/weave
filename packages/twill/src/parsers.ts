@@ -1,5 +1,5 @@
 import { choice, digits, list, lit, maybe, regex, word } from "@weave/reed";
-import {Angle} from './angle.js';
+import {Angle, AngleUnit} from './angle.js';
 
 const pint = regex(/^[1-9]\d*/);
 const zero = regex(/^[0]/);
@@ -29,14 +29,17 @@ const num = choice([rational,float,integer])
 export const anglevalue = list([num, maybe(PI), angle_unit])
 	.map((r)=>{
 		if (r.length===3) {
-			const [val,_,unit]:any[] = r;
+			const [val,_,u]:any[] = r;
 			const v = val * 1;
 			const p = Math.PI;
-			return new Angle(v*p,unit)
+			const value = v*p;
+			const unit: AngleUnit = u;
+			return {value, unit}
 		} else {
-			const [val,unit]:any[]=r;
-			const v = val * 1;
-			return new Angle(v,unit);
+			const [val,u]:any[]=r;
+			const value = val * 1;
+			const unit: AngleUnit = u; 
+			return {value, unit};
 		}
 	});
 

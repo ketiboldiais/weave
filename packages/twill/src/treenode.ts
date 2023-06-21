@@ -18,6 +18,7 @@ abstract class TreeNode extends TREENODE {
   constructor(name: string, parent: Tree | null) {
     super(name);
     this.parent = parent;
+    this.r = 5;
   }
   sketch(depth: number = 0) {
     this.x = -1;
@@ -26,36 +27,36 @@ abstract class TreeNode extends TREENODE {
     this.change = 0;
     this.shift = 0;
     this.thread = null;
-    this.leftmost_sibling=null;
+    this.leftmost_sibling = null;
   }
-  right(): TreeChild|null {
+  right(): TreeChild | null {
     if (this.thread) return this.thread;
     if (this.children.length) {
       return this.children[this.children.length - 1];
     }
     return null;
   }
-  left(): TreeChild|null {
+  left(): TreeChild | null {
     if (this.thread) return this.thread;
     if (this.children.length) {
       return this.children[0];
     }
     return null;
   }
-  hasChild(id:string) {
-    if (this.children.length===0) return false;
+  hasChild(id: string) {
+    if (this.children.length === 0) return false;
     for (const child of this.children) {
-      if (child.id===id) return true;
+      if (child.id === id) return true;
     }
     return false;
   }
   abstract get hasChildren(): boolean;
   abstract get isLeaf(): boolean;
   abstract onLastChild(
-    callback: (node: TreeChild) => void
+    callback: (node: TreeChild) => void,
   ): void;
   abstract onFirstChild(
-    callback: (node: TreeChild) => void
+    callback: (node: TreeChild) => void,
   ): void;
 }
 

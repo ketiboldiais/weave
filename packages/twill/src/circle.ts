@@ -1,15 +1,15 @@
-import {unsafe} from './aux.js';
-import {Base} from './base.js';
-import {colorable} from './colorable.js';
-import {FigNode} from './node.types.js';
-import {scopable} from './scopable.js';
-import {Space} from './space.js';
-import {typed} from './typed.js';
+import { unsafe } from "./aux.js";
+import { Base } from "./base.js";
+import { colorable } from "./colorable.js";
+import { FigNode } from "./node.types.js";
+import { scopable } from "./scopable.js";
+import { linearScale, Space } from "./space.js";
+import { typed } from "./typed.js";
 import { Vector } from "./vector.js";
 
-export const area = (radius:number) => (
+export const area = (radius: number) => (
   Math.PI * (radius ** 2)
-)
+);
 
 const CIRCLE_BASE = scopable(typed(colorable(Vector)));
 
@@ -17,7 +17,7 @@ export class Circle extends CIRCLE_BASE {
   r: number = 5;
   dx: number = 0;
   dy: number = 0;
-  
+
   /**
    * Returns the diameter of this circle,
    * per its current radius.
@@ -25,13 +25,13 @@ export class Circle extends CIRCLE_BASE {
   diameter() {
     return (2 * this.r);
   }
-  
+
   /**
    * Returns the circumference of this
    * circle, per its current radius.
    */
   circumference() {
-    return (2 * Math.PI * this.r)
+    return (2 * Math.PI * this.r);
   }
 
   /**
@@ -39,7 +39,7 @@ export class Circle extends CIRCLE_BASE {
    * per its current radius.
    */
   area() {
-    return (Math.PI) * (this.r**2)
+    return (Math.PI) * (this.r ** 2);
   }
   Dy(value: number) {
     this.dy = value;
@@ -49,22 +49,42 @@ export class Circle extends CIRCLE_BASE {
     this.dx = value;
     return this;
   }
-  constructor(radius:number) {
+  constructor(radius: number) {
     super(0, 0, 0);
-    this.space=()=>new Space();
-    this.r=radius;
-    this.type = 'circle';
+    this.space = () => new Space();
+    this.r = radius;
+    this.type = "circle";
+  }
+  get scaledRadius() {
+    const space = this.space();
+    const max = (space.xmax() - space.xmin()) / 2;
+    let rs = linearScale([0, max], [0, space.boxed("width")/2]);
+    if (space.scaletype === "radial") {
+      const ymax = space.ymax();
+      rs = linearScale(space.dom, [0, ymax/2]);
+    }
+    return rs(this.r);
   }
   radius(value: number) {
     this.r = value;
     return this;
   }
+  get pxy() {
+    const space = this.space();
+    if (space.scaletype === "radial") {
+      const ymax = space.ymax();
+      const rs = linearScale(space.dom, [0, ymax/2]);
+      return `translate(${rs(this.x)},${rs(this.y)})`;
+    }
+    const xs = space.scaleOf("x");
+    const ys = space.scaleOf("y");
+    return `translate(${xs(this.x)},${ys(this.y)})`;
+  }
 }
 
-export const circle = (radius:number) => (
+export const circle = (radius: number) => (
   new Circle(radius)
-)
-export const isCircle = (node:FigNode): node is Circle => (
-  !unsafe(node) && node.isType('circle')
-)
-
+);
+export const isCircle = (node: FigNode): node is Circle => (
+  !unsafe(node) && node.isType("circle")
+);

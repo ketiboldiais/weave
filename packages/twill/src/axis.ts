@@ -1,11 +1,82 @@
-import { FigNode, label, shift, Space, tex, TextNode } from "./index.js";
-import { toFrac, tuple, unsafe } from "./aux.js";
+import {
+  Circle,
+  circle,
+  FigNode,
+  label,
+  Line,
+  line,
+  shift,
+  Space,
+  tex,
+  TextNode,
+} from "./index.js";
+import { toFrac, toRadians, tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
-import {scopable} from './scopable.js';
-import {Base} from './base.js';
+import { scopable } from "./scopable.js";
+import { Base } from "./base.js";
+import { scaleLinear } from "d3";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
+
+type PolarAxisTick = { rotate: string; axisLine: Line };
+export class PolarAxis extends AXIS_BASE {
+  tickCount: number;
+  constructor() {
+    super();
+    this.type = "polar-axis";
+    this.strokeColor = "lightgrey";
+    this.tickCount = 5;
+  }
+
+  /**
+   * Returns the polar plot’s
+   * cicular axes, an array of
+   * circles.
+   */
+  radialAxes(): Circle[] {
+    const space = this.space();
+    const rscale = scaleLinear()
+      .domain(space.dom)
+      .range(space.ran);
+    const max = space.ymax();
+    const out: Circle[] = [
+      circle(
+        max / 2,
+      ).PLACE(0, 0).copyColors(this),
+    ];
+    const ticks = this.tickCount;
+    const step = (max / 2) / ticks;
+    let j = 1;
+    for (let i = 0; i < max; i += step) {
+      j++;
+      const c = circle(i).PLACE(0, 0).copyColors(this).dash(2);
+      out.push(c);
+      if (j > this.tickCount) break;
+    }
+    return out;
+  }
+  /**
+   * Returns an array of axis
+   * tick objects.
+   */
+  axisTicks(): PolarAxisTick[] {
+    const ticks: PolarAxisTick[] = [];
+    const space = this.space();
+    const r = space.ymax() / 2;
+    for (let i = 0; i < 360; i += 30) {
+      const rotate = `rotate(${-i})`;
+      const axisLine = line([0, 0], [0, r]);
+      axisLine.copyColors(this);
+      ticks.push({ rotate, axisLine });
+    }
+    return ticks;
+  }
+}
+
+export const isPolarAxis = (node: FigNode): node is PolarAxis => (
+  !unsafe(node) && node.isType("polar-axis")
+);
 
 export class Axis extends AXIS_BASE {
   /**
@@ -14,12 +85,12 @@ export class Axis extends AXIS_BASE {
    * along the x, y, or z direction.
    */
   readonly direction: "x" | "y" | "z";
-  
-  tickFormat: 'F'|'Q' = 'Q'
+
+  tickFormat: "F" | "Q" = "Q";
 
   constructor(direction: "x" | "y" | "z") {
     super();
-    this.type = 'axis';
+    this.type = "axis";
     this.direction = direction;
   }
 
@@ -57,7 +128,7 @@ export class Axis extends AXIS_BASE {
     const space = this.space();
     const domain = this.domain();
     const range = this.range();
-    const scale = space.scale()
+    const scale = space.scale();
     const out = scale(domain, range);
     return out;
   }
@@ -84,7 +155,6 @@ export class Axis extends AXIS_BASE {
       return shift(0, yscale(0));
     }
   }
-  
 
   tickCount: number = 5;
 
@@ -115,9 +185,9 @@ export class Axis extends AXIS_BASE {
     const n = this.tickCount;
     const isXAxis = this.is("x");
     const ticks = scale.ticks(n).map((value, index) => {
-      let x = `${value}`
+      let x = `${value}`;
       if (!Number.isInteger(value)) {
-        const [a,b] = toFrac(value);
+        const [a, b] = toFrac(value);
         x = `${a}/${b}`;
       }
       let txt = label(x);
@@ -167,7 +237,8 @@ export class Axis extends AXIS_BASE {
   }
 }
 
-export const axis = (of: "x" | "y" | "z") => {
+export const axis = (of: "x" | "y" | "z" | "polar") => {
+  if (of === "polar") return new PolarAxis();
   return new Axis(of);
 };
 

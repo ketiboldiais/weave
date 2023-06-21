@@ -48,8 +48,8 @@ export class Right<T> {
     return f(this.value) as Either<never, X>;
   }
   flatten(): Right<(T extends Right<(infer T)> ? T : never)> {
-    return ((this.value instanceof Right<T> ||
-        this.value instanceof Left<never>)
+    return ((this.value instanceof Right ||
+        this.value instanceof Left)
       ? this.value
       : this) as Right<(T extends Right<(infer T)> ? T : never)>;
   }

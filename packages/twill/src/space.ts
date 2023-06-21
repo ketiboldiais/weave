@@ -1,5 +1,5 @@
 import { scaleLinear, scaleLog, scalePow, scaleRadial, scaleSqrt } from "d3";
-import { axis, Axis, line, Line, shift } from "./index.js";
+import { Axis, axis, Line, line, PolarAxis, shift } from "./index.js";
 import { tuple } from "./aux.js";
 import { Referable } from "./node.types.js";
 
@@ -14,13 +14,17 @@ export const linearScale = (domain: number[], range: number[]) => (
 type LinearScale = typeof linearScale;
 
 /**
- * Returns a d3 power scale. An optional power value maybe passed 
+ * Returns a d3 power scale. An optional power value maybe passed
  * (the exponent the domain values will be raised to). By default,
  * the exponent is set to 2. Note that a power of 1 is simply a linear
  * scale. Power scales are seldom used, but they’re necessary for
  * circle-like figures that require scaling via radius.
  */
-export const powerScale = (domain: number[], range: number[], power:number=2) => (
+export const powerScale = (
+  domain: number[],
+  range: number[],
+  power: number = 2,
+) => (
   scalePow().exponent(power).domain(domain).range(range)
 );
 type PowerScale = typeof powerScale;
@@ -58,7 +62,7 @@ export type Scaler =
 export class Space {
   scaletype: ScaleName = "linear";
   GridLines: Line[] = [];
-  Axes: Axis[] = [];
+  Axes: (Axis | PolarAxis)[] = [];
   axis(on: "x" | "y") {
     const Axis = axis(on);
     Axis.scope(this);
@@ -142,6 +146,12 @@ export class Space {
   ymax() {
     return this.ran[1];
   }
+  marginY() {
+    return this.marginOf("top") + this.marginOf("bottom");
+  }
+  marginX() {
+    return this.marginOf("left") + this.marginOf("right");
+  }
   scale(): Scaler {
     const type = this.scaletype;
     switch (type) {
@@ -220,8 +230,11 @@ export class Space {
     return this;
   }
   center() {
-    const mx = this.marginOf("left") + this.marginOf("right");
-    const my = this.marginOf("top") + this.marginOf("bottom");
+    const mx = this.marginX();
+    const my = this.marginY();
+    if (this.scaletype==='radial') {
+      return shift(this.width/2, this.height/2)
+    }
     return shift(mx / 2, my / 2);
   }
   axisDomain(of: "x" | "y") {
@@ -240,7 +253,7 @@ export class Space {
   }
 
   /**
-   * Returns a scale along either the x- or y-axis, based 
+   * Returns a scale along either the x- or y-axis, based
    * on the current scale type. Two optional
    * parameters may be passed: An interval domain, and an interval range.
    * If a domain is passed, that domain will be used for the scaling function.
@@ -248,7 +261,11 @@ export class Space {
    * function. If neither parameters are passed, this space’s current domain
    * and range are used.
    */
-  scaleOf(of: "x" | "y", Domain?: [number, number], Range?: [number, number]) {
+  scaleOf(
+    of: "x" | "y" | "r",
+    Domain?: [number, number],
+    Range?: [number, number],
+  ) {
     const domain = Domain ? Domain : this.dom;
     const range = Range ? Range : this.ran;
     const width = this.boxed("width");
@@ -256,6 +273,9 @@ export class Space {
     const xdomain = [0, width];
     const ydomain = [height, 0];
     const scale = this.scale();
+    if (of === "r") {
+      return linearScale(this.dom, this.ran);
+    }
     if (of === "y") {
       return scale(range, ydomain);
     } else {

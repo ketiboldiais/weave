@@ -8,6 +8,7 @@ import {
   Line,
   Plane,
   Plot,
+  PolarAxis,
   Polygon,
   TextNode,
   TreeChild,
@@ -27,6 +28,7 @@ export type FigNode =
   | TreeChild
   | ArrowDefNode
   | Polygon
+  | PolarAxis
   | Integral;
 
 /**
@@ -37,15 +39,18 @@ export type FigNode =
  * 1. {@link ArrowDefNode} - an arrow definition node.
  */
 export type Referable = ArrowDefNode;
+
 export type Node2D =
   | Plot
   | Axis
+  | PolarAxis
   | TextNode
   | Circle
   | Line
   | Arc
   | Angle
   | Polygon;
+
 
 export type Plottable = Integral;
 export type LayoutNode = Plane | TreeSpace;

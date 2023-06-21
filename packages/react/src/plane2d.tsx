@@ -69,7 +69,10 @@ export const Angle2D = ({ of }: { of: Angle }) => {
       <Line2D of={initial} />
       <Line2D of={terminal} />
       {of.children.map((l) => (
-        isLine(l) && <Line2D of={l} />
+        <Fragment key={l.id}>
+          {isLine(l) && <Line2D of={l} />}
+          {isArc(l) && <Arc2D of={l} />}
+        </Fragment>
       ))}
     </g>
   );

@@ -1,5 +1,11 @@
 import { Plane2D } from "./plane2d";
-import { isPlane, isTreeSpace, LayoutNode } from "@weave/twill";
+import {
+  isAxis,
+  isPlane,
+  isPolar,
+  isTreeSpace,
+  LayoutNode,
+} from "@weave/twill";
 import { CSSProperties } from "react";
 import { Tree } from "./tree";
 import { Axis2D } from "./axis2d";
@@ -30,16 +36,20 @@ export const Figure = ({ of: data, className }: FigureProps) => {
     right: "0",
     bottom: "0",
   };
-  const par = "xMidYMid meet";
+  const par = "";
   const cname = "weave" + " " + className;
   const gridlines = data.GridLines;
   const shift = data.center();
   const axes = data.Axes;
   return (
     <div style={boxcss} className={cname}>
-      <svg viewBox={viewbox} preserveAspectRatio={par} style={svgcss}>
+      <svg
+        viewBox={viewbox}
+        preserveAspectRatio={par}
+        style={svgcss}
+      >
         <g transform={shift}>
-          {axes.map((a) => <Axis2D key={a.id} of={a} />)}
+          {axes.map((a) => isAxis(a) && <Axis2D key={a.id} of={a} />)}
           {gridlines.length !== 0 && (
             <g>
               {gridlines.map((d, i) => (

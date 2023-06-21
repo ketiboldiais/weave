@@ -17,8 +17,8 @@ export class Polygon extends polygonBase {
     this.type = "polygon";
     this.space = () => new Space();
   }
-  point(x: number, y: number) {
-    this.points.push(vector(x, y));
+  point(coord: Vector|[number,number]) {
+    this.points.push(Vector.from(coord));
     return this;
   }
   path() {
@@ -36,10 +36,10 @@ export class Polygon extends polygonBase {
 }
 
 export const polygon = (
-  ...points: ([number, number])[]
+  ...points: (Vector|[number, number])[]
 ) => {
   const p = new Polygon();
-  points.forEach(([x, y]) => p.point(x, y));
+  points.forEach((point) => p.point(point));
   return p;
 };
 

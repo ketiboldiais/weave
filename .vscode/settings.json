@@ -1,5 +1,5 @@
 {
-	"editor.wordWrapColumn": 60,
+	"editor.wordWrapColumn": 100,
 	"svelte.plugin.svelte.format.config.printWidth": 100,
 	"editor.wordWrap": "wordWrapColumn"
 }

@@ -1,4 +1,4 @@
-import {Angle, AngleUnit} from './angle.js';
+import { Angle, AngleUnit } from "./angle.js";
 import { isNumber, round, safer } from "./aux.js";
 import { ray } from "./line.js";
 
@@ -18,20 +18,10 @@ export class Vector {
    * may be passed. By default, these
    * coordinates are set to `(0,0)`.
    */
-  ray(origin: Vector | number[]=[0,0,0]) {
+  ray(origin: Vector | number[] = [0, 0, 0]) {
     const start = Vector.from(origin);
     const end = new Vector(this.x, this.y);
     return ray(start, end);
-  }
-  
-  toCart(radius:number, angle:Angle|[number,AngleUnit]) {
-    const a = Angle.from(angle).toRadians()
-    const radians = a.value;
-    const cx = a.cx;
-    const cy = a.cy;
-    const x = (cx) + (radius * Math.cos(radians));
-    const y = (cy) + (radius * Math.sin(radians));
-    return vector(x,y);
   }
 
   /**
@@ -71,6 +61,13 @@ export class Vector {
     } else if (value instanceof Vector) {
       return new Vector(value.x, value.y, value.z);
     } else return new Vector(value, value, value);
+  }
+
+  at(x: number, y: number, z: number = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    return this;
   }
 
   /**
