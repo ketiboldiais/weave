@@ -6,7 +6,7 @@ export class Vector {
   x: number;
   y: number;
   z: number;
-  constructor(x: number, y: number, z: number = 0) {
+  constructor(x: number, y: number, z: number = 1) {
     this.x = x;
     this.y = y;
     this.z = z;
@@ -56,14 +56,14 @@ export class Vector {
       return new Vector(
         safer(value[0], 0),
         safer(value[1], 0),
-        safer(value[2], 0),
+        safer(value[2], 1),
       );
     } else if (value instanceof Vector) {
       return new Vector(value.x, value.y, value.z);
     } else return new Vector(value, value, value);
   }
 
-  at(x: number, y: number, z: number = 0) {
+  at(x: number, y: number, z: number = 1) {
     this.x = x;
     this.y = y;
     this.z = z;
@@ -74,7 +74,7 @@ export class Vector {
    * __Mutating method__. Sets every position
    * of this vector to the provided components.
    */
-  PLACE(x: number, y: number, z: number = 0) {
+  PLACE(x: number, y: number, z: number = 1) {
     this.x = x;
     this.y = y;
     this.z = z;
@@ -315,6 +315,10 @@ export class Vector {
    * __Non-mutating method__. Returns
    * a new vector corresponding to this
    * vector’s normal.
+   *
+   * In this library, the normal is equivalent
+   * to the unit vector (i.e., which direction
+   * this vector is pointing in).
    */
   normal() {
     return this.copy().NORMAL();
@@ -354,7 +358,10 @@ export class Vector {
   /**
    * __Mutating Method__. Returns
    * the cross product of this
-   * vector in-place.
+   * vector in-place. The cross
+   * product is used primarily to
+   * compute the vector perpendicular
+   * to two vectors.
    */
   CROSS(other: Vector) {
     const ax = this.x;
@@ -406,7 +413,7 @@ export const distance = (
 export const vector = (
   x: number,
   y: number = x,
-  z: number = 0,
+  z: number = 1,
 ) => new Vector(x, y, z);
 
 export const cross = (

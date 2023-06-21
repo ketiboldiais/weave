@@ -13,7 +13,7 @@ export const Curve2D = ({ of }: Curve2DProps) => {
   // const translate = `translate(200,200)`
   return (
     <Fragment>
-      <g translate={t}>
+      <g transform={t}>
         <path
           d={d}
           fill={of.fillColor || "none"}

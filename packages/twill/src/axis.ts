@@ -6,11 +6,9 @@ import {
   Line,
   line,
   shift,
-  Space,
-  tex,
   TextNode,
 } from "./index.js";
-import { toFrac, toRadians, tuple, unsafe } from "./aux.js";
+import { toFrac, tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
 import { scopable } from "./scopable.js";

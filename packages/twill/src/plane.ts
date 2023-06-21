@@ -7,7 +7,7 @@ import { unsafe } from "./aux.js";
 
 const PLANE = typed(Space);
 
-export class CoordinateSpace extends PLANE {
+export class Plane extends PLANE {
   nodes: Node2D[];
   constructor(nodes: Node2D[]) {
     super();
@@ -52,37 +52,16 @@ export class CoordinateSpace extends PLANE {
   }
 }
 
-export class Plane extends CoordinateSpace {
-  constructor(nodes: Node2D[]) {
-    super(nodes);
-    this.type = "plane";
-  }
-}
 
-export class Polar extends CoordinateSpace {
-  constructor(nodes: Node2D[]) {
-    super(nodes);
-    this.type = "polar-plane";
-    this.scaletype = "radial";
-    this.dom = [0,1];
-    this.ran = [
-      0,
-      (Math.min(this.width, this.height) / 2) - this.marginX()/4,
-    ];
-  }
-}
+
+
 
 export const plane = (nodes: (Node2D | Node2D[])[]) => {
   return new Plane(nodes.flat());
 };
 
-export const polar = (nodes: (Node2D | Node2D[])[]) => {
-  return new Polar(nodes.flat());
-};
+
 
 export const isPlane = (node: FigNode): node is Plane => (
   !unsafe(node) && node.isType("plane")
-);
-export const isPolar = (node: FigNode): node is Polar => (
-  !unsafe(node) && node.isType("polar-plane")
 );

@@ -59,10 +59,6 @@ export class Circle extends CIRCLE_BASE {
     const space = this.space();
     const max = (space.xmax() - space.xmin()) / 2;
     let rs = linearScale([0, max], [0, space.boxed("width")/2]);
-    if (space.scaletype === "radial") {
-      const ymax = space.ymax();
-      rs = linearScale(space.dom, [0, ymax/2]);
-    }
     return rs(this.r);
   }
   radius(value: number) {

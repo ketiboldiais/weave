@@ -1,7 +1,7 @@
 import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
 import { compile, engine } from "@weave/twine";
-import { safer, unsafe } from "./aux.js";
+import { pi, safer, unsafe } from "./aux.js";
 import { line, lineRadial } from "d3-shape";
 import { FigNode, Plottable } from "./node.types.js";
 import { scopable } from "./scopable.js";
@@ -18,6 +18,10 @@ export class Plot extends PLOT_BASE {
   samples: number = 300;
   children: Plottable[] = [];
   system: "cartesian" | "polar" = "cartesian";
+  sys(of: "cartesian" | "polar") {
+    this.system = of;
+    return this;
+  }
   and(child: Plottable) {
     this.children.push(child.scope(this));
     return this;
@@ -54,7 +58,7 @@ export class Plot extends PLOT_BASE {
     const max = (space.xmax() - space.xmin()) / 2;
     const rscale = scaleLinear()
       .domain([0, max])
-      .range([0, space.boxed("width")]);
+      .range([0, xs(max)]);
     const domain_max = 2 * Math.PI;
     let points: [number, number][] = [];
     for (let i = 0; i < domain_max; i += 0.01) {
@@ -67,7 +71,8 @@ export class Plot extends PLOT_BASE {
       .radius((d) => rscale(d[1]))
       .angle((d) => -d[0] + Math.PI / 2)(points);
     if (str !== null) out = str;
-    const t = `translate(${xs(0)},${xs(0)})`;
+    const ys = space.scaleOf("y");
+    const t = `translate(${xs(0)},${ys(0)})`;
     return { d: out, t };
   }
 
@@ -117,8 +122,40 @@ export type CurveData = {
   t: string;
 };
 
+/**
+ * Returns a new function plot in 𝐑².
+ * Functions must be written in the syntax:
+ *
+ * ~~~bash
+ * <var> '(' <var> ')' '=' <expression>
+ * ~~~
+ *
+ * @example
+ * ~~~
+ * plot('f(x) = x^2')
+ * plot('h(y) = y^2')
+ * ~~~
+ */
 export const plot = (fn: string) => {
   return new Plot(fn);
+};
+
+/**
+ * Returns a new polar plot in 𝐑².
+ * Functions must be written in the syntax:
+ *
+ * ~~~bash
+ * <var> '(' <var> ')' '=' <expression>
+ * ~~~
+ *
+ * @example
+ * ~~~
+ * plot('s(t) = cos(t) * sin(t)')
+ * plot('r(x) = cos(2x) + sin(2x)')
+ * ~~~
+ */
+export const polar = (fn: string) => {
+  return new Plot(fn).sys("polar");
 };
 
 export const isPlot = (node: FigNode): node is Plot => {

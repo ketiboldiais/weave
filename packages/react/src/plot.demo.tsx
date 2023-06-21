@@ -1,9 +1,15 @@
 import {
+  angle,
   axis,
   circle,
+  line,
   matrix,
   plot,
+  polar,
+  polygon,
   ray,
+  rect,
+  vector,
 } from "@weave/twill";
 import { Figure } from "./figure";
 import { plane } from "@weave/twill";
@@ -18,8 +24,7 @@ const mtx = matrix([
 const plot1 = plane([
   axis("x"),
   axis("y"),
-  circle(1),
-  plot("f(t) = cos(2t) * sin(2t)"),
+  rect(1,0.5)
   // angle("45deg").arm("70deg").opp().mark(),
 ])
   .domain([-2, 2])

@@ -232,9 +232,6 @@ export class Space {
   center() {
     const mx = this.marginX();
     const my = this.marginY();
-    if (this.scaletype==='radial') {
-      return shift(this.width/2, this.height/2)
-    }
     return shift(mx / 2, my / 2);
   }
   axisDomain(of: "x" | "y") {
