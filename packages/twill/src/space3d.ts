@@ -4,13 +4,12 @@ import { colorable } from "./colorable.js";
 import {
   arrowDef,
   circle,
-  Line,
-  linearScale,
+  isLine,
+  line,
   Space,
   Vector,
-  vector,
 } from "./index.js";
-import { FigNode, Node3D } from "./node.types.js";
+import { FigNode, Node3D } from "./index.js";
 import { scopable } from "./scopable.js";
 import { typed } from "./typed.js";
 
@@ -23,14 +22,10 @@ export class Space3D extends SPACE3D {
     this.type = "space-3D";
     this.children = children;
   }
-  defineArrow(n: Ray3) {
-    this.define(arrowDef().fill("black").uid(n.id));
-    return this;
-  }
   figure() {
     this.children.forEach((child) => {
       child.scope(this);
-      if (isRay3(child)) this.defineArrow(child);
+      if (isLine(child) && child.isArrowed()) this.defineArrow(child);
       if (isAxis3D(child)) {
         const arrow = arrowDef().uid(child.id);
         if (child.direction === "y") arrow.rotation("180");
@@ -120,8 +115,9 @@ export const isSpace3 = (node: FigNode): node is Space3D => (
   !unsafe(node) && node.isType("space-3D")
 );
 
-const RAY3BASE = typed(scopable(Base));
-export class Ray3 extends RAY3BASE {
+const RAY = typed(scopable(Base));
+
+export class Ray extends RAY {
   /** The origin of this 3D ray. */
   o: Vector;
   /** The direction of this 3D ray. */
@@ -131,6 +127,9 @@ export class Ray3 extends RAY3BASE {
     this.o = origin;
     this.d = direction;
     this.type = "ray-3D";
+  }
+  fig() {
+    return line(this.o, this.d).arrow('end');
   }
   /**
    * Sets the direction of this vector.
@@ -154,13 +153,13 @@ export class Ray3 extends RAY3BASE {
   }
 }
 
-export const ray3 = (
+export const ray = (
   direction: Vector | number[],
   origin: Vector | number[] = [0, 0, 0],
 ) => {
-  return new Ray3(Vector.from(origin), Vector.from(direction));
+  return new Ray(Vector.from(direction), Vector.from(origin));
 };
 
-export const isRay3 = (node: FigNode): node is Ray3 => (
-  !unsafe(node) && node.isType("ray-3D")
-);
+export const isRay = (node:FigNode): node is Ray => (
+  !unsafe(node) && node.isType('ray-3D')
+)

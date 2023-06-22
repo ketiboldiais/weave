@@ -1,6 +1,5 @@
 import { PolarAxis } from "@weave/twill";
-import { Line2D } from "./tree";
-import { Circ } from "./circle";
+import { L } from './line';
 
 export const PolarAxis2D = ({ of }: { of: PolarAxis }) => {
   const rticks = of.radialAxes();
@@ -20,7 +19,7 @@ export const PolarAxis2D = ({ of }: { of: PolarAxis }) => {
       </g>
       {ticks.map((tick) => (
         <g key={tick.axisLine.id} transform={tick.rotate}>
-          <Line2D of={tick.axisLine} noscale />
+          <L of={tick.axisLine} noscale />
         </g>
       ))}
     </g>

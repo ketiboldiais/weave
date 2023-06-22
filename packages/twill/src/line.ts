@@ -1,7 +1,7 @@
 import { safer, toRadians, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable";
-import { FigNode } from "./node.types.js";
+import { FigNode } from "./index.js";
 import { scopable } from "./scopable.js";
 import { TextNode } from "./text.js";
 import { typed } from "./typed.js";
@@ -11,7 +11,7 @@ const LINE = typed(colorable(scopable(Base)));
 
 export class Line extends LINE {
   text?: string | number | TextNode;
-  isRay() {
+  isArrowed() {
     return this.arrowed!=='none';
   }
   label(text: TextNode | string | number) {
@@ -137,6 +137,6 @@ export const isLine = (node: FigNode): node is Line => (
   !unsafe(node) && node.isType("line")
 );
 
-export const ray = (start: Vector | number[], end: Vector | number[]) =>
+export const beam = (start: Vector | number[], end: Vector | number[]) =>
   line(start, end).arrow("end");
 

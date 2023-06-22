@@ -16,9 +16,9 @@ import {
 import { Label } from "./label";
 import { Curve2D } from "./curve2d";
 import { Axis2D } from "./axis2d";
-import { Circ } from "./circle";
-import { Line2D } from "./tree";
+import { C } from "./circle";
 import { Arrow } from "./arrow";
+import { L } from './line';
 
 type Plane2DProps = {
   of: Plane;
@@ -36,8 +36,8 @@ export const Plane2D = ({ of }: Plane2DProps) => {
           {isAxis(c) && <Axis2D of={c} />}
           {isPlot(c) && <Curve2D of={c} />}
           {isTextNode(c) && <Label of={c} />}
-          {isCircle(c) && <Circ of={c} />}
-          {isLine(c) && <Line2D of={c} />}
+          {isCircle(c) && <C of={c} />}
+          {isLine(c) && <L of={c} />}
           {isPolygon(c) && <Poly of={c} />}
           {isAngle(c) && <Angle2D of={c} />}
           {isArc(c) && <Arc2D of={c} />}
@@ -66,11 +66,11 @@ export const Angle2D = ({ of }: { of: Angle }) => {
   const terminal = of.terminal;
   return (
     <g>
-      <Line2D of={initial} />
-      <Line2D of={terminal} />
+      <L of={initial} />
+      <L of={terminal} />
       {of.children.map((l) => (
         <Fragment key={l.id}>
-          {isLine(l) && <Line2D of={l} />}
+          {isLine(l) && <L of={l} />}
           {isArc(l) && <Arc2D of={l} />}
         </Fragment>
       ))}

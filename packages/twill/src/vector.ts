@@ -1,32 +1,12 @@
 import { Angle, AngleUnit } from "./angle.js";
 import { isNumber, round, safer } from "./aux.js";
-import { ray } from "./line.js";
+import {beam} from './line.js';
 import { Matrix, matrix } from "./matrix.js";
 
 export class Vector {
   elements: number[];
   constructor(elements: number[]) {
     this.elements = elements;
-  }
-
-  /**
-   * Returns a string RGB color based on
-   * this vector. An optional callback function
-   * may be passed to scale the resulting values.
-   */
-  rgb(callback?: (r: number, g: number, b: number) => Vector) {
-    const base = 255.999;
-    const r = this.x * base;
-    const g = this.y * base;
-    const b = this.z * base;
-    if (callback) {
-      const v = callback(r, g, b);
-      const R = v.x;
-      const G = v.y;
-      const B = v.z;
-      return `rgb(${R},${G},${B})`;
-    }
-    return `rgb(${r},${g},${b})`;
   }
 
   /**
@@ -63,14 +43,14 @@ export class Vector {
 
   /**
    * Returns this vector as a renderable
-   * ray. The ray’s starting coordiantes
+   * arrowed line. The ray’s starting coordiantes
    * may be passed. By default, these
-   * coordinates are set to `(0,0)`.
+   * coordinates are set to `(0,0,0)`.
    */
-  ray2(origin: Vector | number[] = [0, 0]) {
-    const start = Vector.from(origin);
-    const end = new Vector([this.x, this.y]);
-    return ray(start, end);
+  fig(x: number = 0, y: number = 0, z: number = 0) {
+    const start = new Vector([x, y, z]);
+    const end = new Vector([this.x, this.y, this.x]);
+    return beam(start, end);
   }
 
   /**
@@ -158,7 +138,7 @@ export class Vector {
    * at 1.
    */
   set(i: number, value: number) {
-    if (this.elements[i - 1]!==undefined) {
+    if (this.elements[i - 1] !== undefined) {
       this.elements[i - 1] = value;
     }
     return this;
@@ -168,14 +148,14 @@ export class Vector {
     arg: Vector | number,
     f: (thisVector: number, arg: number) => number,
   ) {
-    const other = typeof arg === 'number'
+    const other = typeof arg === "number"
       ? Vector.from(new Array(this.elements.length).fill(arg))
       : arg;
     for (let i = 1; i <= this.order; i++) {
       const a = this.n(i);
       const b = other.n(i);
       const c = f(a, b);
-      this.elements[i-1]=c;
+      this.elements[i - 1] = c;
     }
     return this;
   }
@@ -233,7 +213,7 @@ export class Vector {
    * this vector and the provided matrix (
    * the dot product this vector and each
    * row in the matrix). If the number
-   * of columns in the provided matrix 
+   * of columns in the provided matrix
    * is not equal to the order of this
    * vector, return this vector.
    */
@@ -249,6 +229,36 @@ export class Vector {
   }
 
   /**
+   * Returns true if this vector
+   * and the provided vector are
+   * pointing in roughly the same
+   * direction (i.e., parallel).
+   */
+  acute(other: Vector) {
+    const a = this.dot(other);
+    return a > 0;
+  }
+  /**
+   * Returns true if this vector
+   * and the provided vector are
+   * perpendicular.
+   */
+  aright(other: Vector) {
+    const a = this.dot(other);
+    return a === 0;
+  }
+  /**
+   * Returns true if this vector
+   * and the provided vector are
+   * pointing in roughly
+   * opposite directions.
+   */
+  obtuse(other: Vector) {
+    const a = this.dot(other);
+    return a < 0;
+  }
+
+  /**
    * __Non-mutating Method__. Returns
    * a new vector, based on multiplying
    * this vector by the provided vector.
@@ -259,7 +269,13 @@ export class Vector {
 
   /**
    * __MUTATING METHOD__. Multiplies this
-   * vector by the provided vector.
+   * vector by the provided vector (scalar
+   * multiplication if a number is passed,
+   * pair-wise multiplication if a vector
+   * is passed). For numbers, values between
+   * 1 and 0 will “shrink” the vector, and
+   * values great than 1 will "elongate"
+   * the vector.
    */
   MUL(arg: Vector | number) {
     return this.binaryOp(arg, (thisVector, arg) => thisVector * arg);
@@ -473,6 +489,23 @@ export class Vector {
     const xyz = (x * x) + (y * y) + (z * z);
     return Math.sqrt(xyz);
   }
+  
+  /**
+   * Returns the projection of
+   * this vector (𝑏) onto the
+   * provided vector (𝑎) (projₐ𝑏).
+   * That is, the projection of 𝑏
+   * onto 𝑎.
+   */
+  project(a:Vector): Vector {
+    const b = this.copy();
+    const prod = a.dot(b);
+    const mag = a.mag();
+    const mag2 = mag * mag;
+    const factor = prod/mag2;
+    const res = a.mul(factor);
+    return res;
+  }
 
   /**
    * Returns a copy of this vector.
@@ -564,17 +597,3 @@ export const v3 = (
  * Returns a new generic vector.
  */
 export const vector = (...coords: number[]) => new Vector(coords);
-
-export const cross = (
-  a: Vector | number[],
-  b: Vector | number[],
-  origin: Vector | number[] = [0, 0, 0],
-) => {
-  const A = Vector.from(a);
-  const B = Vector.from(b);
-  const O = Vector.from(origin);
-  const r_A = A.ray2(O);
-  const r_B = B.ray2(O);
-  const r_AB = A.cross(B).ray2(O);
-  return [r_A, r_B, r_AB];
-};

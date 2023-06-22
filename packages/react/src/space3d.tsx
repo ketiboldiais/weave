@@ -1,19 +1,15 @@
 import {
   Axis3D,
-  isAxis,
   isAxis3D,
+  isLine,
   isPoint3D,
-  isRay3,
   Point3D,
-  Ray3,
-  ScaleFn,
-  Scaler,
+  Ray,
   Space3D,
-  vector,
 } from "@weave/twill";
 import { Fragment } from "react";
 import { Arrow } from "./arrow";
-import { Axis2D } from "./axis2d";
+import { L } from './line';
 
 export const Space3 = ({ of }: { of: Space3D }) => {
   const children = of.children;
@@ -26,8 +22,8 @@ export const Space3 = ({ of }: { of: Space3D }) => {
       {children.map((v) => (
         <Fragment key={v.id}>
           {isPoint3D(v) && <Circ3 of={v} />}
-          {isRay3(v) && <Ray3D of={v} />}
           {isAxis3D(v) && <Axis3d of={v} />}
+          {isLine(v) && <L of={v} />}
         </Fragment>
       ))}
     </g>
@@ -65,7 +61,7 @@ export const Circ3 = ({ of }: Point3DProps) => {
   );
 };
 
-type Ray3DProps = { of: Ray3 };
+type Ray3DProps = { of: Ray };
 export const Ray3D = ({ of }: Ray3DProps) => {
   const sp = of.space();
   const xs = sp.scaleOf("x");

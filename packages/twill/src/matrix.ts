@@ -1,4 +1,4 @@
-import { latex, Ray3, ray3, v3, Vector } from "./index.js";
+import { latex, v3, Vector } from "./index.js";
 
 export class Matrix {
   vectors: Vector[] = [];
@@ -24,20 +24,6 @@ export class Matrix {
   }
   get square() {
     return this.C === this.R;
-  }
-
-  /**
-   * Returns each vector in this matrix
-   * as a {@link Ray3}.
-   */
-  r3(callback?: (v: Vector) => Ray3) {
-    const out: Ray3[] = [];
-    for (let i = 0; i < this.R; i++) {
-      const v = this.vectors[i];
-      const d = callback ? callback(v) : ray3([0, 0, 0], v);
-      out.push(d);
-    }
-    return out;
   }
 
   /**
@@ -331,9 +317,7 @@ export class Matrix {
     return out;
   }
 
-  rays(origin: number[] | Vector = [0, 0]) {
-    return this.vectors.map((v) => v.ray2(origin));
-  }
+  
 
   /**
    * Returns a new R×C zero matrix filled

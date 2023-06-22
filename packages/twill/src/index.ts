@@ -1,3 +1,16 @@
+import {Angle} from './angle.js';
+import {ArrowDefNode} from './arrow.js';
+import {PolarAxis} from './axis.js';
+import {Circle} from './circle.js';
+import {Integral} from './integral.js';
+import {Plane} from './plane.js';
+import {Plot} from './plot.js';
+import {Polygon} from './polygon.js';
+import {Axis3D,Space3D,Point3D, Ray} from './space3d.js';
+import {TextNode} from './text.js';
+import {TreeSpace} from './tree.js';
+import {TreeChild} from './treenode.js';
+
 export { Space } from "./space.js";
 export type { ScaleFn, Scaler } from "./space.js";
 export {
@@ -7,10 +20,9 @@ export {
   radialScale,
   sqrtScale,
 } from "./space.js";
-export { isLine, line, ray } from "./line.js";
+export { isLine, line, beam } from "./line.js";
 export type { Line } from "./line.js";
 export {
-  cross,
   distance2D,
   distance3D,
   v2,
@@ -31,7 +43,6 @@ export { textual } from "./textual.js";
 export type { Textual } from "./textual.js";
 export type And<DataClass, Extender> = DataClass & Axiom<Extender>;
 export { Axis, axis, isAxis, isPolarAxis, PolarAxis } from "./axis.js";
-export type { FigNode, LayoutNode, Node2D, Plottable } from "./node.types.js";
 export type { TextNode } from "./text.js";
 export { isTextNode, label, latex, tex } from "./text.js";
 export { isTreeSpace, tree, TreeSpace } from "./tree.js";
@@ -48,17 +59,17 @@ export { diagonal, Matrix, matrix } from "./matrix.js";
 export {
   Axis3D,
   isPoint3D,
-  isRay3,
   isSpace3,
   p3,
   Point3D,
-  Ray3,
-  ray3,
+  Ray,
+  ray,
   space3,
   Space3D,
   isAxis3D,
   axis3
-} from "./ray3d.js";
+} from "./space3d.js";
+
 export type NodeType =
   | "plane"
   | "space-3D"
@@ -92,3 +103,61 @@ export type NodeType =
   | "point-3D"
   | "force-spring-graph"
   | "unknown";
+
+import type { Line } from './line.js';  
+import type { Arc } from './arc.js';
+export type FigNode =
+  | Plot
+  | Axis3D
+  | Ray
+  | Angle
+  | Circle
+  | Plane
+  | Axis
+  | TextNode
+  | Space3D
+  | Line
+  | Arc
+  | TreeSpace
+  | TreeChild
+  | ArrowDefNode
+  | Polygon
+  | PolarAxis
+  | Point3D
+  | Integral;
+
+/**
+ * A referable is any FigNode that
+ * can be placed in a space’s definitions
+ * array. Such nodes include:
+ *
+ * 1. {@link ArrowDefNode} - an arrow definition node.
+ */
+export type Referable = ArrowDefNode;
+
+import {Axis} from './axis.js';
+export type Node3D = 
+  | Point3D
+  | Line
+  | Axis3D
+
+export type Node2D =
+  | Plot
+  | Axis
+  | PolarAxis
+  | TextNode
+  | Circle
+  | Line
+  | Arc
+  | Angle
+  | Polygon;
+
+
+export type Plottable = Integral;
+export type LayoutNode = Plane | TreeSpace | Space3D;
+export type Coord = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+};

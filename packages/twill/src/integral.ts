@@ -1,7 +1,6 @@
 import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
-import { Space } from "./space.js";
-import { Coord, FigNode } from "./node.types.js";
+import { Coord, FigNode } from "./index.js";
 import { Plot } from "./plot.js";
 import { compile, engine } from "@weave/twine";
 import { area } from "d3-shape";

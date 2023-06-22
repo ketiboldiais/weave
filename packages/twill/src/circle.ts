@@ -1,7 +1,6 @@
 import { unsafe } from "./aux.js";
-import { Base } from "./base.js";
 import { colorable } from "./colorable.js";
-import { FigNode } from "./node.types.js";
+import { FigNode } from "./index.js";
 import { scopable } from "./scopable.js";
 import { linearScale, Space } from "./space.js";
 import { typed } from "./typed.js";

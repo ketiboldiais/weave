@@ -1,7 +1,7 @@
 import { Circle, linearScale } from "@weave/twill";
 import { useMemo } from "react";
 
-export const Circ = ({
+export const C = ({
   of,
   shift,
   radius,

@@ -1,15 +1,14 @@
 import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
 import { compile, engine } from "@weave/twine";
-import { pi, safer, unsafe } from "./aux.js";
+import { unsafe } from "./aux.js";
 import { line, lineRadial } from "d3-shape";
-import { FigNode, Plottable } from "./node.types.js";
+import { FigNode, Plottable } from "./index.js";
 import { scopable } from "./scopable.js";
 import { Base } from "./base.js";
 import { Right } from "@weave/twine";
 import type { RVal } from "@weave/twine";
-import { linearScale } from "./space.js";
-import { scaleLinear, scaleRadial } from "d3";
+import { scaleLinear } from "d3-scale";
 
 const PLOT_BASE = scopable(typed(colorable(Base)));
 

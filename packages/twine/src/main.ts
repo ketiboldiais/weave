@@ -274,58 +274,6 @@ type Parslet = (
 type PSpec = Record<tkn, [Parslet, Parslet, bp]>;
 
 export function engine() {
-  const dict: TexCodes = {
-    symbols: {
-      Alpha: "&#x391;",
-      alpha: `&#x3b1;`,
-      Beta: `&#x392;`,
-      beta: `&#x3b2;`,
-      Gamma: `&#x393;`,
-      gamma: `&#x3b3;`,
-      Delta: `&#x394;`,
-      delta: `&#x3b4;`,
-      Epsilon: `&#x395;`,
-      epsilon: `&#x3b5;`,
-      Zeta: `&#x396;`,
-      zeta: `&#x3b6;`,
-      Eta: `&#x397;`,
-      eta: `&#x3b7;`,
-      Theta: `&#x398;`,
-      theta: `&#x3b8;`,
-      Iota: `&#x399;`,
-      iota: `&#x3b9;`,
-      Kappa: `&#x39a;`,
-      kappa: `&#x3ba;`,
-      Lambda: `&#x39b;`,
-      lambda: `&#x3bb;`,
-      Mu: `&#x39c;`,
-      mu: `&#x3bc;`,
-      Nu: `&#x39d;`,
-      nu: `&#x3bd;`,
-      Xi: `&#x39e;`,
-      xi: `&#x3be;`,
-      Omicron: `&#x39f;`,
-      omicron: `&#x3bf;`,
-      Pi: `&#x3a0;`,
-      pi: `&#x3c0;`,
-      Rho: `&#x3a1;`,
-      rho: `&#x3c1;`,
-      Sigma: `&#x3a3;`,
-      sigma: `&#x3c3;`,
-      Tau: `&#x3a4;`,
-      tau: `&#x3c4;`,
-      Upsilon: `&#x3a5;`,
-      upsilon: `&#x3c5;`,
-      Phi: `&#x3a6;`,
-      phi: `&#x3c6;`,
-      Chi: `&#x3a7;`,
-      chi: `&#x3c7;`,
-      Psi: `&#x3a8;`,
-      psi: `&#x3c8;`,
-      Omega: `&#x3a9;`,
-      omega: `&#x3c9;`,
-    },
-  };
   const state = enstate();
   const report = (source: string, message: string) => {
     const L = state._line;
@@ -585,11 +533,6 @@ export function engine() {
   };
 
   const tex = (token: Token) => {
-    const lex = token._lexeme;
-    if (dict.symbols[lex] !== undefined) {
-      const name = dict.symbols[lex];
-      return right(nSym(token.lexeme(name)));
-    }
     return right(nSym(token));
   };
 

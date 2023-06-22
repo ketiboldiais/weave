@@ -1,6 +1,5 @@
-import { scaleLinear, scaleLog, scalePow, scaleRadial, scaleSqrt } from "d3";
-import { Line, line, shift, Vector, vector } from "./index.js";
-import { Referable } from "./node.types.js";
+import { scaleLinear, scaleLog, scalePow, scaleRadial, scaleSqrt } from "d3-scale";
+import { Line, line, shift, Vector, vector, Referable, arrowDef } from "./index.js";
 
 export type ScaleName = "linear" | "power" | "radial" | "log";
 export type ScaleFn = (x: number) => number;
@@ -71,6 +70,12 @@ export class Space {
    * {@link https://developer.mozilla.org/en-US/docs/Web/SVG/Element/defs}
    */
   definitions: Referable[] = [];
+
+  
+  defineArrow(n: Line) {
+    this.define(arrowDef().uid(n.id).copyColors(n));
+    return this;
+  }
 
   /**
    * Inserts the provided {@link Referable} node

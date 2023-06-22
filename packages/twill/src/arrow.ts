@@ -1,6 +1,6 @@
 import { unsafe } from "./aux.js";
 import { colorable } from "./colorable";
-import { FigNode } from "./node.types.js";
+import { FigNode } from "./index.js";
 import { typed } from "./typed.js";
 
 class ArrowDefinition {

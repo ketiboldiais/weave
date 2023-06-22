@@ -1,6 +1,6 @@
 import { isAngle, Space } from "./index.js";
 import { typed } from "./typed.js";
-import { FigNode, Node2D } from "./node.types.js";
+import { FigNode, Node2D } from "./index.js";
 import { isLine, Line } from "./line.js";
 import { arrowDef } from "./index.js";
 import { unsafe } from "./aux.js";
@@ -14,10 +14,7 @@ export class Plane extends PLANE {
     this.nodes = nodes;
     this.type = "plane";
   }
-  defineArrow(n: Line) {
-    this.define(arrowDef().uid(n.id).copyColors(n));
-    return this;
-  }
+  
   /**
    * If called, ensures all child nodes
    * of this figure are properly formatted.
@@ -31,18 +28,18 @@ export class Plane extends PLANE {
         n.terminal.copyColors(n);
         n.initial.scope(this);
         n.terminal.scope(this);
-        n.terminal.isRay() && this.defineArrow(n.terminal);
-        n.initial.isRay() && this.defineArrow(n.initial);
+        n.terminal.isArrowed() && this.defineArrow(n.terminal);
+        n.initial.isArrowed() && this.defineArrow(n.initial);
         n.children.forEach((l) => {
           l.scope(this);
           l.copyColors(n);
-          if (isLine(l) && l.isRay()) {
+          if (isLine(l) && l.isArrowed()) {
             this.defineArrow(l);
           }
         });
       }
       // handle lines
-      isLine(n) && n.isRay() && this.defineArrow(n);
+      isLine(n) && n.isArrowed() && this.defineArrow(n);
     });
     return this;
   }
