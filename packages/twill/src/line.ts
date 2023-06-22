@@ -11,6 +11,9 @@ const LINE = typed(colorable(scopable(Base)));
 
 export class Line extends LINE {
   text?: string | number | TextNode;
+  isRay() {
+    return this.arrowed!=='none';
+  }
   label(text: TextNode | string | number) {
     this.text = text;
     return this;

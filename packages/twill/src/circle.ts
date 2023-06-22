@@ -50,7 +50,7 @@ export class Circle extends CIRCLE_BASE {
     return this;
   }
   constructor(radius: number) {
-    super(0, 0, 0);
+    super([0, 0, 0]);
     this.space = () => new Space();
     this.r = radius;
     this.type = "circle";
@@ -67,11 +67,6 @@ export class Circle extends CIRCLE_BASE {
   }
   get pxy() {
     const space = this.space();
-    if (space.scaletype === "radial") {
-      const ymax = space.ymax();
-      const rs = linearScale(space.dom, [0, ymax/2]);
-      return `translate(${rs(this.x)},${rs(this.y)})`;
-    }
     const xs = space.scaleOf("x");
     const ys = space.scaleOf("y");
     return `translate(${xs(this.x)},${ys(this.y)})`;

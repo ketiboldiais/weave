@@ -1,15 +1,64 @@
 import { Angle, AngleUnit } from "./angle.js";
 import { isNumber, round, safer } from "./aux.js";
 import { ray } from "./line.js";
+import { Matrix, matrix } from "./matrix.js";
 
 export class Vector {
-  x: number;
-  y: number;
-  z: number;
-  constructor(x: number, y: number, z: number = 1) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
+  elements: number[];
+  constructor(elements: number[]) {
+    this.elements = elements;
+  }
+
+  /**
+   * Returns a string RGB color based on
+   * this vector. An optional callback function
+   * may be passed to scale the resulting values.
+   */
+  rgb(callback?: (r: number, g: number, b: number) => Vector) {
+    const base = 255.999;
+    const r = this.x * base;
+    const g = this.y * base;
+    const b = this.z * base;
+    if (callback) {
+      const v = callback(r, g, b);
+      const R = v.x;
+      const G = v.y;
+      const B = v.z;
+      return `rgb(${R},${G},${B})`;
+    }
+    return `rgb(${r},${g},${b})`;
+  }
+
+  /**
+   * Returns the order of this vector.
+   * I.e., the number of components in this
+   * vector.
+   */
+  get order() {
+    return this.elements.length;
+  }
+  get x() {
+    return this.elements[0] !== undefined ? this.elements[0] : 0;
+  }
+
+  set x(value: number) {
+    this.elements[0] = value;
+  }
+
+  get y() {
+    return this.elements[1] !== undefined ? this.elements[1] : 0;
+  }
+
+  set y(value: number) {
+    this.elements[1] = value;
+  }
+
+  get z() {
+    return this.elements[2] !== undefined ? this.elements[2] : 0;
+  }
+
+  set z(value: number) {
+    this.elements[2] = value;
   }
 
   /**
@@ -18,9 +67,9 @@ export class Vector {
    * may be passed. By default, these
    * coordinates are set to `(0,0)`.
    */
-  ray(origin: Vector | number[] = [0, 0, 0]) {
+  ray2(origin: Vector | number[] = [0, 0]) {
     const start = Vector.from(origin);
-    const end = new Vector(this.x, this.y);
+    const end = new Vector([this.x, this.y]);
     return ray(start, end);
   }
 
@@ -48,22 +97,10 @@ export class Vector {
   }
 
   /**
-   * Returns a vector where each component is the
-   * provided value.
+   * __Mutating method__. Sets this vector’s
+   * 3D position.
    */
-  static from(value: number | number[] | Vector) {
-    if (Array.isArray(value)) {
-      return new Vector(
-        safer(value[0], 0),
-        safer(value[1], 0),
-        safer(value[2], 1),
-      );
-    } else if (value instanceof Vector) {
-      return new Vector(value.x, value.y, value.z);
-    } else return new Vector(value, value, value);
-  }
-
-  at(x: number, y: number, z: number = 1) {
+  xyz(x: number, y: number, z: number) {
     this.x = x;
     this.y = y;
     this.z = z;
@@ -71,13 +108,13 @@ export class Vector {
   }
 
   /**
-   * __Mutating method__. Sets every position
-   * of this vector to the provided components.
+   * __Mutating method__. Sets this vector’s
+   * 2D position.
    */
-  PLACE(x: number, y: number, z: number = 1) {
+  xy(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.z = z;
+    this.z = 0;
     return this;
   }
 
@@ -105,39 +142,49 @@ export class Vector {
    * within an array.
    */
   array() {
-    const x = this.x;
-    const y = this.y;
-    const z = this.z;
-    return [x, y, z] as [number, number, number];
+    return this.elements.map((e) => e);
+  }
+
+  /**
+   * Returns the ith vector component. Following
+   * mathematical conventions, indices start at 1.
+   */
+  n(i: number) {
+    return this.elements[i - 1] !== undefined ? this.elements[i - 1] : 0;
+  }
+  /**
+   * Sets the ith vector component. Following
+   * mathematical conventions, indices start
+   * at 1.
+   */
+  set(i: number, value: number) {
+    if (this.elements[i - 1]!==undefined) {
+      this.elements[i - 1] = value;
+    }
+    return this;
   }
 
   private binaryOp(
     arg: Vector | number,
     f: (thisVector: number, arg: number) => number,
   ) {
-    const other = isNumber(arg) ? Vector.from(arg) : arg;
-    const ax = this.x;
-    const bx = other.x;
-    const x = f(ax, bx);
-    this.x = x;
-
-    const ay = this.y;
-    const by = other.y;
-    const y = f(ay, by);
-    this.y = y;
-
-    const az = this.z;
-    const bz = other.z;
-    const z = f(az, bz);
-    this.z = z;
-
+    const other = typeof arg === 'number'
+      ? Vector.from(new Array(this.elements.length).fill(arg))
+      : arg;
+    for (let i = 1; i <= this.order; i++) {
+      const a = this.n(i);
+      const b = other.n(i);
+      const c = f(a, b);
+      this.elements[i-1]=c;
+    }
     return this;
   }
 
-  private unaryOp(f: (element: number, index: number) => number) {
-    this.x = f(this.x, 0);
-    this.y = f(this.y, 1);
-    this.z = f(this.z, 2);
+  private unaryOp(f: (element: number) => number) {
+    for (let i = 1; i <= this.order; i++) {
+      const a = f(this.n(i));
+      this.set(i, a);
+    }
     return this;
   }
 
@@ -179,6 +226,26 @@ export class Vector {
    */
   SUB(arg: Vector | number) {
     return this.binaryOp(arg, (thisVector, arg) => thisVector - arg);
+  }
+
+  /**
+   * Returns the vector-matrix product of
+   * this vector and the provided matrix (
+   * the dot product this vector and each
+   * row in the matrix). If the number
+   * of columns in the provided matrix 
+   * is not equal to the order of this
+   * vector, return this vector.
+   */
+  vxm(matrix: Matrix) {
+    if (this.order !== matrix.C) return this;
+    const vector = new Vector([]);
+    for (let i = 1; i <= matrix.R; i++) {
+      const v = matrix.row(i);
+      const d = this.dot(v);
+      vector.elements[i - 1] = d;
+    }
+    return vector;
   }
 
   /**
@@ -256,7 +323,7 @@ export class Vector {
    * zero vector.
    */
   zero() {
-    return new Vector(0, 0, 0);
+    return this.copy().ZERO();
   }
 
   /**
@@ -264,9 +331,9 @@ export class Vector {
    * I.e., sets every component to zero.
    */
   ZERO() {
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
+    for (let i = 0; i < this.elements.length; i++) {
+      this.elements[i] = 0;
+    }
     return this;
   }
 
@@ -339,10 +406,16 @@ export class Vector {
    * vector.
    */
   dot(other: Vector) {
-    const x = other.x * this.x;
-    const y = other.y * this.y;
-    const z = other.z * this.z;
-    return (x + y + z);
+    const order = this.order;
+    if (other.order !== order) return 0;
+    let sum = 0;
+    for (let i = 0; i < order; i++) {
+      const a = this.elements[i];
+      const b = other.elements[i];
+      const p = a * b;
+      sum += p;
+    }
+    return sum;
   }
 
   /**
@@ -378,12 +451,22 @@ export class Vector {
     this.z = cz;
     return this;
   }
-
   /**
-   * Returns the distance between this
+   * Returns the 2D distance between this
    * vector and the provided vector.
    */
-  distance(other: Vector) {
+  d3(other: Vector) {
+    const x = other.x - this.x;
+    const y = other.y - this.y;
+    const xyz = (x * x) + (y * y);
+    return Math.sqrt(xyz);
+  }
+
+  /**
+   * Returns the 3D distance between this
+   * vector and the provided vector.
+   */
+  d2(other: Vector) {
     const x = other.x - this.x;
     const y = other.y - this.y;
     const z = other.z - this.z;
@@ -395,7 +478,46 @@ export class Vector {
    * Returns a copy of this vector.
    */
   copy() {
-    return new Vector(this.x, this.y, this.z);
+    return new Vector(this.array());
+  }
+  /**
+   * Returns a new zero vector of the specified
+   * length.
+   */
+  static zero(length: number) {
+    return new Vector(new Array(length).fill(0));
+  }
+
+  /**
+   * Returns a new vector of order L,
+   * filled with the given value.
+   */
+  static fill(L: number, value: number) {
+    return new Vector(new Array(L).fill(value));
+  }
+
+  /**
+   * Returns a vector where each component is the
+   * provided value.
+   */
+  static from(value: number[] | Vector) {
+    if (Array.isArray(value)) {
+      return new Vector(value);
+    } else {
+      return new Vector(value.elements);
+    }
+  }
+  /**
+   * Given an array of vectors, returns
+   * the vector of the largest {@link Vector.order}.
+   */
+  static maxOrder(vectors: Vector[]) {
+    let max = 0;
+    for (let i = 0; i < vectors.length; i++) {
+      const L = vectors[i].order;
+      if (L > max) max = L;
+    }
+    return max;
   }
 }
 
@@ -403,18 +525,45 @@ export class Vector {
  * Returns the distance between the
  * two provided vectors.
  */
-export const distance = (
+export const distance3D = (
   vector1: Vector | number[],
   vector2: Vector | number[],
 ) => (
-  (Vector.from(vector1)).distance(Vector.from(vector2))
+  (Vector.from(vector1)).d3(Vector.from(vector2))
 );
 
-export const vector = (
+/**
+ * Returns the distance between the
+ * two provided vectors.
+ */
+export const distance2D = (
+  vector1: Vector | number[],
+  vector2: Vector | number[],
+) => (
+  (Vector.from(vector1)).d2(Vector.from(vector2))
+);
+
+/**
+ * Returns a new 2D vector.
+ */
+export const v2 = (
+  x: number,
+  y: number = x,
+) => new Vector([x, y]);
+
+/**
+ * Returns a new 3D vector.
+ */
+export const v3 = (
   x: number,
   y: number = x,
   z: number = 1,
-) => new Vector(x, y, z);
+) => new Vector([x, y, z]);
+
+/**
+ * Returns a new generic vector.
+ */
+export const vector = (...coords: number[]) => new Vector(coords);
 
 export const cross = (
   a: Vector | number[],
@@ -424,8 +573,8 @@ export const cross = (
   const A = Vector.from(a);
   const B = Vector.from(b);
   const O = Vector.from(origin);
-  const r_A = A.ray(O);
-  const r_B = B.ray(O);
-  const r_AB = A.cross(B).ray(O);
+  const r_A = A.ray2(O);
+  const r_B = B.ray2(O);
+  const r_AB = A.cross(B).ray2(O);
   return [r_A, r_B, r_AB];
 };

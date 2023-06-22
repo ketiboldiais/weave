@@ -7,13 +7,13 @@ import {
   line,
   shift,
   TextNode,
+  Vector,
 } from "./index.js";
 import { toFrac, tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
 import { scopable } from "./scopable.js";
 import { Base } from "./base.js";
-import { scaleLinear } from "d3";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
 
@@ -34,21 +34,18 @@ export class PolarAxis extends AXIS_BASE {
    */
   radialAxes(): Circle[] {
     const space = this.space();
-    const rscale = scaleLinear()
-      .domain(space.dom)
-      .range(space.ran);
     const max = space.ymax();
     const out: Circle[] = [
       circle(
         max / 2,
-      ).PLACE(0, 0).copyColors(this),
+      ).xy(0, 0).copyColors(this),
     ];
     const ticks = this.tickCount;
     const step = (max / 2) / ticks;
     let j = 1;
     for (let i = 0; i < max; i += step) {
       j++;
-      const c = circle(i).PLACE(0, 0).copyColors(this).dash(2);
+      const c = circle(i).xy(0, 0).copyColors(this).dash(2);
       out.push(c);
       if (j > this.tickCount) break;
     }
@@ -82,11 +79,11 @@ export class Axis extends AXIS_BASE {
    * Indicates whether this axis runs
    * along the x, y, or z direction.
    */
-  readonly direction: "x" | "y" | "z";
+  readonly direction: "x" | "y";
 
   tickFormat: "F" | "Q" = "Q";
 
-  constructor(direction: "x" | "y" | "z") {
+  constructor(direction: "x" | "y") {
     super();
     this.type = "axis";
     this.direction = direction;
@@ -97,7 +94,7 @@ export class Axis extends AXIS_BASE {
    * Returns true if this axis is
    * of the provided type.
    */
-  is(direction: "x" | "y" | "z") {
+  is(direction: "x" | "y") {
     return this.direction === direction;
   }
   hiddens: Set<string> = new Set();
@@ -130,23 +127,10 @@ export class Axis extends AXIS_BASE {
     const out = scale(domain, range);
     return out;
   }
-  xScale() {
-    const space = this.space();
-    const domain = space.axisDomain("x");
-    const range = space.axisRange("x");
-    const scale = space.scale();
-    return scale(domain, range);
-  }
-  yScale() {
-    const space = this.space();
-    const domain = space.axisDomain("y");
-    const range = space.axisRange("y");
-    const scale = space.scale();
-    return scale(domain, range);
-  }
   translationXY() {
-    const xscale = this.xScale();
-    const yscale = this.yScale();
+    const space = this.space();
+    const xscale = space.scaleOf('x');
+    const yscale = space.scaleOf('y');
     if (this.is("y")) {
       return shift(xscale(0), 0);
     } else {
@@ -235,7 +219,7 @@ export class Axis extends AXIS_BASE {
   }
 }
 
-export const axis = (of: "x" | "y" | "z" | "polar") => {
+export const axis = (of: "x" | "y" | "polar") => {
   if (of === "polar") return new PolarAxis();
   return new Axis(of);
 };

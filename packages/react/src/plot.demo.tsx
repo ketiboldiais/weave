@@ -25,12 +25,7 @@ const plot1 = plane([
   axis("x"),
   axis("y"),
   rect(1,0.5)
-  // angle("45deg").arm("70deg").opp().mark(),
-])
-  .domain([-2, 2])
-  .range([-2, 2])
-  // .gridlines("xy")
-  .figure();
+]).figure();
 
 export const Plot = () => {
   return (

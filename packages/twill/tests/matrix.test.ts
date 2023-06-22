@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Matrix, matrix } from "../src/index.js";
+import { Matrix, diagonal, matrix } from "../src/index.js";
 
 describe("matrix", () => {
   it("should return a copy of the matrix.", () => {
@@ -17,7 +17,7 @@ describe("matrix", () => {
       [7, 7, 7],
       [7, 7, 7],
     ]);
-    const B = Matrix.homog(7, 3, 3);
+    const B = Matrix.homogenous(3,3,7);
     expect(A).toEqual(B);
   });
   it("should return true for a square matrix.", () => {
@@ -25,7 +25,7 @@ describe("matrix", () => {
       [7, 7, 7],
       [7, 7, 7],
       [7, 7, 7],
-    ]).isSquare;
+    ]).square;
     const B = true;
     expect(A).toEqual(B);
   });
@@ -34,26 +34,8 @@ describe("matrix", () => {
       [7, 2, 7, 3],
       [8, 7, 7, 3],
       [7, 1, 7, 3],
-    ]).isSquare;
+    ]).square;
     const B = false;
-    expect(A).toEqual(B);
-  });
-  it("should return the rth row.", () => {
-    const A = matrix([
-      [7, 2, 7, 3],
-      [8, 0, 1, 3],
-      [7, 1, 7, 3],
-    ]).row(1);
-    const B = [7, 2, 7, 3];
-    expect(A).toEqual(B);
-  });
-  it("should return the last row.", () => {
-    const A = matrix([
-      [7, 2, 7, 3],
-      [8, 0, 1, 3],
-      [7, 1, 7, 3],
-    ]).row(3);
-    const B = [7, 1, 7, 3];
     expect(A).toEqual(B);
   });
   it("should map the matrix.", () => {
@@ -93,7 +75,7 @@ describe("matrix", () => {
     expect(A).toEqual(B);
   });
   it("should construct a diagonal matrix from the given array.", () => {
-    const A = Matrix.diagonal([1, 1, 1]);
+    const A = diagonal([1, 1, 1]);
     const B = matrix([
       [1, 0, 0],
       [0, 1, 0],

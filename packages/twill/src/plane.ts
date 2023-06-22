@@ -14,19 +14,15 @@ export class Plane extends PLANE {
     this.nodes = nodes;
     this.type = "plane";
   }
+  defineArrow(n: Line) {
+    this.define(arrowDef().uid(n.id).copyColors(n));
+    return this;
+  }
   /**
    * If called, ensures all child nodes
    * of this figure are properly formatted.
    */
   figure() {
-    const arrowDefine = (n: Line) => {
-      (n.arrowed !== "none") &&
-        this.define(
-          arrowDef()
-            .uid(n.id)
-            .copyColors(n),
-        );
-    };
     this.nodes.forEach((n) => {
       n.scope(this);
       // handle angles
@@ -35,32 +31,26 @@ export class Plane extends PLANE {
         n.terminal.copyColors(n);
         n.initial.scope(this);
         n.terminal.scope(this);
-        arrowDefine(n.terminal);
-        arrowDefine(n.initial);
+        n.terminal.isRay() && this.defineArrow(n.terminal);
+        n.initial.isRay() && this.defineArrow(n.initial);
         n.children.forEach((l) => {
           l.scope(this);
           l.copyColors(n);
-          if (isLine(l)) arrowDefine(l);
+          if (isLine(l) && l.isRay()) {
+            this.defineArrow(l);
+          }
         });
       }
       // handle lines
-      if (isLine(n)) {
-        arrowDefine(n);
-      }
+      isLine(n) && n.isRay() && this.defineArrow(n);
     });
     return this;
   }
 }
 
-
-
-
-
 export const plane = (nodes: (Node2D | Node2D[])[]) => {
   return new Plane(nodes.flat());
 };
-
-
 
 export const isPlane = (node: FigNode): node is Plane => (
   !unsafe(node) && node.isType("plane")

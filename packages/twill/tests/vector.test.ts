@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {vector} from '../src/index.js'
+import {matrix, vector} from '../src/index.js'
 
 describe('vector', () => {
 	it('should add two vectors immutably', () => {
@@ -66,7 +66,7 @@ describe('vector', () => {
 	it('should return the distance between the two vectors', () => {
 		const a = vector(5,0);
 		const b = vector(-1,8);
-		const distance = a.distance(b);
+		const distance = a.d2(b);
 		const exp = 10;
 		expect(distance).toEqual(exp);
 	})
@@ -85,5 +85,16 @@ describe('vector', () => {
 		const cp = a.cross(b);
 		const exp = vector(-3,6,-3);
 		expect(cp).toEqual(exp);
+	})
+
+	it('should return the vector-matrix product.', () => {
+		const a = vector(2,1,0);
+		const b = matrix([
+			[1,-1,2],
+			[0,-3,1]
+		])
+		const c = a.vxm(b);
+		const exp = vector(1,-3);
+		expect(c).toEqual(exp);
 	})
 })

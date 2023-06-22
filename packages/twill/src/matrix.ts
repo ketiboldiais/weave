@@ -1,43 +1,86 @@
-import { Vector, latex } from "./index.js";
-
-type Mtx = (number[])[];
+import { latex, Ray3, ray3, v3, Vector } from "./index.js";
 
 export class Matrix {
-  elements: Mtx;
-  constructor(elements: Mtx) {
-    this.elements = elements;
-  }
-  private i(index: number) {
-    return index === 0 ? 1 : index - 1;
-  }
-  
-  latex() {
-    let txt = `\\begin{bmatrix}`
-    const R = this.R;
-    const C = this.C;
-    for (let i = 0; i < R; i++) {
-      for (let j = 0; j < C; j++) {
-        const e = this.elements[i][j];
-        txt += `${e}`
-        if (j !== C-1) {
-          txt += `&`
-        }
+  vectors: Vector[] = [];
+  /** The number of rows in this matrix. */
+  R: number;
+  /** The number of columns in this matrix. */
+  C: number;
+  constructor(R: number, C: number, vectors?: Vector[]) {
+    this.R = R;
+    this.C = C;
+    if (vectors) {
+      for (let i = 0; i < vectors.length; i++) {
+        const v = vectors[i];
+        if (v.order === C) {
+          this.vectors.push(v);
+        } else this.vectors.push(Vector.fill(C, 0));
       }
-      if (i !== R-1) {
-        txt += '\\\\'
+    } else {
+      for (let i = 0; i < R; i++) {
+        this.vectors.push(Vector.zero(C));
       }
     }
-    txt+=`\\end{bmatrix}`
-    return latex(txt);
+  }
+  get square() {
+    return this.C === this.R;
   }
 
-  rays() {
-    return this.vectors().map((v) => v.ray());
-  }
-
-  vectors() {
-    const out = this.elements.map((v) => Vector.from(v));
+  /**
+   * Returns each vector in this matrix
+   * as a {@link Ray3}.
+   */
+  r3(callback?: (v: Vector) => Ray3) {
+    const out: Ray3[] = [];
+    for (let i = 0; i < this.R; i++) {
+      const v = this.vectors[i];
+      const d = callback ? callback(v) : ray3([0, 0, 0], v);
+      out.push(d);
+    }
     return out;
+  }
+
+  /**
+   * Returns a copy of this matrix.
+   */
+  copy() {
+    const vs = this.vectors.map((v) => v.copy());
+    return new Matrix(this.R, this.C, vs);
+  }
+
+  /**
+   * __Mutating method__. Sets the element at the given
+   * row index and column index. The row and column indices
+   * are expected to begin at 1. If no element exists
+   * at the provided indices, no change is done.
+   */
+  set(rowIndex: number, columnIndex: number, value: number) {
+    if (this.vectors[rowIndex - 1] === undefined) return this;
+    if (this.vectors[rowIndex - 1].elements[columnIndex - 1] === undefined) {
+      return this;
+    }
+    this.vectors[rowIndex - 1].elements[columnIndex - 1] = value;
+    return this;
+  }
+
+  /**
+   * Executes the given callback over each element
+   * of this matrix. The row and column index provided
+   * in the callback begin at 1.
+   */
+  forEach(
+    callback: (
+      element: number,
+      rowIndex: number,
+      columnIndex: number,
+    ) => void,
+  ) {
+    for (let i = 1; i <= this.R; i++) {
+      for (let j = 1; j <= this.C; j++) {
+        callback(this.n(i, j), i, j);
+      }
+    }
+    return this;
   }
 
   /**
@@ -46,66 +89,33 @@ export class Matrix {
    * number of rows and the same number
    * of columns. False otherwise.
    */
-  congruent(other: Matrix) {
-    return this.R === other.R && this.C === other.C;
+  congruent(matrix: Matrix) {
+    return this.R === matrix.R && this.C === matrix.C;
   }
 
-  equals(matrix: Matrix | (number[])[]) {
-    const other = Array.isArray(matrix) ? new Matrix(matrix) : matrix;
-    if (!this.congruent(other)) return false;
-    let out = true;
-    this.forEach((n, i, j) => {
-      const o = other.n(i, j);
-      if (o !== n) out = false;
+  private matrixOp(other: Matrix, op: (a: number, b: number) => number) {
+    if (this.R !== other.R || this.C !== other.C) return this;
+    return this.forEach((n, r, c) => {
+      this.set(r, c, op(n, other.n(r, c)));
     });
-    return out;
   }
 
-  /**
-   * Constructs a diagonal matrix from
-   * the given diagonal (an array of numbers).
-   * @example
-   * ~~~
-   * const A = Matrix.diagonal([1,1,1]);
-   * // A is equivalent to:
-   * const B = matrix([
-   *  [1,0,0],
-   *  [0,1,0],
-   *  [0,0,1]
-   * ]);
-   * ~~~
-   */
-  static diagonal(diagonal: number[]) {
-    const L = diagonal.length;
-    const m = Matrix.array(L);
-    for (let i = 0; i < L; i++) {
-      for (let j = 0; j < L; j++) {
-        if (i !== j) {
-          m[i][j] = 0;
-        } else {
-          m[i][j] = diagonal[i];
-        }
-      }
-    }
-    return new Matrix(m);
+  private scalarOp(other: number, op: (a: number, b: number) => number) {
+    return this.forEach((element, r, c) => {
+      this.set(r, c, op(element, other));
+    });
   }
 
-  matrixOp(other: Matrix | number | Mtx, op: (a: number, b: number) => number) {
-    const r = this.R;
-    const c = this.C;
-    const arg = (typeof other === "number") ? Matrix.homog(other, r, c) : (
-      Array.isArray(other) ? new Matrix(other) : other
-    );
-    if (!this.congruent(arg)) return this;
-    for (let i = 0; i < r; i++) {
-      for (let j = 0; j < c; j++) {
-        const a = this.elements[i][j];
-        const b = arg.elements[i][j];
-        const n = op(a, b);
-        this.elements[i][j] = n;
-      }
-    }
-    return this;
+  private op(
+    other: number | (number[])[] | Matrix,
+    op: (a: number, b: number) => number,
+  ) {
+    return (typeof other === "number"
+      ? this.scalarOp(other, op)
+      : this.matrixOp(
+        other instanceof Matrix ? other : Matrix.from(other),
+        op,
+      ));
   }
 
   /**
@@ -121,7 +131,7 @@ export class Matrix {
    * from this matrix _in place_.
    */
   SUB(matrix: Matrix | number | (number[])[]) {
-    return this.matrixOp(matrix, (a, b) => a - b);
+    return this.op(matrix, (a, b) => a - b);
   }
 
   /**
@@ -137,84 +147,7 @@ export class Matrix {
    * provided matrix _in place_.
    */
   ADD(matrix: Matrix | number | (number[])[]) {
-    return this.matrixOp(matrix, (a, b) => a + b);
-  }
-
-  /**
-   * __Non-mutating Method__. Transposes a copy of
-   * this matrix.
-   */
-  transpose() {
-    return this.copy().TRANSPOSE();
-  }
-
-  /**
-   * __Mutating Method__. Transposes this matrix
-   * in place.
-   */
-  TRANSPOSE() {
-    const copy: Mtx = [];
-    const R = this.R;
-    const C = this.C;
-    for (var i = 0; i < R; ++i) {
-      for (var j = 0; j < C; ++j) {
-        if (this.elements[i][j] === undefined) continue;
-        if (copy[j] === undefined) copy[j] = [];
-        copy[j][i] = this.elements[i][j];
-      }
-    }
-    this.elements = copy;
-    return this;
-  }
-
-  /**
-   * Returns an N×N identity matrix.
-   */
-  static I(N: number) {
-    const out = Matrix.zero(N, N)
-      .map((_, i, j) => {
-        if (i === j) return 1;
-        return 0;
-      });
-    return out;
-  }
-
-  /**
-   * __Non-mutating method__. Returns the
-   * matrix product of the provided matrix
-   * and a copy of this matrix.
-   */
-  mul(other: number | Matrix | (number[])[]) {
-    return this.copy().MUL(other);
-  }
-
-  /**
-   * __MUTATING METHOD__. Returns the matrix product of this
-   * matrix and the provided matrix _in place_.
-   */
-  MUL(other: number | Matrix | (number[])[]) {
-    const aRows = this.R;
-    const aCols = this.C;
-    const arg = (typeof other === "number")
-      ? Matrix.homog(other, aRows, aCols)
-      : (Array.isArray(other) ? new Matrix(other) : other);
-    const bCols = arg.C;
-    if (aRows !== bCols) return this;
-    const result = new Array(aRows);
-    for (let r = 0; r < aRows; ++r) {
-      const row = new Array(bCols);
-      result[r] = row;
-      const ar = this.elements[r];
-      for (let c = 0; c < bCols; ++c) {
-        let sum = 0;
-        for (let i = 0; i < aCols; i++) {
-          sum += ar[i] * arg.elements[i][c];
-        }
-        row[c] = sum;
-      }
-    }
-    this.elements = result;
-    return this;
+    return this.op(matrix, (a, b) => a + b);
   }
 
   /**
@@ -230,158 +163,14 @@ export class Matrix {
    * of this matrix in place.
    */
   NEG() {
-    this.mut((n) => -n);
-    return this;
+    return this.scalarOp(-1, (a, b) => a * b);
   }
 
   /**
-   * __Non-mutating method__. Returns the
-   * pairwise product of a copy of this matrix and the
-   * provided matrix.
+   * Returns a new matrix where
+   * each element is the result
+   * of the given callback function.
    */
-  times(other: number | Matrix | (number[])[]) {
-    return this.copy().TIMES(other);
-  }
-
-  /**
-   * __MUTATING METHOD__.
-   * Returns the pair-wise product of this
-   * matrix and the provided matrix, _in place_.
-   */
-  TIMES(other: number | Matrix | (number[])[]) {
-    return this.matrixOp(other, (a, b) => a * b);
-  }
-
-  /**
-   * Returns an R×C zero matrix.
-   */
-  static zero(R: number, C: number) {
-    return Matrix.homog(0, R, C);
-  }
-
-  /**
-   * Returns the element at the specified
-   * row index and column index. If the
-   * element is undefined, returns the given
-   * fallback (defaults to 0).
-   */
-  n(rowIndex: number, columnIndex: number, fallback: number = 0) {
-    const r = this.i(rowIndex);
-    const c = this.i(columnIndex);
-    const out = this.elements[r][c];
-    if (out === undefined) return fallback;
-    return out;
-  }
-
-  /**
-   * __Mutating method__. Sets the element at the given
-   * row index and column index. The row and column indices
-   * are expected to begin at 1. If no element exists
-   * at the provided indices, no change is done.
-   */
-  set(rowIndex: number, columnIndex: number, value: number) {
-    const r = this.i(rowIndex);
-    const c = this.i(columnIndex);
-    if (this.elements[r][c] !== undefined) {
-      this.elements[r][c] = value;
-    }
-    return this;
-  }
-  /**
-   * Returns the row at the given index.
-   * Row indices start at 1.
-   */
-  row(index: number) {
-    const i = this.i(index);
-    const out = this.elements[i];
-    if (out === undefined) {
-      return Array(this.R).fill(0);
-    }
-    return out;
-  }
-  /**
-   * Returns true if this matrix is a square
-   * matrix, false otherwise.
-   */
-  get isSquare() {
-    return this.C === this.R;
-  }
-  /**
-   * Returns a rows × columns matrix, where each
-   * element is the provided number value.
-   */
-  static homog(value: number, rows: number, columns: number) {
-    const out: Mtx = [];
-    for (let i = 0; i < rows; i++) {
-      out.push([]);
-    }
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < columns; j++) {
-        out[i][j] = value;
-      }
-    }
-    return new Matrix(out);
-  }
-
-  /**
-   * Returns an empty array of N number arrays.
-   */
-  static array(N: number) {
-    const out: Mtx = [];
-    for (let i = 0; i < N; i++) {
-      out.push([]);
-    }
-    return out;
-  }
-  /**
-   * Runs the given callback on each element of this
-   * matrix. Both the row index and column index (provided
-   * in the callback, start at 1).
-   */
-  forEach(
-    callback: (element: number, rowIndex: number, columnIndex: number) => void,
-  ) {
-    const r = this.R;
-    const c = this.C;
-    for (let i = 1; i <= r; i++) {
-      for (let j = 1; j <= c; j++) {
-        const element = this.n(i, j);
-        callback(element, i, j);
-      }
-    }
-    return this;
-  }
-
-  /**
-   * Returns a copy of this matrix.
-   */
-  copy() {
-    const out = Matrix.array(this.R);
-    this.forEach((n, i, j) => {
-      out[i - 1][j - 1] = n;
-    });
-    return new Matrix(out);
-  }
-
-  /**
-   * Mutates each element of this matrix to the
-   * returned number from the given callback.
-   * The provided row and column indices begin
-   * at 1.
-   */
-  mut(callback: (n: number, rowIndex: number, columnIndex: number) => number) {
-    const R = this.R;
-    const C = this.C;
-    for (let i = 1; i <= R; i++) {
-      for (let j = 1; j <= C; j++) {
-        const e = this.n(i, j);
-        const n = callback(e, i, j);
-        this.elements[i - 1][j - 1] = n;
-      }
-    }
-    return this;
-  }
-
   map(
     callback: (
       n: number,
@@ -394,30 +183,248 @@ export class Matrix {
     for (let i = 1; i <= mtx.R; i++) {
       for (let j = 1; j <= mtx.C; j++) {
         const element = mtx.n(i, j);
-        mtx.elements[i - 1][j - 1] = callback(element, i, j, mtx);
+        mtx.set(i, j, callback(element, i, j, mtx));
       }
     }
     return mtx;
   }
 
   /**
-   * Returns the number of columns
-   * in this matrix.
+   * Returns the transpose of this matrix
+   * in place.
    */
-  get C() {
-    return this.elements[0].length;
+  transpose() {
+    const R = this.R;
+    const C = this.C;
+    const copy: (number[])[] = [];
+    for (let i = 0; i < R; ++i) {
+      const vector = this.vectors[i];
+      for (let j = 0; j < C; ++j) {
+        const element = vector.elements[j];
+        if (element === undefined) continue;
+        if (copy[j] === undefined) copy[j] = [];
+        copy[j][i] = element;
+      }
+    }
+    return Matrix.from(copy);
+  }
+
+  private toMatrix(other: number | Matrix | (number[])[]): Matrix {
+    return (
+      typeof other === "number"
+        ? Matrix.homogenous(this.R, this.C, other)
+        : Array.isArray(other)
+        ? Matrix.from(other)
+        : other
+    );
   }
 
   /**
-   * Returns the number of rows
-   * in this matrix.
+   * Returns an array of generic K, where K is the result
+   * of applying the callback function on each vector
+   * of this matrix.
    */
-  get R() {
-    return this.elements.length;
+  vmap<K>(
+    callback: (vector: Vector, rowIndex: number, matrix: Matrix) => K,
+  ): K[] {
+    const out: K[] = [];
+    const mtx = this.copy();
+    for (let i = 0; i < this.R; i++) {
+      const v = this.vectors[i];
+      const rowIndex = i + 1;
+      const k = callback(v, rowIndex, mtx);
+      out.push(k);
+    }
+    return out;
+  }
+
+  /**
+   * __Non-mutating method__. Returns the matrix product of this
+   * matrix and the provided matrix _in place_.
+   */
+  mul(arg: number | Matrix | (number[])[]) {
+    const Ar = this.R;
+    const Ac = this.C;
+    if (arg instanceof Matrix && Ac !== arg.R) {
+      return this;
+    }
+    const B = this.toMatrix(arg);
+    const Br = B.R;
+    const Bc = B.C;
+    const result: (number[])[] = [];
+    for (let i = 0; i < Ar; i++) {
+      result[i] = [];
+      for (let j = 0; j < Bc; j++) {
+        let sum = 0;
+        for (let k = 0; k < Ac; k++) {
+          const a = this.vectors[i].elements[k];
+          const b = B.vectors[k].elements[j];
+          sum += a * b;
+        }
+        result[i][j] = sum;
+      }
+    }
+    return Matrix.from(result);
+  }
+
+  /**
+   * Returns true if this matrix and the provided
+   * matrix are equal.
+   */
+  equals(matrix: Matrix) {
+    if (!this.congruent(matrix)) return false;
+    let out = true;
+    this.forEach((n, r, c) => {
+      const m = matrix.n(r, c);
+      if (m !== n) out = false;
+    });
+    return out;
+  }
+
+  /**
+   * __MUTATING METHOD__. Returns the vector at the specified
+   * row index. Following mathematical
+   * convention, row indices start at 1. If the
+   * element is undefined, returns the given
+   * fallback (defaults to 0).
+   */
+  row(rowIndex: number): Vector {
+    const out = this.vectors[rowIndex - 1];
+    if (out === undefined) {
+      console.warn("Matrix: Out-of-bounds error.");
+      return Vector.fill(this.C, NaN);
+    }
+    return out;
+  }
+
+  /**
+   * __MUTATING METHOD__. Sets the vector
+   * at row `r` to the provided vector.
+   * Row indices start at 1.
+   */
+  setrow(r: number, vector: Vector) {
+    if (this.vectors[r - 1] === undefined) return this;
+    this.vectors[r - 1] = vector;
+    return this;
+  }
+
+  /**
+   * Returns the element at the specified
+   * row index and column index. Row and column
+   * indices start at 1. If the
+   * element is undefined, returns the given
+   * fallback (defaults to NaN).
+   */
+  n(rowIndex: number, columnIndex: number): number {
+    return this.row(rowIndex).n(columnIndex);
+  }
+
+  /**
+   * Returns an N×N identity matrix.
+   */
+  static I(N: number) {
+    const out = new Matrix(N, N);
+    out.forEach((_, i, j) => {
+      if (i === j) out.set(i, j, 1);
+      else out.set(i, j, 0);
+    });
+    return out;
+  }
+
+  rays(origin: number[] | Vector = [0, 0]) {
+    return this.vectors.map((v) => v.ray2(origin));
+  }
+
+  /**
+   * Returns a new R×C zero matrix filled
+   * with the given number value.
+   */
+  static homogenous(R: number, C: number, value: number) {
+    const matrix = new Matrix(R, C);
+    for (let i = 0; i < R; i++) {
+      matrix.vectors[i] = Vector.fill(C, value);
+    }
+    return matrix;
+  }
+
+  /**
+   * Returns a new R×C zero matrix.
+   */
+  static zero(R: number, C: number) {
+    return new Matrix(R, C);
+  }
+
+  /**
+   * Returns a new matrix of the
+   * provided vectors.
+   */
+  static fill(vectors: Vector[]) {
+    const C = Vector.maxOrder(vectors);
+    const R = vectors.length;
+    const matrix = new Matrix(R, C);
+    for (let i = 0; i < R; i++) {
+      matrix.setrow(i + 1, vectors[i]);
+    }
+    return matrix;
+  }
+
+  /**
+   * Returns a new matrix from the given
+   * nested array.
+   */
+  static from(elements: (number[])[]): Matrix {
+    const C = maxColumnCount(elements);
+    const R = elements.length;
+    const matrix = new Matrix(R, C);
+    for (let i = 0; i < R; i++) {
+      for (let j = 0; j < C; j++) {
+        const element = elements[i][j] === undefined ? NaN : elements[i][j];
+        matrix.set(i + 1, j + 1, element);
+      }
+    }
+    return matrix;
+  }
+
+  /**
+   * Returns a new N×N square matrix filled
+   * with the provided value.
+   */
+  static square(N: number, value: number) {
+    return Matrix.homogenous(N, N, value);
+  }
+
+  static diagonal(diagonal: Vector) {
+    const N = diagonal.order;
+    const matrix = Matrix.square(N, 0);
+    for (let i = 1; i <= N; i++) {
+      for (let j = 1; j <= N; j++) {
+        if (i !== j) matrix.set(i, j, 0);
+        else matrix.set(i, j, diagonal.n(j));
+      }
+    }
+    return matrix;
   }
 }
 
-export const matrix = (elements: (Vector[]) | Mtx): Matrix => {
-  const elems = elements.map((v) => v instanceof Vector ? v.array() : v);
-  return new Matrix(elems);
-};
+
+
+/**
+ * Returns the maximum number of columns
+ * in the given nested array.
+ */
+function maxColumnCount<T>(nestedArray: (T[])[]) {
+  let C = 0;
+  const R = nestedArray.length;
+  for (let i = 0; i < R; i++) {
+    const row = nestedArray[i];
+    const colcount = row.length;
+    if (colcount > C) C = colcount;
+  }
+  return C;
+}
+
+export const diagonal = (elements: number[]) =>
+  Matrix.diagonal(Vector.from(elements));
+
+export const matrix = (elements: (number[] | Vector)[]) =>
+  Matrix.from(elements.map((v) => v instanceof Vector ? v.elements : v));

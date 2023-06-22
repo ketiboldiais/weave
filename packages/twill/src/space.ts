@@ -1,9 +1,9 @@
 import { scaleLinear, scaleLog, scalePow, scaleRadial, scaleSqrt } from "d3";
-import { Axis, axis, Line, line, PolarAxis, shift } from "./index.js";
-import { tuple } from "./aux.js";
+import { Line, line, shift, Vector, vector } from "./index.js";
 import { Referable } from "./node.types.js";
 
 export type ScaleName = "linear" | "power" | "radial" | "log";
+export type ScaleFn = (x: number) => number;
 
 /**
  * Returns a d3 linear scale.
@@ -59,16 +59,11 @@ export type Scaler =
   | RadialScale
   | SqrtScale
   | LogScale;
+
 export class Space {
   scaletype: ScaleName = "linear";
   GridLines: Line[] = [];
-  Axes: (Axis | PolarAxis)[] = [];
-  axis(on: "x" | "y") {
-    const Axis = axis(on);
-    Axis.scope(this);
-    this.Axes.push(Axis);
-    return this;
-  }
+
   /**
    * An array of {@link Referable} nodes.
    * Definitions provide data objects for
@@ -135,16 +130,16 @@ export class Space {
   }
 
   xmin() {
-    return this.dom[0];
+    return this.X.x;
   }
   xmax() {
-    return this.dom[1];
+    return this.X.y;
   }
   ymin() {
-    return this.ran[0];
+    return this.Y.x;
   }
   ymax() {
-    return this.ran[1];
+    return this.Y.y;
   }
   marginY() {
     return this.marginOf("top") + this.marginOf("bottom");
@@ -173,11 +168,31 @@ export class Space {
   }
   width: number = 500;
   height: number = 500;
+  /**
+   * Sets the figure’s physical size/
+   */
   size(width: number, height: number) {
     this.width = width;
     this.height = height;
     return this;
   }
+
+  image(of: "x" | "y" | "z"): Vector {
+    switch (of) {
+      case "x":
+        return this.X;
+      case "y":
+        return this.Y;
+      case "z":
+        return this.Z;
+      default:
+        return this.X;
+    }
+  }
+
+  /**
+   * Sets the figure’s margins.
+   */
   margins: [number, number, number, number] = [50, 50, 50, 50];
   margin(
     top: number,
@@ -218,35 +233,40 @@ export class Space {
       return width - left - right;
     }
   }
-
-  dom: [number, number] = [-10, 10];
-  domain(value: [number, number]) {
-    this.dom = value;
+  Z: Vector = vector(-10, 10);
+  /**
+   * Sets the minimum and maximum
+   * z-values for this space.
+   */
+  z(min: number, max: number) {
+    if (min < max) this.Z = Vector.from([min, max]);
     return this;
   }
-  ran: [number, number] = [-10, 10];
-  range(value: [number, number]) {
-    this.ran = value;
+  X: Vector = vector(-10, 10);
+
+  /**
+   * Sets the minimum and maximum
+   * x-values for this space.
+   */
+  x(min: number, max: number) {
+    if (min < max) this.X = Vector.from([min, max]);
+    return this;
+  }
+
+  Y: Vector = vector(-10, 10);
+  /**
+   * Sets the minimum and maximum
+   * y-values for this space.
+   */
+  y(min: number, max: number) {
+    if (min < max) this.Y = Vector.from([min, max]);
     return this;
   }
   center() {
     const mx = this.marginX();
     const my = this.marginY();
-    return shift(mx / 2, my / 2);
-  }
-  axisDomain(of: "x" | "y") {
-    if (of === "x") {
-      return this.dom;
-    } else {
-      return this.ran;
-    }
-  }
-  axisRange(of: "x" | "y") {
-    if (of === "x") {
-      return tuple(0, this.boxed("width"));
-    } else {
-      return tuple(this.boxed("height"), 0);
-    }
+    let out = shift(mx / 2, my / 2);
+    return out;
   }
 
   /**
@@ -258,25 +278,19 @@ export class Space {
    * function. If neither parameters are passed, this space’s current domain
    * and range are used.
    */
-  scaleOf(
-    of: "x" | "y" | "r",
-    Domain?: [number, number],
-    Range?: [number, number],
-  ) {
-    const domain = Domain ? Domain : this.dom;
-    const range = Range ? Range : this.ran;
+  scaleOf(of: "x" | "y" | "z"): ScaleFn {
     const width = this.boxed("width");
     const height = this.boxed("height");
     const xdomain = [0, width];
     const ydomain = [height, 0];
     const scale = this.scale();
-    if (of === "r") {
-      return linearScale(this.dom, this.ran);
-    }
     if (of === "y") {
-      return scale(range, ydomain);
+      return scale(this.Y.array(), ydomain);
+    } else if (of === "x") {
+      return scale(this.X.array(), xdomain);
     } else {
-      return scale(domain, xdomain);
+      const zdomain = [0, Math.sqrt((width * width) + (height * height))];
+      return scale(this.Z.array(), zdomain);
     }
   }
 }

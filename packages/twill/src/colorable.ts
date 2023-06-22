@@ -123,3 +123,4 @@ export function colorable<NodeClass extends Axiom>(
     }
   };
 }
+

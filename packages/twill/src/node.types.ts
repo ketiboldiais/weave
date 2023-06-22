@@ -3,13 +3,17 @@ import {
   Arc,
   ArrowDefNode,
   Axis,
+  Axis3D,
   Circle,
   Integral,
   Line,
   Plane,
   Plot,
+  Point3D,
   PolarAxis,
   Polygon,
+  Ray3,
+  Space3D,
   TextNode,
   TreeChild,
   TreeSpace,
@@ -17,11 +21,13 @@ import {
 
 export type FigNode =
   | Plot
+  | Axis3D
   | Angle
   | Circle
   | Plane
   | Axis
   | TextNode
+  | Space3D
   | Line
   | Arc
   | TreeSpace
@@ -29,6 +35,8 @@ export type FigNode =
   | ArrowDefNode
   | Polygon
   | PolarAxis
+  | Ray3
+  | Point3D
   | Integral;
 
 /**
@@ -39,6 +47,11 @@ export type FigNode =
  * 1. {@link ArrowDefNode} - an arrow definition node.
  */
 export type Referable = ArrowDefNode;
+
+export type Node3D = 
+  | Ray3
+  | Point3D
+  | Axis3D
 
 export type Node2D =
   | Plot
@@ -53,7 +66,7 @@ export type Node2D =
 
 
 export type Plottable = Integral;
-export type LayoutNode = Plane | TreeSpace;
+export type LayoutNode = Plane | TreeSpace | Space3D;
 export type Coord = {
   x1: number;
   y1: number;

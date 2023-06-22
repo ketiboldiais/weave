@@ -32,13 +32,13 @@ export class Integral extends INTEGRAL_BASE {
     const [xs, ys] = plot.xyScales();
     if (plot.fn === "") return "";
     const space = plot.space();
-    const domain = space.dom;
-    const range = space.ran;
-    const ymin = range[0];
-    const ymax = range[1];
+    const domain = space.X;
+    const range = space.Y;
+    const ymin = range.x;
+    const ymax = range.y;
     const lowerBound = this.bounds[0];
     const upperBound = this.bounds[1];
-    const max = domain[1];
+    const max = domain.y;
     const dataset: Coord[] = [];
     const samples = plot.samples;
     const def = plot.fn;

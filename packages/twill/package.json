@@ -18,7 +18,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest --run",
-    "mtx": "vitest --run matrix"
+    "mtx": "vitest --run matrix",
+    "vtr": "vitest --run vector"
   },
   "devDependencies": {
     "@types/d3": "^7.4.0",

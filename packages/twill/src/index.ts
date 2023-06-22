@@ -1,5 +1,5 @@
 export { Space } from "./space.js";
-export type { Scaler } from "./space.js";
+export type { ScaleFn, Scaler } from "./space.js";
 export {
   linearScale,
   logScale,
@@ -9,10 +9,18 @@ export {
 } from "./space.js";
 export { isLine, line, ray } from "./line.js";
 export type { Line } from "./line.js";
-export { cross, distance, Vector, vector } from "./vector.js";
+export {
+  cross,
+  distance2D,
+  distance3D,
+  v2,
+  v3,
+  Vector,
+  vector,
+} from "./vector.js";
 export { arrowDef, isArrow } from "./arrow.js";
 export type { ArrowDefNode } from "./arrow.js";
-export { isPlane, Plane, plane} from "./plane.js";
+export { isPlane, Plane, plane } from "./plane.js";
 export { isPlot, Plot, plot, polar } from "./plot.js";
 export { integral, isIntegral } from "./integral.js";
 export type { Integral } from "./integral.js";
@@ -36,10 +44,27 @@ export type { Polygon } from "./polygon.js";
 export { clamp, randFloat, randInt, round, toDeg, toRadians } from "./aux.js";
 export { Angle, angle, isAngle } from "./angle.js";
 export { Arc, arc, isArc } from "./arc.js";
-export { Matrix, matrix } from "./matrix.js";
+export { diagonal, Matrix, matrix } from "./matrix.js";
+export {
+  Axis3D,
+  isPoint3D,
+  isRay3,
+  isSpace3,
+  p3,
+  Point3D,
+  Ray3,
+  ray3,
+  space3,
+  Space3D,
+  isAxis3D,
+  axis3
+} from "./ray3d.js";
 export type NodeType =
   | "plane"
+  | "space-3D"
+  | "axis-3D"
   | "arc"
+  | "ray-3D"
   | "polar-plane"
   | "matrix"
   | "particle"
@@ -64,5 +89,6 @@ export type NodeType =
   | "circle"
   | "force-spring"
   | "polar-axis"
+  | "point-3D"
   | "force-spring-graph"
   | "unknown";

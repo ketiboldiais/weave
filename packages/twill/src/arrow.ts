@@ -14,6 +14,10 @@ class ArrowDefinition {
     }
     return this;
   }
+  rotation(value:string|number) {
+    this.orient = value;
+    return this;
+  }
   viewbox(value: string) {
     this.viewBox = value;
     return this;
@@ -27,7 +31,7 @@ class ArrowDefinition {
     public markerHeight: string | number = 6,
     public viewBox: string = `0 -5 10 10`,
     public d: string = `M0,-5L10,0L0,5Z`,
-    public orient: string = "auto",
+    public orient: string|number = "auto",
   ) {}
   /**
    * Sets the arrow head’s width and height.
