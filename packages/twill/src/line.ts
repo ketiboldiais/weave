@@ -12,22 +12,42 @@ const LINE = typed(colorable(scopable(Base)));
 export class Line extends LINE {
   text?: string | number | TextNode;
   isArrowed() {
-    return this.arrowed!=='none';
+    return this.arrowed !== "none";
+  }
+  static from(x1: number, y1: number, x2: number, y2: number) {
+    return new Line(Vector.from([x1, y1]), Vector.from([x2, y2]));
+  }
+  vy() {
+    const line = this.copy();
+    line.x1 = this.x2;
+    line.y1 = 0;
+    line.x2 = this.x2;
+    line.y2 = this.y2;
+    line.copyColors(this);
+    line.arrowed = this.arrowed;
+    return line;
+  }
+  vx(): Line {
+    const line = this.copy();
+    line.y2 = this.x1;
+    line.copyColors(this);
+    line.arrowed = this.arrowed;
+    return line;
   }
   label(text: TextNode | string | number) {
     this.text = text;
     return this;
   }
-  clone() {
+  copy() {
     const start = this.start;
     const end = this.end;
-    const copy = new Line(start,end);
+    const copy = Line.from(start.x, start.y, end.x, end.y);
     copy.arrowed = this.arrowed;
     copy.copyColors(this);
     return copy;
   }
   rotate(value: number, unit: "deg" | "rad") {
-    const l = this.clone();
+    const l = this.copy();
     const mag = l.end.mag();
     // deno-fmt-ignore
     const val = (unit === "deg") 
@@ -43,12 +63,12 @@ export class Line extends LINE {
   zero() {
     const x0 = this.x1;
     const y0 = this.y1;
-    return vector(x0,y0);
+    return vector(x0, y0);
   }
   vector() {
     const x1 = this.x2;
     const y1 = this.y1;
-    return vector(x1,y1);
+    return vector(x1, y1);
   }
   displacement() {
     const o = this.zero();
@@ -119,7 +139,7 @@ export class Line extends LINE {
    * an arrow. If set, the line’s
    * space will include arrow definitions.
    */
-  arrow(on: "start" | "end") {
+  arrow(on: "start" | "end" | 'none') {
     this.arrowed = on;
     return this;
   }
@@ -137,6 +157,7 @@ export const isLine = (node: FigNode): node is Line => (
   !unsafe(node) && node.isType("line")
 );
 
-export const beam = (start: Vector | number[], end: Vector | number[]) =>
-  line(start, end).arrow("end");
-
+export const arrow = (
+  start: Vector | number[],
+  end: Vector | number[],
+) => line(start, end).arrow("end");

@@ -8,6 +8,7 @@ import {
   isCircle,
   isLine,
   isPlot,
+  isPolarAxis,
   isPolygon,
   isTextNode,
   Plane,
@@ -18,7 +19,8 @@ import { Curve2D } from "./curve2d";
 import { Axis2D } from "./axis2d";
 import { C } from "./circle";
 import { Arrow } from "./arrow";
-import { L } from './line';
+import { L } from "./line";
+import { PolarAxis2D } from "./axisPolar";
 
 type Plane2DProps = {
   of: Plane;
@@ -34,6 +36,7 @@ export const Plane2D = ({ of }: Plane2DProps) => {
       {children.map((c) => (
         <Fragment key={c.id}>
           {isAxis(c) && <Axis2D of={c} />}
+          {isPolarAxis(c) && <PolarAxis2D of={c} />}
           {isPlot(c) && <Curve2D of={c} />}
           {isTextNode(c) && <Label of={c} />}
           {isCircle(c) && <C of={c} />}

@@ -54,11 +54,17 @@ export class Plot extends PLOT_BASE {
     let out = "";
     const space = this.space();
     const xs = space.scaleOf("x");
+    const ys = space.scaleOf("y");
     const max = (space.xmax() - space.xmin()) / 2;
-    const rscale = scaleLinear()
-      .domain([0, max])
-      .range([0, xs(max)]);
+    const m = Math.max(space.marginX(), space.marginY())
+    const d = 2;
+    const rx = xs(space.amplitude("x") / d) / 2;
+    const ry = ys(space.amplitude("y") / d) / 2;
+    const r = Math.min(rx, ry);
     const domain_max = 2 * Math.PI;
+    const rscale = scaleLinear()
+      .domain([0,0.5])
+      .range([0, xs(r)]);
     let points: [number, number][] = [];
     for (let i = 0; i < domain_max; i += 0.01) {
       const x = i;
@@ -70,7 +76,6 @@ export class Plot extends PLOT_BASE {
       .radius((d) => rscale(d[1]))
       .angle((d) => -d[0] + Math.PI / 2)(points);
     if (str !== null) out = str;
-    const ys = space.scaleOf("y");
     const t = `translate(${xs(0)},${ys(0)})`;
     return { d: out, t };
   }

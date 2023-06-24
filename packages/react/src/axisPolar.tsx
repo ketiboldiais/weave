@@ -1,5 +1,6 @@
 import { PolarAxis } from "@weave/twill";
-import { L } from './line';
+import { L } from "./line";
+import { Fragment } from "react";
 
 export const PolarAxis2D = ({ of }: { of: PolarAxis }) => {
   const rticks = of.radialAxes();
@@ -11,16 +12,18 @@ export const PolarAxis2D = ({ of }: { of: PolarAxis }) => {
           <circle
             key={c.id}
             r={c.r}
+            cx={c.x}
+            cy={c.y}
             stroke={c.strokeColor || "currentColor"}
-            strokeDasharray={c.strokeDashArray||0}
+            strokeDasharray={c.strokeDashArray || 0}
             fill={"none"}
           />
         ))}
       </g>
       {ticks.map((tick) => (
-        <g key={tick.axisLine.id} transform={tick.rotate}>
-          <L of={tick.axisLine} noscale />
-        </g>
+        <Fragment key={tick.id}>
+          <L of={tick} noscale />
+        </Fragment>
       ))}
     </g>
   );

@@ -110,4 +110,7 @@ export const sin = Math.sin;
 export const tan = Math.tan;
 export const arctan = Math.atan;
 export const arctan2 = Math.atan2;
+export const maxof = Math.max;
+export const minof = Math.min;
+export const abs = Math.abs;
 

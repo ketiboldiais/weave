@@ -1,12 +1,53 @@
-import { Angle, AngleUnit } from "./angle.js";
-import { isNumber, round, safer } from "./aux.js";
-import {beam} from './line.js';
-import { Matrix, matrix } from "./matrix.js";
+import { randFloat, randInt, round, safer, toRadians } from "./aux.js";
+import { arrow, Matrix } from "./index.js";
+import { anglevalue } from "./parsers.js";
 
 export class Vector {
   elements: number[];
   constructor(elements: number[]) {
     this.elements = elements;
+  }
+
+  toString() {
+    let out = "⟨";
+    out += this.elements.map((d) => `${d}`).join(",") + "⟩";
+    return out;
+  }
+
+  /**
+   * Returns the unit vector
+   * point from this vector 𝑢
+   * to the provided 𝑣.
+   */
+  normalTo(v: Vector) {
+    const d = this.sub(v);
+    return d.normalize();
+  }
+
+  reduce(
+    callbackfn: (
+      previousValue: number,
+      currentValue: number,
+      currentIndex: number,
+      array: number[],
+    ) => number,
+  ) {
+    return this.elements.reduce(callbackfn);
+  }
+
+  /**
+   * __Non-mutating method__. Squares each component
+   * of a copy of this vector.
+   */
+  square() {
+    return this.copy().SQUARE();
+  }
+
+  /**
+   * Squares every component of this vector.
+   */
+  SQUARE() {
+    return this.MUL(this);
   }
 
   /**
@@ -39,18 +80,6 @@ export class Vector {
 
   set z(value: number) {
     this.elements[2] = value;
-  }
-
-  /**
-   * Returns this vector as a renderable
-   * arrowed line. The ray’s starting coordiantes
-   * may be passed. By default, these
-   * coordinates are set to `(0,0,0)`.
-   */
-  fig(x: number = 0, y: number = 0, z: number = 0) {
-    const start = new Vector([x, y, z]);
-    const end = new Vector([this.x, this.y, this.x]);
-    return beam(start, end);
   }
 
   /**
@@ -403,17 +432,25 @@ export class Vector {
    * to the unit vector (i.e., which direction
    * this vector is pointing in).
    */
-  normal() {
-    return this.copy().NORMAL();
+  normalize() {
+    return this.copy().NORMALIZE();
   }
 
   /**
    * __Mutating Method__. Sets this
    * vector to its normal
    */
-  NORMAL() {
+  NORMALIZE() {
     if (this.isZero()) return this;
     return this.DIV(this.mag());
+  }
+
+  /**
+   * Returns a new 2D vector normal to
+   * this vector.
+   */
+  normal2D() {
+    return new Vector([-this.y, this.x]);
   }
 
   /**
@@ -489,7 +526,7 @@ export class Vector {
     const xyz = (x * x) + (y * y) + (z * z);
     return Math.sqrt(xyz);
   }
-  
+
   /**
    * Returns the projection of
    * this vector (𝑏) onto the
@@ -497,12 +534,12 @@ export class Vector {
    * That is, the projection of 𝑏
    * onto 𝑎.
    */
-  project(a:Vector): Vector {
+  project(a: Vector): Vector {
     const b = this.copy();
     const prod = a.dot(b);
     const mag = a.mag();
     const mag2 = mag * mag;
-    const factor = prod/mag2;
+    const factor = prod / mag2;
     const res = a.mul(factor);
     return res;
   }
@@ -513,6 +550,37 @@ export class Vector {
   copy() {
     return new Vector(this.array());
   }
+
+  /**
+   * Non-mutating method. Rotates a copy of this
+   * vector.
+   */
+  rotate2D(origin: Vector | number[], Θ: string | number) {
+    return this.copy().ROTATE2D(origin, Θ);
+  }
+
+  /**
+   * Rotates thie vector in place.
+   */
+  ROTATE2D(origin: Vector | number[], Θ: string | number) {
+    const angle = (typeof Θ === "number")
+      ? Θ
+      : anglevalue.map(({ value, unit }) =>
+        unit === "deg" ? toRadians(value) : value
+      ).parse(Θ).result.unwrap(0);
+    const center = origin instanceof Vector ? origin : Vector.from(origin);
+    const r = [];
+    const x = this.x - center.x;
+    const y = this.y - center.y;
+    r[0] = (x * Math.cos(angle)) - (y * Math.sin(angle));
+    r[1] = (x * Math.sin(angle)) + (y * Math.cos(angle));
+    r[0] += center.x;
+    r[1] += center.y;
+    this.x = r[0];
+    this.y = r[1];
+    return this;
+  }
+
   /**
    * Returns a new zero vector of the specified
    * length.
@@ -551,6 +619,35 @@ export class Vector {
       if (L > max) max = L;
     }
     return max;
+  }
+  /**
+   * Returns a random 2D vector.
+   * @param min - The lower bound of the sampling interval.
+   * @param max - The upper bound of the sampling interval.
+   * @param restrict - If `Z` is passed, random values are
+   * restricted to integers. If `R` is passed, random values
+   * are either integers or floats.
+   */
+  static random2D(min: number, max: number, restrict: "Z" | "R" = "R") {
+    const rfn = (restrict === "Z") ? randInt : randFloat;
+    const x = rfn(min, max);
+    const y = rfn(min, max);
+    return new Vector([x, y]);
+  }
+  /**
+   * Returns a random 2D vector.
+   * @param min - The lower bound of the sampling interval.
+   * @param max - The upper bound of the sampling interval.
+   * @param restrict - If `Z` is passed, random values are
+   * restricted to integers. If `R` is passed, random values
+   * are either integers or floats.
+   */
+  static random3D(min: number, max: number, restrict: "Z" | "R" = "R") {
+    const v = Vector.random2D(min, max, restrict);
+    const x = v.x;
+    const y = v.y;
+    const z = restrict === "Z" ? randInt(min, max) : randFloat(min, max);
+    return new Vector([x, y, z]);
   }
 }
 
@@ -597,3 +694,8 @@ export const v3 = (
  * Returns a new generic vector.
  */
 export const vector = (...coords: number[]) => new Vector(coords);
+
+/**
+ * Renders the provided vector as an arrowed line.
+ */
+export const vray = (vector: Vector) => arrow([0, 0, 0], vector);

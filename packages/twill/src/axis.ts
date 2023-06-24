@@ -34,36 +34,40 @@ export class PolarAxis extends AXIS_BASE {
    */
   radialAxes(): Circle[] {
     const space = this.space();
-    const max = space.ymax();
+    const xs = space.scaleOf("x");
+    const ys = space.scaleOf("y");
+    const d = 2;
+    const rx = xs(space.amplitude("x") / d) / 2;
+    const ry = ys(space.amplitude("y") / d) / 2;
+    const r = Math.min(rx, ry);
     const out: Circle[] = [
-      circle(
-        max / 2,
-      ).xy(0, 0).copyColors(this),
+      circle(xs(r)).xy(xs(0), ys(0)),
     ];
-    const ticks = this.tickCount;
-    const step = (max / 2) / ticks;
-    let j = 1;
-    for (let i = 0; i < max; i += step) {
-      j++;
-      const c = circle(i).xy(0, 0).copyColors(this).dash(2);
-      out.push(c);
-      if (j > this.tickCount) break;
-    }
     return out;
   }
   /**
-   * Returns an array of axis
-   * tick objects.
+   * Returns an array of the radial
+   * lines comprising the polar axis’s
+   * ticks.
    */
-  axisTicks(): PolarAxisTick[] {
-    const ticks: PolarAxisTick[] = [];
+  axisTicks(): Line[] {
+    const ticks: Line[] = [];
     const space = this.space();
-    const r = space.ymax() / 2;
-    for (let i = 0; i < 360; i += 30) {
-      const rotate = `rotate(${-i})`;
-      const axisLine = line([0, 0], [0, r]);
+    const xs = space.scaleOf("x");
+    const ys = space.scaleOf("y");
+    const d = 2;
+    const rx = space.amplitude("x") / d;
+    const ry = space.amplitude("y") / d;
+    const cx = xs(0);
+    const cy = ys(0);
+    const ub = 2 * Math.PI;
+    const inc = Math.PI / 4;
+    for (let i = 0; i < ub; i += inc) {
+      const x1 = rx * Math.cos(i);
+      const y1 = ry * Math.sin(i);
+      const axisLine = line([xs(x1), ys(y1)], [cx, cy]);
       axisLine.copyColors(this);
-      ticks.push({ rotate, axisLine });
+      ticks.push(axisLine);
     }
     return ticks;
   }
@@ -129,8 +133,8 @@ export class Axis extends AXIS_BASE {
   }
   translationXY() {
     const space = this.space();
-    const xscale = space.scaleOf('x');
-    const yscale = space.scaleOf('y');
+    const xscale = space.scaleOf("x");
+    const yscale = space.scaleOf("y");
     if (this.is("y")) {
       return shift(xscale(0), 0);
     } else {

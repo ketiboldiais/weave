@@ -1,7 +1,7 @@
 import { toDeg, toRadians, unsafe } from "./aux.js";
 import { Base } from "./base";
 import { colorable } from "./colorable";
-import { Arc, FigNode, Line, arc, line, beam } from "./index.js";
+import { Arc, FigNode, Line, arc, line, arrow } from "./index.js";
 import { anglevalue } from "./parsers.js";
 import { scopable } from "./scopable.js";
 import { typed } from "./typed";
@@ -10,7 +10,14 @@ import { Vector, vector } from "./vector.js";
 export type AngleUnit = "deg" | "rad";
 const ANGLE = typed(colorable(scopable(Base)));
 export class Angle extends ANGLE {
+  /**
+   * The angle’s value, a number.
+   */
   value: number;
+  /**
+   * The angle’s unit, either of the constant
+   * strings `deg` or `rad`.
+   */
   unit: AngleUnit;
   origin: Vector;
   initial: Line;
@@ -43,13 +50,13 @@ export class Angle extends ANGLE {
         value: 0,
         unit: "rad",
       });
-      const r = beam(this.origin, [this.armLength, this.origin.y])
+      const r = arrow(this.origin, [this.armLength, this.origin.y])
         .rotate(value, unit);
       this.children.push(
         callback ? callback(r).lock() : r.opacity(0.2).lock(),
       );
     } else {
-      const r = beam(this.origin, [this.armLength, this.origin.y])
+      const r = arrow(this.origin, [this.armLength, this.origin.y])
         .rotate(angle, this.unit);
       this.children.push(
         callback ? callback(r).lock() : r.opacity(0.2).lock(),
@@ -80,8 +87,8 @@ export class Angle extends ANGLE {
     const value = this.value;
     const unit = this.unit;
     const origin = this.origin.copy();
-    const initial = this.initial.clone();
-    const terminal = this.terminal.clone();
+    const initial = this.initial.copy();
+    const terminal = this.terminal.copy();
     const out = new Angle(value, unit);
     const children = this.children;
     out.origin = origin;
@@ -104,8 +111,8 @@ export class Angle extends ANGLE {
     this.value = value;
     this.unit = unit;
     this.origin = vector(0, 0);
-    this.initial = beam(this.origin, [this.armLength, this.origin.y]);
-    this.terminal = beam(this.origin, [this.armLength, this.origin.y]).rotate(
+    this.initial = arrow(this.origin, [this.armLength, this.origin.y]);
+    this.terminal = arrow(this.origin, [this.armLength, this.origin.y]).rotate(
       value,
       unit,
     );

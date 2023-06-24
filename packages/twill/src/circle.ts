@@ -1,6 +1,6 @@
 import { unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
-import { FigNode } from "./index.js";
+import { FigNode, TextNode } from "./index.js";
 import { scopable } from "./scopable.js";
 import { linearScale, Space } from "./space.js";
 import { typed } from "./typed.js";
@@ -16,6 +16,11 @@ export class Circle extends CIRCLE_BASE {
   r: number = 5;
   dx: number = 0;
   dy: number = 0;
+  text: string = "";
+  label(text: string) {
+    this.text = text;
+    return this;
+  }
 
   /**
    * Returns the diameter of this circle,
@@ -57,7 +62,7 @@ export class Circle extends CIRCLE_BASE {
   get scaledRadius() {
     const space = this.space();
     const max = (space.xmax() - space.xmin()) / 2;
-    let rs = linearScale([0, max], [0, space.boxed("width")/2]);
+    let rs = linearScale([0, max], [0, space.boxed("width") / 2]);
     return rs(this.r);
   }
   radius(value: number) {

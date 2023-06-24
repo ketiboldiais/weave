@@ -267,6 +267,14 @@ export class Space {
     if (min < max) this.Y = Vector.from([min, max]);
     return this;
   }
+  amplitude(of:'x'|'y'|'z') {
+    switch (of) {
+      case 'x': return this.X.y - this.X.x;
+      case 'y': return this.Y.y - this.Y.x;
+      case 'z': return this.Z.y - this.Z.x;
+      default: return 0;
+    }
+  }
   center() {
     const mx = this.marginX();
     const my = this.marginY();
