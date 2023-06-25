@@ -11,7 +11,7 @@ import { TextNode } from "./text.js";
 import { TreeSpace } from "./tree.js";
 import { TreeChild } from "./treenode.js";
 export { Interval, I } from "./interval.js";
-export { ContinuousScale } from "./scale.js";
+export { RealScale } from "./scale.js";
 export { Space } from "./space.js";
 export type { ScaleFn, Scaler } from "./space.js";
 export {
