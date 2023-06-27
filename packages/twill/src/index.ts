@@ -1,3 +1,4 @@
+export { linear, LinearScale } from "./scale.js";
 import { Angle } from "./angle.js";
 import { ArrowDefNode } from "./arrow.js";
 import { PolarAxis } from "./axis.js";
@@ -10,28 +11,11 @@ import { Axis3D, Point3D, Ray, Space3D } from "./space3d.js";
 import { TextNode } from "./text.js";
 import { TreeSpace } from "./tree.js";
 import { TreeChild } from "./treenode.js";
-export { Interval, I } from "./interval.js";
-export { RealScale } from "./scale.js";
 export { Space } from "./space.js";
-export type { ScaleFn, Scaler } from "./space.js";
-export {
-  linearScale,
-  logScale,
-  powerScale,
-  radialScale,
-  sqrtScale,
-} from "./space.js";
+export type { ScaleFn } from "./space.js";
 export { arrow, isLine, line } from "./line.js";
 export type { Line } from "./line.js";
-export {
-  distance2D,
-  distance3D,
-  v2,
-  v3,
-  Vector,
-  vector,
-  vray,
-} from "./vector.js";
+export { v2, v3, Vector, vector, vray } from "./vector.js";
 export { arrowDef, isArrow } from "./arrow.js";
 export type { ArrowDefNode } from "./arrow.js";
 export { isPlane, Plane, plane } from "./plane.js";
@@ -70,7 +54,10 @@ export {
   space3,
   Space3D,
 } from "./space3d.js";
-export { eades, ForceGraph, graph, isForceGraph } from "./graph.js";
+export { Vertex, vtx } from "./graph/vertex.js";
+export { Edge, edge } from "./graph/edge.js";
+export { Graph, graph } from "./graph/graph.js";
+export { Particle, ForceSpace, pt, forceSpace, isForceSpace } from "./graph/graph.spring.js";
 export type NodeType =
   | "plane"
   | "space-3D"
@@ -79,7 +66,6 @@ export type NodeType =
   | "ray-3D"
   | "polar-plane"
   | "matrix"
-  | "particle"
   | "plot"
   | "point"
   | "polygon"
@@ -99,17 +85,23 @@ export type NodeType =
   | "vector"
   | "arrow"
   | "circle"
-  | "force-graph"
   | "polar-axis"
   | "point-3D"
+  | "graph-simple"
+  | "graph-directed"
+  | "force-graph"
+  | 'force-spring'
+  | "force-particle"
   | "unknown";
 
 import type { Line } from "./line.js";
 import type { Arc } from "./arc.js";
+import { Axis } from "./axis.js";
+import { ForceSpace, Particle } from "./graph/graph.spring.js";
+
 export type FigNode =
   | Plot
   | Axis3D
-  | ForceGraph
   | Ray
   | Angle
   | Circle
@@ -122,6 +114,8 @@ export type FigNode =
   | TreeSpace
   | TreeChild
   | ArrowDefNode
+  | Particle
+  | ForceSpace
   | Polygon
   | PolarAxis
   | Point3D
@@ -136,8 +130,6 @@ export type FigNode =
  */
 export type Referable = ArrowDefNode;
 
-import { Axis } from "./axis.js";
-import { ForceGraph } from "./graph.js";
 export type Node3D =
   | Point3D
   | Line
@@ -155,7 +147,7 @@ export type Node2D =
   | Polygon;
 
 export type Plottable = Integral;
-export type LayoutNode = Plane | TreeSpace | Space3D | ForceGraph;
+export type LayoutNode = Plane | TreeSpace | Space3D | ForceSpace;
 export type Coord = {
   x1: number;
   y1: number;

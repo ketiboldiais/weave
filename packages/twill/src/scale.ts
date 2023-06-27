@@ -1,50 +1,70 @@
-import { I, Interval } from "./index.js";
-
-export abstract class RealScale {
-  dom: Interval;
-  ran: Interval;
-  constructor(domain: Interval, range: Interval) {
+export class LinearScale {
+  dom: number[];
+  ran: number[];
+  constructor(domain: number[], range: number[]) {
     this.dom = domain;
     this.ran = range;
   }
-  domain(min: number, max: number) {
-    this.dom = I(min, max);
-    return this;
+  minValue() {
+    return this.dom[0];
   }
-  range(min: number, max: number) {
-    this.ran = I(min, max);
-    return this;
+  maxValue() {
+    return this.dom[1];
   }
-  get minValue() {
-    return this.dom.min;
+  minScale() {
+    return this.ran[0];
   }
-  get maxValue() {
-    return this.dom.max;
+  maxScale() {
+    return this.ran[1];
   }
-  get minScale() {
-    return this.ran.min;
+  ywidth() {
+    return this.ran[1] - this.dom[0];
   }
-  get maxScale() {
-    return this.ran.max;
+  xwidth() {
+    return this.dom[1] - this.dom[0];
   }
-  get ratio() {
-    return (this.ran.width / this.dom.width);
-  }
-}
-
-class LinearScale extends RealScale {
-  constructor(domain: Interval, range: Interval) {
-    super(domain, range);
+  ratio() {
+    return (this.ywidth() / this.xwidth());
   }
   scale(value: number) {
-    const res = this.minScale + (this.ratio * (value - this.minValue));
-    if (res === Infinity) return this.maxScale;
-    if (res === -Infinity) return this.minScale;
-    if (isNaN(res)) return this.minScale;
+    const res = this.minScale() + (this.ratio() * (value - this.minValue()));
+    if (res === Infinity) return this.maxScale();
+    if (res === -Infinity) return this.minScale();
+    if (isNaN(res)) return this.minScale();
     return res;
   }
 }
 
-export const linearScale = (domain: number[], range: number[]) => (
-  new LinearScale(Interval.of(domain), Interval.of(range))
+const ScaleFactory = (
+  interpolate: (
+    inputValue: number,
+    minscale: number,
+    maxscale: number,
+    minval: number,
+    maxval: number,
+    ratio: number,
+  ) => number,
+) =>
+(
+  domain: number[],
+  range: number[],
+) =>
+(inputValue: number) =>
+  interpolate(
+    inputValue,
+    range[0],
+    range[1],
+    domain[0],
+    domain[1],
+    (range[1] - range[0]) / (domain[1] - domain[0]),
+  );
+
+export const linear = ScaleFactory(
+  (input, minscale, maxscale, minval, maxval, ratio) => {
+    const res = minscale + (ratio * (input - minval));
+    if (res === Infinity) return maxscale;
+    if (res === -Infinity) return minscale;
+    if (isNaN(res)) return minscale;
+    return res;
+  },
 );

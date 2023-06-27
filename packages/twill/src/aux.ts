@@ -31,7 +31,6 @@ export const safer = <T>(
 /** Returns a tuple of type `T`. */
 export const tuple = <T extends any[]>(...data: T) => data;
 export const isNumber = (x: any): x is number => typeof x === "number";
-export const sq = (x: number) => x * x;
 
 export const dne = (x: any): x is undefined => (x === undefined);
 export const nil = (x: any): x is null => (x === null);
@@ -113,4 +112,4 @@ export const arctan2 = Math.atan2;
 export const maxof = Math.max;
 export const minof = Math.min;
 export const abs = Math.abs;
-
+export const square = (x: number) => x * x;

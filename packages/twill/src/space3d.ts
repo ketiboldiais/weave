@@ -1,14 +1,7 @@
 import { shift, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable.js";
-import {
-  arrowDef,
-  circle,
-  isLine,
-  line,
-  Space,
-  Vector,
-} from "./index.js";
+import { arrowDef, circle, isLine, line, Space, Vector } from "./index.js";
 import { FigNode, Node3D } from "./index.js";
 import { scopable } from "./scopable.js";
 import { typed } from "./typed.js";
@@ -129,20 +122,20 @@ export class Ray extends RAY {
     this.type = "ray-3D";
   }
   fig() {
-    return line(this.o, this.d).arrow('end');
+    return line(this.o, this.d).arrow("end");
   }
   /**
    * Sets the direction of this vector.
    */
-  to(vector:Vector|number[]) {
-    this.d=Vector.from(vector);
+  to(vector: Vector | number[]) {
+    this.d = Vector.from(vector);
     return this;
   }
   /**
    * Sets the origin of this vector.
    */
-  from(vector:Vector|number[]) {
-    this.o=Vector.from(vector);
+  from(vector: Vector | number[]) {
+    this.o = Vector.from(vector);
     return this;
   }
   p(t: number) {
@@ -160,6 +153,6 @@ export const ray = (
   return new Ray(Vector.from(direction), Vector.from(origin));
 };
 
-export const isRay = (node:FigNode): node is Ray => (
-  !unsafe(node) && node.isType('ray-3D')
-)
+export const isRay = (node: FigNode): node is Ray => (
+  !unsafe(node) && node.isType("ray-3D")
+);

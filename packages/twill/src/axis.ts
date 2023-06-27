@@ -5,9 +5,9 @@ import {
   label,
   Line,
   line,
+  linear,
   shift,
   TextNode,
-  Vector,
 } from "./index.js";
 import { toFrac, tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
@@ -17,7 +17,6 @@ import { Base } from "./base.js";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
 
-type PolarAxisTick = { rotate: string; axisLine: Line };
 export class PolarAxis extends AXIS_BASE {
   tickCount: number;
   constructor() {
@@ -167,10 +166,15 @@ export class Axis extends AXIS_BASE {
    * target each tick.
    */
   labelTicks(f?: (tick: TextNode, index: number) => TextNode) {
+    const space = this.space();
     const scale = this.scaleFn();
     const n = this.tickCount;
     const isXAxis = this.is("x");
-    const ticks = scale.ticks(n).map((value, index) => {
+    this.TickLabels = [];
+    const ran = isXAxis ? space.X : space.Y;
+    const rescale = linear([0,n-1],[ran.x, ran.y]); 
+    for (let i = 0; i < n; i++) {
+      const value = rescale(i);
       let x = `${value}`;
       if (!Number.isInteger(value)) {
         const [a, b] = toFrac(value);
@@ -184,11 +188,10 @@ export class Axis extends AXIS_BASE {
         txt.x = scale(0);
         txt.y = scale(value);
       }
-      if (f) txt = f(txt, index);
+      if (f) txt = f(txt, i);
       txt.anchor = txt.anchor ? txt.anchor : this.tickLabelAnchor;
-      return txt;
-    });
-    this.TickLabels = ticks;
+      this.TickLabels.push(txt);
+    }
     return this;
   }
 

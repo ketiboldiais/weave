@@ -43,7 +43,7 @@ abstract class TreeNode extends TREENODE {
     }
     return null;
   }
-  hasChild(id: string) {
+  hasChild(id: string|number) {
     if (this.children.length === 0) return false;
     for (const child of this.children) {
       if (child.id === id) return true;

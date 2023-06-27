@@ -29,10 +29,10 @@ const B = v2(-1,8);
 const plot1 = plane([
   axis("x"),
   axis("y"),
-  vray(A),
+  // vray(A.magnify(5)),
   // polar('f(t) = sin(t^2)'),
-  // plot('f(t) = log(t)'),
-]).figure();
+  // plot('f(t) = cos(t)'),
+]);
 
 export const Plot = () => {
   return (

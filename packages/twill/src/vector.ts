@@ -1,4 +1,4 @@
-import { randFloat, randInt, round, safer, toRadians } from "./aux.js";
+import { randFloat, randInt, round, toRadians } from "./aux.js";
 import { arrow, Matrix } from "./index.js";
 import { anglevalue } from "./parsers.js";
 
@@ -508,18 +508,18 @@ export class Vector {
    * Returns the 2D distance between this
    * vector and the provided vector.
    */
-  d3(other: Vector) {
-    const x = other.x - this.x;
-    const y = other.y - this.y;
-    const xyz = (x * x) + (y * y);
-    return Math.sqrt(xyz);
+  euclideanDistance(other: Vector) {
+    const dx = other.x - this.x;
+    const dy = other.y - this.y;
+    const dsum = (dx ** 2) + (dy ** 2);
+    return Math.sqrt(dsum);
   }
 
   /**
    * Returns the 3D distance between this
    * vector and the provided vector.
    */
-  d2(other: Vector) {
+  d3(other: Vector) {
     const x = other.x - this.x;
     const y = other.y - this.y;
     const z = other.z - this.z;
@@ -650,28 +650,6 @@ export class Vector {
     return new Vector([x, y, z]);
   }
 }
-
-/**
- * Returns the distance between the
- * two provided vectors.
- */
-export const distance3D = (
-  vector1: Vector | number[],
-  vector2: Vector | number[],
-) => (
-  (Vector.from(vector1)).d3(Vector.from(vector2))
-);
-
-/**
- * Returns the distance between the
- * two provided vectors.
- */
-export const distance2D = (
-  vector1: Vector | number[],
-  vector2: Vector | number[],
-) => (
-  (Vector.from(vector1)).d2(Vector.from(vector2))
-);
 
 /**
  * Returns a new 2D vector.

@@ -3,12 +3,11 @@ import { colorable } from "./colorable.js";
 import { compile, engine } from "@weave/twine";
 import { unsafe } from "./aux.js";
 import { line, lineRadial } from "d3-shape";
-import { FigNode, Plottable } from "./index.js";
+import { FigNode, linear, Plottable } from "./index.js";
 import { scopable } from "./scopable.js";
 import { Base } from "./base.js";
 import { Right } from "@weave/twine";
 import type { RVal } from "@weave/twine";
-import { scaleLinear } from "d3-scale";
 
 const PLOT_BASE = scopable(typed(colorable(Base)));
 
@@ -56,15 +55,13 @@ export class Plot extends PLOT_BASE {
     const xs = space.scaleOf("x");
     const ys = space.scaleOf("y");
     const max = (space.xmax() - space.xmin()) / 2;
-    const m = Math.max(space.marginX(), space.marginY())
+    const m = Math.max(space.marginX(), space.marginY());
     const d = 2;
     const rx = xs(space.amplitude("x") / d) / 2;
     const ry = ys(space.amplitude("y") / d) / 2;
     const r = Math.min(rx, ry);
     const domain_max = 2 * Math.PI;
-    const rscale = scaleLinear()
-      .domain([0,0.5])
-      .range([0, xs(r)]);
+    const rscale = linear([0, 0.5], [0, xs(r)]);
     let points: [number, number][] = [];
     for (let i = 0; i < domain_max; i += 0.01) {
       const x = i;

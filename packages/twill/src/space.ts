@@ -1,63 +1,16 @@
-import { scaleLinear, scaleLog, scalePow, scaleRadial, scaleSqrt } from "d3-scale";
-import { Line, line, shift, Vector, vector, Referable, arrowDef } from "./index.js";
+import {
+  arrowDef,
+  Line,
+  line,
+  linear,
+  Referable,
+  shift,
+  Vector,
+  vector,
+} from "./index.js";
 
 export type ScaleName = "linear" | "power" | "radial" | "log";
 export type ScaleFn = (x: number) => number;
-
-/**
- * Returns a d3 linear scale.
- */
-export const linearScale = (domain: number[], range: number[]) => (
-  scaleLinear().domain(domain).range(range)
-);
-type LinearScale = typeof linearScale;
-
-/**
- * Returns a d3 power scale. An optional power value maybe passed
- * (the exponent the domain values will be raised to). By default,
- * the exponent is set to 2. Note that a power of 1 is simply a linear
- * scale. Power scales are seldom used, but they’re necessary for
- * circle-like figures that require scaling via radius.
- */
-export const powerScale = (
-  domain: number[],
-  range: number[],
-  power: number = 2,
-) => (
-  scalePow().exponent(power).domain(domain).range(range)
-);
-type PowerScale = typeof powerScale;
-
-/**
- * Returns a d3 radial scale.
- */
-export const radialScale = (domain: number[], range: number[]) => (
-  scaleRadial().domain(domain).range(range)
-);
-type RadialScale = typeof radialScale;
-
-/**
- * Return a d3 sqrt scale.
- */
-export const sqrtScale = (domain: number[], range: number[]) => (
-  scaleSqrt().domain(domain).range(range)
-);
-type SqrtScale = typeof sqrtScale;
-
-/**
- * Returns a d3 log scale.
- */
-export const logScale = (domain: number[], range: number[]) => (
-  scaleLog().domain(domain).range(range)
-);
-type LogScale = typeof logScale;
-
-export type Scaler =
-  | LinearScale
-  | PowerScale
-  | RadialScale
-  | SqrtScale
-  | LogScale;
 
 export class Space {
   scaletype: ScaleName = "linear";
@@ -71,7 +24,6 @@ export class Space {
    */
   definitions: Referable[] = [];
 
-  
   defineArrow(n: Line) {
     this.define(arrowDef().uid(n.id).copyColors(n));
     return this;
@@ -152,19 +104,19 @@ export class Space {
   marginX() {
     return this.marginOf("left") + this.marginOf("right");
   }
-  scale(): Scaler {
+  scale() {
     const type = this.scaletype;
     switch (type) {
-      case "linear":
-        return linearScale;
-      case "log":
-        return logScale;
-      case "power":
-        return powerScale;
-      case "radial":
-        return radialScale;
+      // case "linear":
+      // return linearScale;
+      // case "log":
+      // return logScale;
+      // case "power":
+      // return powerScale;
+      // case "radial":
+      // return radialScale;
       default:
-        return linearScale;
+        return linear;
     }
   }
   scaled(type: ScaleName) {
@@ -267,12 +219,16 @@ export class Space {
     if (min < max) this.Y = Vector.from([min, max]);
     return this;
   }
-  amplitude(of:'x'|'y'|'z') {
+  amplitude(of: "x" | "y" | "z") {
     switch (of) {
-      case 'x': return this.X.y - this.X.x;
-      case 'y': return this.Y.y - this.Y.x;
-      case 'z': return this.Z.y - this.Z.x;
-      default: return 0;
+      case "x":
+        return this.X.y - this.X.x;
+      case "y":
+        return this.Y.y - this.Y.x;
+      case "z":
+        return this.Z.y - this.Z.x;
+      default:
+        return 0;
     }
   }
   center() {
@@ -296,14 +252,16 @@ export class Space {
     const height = this.boxed("height");
     const xdomain = [0, width];
     const ydomain = [height, 0];
-    const scale = this.scale();
     if (of === "y") {
-      return scale(this.Y.array(), ydomain);
+      // return scale(this.Y.array(), ydomain);
+      return linear(this.Y.array(), ydomain);
     } else if (of === "x") {
-      return scale(this.X.array(), xdomain);
+      // return scale(this.X.array(), xdomain);
+      return linear(this.X.array(), xdomain);
     } else {
       const zdomain = [0, Math.sqrt((width * width) + (height * height))];
-      return scale(this.Z.array(), zdomain);
+      // return scale(this.Z.array(), zdomain);
+      return linear(this.Z.array(), zdomain);
     }
   }
 }

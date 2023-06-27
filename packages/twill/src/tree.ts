@@ -1,7 +1,7 @@
 import { tuple, unsafe } from "./aux.js";
-import { arrowDef, FigNode, Line, line, linearScale, Space } from "./index.js";
+import { arrowDef, FigNode, Line, line, Space } from "./index.js";
 import { linkedList } from "./list.js";
-import { leaf, subtree, Tree, TreeChild } from "./treenode.js";
+import { subtree, Tree, TreeChild } from "./treenode.js";
 import { typed } from "./typed.js";
 
 type TreeLayout =

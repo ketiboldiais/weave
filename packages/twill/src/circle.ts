@@ -1,8 +1,8 @@
 import { unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
-import { FigNode, TextNode } from "./index.js";
+import { FigNode, TextNode, linear } from "./index.js";
 import { scopable } from "./scopable.js";
-import { linearScale, Space } from "./space.js";
+import { Space } from "./space.js";
 import { typed } from "./typed.js";
 import { Vector } from "./vector.js";
 
@@ -62,7 +62,7 @@ export class Circle extends CIRCLE_BASE {
   get scaledRadius() {
     const space = this.space();
     const max = (space.xmax() - space.xmin()) / 2;
-    let rs = linearScale([0, max], [0, space.boxed("width") / 2]);
+    let rs = linear([0, max], [0, space.boxed("width") / 2]);
     return rs(this.r);
   }
   radius(value: number) {
