@@ -7,6 +7,7 @@ import {
   isAxis,
   isCircle,
   isLine,
+  isPath,
   isPlot,
   isPolarAxis,
   isPolygon,
@@ -21,6 +22,7 @@ import { C } from "./circle";
 import { Arrow } from "./arrow";
 import { L } from "./line";
 import { PolarAxis2D } from "./axisPolar";
+import { Path2D } from "./path";
 
 type Plane2DProps = {
   of: Plane;
@@ -44,6 +46,7 @@ export const Plane2D = ({ of }: Plane2DProps) => {
           {isPolygon(c) && <Poly of={c} />}
           {isAngle(c) && <Angle2D of={c} />}
           {isArc(c) && <Arc2D of={c} />}
+          {isPath(c) && <Path2D of={c} />}
         </Fragment>
       ))}
     </Fragment>

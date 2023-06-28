@@ -6,7 +6,7 @@ type Palette = {
   fill: string;
   strokeWidth: string | number;
   strokeDashArray: string | number;
-  opacity: number;
+  opacity: string | number;
 };
 
 export interface Colorable {
@@ -54,7 +54,7 @@ export interface Colorable {
    * appear more transparent, and values tending
    * towards 1 less transparent.
    */
-  get opacityValue(): number;
+  get opacityValue(): number | string;
 
   /**
    * The renderable node’s stroke width
@@ -114,58 +114,35 @@ export function colorable<NodeClass extends Axiom>(
       return this.colors ? safer(this.colors.fill, "") : "";
     }
     get strokeColor() {
-      return this.colors ? safer(this.colors.stroke, "") : "";
+      return this.colors ? (this.colors.stroke || "") : "";
     }
     get strokeWidth() {
       return this.colors ? safer(this.colors.strokeWidth, 1) : 1;
     }
     get strokeDashArray() {
-      return this.colors ? safer(this.colors.strokeWidth, 0) : 0;
+      return this.colors ? safer(this.colors.strokeDashArray, 0) : 0;
     }
     get opacityValue() {
-      return this.colors ? safer(this.colors.opacity, 1) : 1;
+      return this.colors ? safer(this.colors.opacity, '') : '';
     }
-    // strokeColor?: string;
     stroke(stroke: string): this {
       this.enstyle({ stroke });
       return this;
     }
-    // fillColor?: string;
-    /**
-     * Sets the renderable node’s fill color.
-     */
+    
     fill(fill: string): this {
       this.enstyle({ fill });
-      // this.fillColor = color;
       return this;
     }
 
-    /**
-     * The renderable node’s stroke width
-     * (how thick the node’s outline is).
-     */
-    // strokeWidth?: number;
-
-    /**
-     * Sets the renderable node’s stroke width.
-     */
     weight(strokeWidth: number): this {
       this.enstyle({ strokeWidth });
-      // this.strokeWidth = value;
       return this;
     }
 
-    /**
-     * The renderable node’s dash property.
-     * If 0, a solid line is shown.
-     */
-    // strokeDashArray?: number;
 
-    /**
-     * Sets the renderable node’s dash property.
-     */
+
     dash(strokeDashArray: number): this {
-      // this.strokeDashArray = value;
       this.enstyle({ strokeDashArray });
       return this;
     }

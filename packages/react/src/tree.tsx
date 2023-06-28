@@ -5,10 +5,11 @@ import { L } from './line';
 
 
 export const Tree = ({ of }: { of: TreeSpace }) => {
-  const { nodes, edges, edgeNotes } = of.figure();
-  // const nodes = of.children.nodes;
-  // const edges = of.children.edges;
-  // const edgeNotes = of.children.edgeNotes;
+  // of.figure();
+  // const { nodes, edges, edgeNotes } = of.figure();
+  const nodes = of.treenodes;
+  const edges = of.links;
+  const edgeNotes = of.notes;
   const definitions = of.definitions;
   return (
     <g>
@@ -18,29 +19,31 @@ export const Tree = ({ of }: { of: TreeSpace }) => {
       <g>
         {edges.map((e) => (
           <g key={e.id}>
-            <L of={e} />
+            <L of={e}/>
           </g>
         ))}
       </g>
       <g>
         {edgeNotes.map((e) => (
           <g key={e.id}>
-            <L of={e} />
+            <L of={e}/>
           </g>
         ))}
       </g>
       <g>
         {nodes.map((n) => (
-          <g key={n.id} transform={n.pxy}>
+          <g key={n.id}>
             <circle
               r={n.r}
+              cx={n.sx}
+              cy={n.sy}
               stroke={n.strokeColor || "currentColor"}
               strokeWidth={n.strokeWidth || 1}
               fill={n.fillColor || "white"}
             />
             <Label
-              of={label(n.text)}
-              position={`translate(0,15)`}
+              of={label(n.text).xy(n.x,n.y)}
+              // position={`translate(${n.sx},${n.sy})`}
             />
           </g>
         ))}

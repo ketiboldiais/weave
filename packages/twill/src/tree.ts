@@ -72,7 +72,7 @@ export class TreeSpace extends TREEBASE {
     this.type = "tree";
   }
   nodes(nodes: TreeChild[]) {
-    nodes.forEach((n) => this.tree.child(n));
+    nodes.forEach((n) => this.tree.child(n.scope(this)));
     return this;
   }
 
@@ -91,7 +91,7 @@ export class TreeSpace extends TREEBASE {
       if (
         !self.leftmost_sibling &&
         self.parent &&
-        self.id != self.parent.children[0].id
+        self.id !== self.parent.children[0].id
       ) {
         self.leftmost_sibling = self.parent.children[0];
         return self.parent.children[0];
@@ -249,6 +249,7 @@ export class TreeSpace extends TREEBASE {
         thirdwalk(this.tree, -min);
       }
     };
+    buccheim();
     buccheim();
     const x = this.tree.x;
     this.tree.bfs((n) => {
@@ -446,11 +447,8 @@ export class TreeSpace extends TREEBASE {
   }
   figure() {
     this.lay();
-    const nodes: TreeChild[] = [];
-    const edges: Line[] = [];
-    const edgeNotes: Line[] = [];
     this.tree.bfs((node) => {
-      nodes.push(node);
+      this.treenodes.push(node);
     });
     this.tree.bfs((node) => {
       const parent = node.parent;
@@ -459,7 +457,7 @@ export class TreeSpace extends TREEBASE {
           [parent.x, parent.y],
           [node.x, node.y],
         );
-        edges.push(l);
+        this.links.push(l);
       }
     });
     const markEdge = (
@@ -487,7 +485,7 @@ export class TreeSpace extends TREEBASE {
           .viewbox(`0 -${b.r} ${b.r * 2} ${b.r * 2}`)
           .path(`M0,-${b.r}L${b.r * 2},0L0,${b.r}Z`)
           .copyColors(c);
-        edgeNotes.push(c);
+        this.notes.push(c);
         this.define(arrow);
       });
       list.clear();
@@ -504,9 +502,11 @@ export class TreeSpace extends TREEBASE {
     if (this.edgeNotes["preorder"]) {
       markEdge("preorder", this.edgeNotes["preorder"]);
     }
-    const out = { nodes, edges, edgeNotes };
-    return out;
+    return this;
   }
+  treenodes: TreeChild[]=[];
+  links: Line[]=[];
+  notes: Line[]=[];
 }
 
 export const tree = (name: string) => {

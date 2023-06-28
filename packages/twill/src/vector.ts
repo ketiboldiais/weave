@@ -390,11 +390,8 @@ export class Vector {
     return this.x === that.x && this.y === that.y && this.z === that.z;
   }
 
-  /**
-   * An alias for {@link Vector.mag}.
-   */
   get length() {
-    return this.mag();
+    return this.elements.length;
   }
 
   /**

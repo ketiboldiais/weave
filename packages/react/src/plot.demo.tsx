@@ -1,12 +1,16 @@
-import { axis, circle, matrix, plot } from "@weave/twill";
+import { axis, circle, matrix, path, plot, rect } from "@weave/twill";
 import { Figure } from "./figure";
 import { plane } from "@weave/twill";
 import { Fragment } from "react";
 const plot1 = plane([
   axis("x"),
   axis("y"),
-  circle(1).transform(m => [[1,0,100], [0,1,-30]]),
-]).figure();
+  path([0, 0])
+    .L([5, 0])
+    .L([5, 5])
+    .Z()
+    .rotate("45deg"),
+]).gridlines("xy").figure();
 
 export const Plot = () => {
   return (

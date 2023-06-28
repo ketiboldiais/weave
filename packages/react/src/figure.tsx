@@ -56,9 +56,9 @@ export const Figure = ({ of: data, className }: FigureProps) => {
                   y1={d.y1}
                   x2={d.x2}
                   y2={d.y2}
-                  stroke={d.strokeColor ? d.strokeColor : "currentColor"}
+                  stroke={d.strokeColor ? d.strokeColor : "lightgrey"}
                   strokeWidth={d.strokeWidth || 1}
-                  opacity={d.opacityValue || 0.1}
+                  opacity={d.opacityValue || 0.3}
                 />
               ))}
             </g>

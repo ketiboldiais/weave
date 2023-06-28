@@ -28,7 +28,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
   const translateXY = of.translationXY();
   return (
     <g transform={translateXY}>
-      <g transform={rotate} opacity={of.opacityValue||0.3}>
+      <g transform={rotate} opacity={of.opacityValue||0.4}>
         {!of.hasNo("axis-line") && (
           <path
             d={[

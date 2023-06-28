@@ -1,4 +1,5 @@
 export { Space } from "./space.js";
+export { Path, path, isPath } from "./path.js";
 export { linear, LinearScale } from "./scale.js";
 import { Angle } from "./angle.js";
 import { ArrowDefNode } from "./arrow.js";
@@ -91,11 +92,13 @@ import type { Line } from "./line.js";
 import type { Arc } from "./arc.js";
 import { Axis } from "./axis.js";
 import { ForceSpace, Particle } from "./graph/graph.spring.js";
+import { Path } from "./path.js";
 
 export type FigNode =
   | Plot
   | Angle
   | Circle
+  | Path
   | Plane
   | Axis
   | TextNode
@@ -126,6 +129,7 @@ export type Node2D =
   | Axis
   | PolarAxis
   | TextNode
+  | Path
   | Circle
   | Line
   | Arc

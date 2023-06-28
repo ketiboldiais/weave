@@ -1,4 +1,3 @@
-
 export function uid(length: number = 4, base = 36) {
   return Math.random()
     .toString(base)
@@ -81,7 +80,7 @@ export const shift = (
   y: number = 0,
 ) => `translate(${x},${y})`;
 
-export const toFrac = (x0:number) => {
+export const toFrac = (x0: number) => {
   let eps = 1.0E-15;
   let h, h1, h2, k, k1, k2, a, x;
   x = x0;
@@ -100,7 +99,7 @@ export const toFrac = (x0:number) => {
     h = h2 + a * h1;
     k = k2 + a * k1;
   }
-  return [h,k];
+  return [h, k];
 };
 
 export const pi = Math.PI;
@@ -113,6 +112,13 @@ export const maxof = Math.max;
 export const minof = Math.min;
 export const abs = Math.abs;
 export const square = (x: number) => x * x;
-
-export const constant = (x:number) => x;
-export type ConstFn<T> = (x:T) => T;
+export const slope = (
+  p1: number[],
+  p2: number[],
+  precision: number = 5,
+) => {
+  const [x1, y1] = p1.length === 2 ? p1 : [1, 1];
+  const [x2, y2] = p2.length === 2 ? p2 : [1, 1];
+  const dydx = (y2 - y1) / (x2 - x1);
+  return round(dydx, precision);
+};

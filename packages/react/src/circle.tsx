@@ -11,14 +11,16 @@ export const C = ({
   radius?: number;
 }) => {
   return (
-    <circle
-      r={of.sr}
-      cx={of.sx}
-      cy={of.sy}
-      fill={of.fillColor || "none"}
-      stroke={of.strokeColor || "currentColor"}
-      strokeWidth={of.strokeWidth || 1}
-      strokeDasharray={of.strokeDashArray || 0}
-    />
+    <g>
+      <circle
+        r={of.sr}
+        cx={of.sx}
+        cy={of.sy}
+        fill={of.fillColor || "none"}
+        stroke={of.strokeColor || "currentColor"}
+        strokeWidth={of.strokeWidth || 1}
+        strokeDasharray={of.strokeDashArray || 0}
+      />
+    </g>
   );
 };

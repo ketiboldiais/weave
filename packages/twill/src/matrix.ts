@@ -22,6 +22,7 @@ export class Matrix {
       }
     }
   }
+  
   get square() {
     return this.C === this.R;
   }
@@ -118,6 +119,17 @@ export class Matrix {
    */
   SUB(matrix: Matrix | number | (number[])[]) {
     return this.op(matrix, (a, b) => a - b);
+  }
+  
+  times(matrix: Matrix | number | (number[])[]) {
+    return this.copy().TIMES(matrix)
+  }
+  
+  /**
+   * Adds the matrix provided to this matrix..
+   */
+  TIMES(matrix: Matrix | number | (number[])[]) {
+    return this.op(matrix, (a,b) => a + b);
   }
 
   /**
@@ -277,16 +289,16 @@ export class Matrix {
   }
 
   /**
-   * __MUTATING METHOD__. Returns the vector at the specified
+   * Returns the vector at the specified
    * row index. Following mathematical
    * convention, row indices start at 1. If the
    * element is undefined, returns the given
    * fallback (defaults to 0).
    */
-  row(rowIndex: number): Vector {
+  row(rowIndex: number, fallback?: Vector | number[]): Vector {
     const out = this.vectors[rowIndex - 1];
     if (out === undefined) {
-      console.warn("Matrix: Out-of-bounds error.");
+      if (fallback !== undefined) return Vector.from(fallback);
       return Vector.fill(this.C, NaN);
     }
     return out;
@@ -310,8 +322,9 @@ export class Matrix {
    * element is undefined, returns the given
    * fallback (defaults to NaN).
    */
-  n(rowIndex: number, columnIndex: number): number {
-    return this.row(rowIndex).n(columnIndex);
+  n(rowIndex: number, columnIndex: number, fallback: number = 0): number {
+    const out = this.row(rowIndex).n(columnIndex);
+    return typeof out === "number" ? out : fallback;
   }
 
   /**

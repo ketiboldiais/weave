@@ -1,0 +1,114 @@
+import {
+  And,
+  Axiom,
+  Matrix,
+  matrix,
+  Space2D,
+  Vector,
+  vector,
+} from "./index.js";
+
+interface Scopable {
+  /**
+   * This node's enscoping space.
+   */
+  space: () => Space2D;
+  /**
+   * Sets this node˚s enscoping space.
+   */
+  scope(space: Space2D): this;
+  /**
+   * This node˚s transformation matrix.
+   */
+  tmx: Matrix | null;
+  /**
+   * Applies the given transform to this node˚s transformation
+   * matrix.
+   */
+  transform(callback: (matrix: Matrix) => Matrix | (number[])[]): this;
+  /**
+   * The node˚s transformation string.
+   */
+  get transformation(): string;
+  /**
+   * The node˚s transform origin.
+   */
+  get transformOrigin(): string;
+  
+  /**
+   * Translates the node by x- units and y-units.
+   */
+  translate(x: number, y: number): this;
+}
+
+function scopable<NodeClass extends Axiom>(
+  nodetype: NodeClass,
+): And<NodeClass, Scopable> {
+  return class extends nodetype {
+    space: () => Space2D = () => new Space2D();
+    tmx: Matrix | null = null;
+    o: Vector | null = null;
+    get transformOrigin() {
+      if (this.o) {
+        const x = this.o.x;
+        const y = this.o.y;
+        return `${x} ${y}`;
+      }
+      return "";
+    }
+    translate(x: number, y: number) {
+      if (this.tmx !== null) {
+        this.tmx.set(1, 3, x);
+        this.tmx.set(2, 3, y);
+      } else {
+        this.tmx = matrix([
+          [1, 0, x],
+          [0, 1, y],
+          [0, 0, 1],
+        ]);
+      }
+      return this;
+    }
+    get transformation() {
+      if (this.tmx === null) return "";
+      const arr = this.tmx.array();
+      const e1 = arr[0] ? arr[0] : [0, 0, 0];
+      const e2 = arr[1] ? arr[1] : [0, 0, 0];
+      const a = e1[0];
+      const b = e2[0];
+      const c = e1[1];
+      const d = e2[1];
+      const e = e1[2];
+      const f = e2[2];
+      return `matrix(${a},${b},${c},${d},${e},${f})`;
+    }
+    scope(space: Space2D) {
+      this.space = () => space;
+      if (this.tmx) {
+        const xs = space.scaleOf("x");
+        const ys = space.scaleOf("y");
+        this.o = vector(xs(0), ys(0));
+      }
+      return this;
+    }
+
+    transform(callback: (matrix: Matrix) => Matrix | (number[])[]) {
+      if (this.tmx) {
+        const mtx = callback(this.tmx);
+        if (Array.isArray(mtx)) {
+          this.tmx = matrix(mtx);
+        } else this.tmx = mtx;
+      } else {
+        const mtx = callback(matrix([
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 1],
+        ]));
+        if (Array.isArray(mtx)) {
+          this.tmx = matrix(mtx);
+        } else this.tmx = mtx;
+      }
+      return this;
+    }
+  };
+}

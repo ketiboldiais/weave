@@ -9,6 +9,7 @@ export const App = () => {
       {/* <ForceGraph1 /> */}
       {/* <Space3Demo /> */}
       <Plot/>
+      {/* <Tree/> */}
     </div>
   );
 };
