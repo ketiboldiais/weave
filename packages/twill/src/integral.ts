@@ -2,7 +2,6 @@ import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
 import { Coord, FigNode } from "./index.js";
 import { Plot } from "./plot.js";
-import { compile, engine } from "@weave/twine";
 import { area } from "d3-shape";
 import { unsafe } from "./aux.js";
 import { Base } from "./base.js";
@@ -28,8 +27,9 @@ export class Integral extends INTEGRAL_BASE {
   }
   area() {
     const plot = this.space();
+    // const xs = plot
     const [xs, ys] = plot.xyScales();
-    if (plot.fn === "") return "";
+    if (plot.fn === null) return "";
     const space = plot.space();
     const domain = space.X;
     const range = space.Y;
@@ -40,14 +40,11 @@ export class Integral extends INTEGRAL_BASE {
     const max = domain.y;
     const dataset: Coord[] = [];
     const samples = plot.samples;
-    const def = plot.fn;
-    const f = compile(engine().parse("fn " + def + ";"));
-    if (f.isLeft()) return "";
     for (let i = -samples; i < samples; i++) {
       const n = (i / samples) * max;
       const x1 = n;
       const x2 = n;
-      const y1 = f.map((n) => n(x1)).unwrap();
+      const y1 = plot.fn.map((n) => n(x1)).unwrap();
       if (typeof y1 !== "number") continue;
       const y2 = 0;
       if (lowerBound < n && n < upperBound && ymin <= y1 && y1 <= ymax) {

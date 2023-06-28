@@ -3,7 +3,7 @@ import { Base } from "./base.js";
 import { colorable } from "./colorable.js";
 import { FigNode } from "./index.js";
 import { scopable } from "./scopable.js";
-import { Space } from "./space.js";
+import { Space2D } from "./space2d.js";
 import { typed } from "./typed.js";
 import { Vector, vector } from "./vector.js";
 
@@ -15,7 +15,6 @@ export class Polygon extends polygonBase {
     super();
     this.points = [];
     this.type = "polygon";
-    this.space = () => new Space();
   }
   point(coord: Vector | number[]) {
     this.points.push(Vector.from(coord));

@@ -34,6 +34,8 @@ import { nTuple } from "./nodes/node.tuple.js";
 import { nUnex } from "./nodes/node.unex.js";
 import { nVarDef } from "./nodes/node.vardef.js";
 import { nVector } from "./nodes/node.vector.js";
+import { nDerivative } from "./nodes/node.derivative.js";
+import {compile} from './compiler.js';
 
 const isWS = (c: string) => (
   c === " " ||
@@ -162,8 +164,6 @@ class State {
   }
 }
 const enstate = () => new State();
-type TexSyms = { symbols: Record<string, string> };
-type TexCodes = TexSyms;
 const isDQuote = (c: string) => (c === `"`);
 const isDigit = (c: string) => (
   "0" <= c && c <= "9"
@@ -229,6 +229,7 @@ const char = (c: string) => {
     case "!": return token(tkn.bang);
     case "=": return token(tkn.eq);
     case '"': return token(tkn.string);
+    case `'`: return token(tkn.derivative);
     default: return token(tkn.unknown);
   }
 };
@@ -275,6 +276,10 @@ type PSpec = Record<tkn, [Parslet, Parslet, bp]>;
 
 export function engine() {
   const state = enstate();
+
+  /**
+   * Error-reporter.
+   */
   const report = (source: string, message: string) => {
     const L = state._line;
     const C = state._column;
@@ -285,12 +290,15 @@ export function engine() {
     state.setError(E);
     return left(E);
   };
+
   // deno-fmt-ignore
   const pickleft = (
     a: tkn,
     char: string,
     b: tkn,
   ) => (t: Token) => (t.type(state.match(char) ? a : b));
+
+  // string tokenizer
   const string = () => {
     state.forward((c) => !isDQuote(c));
     if (state.atEnd()) {
@@ -300,9 +308,13 @@ export function engine() {
     const lexeme = state.substr().slice(1, -1);
     return token(tkn.string, lexeme);
   };
+
+  /**
+   * Identifier scanner.
+   */
   const symscan = () => {
     const text = state.forward(
-      (c) => isLatin(c) || c === "_" || c === `'` || isDigit(c),
+      (c) => isLatin(c) || c === "_" || isDigit(c),
     );
     return keyword(text).lexeme(text);
   };
@@ -332,12 +344,6 @@ export function engine() {
     }
     return token(tkn.integer);
   };
-  const scantex = () => {
-    state.tick(); // eat the `~`
-    state.forward(isLatin);
-    const lex = state.substr().slice(1);
-    return token(tkn.texcode, lex);
-  };
   const scanOct = () => {
     state.tick(); // eat the '0'
     state.tick(); // eat the 'o'
@@ -360,7 +366,6 @@ export function engine() {
     return token(tkn.binary).lexeme(lex);
   };
   const read = (c: string) => {
-    if (c === "!" && isLatin(state.c2())) return scantex();
     if (isPreOct(c, state.c1(), state.c2())) return scanOct();
     if (isPreHex(c, state.c1(), state.c2())) return scanHex();
     if (isPreBit(c, state.c1(), state.c2())) return scanbinary();
@@ -532,10 +537,6 @@ export function engine() {
     return right(id);
   };
 
-  const tex = (token: Token) => {
-    return right(nSym(token));
-  };
-
   const call = () => {
     const name = state._lastnode;
     if (!is_nSym(name)) {
@@ -603,6 +604,7 @@ export function engine() {
     [tkn.let]: [__, __, __o],
     [tkn.print]: [__, __, __o],
     [tkn.fn]: [__, __, __o],
+    [tkn.derivative]: [__, __, __o],
     [tkn.rem]: [__, infix, bp.quot],
     [tkn.div]: [__, infix, bp.quot],
     [tkn.mod]: [__, infix, bp.quot],
@@ -625,7 +627,6 @@ export function engine() {
     [tkn.null]: [atom, __, bp.atom],
     [tkn.if]: [__, __, __o],
     [tkn.else]: [__, __, __o],
-    [tkn.texcode]: [tex, __, bp.atom],
   };
 
   const prefixRule = (t: tkn) => Rules[t][0];
@@ -727,12 +728,58 @@ export function engine() {
     return right(nCond(cond.unwrap(), ifblock.unwrap(), elseblock));
   };
 
+  const derivativeExpr = () => {
+    // last call should be function statement
+    const name = state._prev;
+    const src = `derivative`;
+    if (!name.is(tkn.symbol)) {
+      const msg = `Expected identifier before derivative operator.`;
+      return report(src, msg);
+    }
+    let order = 0;
+    while (state.peekIs(tkn.derivative)) {
+      push();
+      order++;
+    }
+    const params: Token[] = [];
+    const t1 = push();
+    if (t1.isnt(tkn.left_paren)) {
+      const msg = `Expected “(” to open parameters.`;
+      return report(src, msg);
+    }
+    if (!state.peekIs(tkn.right_paren)) {
+      do {
+        const id = push();
+        if (id.isnt(tkn.symbol)) {
+          const msg = expect(`parameter name`, id);
+          return report(src, msg);
+        }
+        params.push(id);
+      } while (nextTokenIs(tkn.comma));
+    }
+    const t2 = push();
+    if (t2.isnt(tkn.right_paren)) {
+      const msg = `Expected “)” to close parameters.`;
+      return report(src, msg);
+    }
+    if (nextTokenIs(tkn.eq)) {
+      const body = exprStmt();
+      return body.map((b) => nDerivative(name, params, b, order));
+    } else {
+      const msg = `Expected “=” after derivative parameters.`;
+      return report(src, msg);
+    }
+  };
+
   const functionStmt = () => {
     const src = `functionStmt`;
     const name = push();
     if (name.isnt(tkn.symbol)) {
       const msg = expect(`identifer`, name);
       return report(src, msg);
+    }
+    if (state.peekIs(tkn.derivative)) {
+      return derivativeExpr();
     }
     const t1 = push();
     if (t1.isnt(tkn.left_paren)) {

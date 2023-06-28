@@ -152,27 +152,36 @@ export class Matrix {
     return this.scalarOp(-1, (a, b) => a * b);
   }
 
+  array() {
+    const out: (number[])[] = [];
+    for (let i = 0; i < this.R; i++) {
+      const vector = this.vectors[i];
+      if (vector) {
+        const array = vector.array();
+        out.push(array);
+      }
+    }
+    return out;
+  }
+
   /**
-   * Returns a new matrix where
+   * Returns a nested array where
    * each element is the result
    * of the given callback function.
    */
-  map(
-    callback: (
-      n: number,
-      rowIndex: number,
-      columnIndex: number,
-      matrix: Matrix,
-    ) => number,
-  ) {
-    const mtx = this.copy();
-    for (let i = 1; i <= mtx.R; i++) {
-      for (let j = 1; j <= mtx.C; j++) {
-        const element = mtx.n(i, j);
-        mtx.set(i, j, callback(element, i, j, mtx));
+  to<T>(callback: (n: number) => T) {
+    const out: (T[])[] = [];
+    for (let i = 0; i <= this.R; i++) {
+      const vector = this.vectors[i];
+      if (vector) {
+        out[i] = [];
+        const elems = vector.array();
+        elems.forEach((n, j) => {
+          out[i][j] = callback(n);
+        });
       }
     }
-    return mtx;
+    return out;
   }
 
   /**
@@ -317,8 +326,6 @@ export class Matrix {
     return out;
   }
 
-  
-
   /**
    * Returns a new R×C zero matrix filled
    * with the given number value.
@@ -389,8 +396,6 @@ export class Matrix {
     return matrix;
   }
 }
-
-
 
 /**
  * Returns the maximum number of columns

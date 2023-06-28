@@ -1,11 +1,10 @@
-import { isAngle, Space } from "./index.js";
+import { isAngle, Space2D } from "./index.js";
 import { typed } from "./typed.js";
 import { FigNode, Node2D } from "./index.js";
-import { isLine, Line } from "./line.js";
-import { arrowDef } from "./index.js";
+import { isLine } from "./line.js";
 import { unsafe } from "./aux.js";
 
-const PLANE = typed(Space);
+const PLANE = typed(Space2D);
 
 export class Plane extends PLANE {
   nodes: Node2D[];
@@ -14,7 +13,7 @@ export class Plane extends PLANE {
     this.nodes = nodes;
     this.type = "plane";
   }
-  
+
   /**
    * If called, ensures all child nodes
    * of this figure are properly formatted.

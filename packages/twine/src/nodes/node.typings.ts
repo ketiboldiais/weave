@@ -23,6 +23,7 @@ export type EType =
   | "tuple"
   | "getex"
   | "setex"
+  | "derivative"
   | "frac"
   | "assign"
   | "group"

@@ -22,7 +22,6 @@ export class PolarAxis extends AXIS_BASE {
   constructor() {
     super();
     this.type = "polar-axis";
-    this.strokeColor = "lightgrey";
     this.tickCount = 5;
   }
 

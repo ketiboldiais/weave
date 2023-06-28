@@ -1,8 +1,7 @@
 import { unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
-import { FigNode, TextNode, linear } from "./index.js";
+import { FigNode, linear } from "./index.js";
 import { scopable } from "./scopable.js";
-import { Space } from "./space.js";
 import { typed } from "./typed.js";
 import { Vector } from "./vector.js";
 
@@ -45,21 +44,15 @@ export class Circle extends CIRCLE_BASE {
   area() {
     return (Math.PI) * (this.r ** 2);
   }
-  Dy(value: number) {
-    this.dy = value;
-    return this;
-  }
-  Dx(value: number) {
-    this.dx = value;
-    return this;
-  }
   constructor(radius: number) {
     super([0, 0, 0]);
-    this.space = () => new Space();
     this.r = radius;
     this.type = "circle";
   }
-  get scaledRadius() {
+  /**
+   * Returns the scaled radius of this circle.
+   */
+  get sr() {
     const space = this.space();
     const max = (space.xmax() - space.xmin()) / 2;
     let rs = linear([0, max], [0, space.boxed("width") / 2]);
@@ -69,11 +62,23 @@ export class Circle extends CIRCLE_BASE {
     this.r = value;
     return this;
   }
-  get pxy() {
+  /**
+   * Returns the scaled x-coordinate
+   * of this circle.
+   */
+  get sx() {
     const space = this.space();
     const xs = space.scaleOf("x");
+    return xs(this.x);
+  }
+  /**
+   * Returns the scaled y-coordinate
+   * of this circle.
+   */
+  get sy() {
+    const space = this.space();
     const ys = space.scaleOf("y");
-    return `translate(${xs(this.x)},${ys(this.y)})`;
+    return ys(this.y);
   }
 }
 

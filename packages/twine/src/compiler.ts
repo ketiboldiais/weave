@@ -4,8 +4,8 @@ import { Fn, isFn, native } from "./fn.js";
 import { Assign } from "./nodes/node.assign.js";
 import { Group } from "./nodes/node.group.js";
 import { ASTNode } from "./nodes/node.ast.js";
-import { Atom } from "./nodes/node.atom.js";
-import { Binex } from "./nodes/node.binex.js";
+import { Atom, is_nBin } from "./nodes/node.atom.js";
+import { Binex, nBinex } from "./nodes/node.binex.js";
 import { Block } from "./nodes/node.block.js";
 import { Call } from "./nodes/node.call.js";
 import { Cond } from "./nodes/node.cond.js";
@@ -15,7 +15,7 @@ import { Loop } from "./nodes/node.loop.js";
 import { PrintNode } from "./nodes/node.print.js";
 import { Return } from "./nodes/node.return.js";
 import { Setex } from "./nodes/node.setex.js";
-import { Sym } from "./nodes/node.sym.js";
+import { is_nSym, Sym } from "./nodes/node.sym.js";
 import { Unex } from "./nodes/node.unex.js";
 import { VarDef } from "./nodes/node.vardef.js";
 import { VectorExpr } from "./nodes/node.vector.js";
@@ -26,6 +26,7 @@ import { tkn } from "./token.js";
 import { RVal } from "./typings.js";
 import { env, Environment } from "./environment.js";
 import { LocalScope, resolve } from "./resolver.js";
+import { Derivative } from "./nodes/node.derivative.js";
 
 function tval(x: any): boolean {
   if (x === null) return false;
@@ -156,7 +157,7 @@ export class Compiler implements Visitor {
   lookup(name: string, value: ASTNode) {
     const distance = this.locals.get(value);
     if (distance !== undefined) {
-      return this.env.getAt(distance-1, name);
+      return this.env.getAt(distance - 1, name);
     } else {
       return this.env.read(name);
     }
@@ -171,6 +172,7 @@ export class Compiler implements Visitor {
   setex<t>(node: Setex): t {
     throw new Error("Method not implemented.");
   }
+
   binex(node: Binex): RVal {
     const left = this.cmp(node.left);
     const right = this.cmp(node.right);
@@ -257,6 +259,11 @@ export class Compiler implements Visitor {
     this.env.write(name, fn);
     return fn;
   }
+  derive1(node: Binex) {
+  }
+  derivative(node: Derivative) {
+    throw new Error('method unimplemented')
+  }
   cmpBlock(block: Block, env: Environment<RVal>) {
     const stmts = block.stmts;
     const prev = this.env;
@@ -332,4 +339,3 @@ export function compile(prog: Either<Err, ASTNode[]>) {
   ) => f.call(compiler, args);
   return right(out);
 }
-

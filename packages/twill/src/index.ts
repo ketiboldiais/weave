@@ -1,3 +1,4 @@
+export { Space } from "./space.js";
 export { linear, LinearScale } from "./scale.js";
 import { Angle } from "./angle.js";
 import { ArrowDefNode } from "./arrow.js";
@@ -7,12 +8,11 @@ import { Integral } from "./integral.js";
 import { Plane } from "./plane.js";
 import { Plot } from "./plot.js";
 import { Polygon } from "./polygon.js";
-import { Axis3D, Point3D, Ray, Space3D } from "./space3d.js";
 import { TextNode } from "./text.js";
 import { TreeSpace } from "./tree.js";
 import { TreeChild } from "./treenode.js";
-export { Space } from "./space.js";
-export type { ScaleFn } from "./space.js";
+export { Space2D } from "./space2d.js";
+export type { ScaleFn } from "./space2d.js";
 export { arrow, isLine, line } from "./line.js";
 export type { Line } from "./line.js";
 export { v2, v3, Vector, vector, vray } from "./vector.js";
@@ -41,23 +41,16 @@ export { clamp, randFloat, randInt, round, toDeg, toRadians } from "./aux.js";
 export { Angle, angle, isAngle } from "./angle.js";
 export { Arc, arc, isArc } from "./arc.js";
 export { diagonal, Matrix, matrix } from "./matrix.js";
-export {
-  axis3,
-  Axis3D,
-  isAxis3D,
-  isPoint3D,
-  isSpace3,
-  p3,
-  Point3D,
-  Ray,
-  ray,
-  space3,
-  Space3D,
-} from "./space3d.js";
 export { Vertex, vtx } from "./graph/vertex.js";
 export { Edge, edge } from "./graph/edge.js";
 export { Graph, graph } from "./graph/graph.js";
-export { Particle, ForceSpace, pt, forceSpace, isForceSpace } from "./graph/graph.spring.js";
+export {
+  ForceSpace,
+  forceSpace,
+  isForceSpace,
+  Particle,
+  pt,
+} from "./graph/graph.spring.js";
 export type NodeType =
   | "plane"
   | "space-3D"
@@ -90,7 +83,7 @@ export type NodeType =
   | "graph-simple"
   | "graph-directed"
   | "force-graph"
-  | 'force-spring'
+  | "force-spring"
   | "force-particle"
   | "unknown";
 
@@ -101,14 +94,11 @@ import { ForceSpace, Particle } from "./graph/graph.spring.js";
 
 export type FigNode =
   | Plot
-  | Axis3D
-  | Ray
   | Angle
   | Circle
   | Plane
   | Axis
   | TextNode
-  | Space3D
   | Line
   | Arc
   | TreeSpace
@@ -118,7 +108,6 @@ export type FigNode =
   | ForceSpace
   | Polygon
   | PolarAxis
-  | Point3D
   | Integral;
 
 /**
@@ -130,10 +119,7 @@ export type FigNode =
  */
 export type Referable = ArrowDefNode;
 
-export type Node3D =
-  | Point3D
-  | Line
-  | Axis3D;
+export type Node3D = Line;
 
 export type Node2D =
   | Plot
@@ -147,7 +133,7 @@ export type Node2D =
   | Polygon;
 
 export type Plottable = Integral;
-export type LayoutNode = Plane | TreeSpace | Space3D | ForceSpace;
+export type LayoutNode = Plane | TreeSpace | ForceSpace;
 export type Coord = {
   x1: number;
   y1: number;

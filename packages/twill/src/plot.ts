@@ -1,7 +1,7 @@
 import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
 import { compile, engine } from "@weave/twine";
-import { unsafe } from "./aux.js";
+import { cos, pi, sin, unsafe } from "./aux.js";
 import { line, lineRadial } from "d3-shape";
 import { FigNode, linear, Plottable } from "./index.js";
 import { scopable } from "./scopable.js";
@@ -12,7 +12,7 @@ import type { RVal } from "@weave/twine";
 const PLOT_BASE = scopable(typed(colorable(Base)));
 
 export class Plot extends PLOT_BASE {
-  fn: string;
+  fn: Right<(...args: any[]) => RVal> | null;
   samples: number = 300;
   children: Plottable[] = [];
   system: "cartesian" | "polar" = "cartesian";
@@ -30,8 +30,13 @@ export class Plot extends PLOT_BASE {
   }
   constructor(fn: string) {
     super();
-    this.fn = fn;
     this.type = "plot";
+    const f = compile(engine().parse("fn " + fn + ";"));
+    if (f.isRight()) {
+      this.fn = f;
+    } else {
+      this.fn = null;
+    }
   }
   dom: [number, number] = [-5, 5];
   domain(interval: [number, number]) {
@@ -49,13 +54,13 @@ export class Plot extends PLOT_BASE {
     const xs = space.scaleOf("x");
     return [xs, ys];
   }
-  private radialPath(f: Right<(...args: any[]) => RVal>): CurveData {
+  private radialPath(): string {
     let out = "";
+    const f = this.fn;
+    if (f === null) return out;
     const space = this.space();
     const xs = space.scaleOf("x");
     const ys = space.scaleOf("y");
-    const max = (space.xmax() - space.xmin()) / 2;
-    const m = Math.max(space.marginX(), space.marginY());
     const d = 2;
     const rx = xs(space.amplitude("x") / d) / 2;
     const ry = ys(space.amplitude("y") / d) / 2;
@@ -73,12 +78,13 @@ export class Plot extends PLOT_BASE {
       .radius((d) => rscale(d[1]))
       .angle((d) => -d[0] + Math.PI / 2)(points);
     if (str !== null) out = str;
-    const t = `translate(${xs(0)},${ys(0)})`;
-    return { d: out, t };
+    return out;
   }
 
-  private linearPath(f: Right<(...args: any[]) => RVal>): CurveData {
+  private linearPath(): string {
     let out = "";
+    const f = this.fn;
+    if (f === null) return out;
     const space = this.space();
     const xmin = space.xmin();
     const xmax = space.xmax();
@@ -101,20 +107,19 @@ export class Plot extends PLOT_BASE {
       .defined((d) => !isNaN(d[1]))
       .x((d) => xs(d[0]))(dataset);
     out = p === null ? "" : p;
-    return { d: out, t: "" };
+    return out;
   }
 
-  path(): CurveData {
+  path(): string {
     const fn = this.fn;
-    const f = compile(engine().parse("fn " + fn + ";"));
-    if (f.isLeft()) return { d: "", t: "" };
+    if (fn === null) return "";
     if (this.system === "cartesian") {
-      return this.linearPath(f);
+      return this.linearPath();
     }
     if (this.system === "polar") {
-      return this.radialPath(f);
+      return this.radialPath();
     }
-    return { d: "", t: "" };
+    return "";
   }
 }
 

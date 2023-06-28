@@ -113,3 +113,6 @@ export const maxof = Math.max;
 export const minof = Math.min;
 export const abs = Math.abs;
 export const square = (x: number) => x * x;
+
+export const constant = (x:number) => x;
+export type ConstFn<T> = (x:T) => T;

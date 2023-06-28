@@ -8,7 +8,7 @@ export const App = () => {
     <div>
       {/* <ForceGraph1 /> */}
       {/* <Space3Demo /> */}
-      {/* <Plot/> */}
+      <Plot/>
     </div>
   );
 };

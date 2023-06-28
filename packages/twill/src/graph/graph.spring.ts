@@ -1,12 +1,11 @@
-import { clamp, randFloat, randInt, square, unsafe } from "../aux.js";
+import { randInt, unsafe } from "../aux.js";
 import { Base } from "../base.js";
-import { colorable } from "../colorable.js";
-import { axis, Edge, FigNode, Node2D } from "../index.js";
+import { Edge, FigNode, Node2D } from "../index.js";
 import { scopable } from "../scopable.js";
-import { Space } from "../space.js";
+import { Space2D } from "../space2d.js";
 import { atyped, typed } from "../typed.js";
 import { v2, Vector, vector } from "../vector.js";
-import { Graph, graph } from "./graph.js";
+import { Graph } from "./graph.js";
 import { Vertex } from "./vertex.js";
 
 const PARTICLE = atyped(scopable(Base));
@@ -66,7 +65,7 @@ const spring = (
   new Spring(point1, point2, data.id)
 );
 
-const FORCELAYOUT = typed(Space);
+const FORCELAYOUT = typed(Space2D);
 
 export class ForceSpace extends FORCELAYOUT {
   particles: Map<(string | number), Particle>;

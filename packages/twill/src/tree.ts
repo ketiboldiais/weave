@@ -1,5 +1,5 @@
 import { tuple, unsafe } from "./aux.js";
-import { arrowDef, FigNode, Line, line, Space } from "./index.js";
+import { arrowDef, FigNode, Line, line, Space2D } from "./index.js";
 import { linkedList } from "./list.js";
 import { subtree, Tree, TreeChild } from "./treenode.js";
 import { typed } from "./typed.js";
@@ -19,7 +19,7 @@ type LinkFunction = (
   source: TreeChild,
   target: TreeChild,
 ) => Line;
-const TREEBASE = typed(Space);
+const TREEBASE = typed(Space2D);
 
 export class TreeSpace extends TREEBASE {
   tree: Tree;

@@ -3,7 +3,7 @@ import { ArrowDefNode } from "@weave/twill";
 export const Arrow = ({ of }: { of: ArrowDefNode }) => {
   return (
     <marker
-      id={of.id}
+      id={`${of.id}`}
       orient={of.orient}
       viewBox={of.viewBox}
       markerWidth={of.markerWidth}

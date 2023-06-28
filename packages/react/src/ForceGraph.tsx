@@ -8,8 +8,8 @@ export const ForceGraph = ({ of }: { of: ForceSpace }) => {
   const edges = of.edges();
   return (
     <Fragment>
-      {children.map((n) => (
-        <Fragment key={n.id}>
+      {children.map((n,i) => (
+        <Fragment key={`${of.id}-axis-${i}`}>
           {isAxis(n) && <Axis2D of={n} />}
         </Fragment>
       ))}

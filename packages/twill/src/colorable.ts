@@ -1,12 +1,30 @@
+import { safer } from "./aux.js";
 import { And, Axiom } from "./index.js";
+
+type Palette = {
+  stroke: string;
+  fill: string;
+  strokeWidth: string | number;
+  strokeDashArray: string | number;
+  opacity: number;
+};
 
 export interface Colorable {
   locked: boolean;
+
+  colors: Partial<Palette> | null;
+  
+  /**
+   * If called, prevents all parent
+   * nodes from setting the styles
+   * of this colorable.
+   */
   lock(): this;
+
   /**
    * The renderable node’s stroke color.
    */
-  strokeColor?: string;
+  get strokeColor(): string;
 
   /**
    * Sets the renderable node’s stroke color.
@@ -16,34 +34,19 @@ export interface Colorable {
   /**
    * The renderable node’s fill color.
    */
-  fillColor?: string;
+  get fillColor(): string;
 
   /**
    * Sets the renderable node’s fill color.
    */
   fill(color: string): this;
 
-  /**
-   * The renderable node’s stroke width
-   * (how thick the node’s outline is).
-   */
-  strokeWidth?: number;
-
-  /**
-   * Sets the renderable node’s stroke width.
-   */
-  weight(value: number): this;
 
   /**
    * The renderable node’s dash property.
    * If 0, a solid line is shown.
    */
-  strokeDashArray?: number;
-
-  /**
-   * Sets the renderable node’s dash property.
-   */
-  dash(value: number): this;
+  get strokeDashArray(): string | number;
 
   /**
    * The renderable node’s opacity, a number
@@ -51,7 +54,27 @@ export interface Colorable {
    * appear more transparent, and values tending
    * towards 1 less transparent.
    */
-  opacityValue?: number;
+  get opacityValue(): number;
+
+  /**
+   * The renderable node’s stroke width
+   * (how thick the node’s outline is).
+   */
+  get strokeWidth(): string | number;
+
+  /**
+   * Sets the renderable node’s stroke width.
+   */
+  weight(value: number): this;
+
+  /**
+   * Sets the renderable node’s dash property.
+   */
+  dash(value: number): this;
+
+  /**
+   * Sets the renderable node’s opacity.
+   */
   opacity(value: number): this;
   copyColors(node: Colorable): this;
 }
@@ -61,36 +84,59 @@ export function colorable<NodeClass extends Axiom>(
 ): And<NodeClass, Colorable> {
   return class extends nodetype {
     locked: boolean = false;
+    colors: Partial<Palette> | null = null;
     lock() {
       this.locked = true;
       return this;
     }
+    private enstyle(palette: Partial<Palette>) {
+      const colors = this.colors;
+      if (colors === null) {
+        this.colors = palette;
+      } else {
+        this.colors = { ...colors, ...palette };
+      }
+    }
     copyColors(node: Colorable) {
-      if (!this.locked) {
-        this.strokeColor = node.strokeColor;
-        this.fillColor = node.fillColor;
-        this.strokeDashArray = node.strokeDashArray;
-        this.opacityValue = node.opacityValue;
-        this.strokeWidth = node.strokeWidth;
+      if (!this.locked && node.colors !== null) {
+        const colors = node.colors;
+        this.colors = { ...colors };
       }
       return this;
     }
-    opacityValue?: number;
-    opacity(value: number) {
-      this.opacityValue = value;
+    // opacityValue?: number;
+    opacity(opacity: number) {
+      this.enstyle({ opacity });
+      // this.opacityValue = value;
       return this;
     }
-    strokeColor?: string;
-    stroke(color: string): this {
-      this.strokeColor = color;
+    get fillColor() {
+      return this.colors ? safer(this.colors.fill, "") : "";
+    }
+    get strokeColor() {
+      return this.colors ? safer(this.colors.stroke, "") : "";
+    }
+    get strokeWidth() {
+      return this.colors ? safer(this.colors.strokeWidth, 1) : 1;
+    }
+    get strokeDashArray() {
+      return this.colors ? safer(this.colors.strokeWidth, 0) : 0;
+    }
+    get opacityValue() {
+      return this.colors ? safer(this.colors.opacity, 1) : 1;
+    }
+    // strokeColor?: string;
+    stroke(stroke: string): this {
+      this.enstyle({ stroke });
       return this;
     }
-    fillColor?: string;
+    // fillColor?: string;
     /**
      * Sets the renderable node’s fill color.
      */
-    fill(color: string): this {
-      this.fillColor = color;
+    fill(fill: string): this {
+      this.enstyle({ fill });
+      // this.fillColor = color;
       return this;
     }
 
@@ -98,13 +144,14 @@ export function colorable<NodeClass extends Axiom>(
      * The renderable node’s stroke width
      * (how thick the node’s outline is).
      */
-    strokeWidth?: number;
+    // strokeWidth?: number;
 
     /**
      * Sets the renderable node’s stroke width.
      */
-    weight(value: number): this {
-      this.strokeWidth = value;
+    weight(strokeWidth: number): this {
+      this.enstyle({ strokeWidth });
+      // this.strokeWidth = value;
       return this;
     }
 
@@ -112,15 +159,15 @@ export function colorable<NodeClass extends Axiom>(
      * The renderable node’s dash property.
      * If 0, a solid line is shown.
      */
-    strokeDashArray?: number;
+    // strokeDashArray?: number;
 
     /**
      * Sets the renderable node’s dash property.
      */
-    dash(value: number): this {
-      this.strokeDashArray = value;
+    dash(strokeDashArray: number): this {
+      // this.strokeDashArray = value;
+      this.enstyle({ strokeDashArray });
       return this;
     }
   };
 }
-

@@ -1,4 +1,5 @@
 import { Compiler } from "./compiler.js";
+import {ASTNode} from './nodes/node.ast.js';
 
 export type RVal =
   | number
@@ -6,6 +7,7 @@ export type RVal =
   | null
   | string
   | Callable
+  | ASTNode
   | RVal[];
 
 export abstract class Callable {

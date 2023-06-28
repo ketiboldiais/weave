@@ -2,14 +2,12 @@ import { Plane2D } from "./plane2d";
 import {
   isForceSpace,
   isPlane,
-  isSpace3,
   isTreeSpace,
   LayoutNode,
 } from "@weave/twill";
 import { CSSProperties } from "react";
 import { Tree } from "./tree";
-import { Space3 } from "./space3d";
-import { ForceGraph } from "./forcegraph";
+import { ForceGraph } from "./ForceGraph";
 
 type FigureProps = {
   of: LayoutNode;
@@ -67,7 +65,6 @@ export const Figure = ({ of: data, className }: FigureProps) => {
           )}
           {isPlane(data) && <Plane2D of={data} />}
           {isTreeSpace(data) && <Tree of={data} />}
-          {isSpace3(data) && <Space3 of={data} />}
           {isForceSpace(data) && <ForceGraph of={data} />}
         </g>
       </svg>
