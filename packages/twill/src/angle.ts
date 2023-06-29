@@ -51,7 +51,7 @@ export class Angle extends ANGLE {
         unit: "rad",
       });
       const r = arrow(this.origin, [this.armLength, this.origin.y])
-        .rotate(value, unit);
+        .rotate(value, unit as any);
       this.children.push(
         callback ? callback(r).lock() : r.opacity(0.2).lock(),
       );
@@ -168,7 +168,7 @@ export const angle = (
     const parsing = anglevalue.parse(value).result.unwrap(
       { value: 0, unit: "rad" },
     );
-    return new Angle(parsing.value, parsing.unit);
+    return new Angle(parsing.value, parsing.unit as any);
   } else {
     return new Angle(value, unit);
   }

@@ -7,7 +7,41 @@ export class Vector {
   constructor(elements: number[]) {
     this.elements = elements;
   }
+  
+  
+  /**
+   * Returns the smallest component
+   * of this vector.
+   */
+  get min() {
+    let min = Infinity;
+    for (let i = 0; i < this.elements.length; i++) {
+      const elem = this.elements[i];
+      if (elem < min) {
+        min = elem;
+      }
+    }
+    return min;
+  }
+  
+  /**
+   * Returns the largest component
+   * of this vector.
+   */
+  get max() {
+    let max = -Infinity;
+    for (let i = 0; i < this.elements.length; i++) {
+      const elem = this.elements[i];
+      if (elem > max) {
+        max = elem;
+      }
+    }
+    return max;
+  }
 
+  /**
+   * Returns the string representation of this vector.
+   */
   toString() {
     let out = "⟨";
     out += this.elements.map((d) => `${d}`).join(",") + "⟩";
@@ -24,17 +58,6 @@ export class Vector {
     return d.normalize();
   }
 
-  reduce(
-    callbackfn: (
-      previousValue: number,
-      currentValue: number,
-      currentIndex: number,
-      array: number[],
-    ) => number,
-  ) {
-    return this.elements.reduce(callbackfn);
-  }
-
   /**
    * __Non-mutating method__. Squares each component
    * of a copy of this vector.
@@ -44,10 +67,27 @@ export class Vector {
   }
 
   /**
-   * Squares every component of this vector.
+   * __MUTATING METHOD__. Squares every component of this vector.
    */
   SQUARE() {
     return this.MUL(this);
+  }
+
+  /**
+   * __Non-mutating Method__. Raises every
+   * component of a copy of this vector to
+   * the provided component.
+   */
+  pow(arg: Vector | number | number[]) {
+    return this.copy().POW(arg);
+  }
+
+  /**
+   * __MUTATING METHOD__. Raises every component to the provided
+   * vector.
+   */
+  POW(arg: Vector | number | number[]) {
+    return this.binaryOp(arg, (a, b) => a ** b);
   }
 
   /**
@@ -58,28 +98,75 @@ export class Vector {
   get order() {
     return this.elements.length;
   }
+
+  /**
+   * The x-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
   get x() {
-    return this.elements[0] !== undefined ? this.elements[0] : 0;
+    return this.elements[0] !== undefined ? this.elements[0] : NaN;
   }
 
+  /**
+   * Sets the x-coordinate of this vector.
+   */
   set x(value: number) {
     this.elements[0] = value;
   }
 
+  /**
+   * Returns the y-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
   get y() {
-    return this.elements[1] !== undefined ? this.elements[1] : 0;
+    return this.elements[1] !== undefined ? this.elements[1] : NaN;
   }
 
+  /**
+   * Sets the y-coordinate of this vector.
+   */
   set y(value: number) {
     this.elements[1] = value;
   }
 
+  /**
+   * Returns the z-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
   get z() {
-    return this.elements[2] !== undefined ? this.elements[2] : 0;
+    return this.elements[2] !== undefined ? this.elements[2] : NaN;
   }
 
+  /**
+   * Sets the z-coordinate of this vector. This will
+   * implicitly cast the vector to a 3D vector if
+   * it isn’t already a 3D vector.
+   */
   set z(value: number) {
+    if (this.elements.length !== 3) {
+      this.elements = [0, 0, 0];
+    }
     this.elements[2] = value;
+  }
+
+  /**
+   * Returns the w-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
+  get w() {
+    return this.elements[3] !== undefined ? this.elements[3] : NaN;
+  }
+
+  /**
+   * Sets the z-coordinate of this vector. This will
+   * implicitly cast the vector to a 3D vector if
+   * it isn’t already a 3D vector.
+   */
+  set w(value: number) {
+    if (this.elements.length !== 4) {
+      this.elements = [0, 0, 0, 0];
+    }
+    this.elements[3] = value;
   }
 
   /**
@@ -174,12 +261,12 @@ export class Vector {
   }
 
   private binaryOp(
-    arg: Vector | number,
+    arg: Vector | number | number[],
     f: (thisVector: number, arg: number) => number,
   ) {
     const other = typeof arg === "number"
       ? Vector.from(new Array(this.elements.length).fill(arg))
-      : arg;
+      : Vector.from(arg);
     for (let i = 1; i <= this.order; i++) {
       const a = this.n(i);
       const b = other.n(i);
@@ -202,7 +289,7 @@ export class Vector {
    * a new vector, based on dividing this
    * vector by the provided argument.
    */
-  div(arg: Vector | number) {
+  div(arg: Vector | number | number[]) {
     return this.copy().DIV(arg);
   }
 
@@ -211,7 +298,7 @@ export class Vector {
    * vector by the provided argument.
    * Note that vector divison is non-commutative.
    */
-  DIV(arg: Vector | number) {
+  DIV(arg: Vector | number | number[]) {
     return this.binaryOp(
       arg,
       (thisVector, arg) => (arg === 0 ? 0 : thisVector / arg),
@@ -223,7 +310,7 @@ export class Vector {
    * vector, based on subtracting the provided
    * _from_ this vector.
    */
-  sub(arg: Vector | number) {
+  sub(arg: Vector | number | number[]) {
     return this.copy().SUB(arg);
   }
 
@@ -233,7 +320,7 @@ export class Vector {
    * Bear in mind that vector subtraction
    * is non-commutative.
    */
-  SUB(arg: Vector | number) {
+  SUB(arg: Vector | number | number[]) {
     return this.binaryOp(arg, (thisVector, arg) => thisVector - arg);
   }
 
@@ -292,7 +379,7 @@ export class Vector {
    * a new vector, based on multiplying
    * this vector by the provided vector.
    */
-  mul(arg: Vector | number) {
+  mul(arg: Vector | number | number[]) {
     return this.copy().MUL(arg);
   }
 
@@ -306,7 +393,7 @@ export class Vector {
    * values great than 1 will "elongate"
    * the vector.
    */
-  MUL(arg: Vector | number) {
+  MUL(arg: Vector | number | number[]) {
     return this.binaryOp(arg, (thisVector, arg) => thisVector * arg);
   }
 
@@ -315,7 +402,7 @@ export class Vector {
    * a new vector, based on adding
    * the provided vector to this vector.
    */
-  add(arg: Vector | number) {
+  add(arg: Vector | number | number[]) {
     return this.copy().ADD(arg);
   }
 
@@ -323,7 +410,7 @@ export class Vector {
    * __MUTATING METHOD__. Adds the
    * provided vector this vector.
    */
-  ADD(arg: Vector | number) {
+  ADD(arg: Vector | number | number[]) {
     return this.binaryOp(arg, (thisVector, arg) => thisVector + arg);
   }
 
@@ -387,9 +474,20 @@ export class Vector {
    * equals the provided vector.
    */
   equals(that: Vector) {
-    return this.x === that.x && this.y === that.y && this.z === that.z;
+    if (this.length !== that.length) return false;
+    for (let i = 0; i < this.length; i++) {
+      const e1 = this.elements[i];
+      const e2 = that.elements[i];
+      if (e1 !== e2) return false;
+    }
+    return true;
   }
 
+  /**
+   * Returns the number of components in this
+   * vector. For the mathematical “length” of
+   * a vector, see {@link Vector.mag}.
+   */
   get length() {
     return this.elements.length;
   }
@@ -417,7 +515,10 @@ export class Vector {
    * is the zero vector.
    */
   isZero() {
-    return this.x === 0 && this.y === 0 && this.z === 0;
+    for (let i = 0; i < this.length; i++) {
+      if (this.elements[i] !== 0) return false;
+    }
+    return true;
   }
 
   /**
@@ -455,9 +556,10 @@ export class Vector {
    * this vector and the provided
    * vector.
    */
-  dot(other: Vector) {
-    const order = this.order;
-    if (other.order !== order) return 0;
+  dot(vector: Vector | number[]) {
+    const other = Vector.from(vector);
+    const order = this.length;
+    if (other.length !== order) return 0;
     let sum = 0;
     for (let i = 0; i < order; i++) {
       const a = this.elements[i];
@@ -472,7 +574,9 @@ export class Vector {
    * __Non-mutating Method__. Returns
    * the cross product of this
    * vector against the provided
-   * vector as a new vector.
+   * vector as a new vector. Note that in
+   * this library, the cross product
+   * is only defined for 3D vectors.
    */
   cross(other: Vector) {
     return this.copy().CROSS(other);
@@ -602,7 +706,7 @@ export class Vector {
     if (Array.isArray(value)) {
       return new Vector(value);
     } else {
-      return new Vector(value.elements);
+      return value;
     }
   }
   /**

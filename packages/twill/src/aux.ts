@@ -122,3 +122,4 @@ export const slope = (
   const dydx = (y2 - y1) / (x2 - x1);
   return round(dydx, precision);
 };
+export const mod = (n: number, d: number) => ((n % d) + d) % d;

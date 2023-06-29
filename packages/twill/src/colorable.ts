@@ -1,5 +1,5 @@
 import { safer } from "./aux.js";
-import { And, Axiom } from "./index.js";
+import { And, Axiom, Color } from "./index.js";
 
 type Palette = {
   stroke: string;
@@ -13,7 +13,7 @@ export interface Colorable {
   locked: boolean;
 
   colors: Partial<Palette> | null;
-  
+
   /**
    * If called, prevents all parent
    * nodes from setting the styles
@@ -29,7 +29,7 @@ export interface Colorable {
   /**
    * Sets the renderable node’s stroke color.
    */
-  stroke(color: string): this;
+  stroke(color: string | Color): this;
 
   /**
    * The renderable node’s fill color.
@@ -39,8 +39,7 @@ export interface Colorable {
   /**
    * Sets the renderable node’s fill color.
    */
-  fill(color: string): this;
-
+  fill(color: string | Color): this;
 
   /**
    * The renderable node’s dash property.
@@ -123,15 +122,19 @@ export function colorable<NodeClass extends Axiom>(
       return this.colors ? safer(this.colors.strokeDashArray, 0) : 0;
     }
     get opacityValue() {
-      return this.colors ? safer(this.colors.opacity, '') : '';
+      return this.colors ? safer(this.colors.opacity, "") : "";
     }
-    stroke(stroke: string): this {
-      this.enstyle({ stroke });
+    stroke(stroke: string | Color): this {
+      this.enstyle(
+        typeof stroke === "string" ? ({ stroke }) : ({ stroke: stroke.color }),
+      );
       return this;
     }
-    
-    fill(fill: string): this {
-      this.enstyle({ fill });
+
+    fill(fill: string | Color): this {
+      this.enstyle(
+        typeof fill === "string" ? ({ fill }) : ({ fill: fill.color }),
+      );
       return this;
     }
 
@@ -139,8 +142,6 @@ export function colorable<NodeClass extends Axiom>(
       this.enstyle({ strokeWidth });
       return this;
     }
-
-
 
     dash(strokeDashArray: number): this {
       this.enstyle({ strokeDashArray });

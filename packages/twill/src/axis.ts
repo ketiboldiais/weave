@@ -9,7 +9,7 @@ import {
   shift,
   TextNode,
 } from "./index.js";
-import { toFrac, tuple, unsafe } from "./aux.js";
+import { round, toFrac, tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
 import { scopable } from "./scopable.js";
@@ -23,6 +23,16 @@ export class PolarAxis extends AXIS_BASE {
     super();
     this.type = "polar-axis";
     this.tickCount = 5;
+  }
+  
+
+  /**
+   * Sets the number of ticks
+   * along this axis.
+   */
+  ticks(value: number) {
+    this.tickCount = value;
+    return this;
   }
 
   /**
@@ -42,6 +52,14 @@ export class PolarAxis extends AXIS_BASE {
       circle(xs(r)).xy(xs(0), ys(0)),
     ];
     return out;
+  }
+  hiddens: Set<string> = new Set();
+  hide(option: "ticks" | "zero" | "axis-line") {
+    this.hiddens.add(option);
+    return this;
+  }
+  hasNo(option: "ticks" | "zero" | "axis-line") {
+    return this.hiddens.has(option);
   }
   /**
    * Returns an array of the radial
@@ -83,7 +101,7 @@ export class Axis extends AXIS_BASE {
    */
   readonly direction: "x" | "y";
 
-  tickFormat: "F" | "Q" = "Q";
+  tickFormat: "F" | "Q" = "F";
 
   constructor(direction: "x" | "y") {
     super();
@@ -159,6 +177,18 @@ export class Axis extends AXIS_BASE {
   }
   TickLabels: TextNode[] = [];
 
+  tickPrecision: number = 2;
+
+  /**
+   * Sets the precision for
+   * tick labels, if any.
+   * Defaults to 2.
+   */
+  precision(value: number) {
+    this.tickPrecision = value;
+    return this;
+  }
+
   /**
    * Sets the axis tick labels. An optional
    * callback function may be provided to
@@ -171,11 +201,14 @@ export class Axis extends AXIS_BASE {
     const isXAxis = this.is("x");
     this.TickLabels = [];
     const ran = isXAxis ? space.X : space.Y;
-    const rescale = linear([0,n-1],[ran.x, ran.y]); 
+    const rescale = linear([0, n - 1], [ran.x, ran.y]);
     for (let i = 0; i < n; i++) {
       const value = rescale(i);
-      let x = `${value}`;
-      if (!Number.isInteger(value)) {
+
+      let x = value.toPrecision(this.tickPrecision);
+      if (Number.isInteger(value)) {
+        x = `${value}`;
+      } else if (this.tickFormat === "Q") {
         const [a, b] = toFrac(value);
         x = `${a}/${b}`;
       }
@@ -188,7 +221,14 @@ export class Axis extends AXIS_BASE {
         txt.y = scale(value);
       }
       if (f) txt = f(txt, i);
-      txt.anchor = txt.anchor ? txt.anchor : this.tickLabelAnchor;
+      txt.anchor = txt.anchor
+        ? txt.anchor
+        : (this.tickLabelAnchor ? this.tickLabelAnchor : (
+          this.is("x") ? "middle" : "end"
+        ));
+      if (x === "0" && this.hasNo("zero")) {
+        continue;
+      }
       this.TickLabels.push(txt);
     }
     return this;
