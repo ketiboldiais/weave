@@ -1,4 +1,5 @@
-import { Matrix, ScaleFn, v2 } from "./index.js";
+import { cos, pi, sin } from "./aux.js";
+import { linear, LinearScale, Matrix, matrix, ScaleFn, v2 } from "./index.js";
 
 export type CommandHandler<T> = {
   M: (command: MCommand) => T;
@@ -9,8 +10,9 @@ export type CommandHandler<T> = {
   Q: (command: QCommand) => T;
   C: (command: CCommand) => T;
   A: (command: ACommand) => T;
-  S: (command: ACommand) => T;
-  T: (command: ACommand) => T;
+  S: (command: SCommand) => T;
+  T: (command: TCommand) => T;
+  P: (command: PCommand) => T;
 };
 
 export type PC = keyof CommandHandler<any>;
@@ -19,6 +21,29 @@ export interface PathCommand {
   end: number[];
   type: PC;
 }
+
+interface PCommand extends PathCommand {
+  end: number[];
+  rxry: number[];
+  type: "P";
+}
+
+export const P = (
+  end: number[],
+  rxry: number[],
+): PCommand => ({
+  end,
+  rxry,
+  type: "P",
+});
+
+const pString = (command: PCommand) => {
+  const [cx, cy] = command.end;
+  const [rx, ry] = command.rxry;
+  return `M${cx - rx},${cy}a${rx},${ry} 0 1,0 ${rx * 2},0 a${rx},${ry} 0 1,0 -${
+    rx * 2
+  },0 Z`;
+};
 
 export interface MCommand extends PathCommand {
   type: "M";
@@ -54,6 +79,14 @@ export interface VCommand extends PathCommand {
 export const V = (x: number, y: number): VCommand => ({
   end: [x, y],
   type: "V",
+});
+
+export interface TCommand extends PathCommand {
+  type: "T";
+}
+export const T = (x: number, y: number): TCommand => ({
+  type: "T",
+  end: [x, y],
 });
 
 export interface SCommand extends PathCommand {
@@ -138,6 +171,7 @@ export const comHandler = <T>(
 		case 'A': return handlers.A(x);
 		case 'S': return handlers.S(x);
 		case 'T': return handlers.T(x);
+		case 'P': return handlers.P(x);
 	}
 }
 
@@ -158,6 +192,7 @@ export const pathStringer = comHandler({
     `A${p.rxry[0]},${
       p.rxry[1]
     } ${p.rotation} ${p.largeArcFlag} ${p.sweepFlag} ${p.end[0]},${p.end[1]}`,
+  P: pString,
 });
 
 export const pathScaler = (xscale: ScaleFn, yscale: ScaleFn) =>
@@ -181,10 +216,12 @@ export const pathScaler = (xscale: ScaleFn, yscale: ScaleFn) =>
       endCtrl: [xscale(p.endCtrl[0]), yscale(p.endCtrl[1])],
     }),
     A: (p) => ({ ...p, end: [xscale(p.end[0]), yscale(p.end[1])] }),
+    P: (p): PCommand => ({
+      ...p,
+      end: [xscale(p.end[0]), yscale(p.end[1])],
+    }),
   });
 
-
-	
 export const transformer2D = (matrix: Matrix) =>
   comHandler<PathCommand>({
     M: (p) => ({ ...p, end: v2(p.end[0], p.end[1]).vxm(matrix).array() }),
@@ -205,5 +242,13 @@ export const transformer2D = (matrix: Matrix) =>
       endCtrl: v2(p.endCtrl[0], p.endCtrl[1]).vxm(matrix).array(),
       end: v2(p.end[0], p.end[1]).vxm(matrix).array(),
     }),
-    A: (p) => ({ ...p, end: v2(p.end[0], p.end[1]).vxm(matrix).array() }),
+    A: (p): ACommand => ({
+      ...p,
+      end: v2(p.end[0], p.end[1]).vxm(matrix).array(),
+    }),
+    P: (p): PCommand => ({
+      ...p,
+      end: v2(p.end[0], p.end[1]).vxm(matrix).array(),
+      rxry: v2(p.rxry[0], p.rxry[1]).vxm(matrix).array(),
+    }),
   });

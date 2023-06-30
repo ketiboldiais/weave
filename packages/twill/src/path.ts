@@ -1,16 +1,20 @@
-import { cos, sin, unsafe } from "./aux.js";
+import { cos, pi, sin, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable";
-import { FigNode, Matrix, matrix, v2, Vector } from "./index.js";
-import { parseRadians } from "./parsers.js";
+import { FigNode, linear, Matrix, matrix, v2, Vector } from "./index.js";
+import { parseDegrees, parseRadians } from "./parsers.js";
 import {
+  A,
   C,
   L,
   M,
+  P,
   PathCommand,
   pathScaler,
   pathStringer,
   Q,
+  S,
+  T,
   transformer2D,
   V,
   Z,
@@ -30,16 +34,24 @@ export class Path extends PATH {
     this.type = "path";
   }
 
-  transform(matrix: Matrix) {
+  private tfm(matrix: Matrix) {
     const t = transformer2D(matrix);
     this.points = this.points.map((p) => t(p));
     this.cursor = this.cursor.vxm(matrix);
     return this;
   }
 
+  /**
+   * Rotates this path by the given angle.
+   * If a number is passed for the angle
+   * value, the angle unit is assumed to be
+   * radians. If a string is passed, Weave’s
+   * combinators will attempt to parse an angle,
+   * defaulting to 0 in failure.
+   */
   rotate(angle: string | number) {
     const theta = typeof angle === "string" ? parseRadians(angle) : angle;
-    return this.transform(matrix([
+    return this.tfm(matrix([
       [cos(theta), sin(theta)],
       [-sin(theta), cos(theta)],
     ]));
@@ -50,7 +62,7 @@ export class Path extends PATH {
    * by the given value.
    */
   shearY(value: number) {
-    return this.transform(
+    return this.tfm(
       matrix([
         [1, 0],
         [value, 1],
@@ -63,7 +75,7 @@ export class Path extends PATH {
    * by the given value.
    */
   shearX(value: number) {
-    return this.transform(matrix([
+    return this.tfm(matrix([
       [1, value],
       [0, 1],
     ]));
@@ -73,7 +85,7 @@ export class Path extends PATH {
    * Reflects this path along its y-axis.
    */
   reflectY() {
-    return this.transform(
+    return this.tfm(
       matrix([
         [-1, 0],
         [0, 1],
@@ -85,7 +97,7 @@ export class Path extends PATH {
    * Reflects this path along its x-axis.
    */
   reflectX() {
-    return this.transform(
+    return this.tfm(
       matrix([
         [1, 0],
         [0, -1],
@@ -105,7 +117,7 @@ export class Path extends PATH {
    * @param y - The y-scale factor.
    */
   scale(x: number, y: number = x) {
-    return this.transform(
+    return this.tfm(
       matrix([
         [x, 0],
         [0, y],
@@ -113,15 +125,30 @@ export class Path extends PATH {
     );
   }
 
+  /**
+   * Returns this path’s string.
+   */
   d() {
     const space = this.space();
     const xs = space.scaleOf("x");
     const ys = space.scaleOf("y");
     const scaler = pathScaler(xs, ys);
-    return this.points.map((p) => pathStringer(scaler(p))).join(" ");
+    const xmax = (space.xmax() - space.xmin()) / 2;
+    const ymax = (space.ymax() - space.ymin()) / 2;
+    const rxs = linear([0, xmax], [0, space.boxed("width") / 2]);
+    const rys = linear([0, ymax], [0, space.boxed("height") / 2]);
+    return this.points.map((p) =>
+      pathStringer(
+        p.type === "P"
+          ? P([xs(p.end[0]), ys(p.end[1])], [
+            rxs((p as any).rxry[0]),
+            rys((p as any).rxry[1]),
+          ])
+          : scaler(p),
+      )
+    ).join(" ");
   }
-
-  push(command: PathCommand) {
+  private push(command: PathCommand) {
     this.points.push(command);
     this.cursor = Vector.from(command.end);
     return this;
@@ -160,7 +187,6 @@ export class Path extends PATH {
     const control = [current.x + (width / 2), current.y + height];
     return this.push(Q(control, end));
   }
-
   /**
    * Given the current position `(a,b)`, draws
    * a quadraic Bezier curve with the given `endPoint`,
@@ -178,7 +204,9 @@ export class Path extends PATH {
     this.push(Q(controlPoint, endPoint));
     return this;
   }
-
+  /**
+   * Appends a cubic Bezier curve command.
+   */
   C(
     startControlPoint: [number, number],
     endPoint: [number, number],
@@ -187,17 +215,6 @@ export class Path extends PATH {
     this.push(C(startControlPoint, endControlPoint, endPoint));
     return this;
   }
-
-  /**
-   * Given the current cursor position
-   * `(a,b)`, draws a vertical line to the position
-   * `(a, b+y)`.
-   */
-  v(y: number) {
-    const current = this.cursor;
-    return this.push(L(current.x, current.y + y));
-  }
-
   /**
    * Given the current position `(a,b)`,
    * draws a vertical line to the
@@ -208,17 +225,6 @@ export class Path extends PATH {
     // const newposition = v2(current.x, y);
     return this.push(V(current.x, y));
   }
-
-  /**
-   * Given the current cursor position
-   * `(a,b)`, draws a horizontal line to
-   * the position `(a + x, b)`.
-   */
-  h(x: number) {
-    const current = this.cursor;
-    return this.push(L(current.x + x, current.y));
-  }
-
   /**
    * Given the current position `(a,b)`,
    * draws a horizontal line to the
@@ -229,18 +235,25 @@ export class Path extends PATH {
     return this.push(L(x, current.y));
   }
 
-  Z() {
-    return this.push(Z(this.cursor.x, this.cursor.y));
+  /**
+   * Appends an S command.
+   */
+  S() {
+    return this.push(S(this.cursor.x, this.cursor.y));
   }
 
   /**
-   * Given the current cursor position
-   * `(a,b)`, draws a line to the position
-   * `(a + x, b + y)`.
+   * Appends a T command.
    */
-  l(x: number, y: number) {
-    const current = this.cursor;
-    return this.push(L(current.x + x, current.y + y));
+  T() {
+    return this.push(T(this.cursor.x, this.cursor.y));
+  }
+
+  /**
+   * Closes this path.
+   */
+  Z() {
+    return this.push(Z(this.cursor.x, this.cursor.y));
   }
   /**
    * Draws a line from the current cursor
@@ -259,18 +272,69 @@ export class Path extends PATH {
     // return this.push1Ary("M", [x, y]);
   }
   /**
-   * Given the current cursor position
-   * `(a,b)`, moves the cursor to the
-   * position `(a + x, b + y)`.
+   * @param end - The arc’s end point.
+   * @param dimensions - Either a pair `(w,h)` where `w` is the width of
+   * the arc, and `h` is the height of the arc, or a number.
+   * If a number is passed, draws an arc where `w = h` (a circular
+   * arc). Defaults to `[1,1]`.
+   * @param rotation - The arc’s rotation along its x-axis. If
+   * a string is passed, Weave’s parsers will attempt to parse
+   * an angle, defaulting to 0 in failure. If a number is
+   * passed, assumes the angle unit is in radians. Defaults to `0`.
+   * @param arc - Either `minor` (the smaller half of the arc,
+   * corresponding to a large arc flag of `0`) or `major` (the
+   * larger half of the arc, corresponding to a large arc
+   * flag of `1`). Defaults to `minor`.
+   * @param sweep - Either `clockwise` (thus drawing the arc
+   * clockwise, a sweep flag of 1) or `counter-clockwise` (
+   * thus drawing the arc counter-clockwise, a sweep flag of
+   * 0). Defaults to `clockwise`.
    */
-  m(x: number, y: number) {
-    const current = this.cursor;
-    return this.push(M(current.x + x, current.y + y));
+  A(
+    end: number[],
+    dimensions: number[] | number = [1, 1],
+    arc: "minor" | "major" = "minor",
+    rotation: number | string = 0,
+    sweep: "clockwise" | "counter-clockwise" = "clockwise",
+  ) {
+    return this.push(A(
+      Array.isArray(dimensions) ? dimensions : [dimensions, dimensions],
+      typeof rotation === "string" ? parseDegrees(rotation) : rotation,
+      arc === "major" ? 1 : 0,
+      sweep === "clockwise" ? 1 : 0,
+      end,
+    ));
+  }
+
+  /**
+   * Draws an ellipse.
+   * @param radiusX - The width of the ellipse.
+   * @param radiusY - The height of the ellipse.
+   * @param center - Optionally set the center point of the ellipse.
+   * If the center isn’t provided, defaults to the current cursor position.
+   */
+  E(radiusX: number, radiusY: number, center?: number[]) {
+    const c = center !== undefined ? center : [this.cursor.x, this.cursor.y];
+    return this.push(P(c, [radiusX, radiusY]));
+  }
+
+  /**
+   * Draws a circle.
+   * @param radius - The circle’s radius.
+   * @param center - Optionally set the center point of the circle.
+   * If the center isn’t provided, defaults to the current cursor
+   * position.
+   */
+  O(radius: number, center?: number[]) {
+    const c = center !== undefined ? center : [this.cursor.x, this.cursor.y];
+    return this.push(P(c, [radius, radius]));
   }
 }
 
 /**
  * Instantiates a new Path object.
+ * @param startX - An optional starting x-coordinate. Defaults to 0.
+ * @param startY - An optional starting y-coordinate. Defaults to 0.
  */
 export const path = (startX: number = 0, startY: number = 0) => (
   new Path(startX, startY)
@@ -279,4 +343,3 @@ export const path = (startX: number = 0, startY: number = 0) => (
 export const isPath = (node: FigNode): node is Path => (
   !unsafe(node) && node.isType("path")
 );
-
