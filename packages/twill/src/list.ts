@@ -1,126 +1,87 @@
-class ListItem<T> {
-  data: T | null;
-  private _next: () => ListItem<T>;
-  private _prev: () => ListItem<T>;
-  constructor(data: T | null) {
-    this.data = data;
-    this._next = () => ListItem.none();
-    this._prev = () => ListItem.none();
-  }
-  flatten(): ListItem<T> | T {
-    return this.data === null ? ListItem.none<T>() : this.data;
-  }
-  map<K>(callback: (data: T) => K) {
-    if (this.data) {
-      return ListItem.some<K>(callback(this.data));
-    } else return ListItem.none<K>();
-  }
-  set value(data: T) {
-    this.data = data;
-  }
-  do<K>(f: (d: T) => K) {
-    if (this.data !== null) {
-      f(this.data);
-    }
-    return this;
-  }
-  isSomething() {
-    return this.data !== null;
-  }
-  isNothing() {
-    return this.data === null;
-  }
-  get next() {
-    return this._next();
-  }
-  set next(node: ListItem<T>) {
-    this._next = () => node;
-  }
-  get prev() {
-    return this._prev();
-  }
-  set prev(node: ListItem<T>) {
-    this._prev = () => node;
-  }
-  static none<T>() {
-    return new ListItem<T>(null);
-  }
-  static some<T>(data: T) {
-    return new ListItem(data);
-  }
-}
-
-const item = <T>(data?: T) => {
-  return data === undefined ? ListItem.none<T>() : ListItem.some<T>(data);
-};
+import { Binode, binode } from "./nodes/binode.js";
 
 export class LinkedList<T> {
-  #head: ListItem<T>;
-  #tail: ListItem<T>;
+  #head: Binode<T>;
+  #tail: Binode<T>;
   #length: number;
   constructor() {
-    this.#head = item();
-    this.#tail = item();
+    this.#head = binode();
+    this.#tail = binode();
     this.#length = 0;
   }
+  /**
+   * Returns the last index of
+   * this list.
+   */
   get lastIndex() {
     const l = this.#length;
     return l === 0 ? l : l - 1;
   }
+  /**
+   * True if this list has a length
+   * of 1.
+   */
   get isUnary() {
     return this.#length === 1;
   }
+  /**
+   * True if this list is empty, false otherwise.
+   */
   get isEmpty() {
     return this.#length === 0 || this.#head.isNothing();
   }
+  /**
+   * @internal Ensures that indices are valid.
+   */
   #validIndex(i: number) {
     return 0 <= i && i < this.length;
   }
+  /**
+   * 
+   */
   #item(index: number) {
     if (!this.#validIndex(index)) {
-      return item<T>();
+      return binode<T>();
     } else {
       let count = 0;
       let current = this.#head;
       while (count !== index) {
-        current = current.next;
+        current = current.right;
         count++;
       }
       return current;
     }
   }
-  ith(index:number, fallback:T): T {
-    const out = this.#item(index).data
+  ith(index: number, fallback: T): T {
+    const out = this.#item(index).data;
     return out === null ? fallback : out;
   }
-  item<T>(index: number) {
+  item(index: number) {
     return this.#item(index).data;
   }
   unshift(element: T) {
-    const node = item(element);
+    const node = binode(element);
     if (this.isEmpty) {
       this.#head = node;
       this.#tail = node;
     } else {
-      this.#head.prev = node;
-      node.next = this.#head;
+      this.#head.left = node;
+      node.right = this.#head;
       this.#head = node;
     }
     this.#length++;
     return this;
   }
-  lop() {
-  }
   shift() {
     if (this.isEmpty) return null;
     let previousHead = this.#head;
     if (this.isUnary) {
-      this.#head = item();
-      this.#tail = item();
+      this.#head = binode();
+      this.#tail = binode();
     } else {
-      this.#head = previousHead.next;
-      this.#head.prev = item();
-      previousHead.next = item();
+      this.#head = previousHead.right;
+      this.#head.left = binode();
+      previousHead.right = binode();
     }
     this.#length--;
     return previousHead.data;
@@ -140,13 +101,13 @@ export class LinkedList<T> {
     if (this.lastIndex === atIndex) {
       return this.push(element);
     }
-    const node = item(element);
+    const node = binode(element);
     const before = this.#item(atIndex - 1);
-    const after = before.next;
-    before.next = node;
-    node.prev = before;
-    node.next = after;
-    after.prev = node;
+    const after = before.right;
+    before.right = node;
+    node.left = before;
+    node.right = after;
+    after.left = node;
     this.#length++;
     return this;
   }
@@ -165,12 +126,12 @@ export class LinkedList<T> {
     if (list.isEmpty) return list;
     let previousHead = list.#head;
     if (list.isUnary) {
-      list.#head = item();
-      list.#tail = item();
+      list.#head = binode();
+      list.#tail = binode();
     } else {
-      list.#head = previousHead.next;
-      list.#head.prev = item();
-      previousHead.next = item();
+      list.#head = previousHead.right;
+      list.#head.left = binode();
+      previousHead.right = binode();
     }
     list.#length--;
     return list;
@@ -180,7 +141,6 @@ export class LinkedList<T> {
     const head = this.#head.data!;
     return new LinkedList<T>().push(head);
   }
-
   get last() {
     return this.#tail.data;
   }
@@ -195,24 +155,24 @@ export class LinkedList<T> {
     let node = this.#head;
     while (node.isSomething()) {
       yield node.data!;
-      node = node.next;
+      node = node.right;
     }
   }
 
   clear() {
-    this.#head = item();
+    this.#head = binode();
   }
 
   pop() {
     if (this.isEmpty) return null;
     let popped = this.#tail;
     if (this.isUnary) {
-      this.#head = item();
-      this.#tail = item();
+      this.#head = binode();
+      this.#tail = binode();
     } else {
-      this.#tail = popped.prev;
-      this.#tail.next = item();
-      popped.prev = item();
+      this.#tail = popped.left;
+      this.#tail.right = binode();
+      popped.left = binode();
     }
     this.#length--;
     return popped.data;
@@ -235,7 +195,7 @@ export class LinkedList<T> {
     let i = 0;
     while (!node.isNothing()) {
       node.do((d) => f(d, i, this));
-      node = node.next;
+      node = node.right;
       i++;
     }
   }
@@ -247,13 +207,13 @@ export class LinkedList<T> {
   }
 
   push(element: T) {
-    const node = item(element);
+    const node = binode(element);
     if (this.#head.isNothing()) {
       this.#head = node;
       this.#tail = node;
     } else {
-      this.#tail.next = node;
-      node.prev = this.#tail;
+      this.#tail.right = node;
+      node.left = this.#tail;
       this.#tail = node;
     }
     this.tick();
@@ -348,10 +308,10 @@ export class LinkedList<T> {
   reverse() {
     let current = this.#head;
     while (current.isSomething()) {
-      const next = current.next;
-      current.next = current.prev;
-      current.prev = next;
-      current = current.prev;
+      const right = current.right;
+      current.right = current.left;
+      current.left = right;
+      current = current.left;
     }
     const tail = this.#tail;
     this.#tail = this.#head;
@@ -372,6 +332,6 @@ export class LinkedList<T> {
   }
 }
 
-export const linkedList = <T>(...elements:T[]) => {
+export const linkedList = <T>(...elements: T[]) => {
   return new LinkedList<T>().append(...elements);
 };

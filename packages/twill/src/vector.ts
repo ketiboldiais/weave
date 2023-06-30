@@ -7,8 +7,7 @@ export class Vector {
   constructor(elements: number[]) {
     this.elements = elements;
   }
-  
-  
+
   /**
    * Returns the smallest component
    * of this vector.
@@ -23,7 +22,7 @@ export class Vector {
     }
     return min;
   }
-  
+
   /**
    * Returns the largest component
    * of this vector.
