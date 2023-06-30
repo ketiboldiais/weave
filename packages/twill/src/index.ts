@@ -11,7 +11,6 @@ import { Circle } from "./circle.js";
 import { Integral } from "./integral.js";
 import { Plane } from "./plane.js";
 import { Plot } from "./plot.js";
-import { Polygon } from "./polygon.js";
 import { TextNode } from "./text.js";
 import { TreeSpace } from "./tree.js";
 import { TreeChild } from "./treenode.js";
@@ -38,8 +37,6 @@ export { isTreeSpace, tree, TreeSpace } from "./tree.js";
 export { isLeaf, isTree, leaf, subtree } from "./treenode.js";
 export type { LeafNode, Tree, TreeChild } from "./treenode.js";
 export { area, Circle, circle, isCircle } from "./circle.js";
-export { isPolygon, polygon, rect } from "./polygon.js";
-export type { Polygon } from "./polygon.js";
 export { clamp, randFloat, randInt, round, toDeg, toRadians } from "./aux.js";
 export { Angle, angle, isAngle } from "./angle.js";
 export { Arc, arc, isArc } from "./arc.js";
@@ -110,7 +107,6 @@ export type FigNode =
   | ArrowDefNode
   | Particle
   | ForceSpace
-  | Polygon
   | PolarAxis
   | Integral;
 
@@ -135,7 +131,6 @@ export type Node2D =
   | Line
   | Arc
   | Angle
-  | Polygon;
 
 export type Plottable = Integral;
 export type LayoutNode = Plane | TreeSpace | ForceSpace;

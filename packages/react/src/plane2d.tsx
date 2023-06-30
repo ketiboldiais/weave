@@ -10,10 +10,8 @@ import {
   isPath,
   isPlot,
   isPolarAxis,
-  isPolygon,
   isTextNode,
   Plane,
-  Polygon,
 } from "@weave/twill";
 import { Label } from "./label";
 import { Curve2D } from "./curve2d";
@@ -43,7 +41,6 @@ export const Plane2D = ({ of }: Plane2DProps) => {
           {isTextNode(c) && <Label of={c} />}
           {isCircle(c) && <C of={c} />}
           {isLine(c) && <L of={c} />}
-          {isPolygon(c) && <Poly of={c} />}
           {isAngle(c) && <Angle2D of={c} />}
           {isArc(c) && <Arc2D of={c} />}
           {isPath(c) && <Path2D of={c} />}
@@ -84,16 +81,3 @@ export const Angle2D = ({ of }: { of: Angle }) => {
   );
 };
 
-export const Poly = ({ of }: { of: Polygon }) => {
-  const d = of.path();
-  return (
-    <polygon
-      points={d}
-      stroke={of.strokeColor || "currentColor"}
-      fill={of.fillColor || "none"}
-      strokeDasharray={of.strokeDashArray || 0}
-      opacity={of.opacityValue || 1}
-      strokeWidth={of.strokeWidth || 1}
-    />
-  );
-};

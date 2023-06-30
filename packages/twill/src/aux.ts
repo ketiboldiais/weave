@@ -64,7 +64,9 @@ export const isnum = (x: any): x is number => typeof x === "number";
 export const isstr = (x: any): x is string => typeof x === "string";
 
 export const toDeg = (radians: number) => radians * (180 / Math.PI);
+
 export const toRadians = (degrees: number) => degrees * (Math.PI / 180);
+
 export const cc = "currentColor";
 export const round = (value: number, to: number = 2) => {
   const cap = 10 ** (Math.abs(Math.floor(to)));

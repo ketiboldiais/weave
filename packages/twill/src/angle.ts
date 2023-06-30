@@ -1,10 +1,10 @@
 import { toDeg, toRadians, unsafe } from "./aux.js";
-import { Base } from "./base";
-import { colorable } from "./colorable";
+import { Base } from "./base.js";
+import { colorable } from "./colorable.js";
 import { Arc, FigNode, Line, arc, line, arrow } from "./index.js";
 import { anglevalue } from "./parsers.js";
 import { scopable } from "./scopable.js";
-import { typed } from "./typed";
+import { typed } from "./typed.js";
 import { Vector, vector } from "./vector.js";
 
 export type AngleUnit = "deg" | "rad";

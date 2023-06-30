@@ -1,104 +1,48 @@
-import { cos, sin, toRadians, unsafe } from "./aux.js";
+import { cos, sin, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable";
-import { FigNode, Matrix, matrix, v2, Vector, vector } from "./index.js";
-import { anglevalue } from "./parsers.js";
+import { FigNode, Matrix, matrix, v2, Vector } from "./index.js";
+import { parseRadians } from "./parsers.js";
+import {
+  C,
+  L,
+  M,
+  PathCommand,
+  pathScaler,
+  pathStringer,
+  Q,
+  transformer2D,
+  V,
+  Z,
+} from "./pathcoms.js";
 import { scopable } from "./scopable.js";
-import { typed } from "./typed.js";
+import { atyped } from "./typed.js";
 
-const PATH = typed(colorable(scopable(Base)));
-
-type MCommand = { M: Vector };
-type LCommand = { L: Vector };
-type HCommand = { H: Vector };
-type VCommand = { V: Vector };
-type ZCommand = { Z: Vector };
-/**
- * The first vector is the control point,
- * the second vector the end point.
- */
-type QCommand = { Q: [Vector, Vector] };
-/**
- * The first vector is the end point,
- * the second vector the start control point,
- * and the third vector is the end control point.
- */
-type CCommand = { C: [Vector, Vector, Vector] };
-type PathCommand =
-  | MCommand
-  | LCommand
-  | HCommand
-  | VCommand
-  | ZCommand
-  | QCommand
-  | CCommand;
-
-const iscom = <T extends PathCommand>(
-  key: string,
-) =>
-(command: any): command is T => (
-  command[key] !== undefined
-);
-const is_M = iscom<MCommand>("M");
-const is_L = iscom<LCommand>("L");
-const is_H = iscom<HCommand>("H");
-const is_V = iscom<VCommand>("V");
-const is_Z = iscom<ZCommand>("Z");
-const is_Q = iscom<QCommand>("Q");
-const is_C = iscom<CCommand>("C");
+const PATH = atyped(colorable(scopable(Base)));
 
 export class Path extends PATH {
   points: (PathCommand)[];
   cursor: Vector;
-  constructor(M: Vector) {
+  constructor(initX: number, initY: number) {
     super();
-    this.points = [{ M }];
-    this.cursor = M;
+    this.points = [M(initX, initY)];
+    this.cursor = v2(initX, initY);
     this.type = "path";
   }
 
-  transform(callback: (vector: Vector) => Vector) {
-    this.points = this.points.map((point) => {
-      if (is_M(point)) {
-        return { M: callback(point.M) };
-      }
-      if (is_L(point)) {
-        return { L: callback(point.L) };
-      }
-      if (is_H(point)) {
-        return { H: callback(point.H) };
-      }
-      if (is_V(point)) {
-        return { V: callback(point.V) };
-      }
-      if (is_Z(point)) {
-        return point;
-      }
-      if (is_Q(point)) {
-        const [a, b] = point.Q;
-        return { Q: [callback(a), callback(b)] };
-      }
-      if (is_C(point)) {
-        const [a, b, c] = point.C;
-        return { C: [callback(a), callback(b), callback(c)] };
-      }
-      return point;
-    });
-    this.updateCursor(callback(this.cursor));
+  transform(matrix: Matrix) {
+    const t = transformer2D(matrix);
+    this.points = this.points.map((p) => t(p));
+    this.cursor = this.cursor.vxm(matrix);
     return this;
   }
 
   rotate(angle: string | number) {
-    const theta = (typeof angle === "string")
-      ? anglevalue.map((r) => r.unit === "deg" ? toRadians(r.value) : r.value)
-        .parse(angle).result.unwrap(0)
-      : angle;
-    return this.transform((vector) =>
-      vector.vxm(matrix([
-        [cos(theta), sin(theta)],
-        [-sin(theta), cos(theta)],
-      ]))
-    );
+    const theta = typeof angle === "string" ? parseRadians(angle) : angle;
+    return this.transform(matrix([
+      [cos(theta), sin(theta)],
+      [-sin(theta), cos(theta)],
+    ]));
   }
 
   /**
@@ -106,11 +50,11 @@ export class Path extends PATH {
    * by the given value.
    */
   shearY(value: number) {
-    return this.transform((vector) =>
-      vector.vxm(matrix([
+    return this.transform(
+      matrix([
         [1, 0],
         [value, 1],
-      ]))
+      ]),
     );
   }
 
@@ -119,23 +63,21 @@ export class Path extends PATH {
    * by the given value.
    */
   shearX(value: number) {
-    return this.transform((vector) =>
-      vector.vxm(matrix([
-        [1, value],
-        [0, 1],
-      ]))
-    );
+    return this.transform(matrix([
+      [1, value],
+      [0, 1],
+    ]));
   }
 
   /**
    * Reflects this path along its y-axis.
    */
   reflectY() {
-    return this.transform((vector) =>
-      vector.vxm(matrix([
+    return this.transform(
+      matrix([
         [-1, 0],
         [0, 1],
-      ]))
+      ]),
     );
   }
 
@@ -143,11 +85,11 @@ export class Path extends PATH {
    * Reflects this path along its x-axis.
    */
   reflectX() {
-    return this.transform((vector) =>
-      vector.vxm(matrix([
+    return this.transform(
+      matrix([
         [1, 0],
         [0, -1],
-      ]))
+      ]),
     );
   }
 
@@ -163,101 +105,27 @@ export class Path extends PATH {
    * @param y - The y-scale factor.
    */
   scale(x: number, y: number = x) {
-    return this.transform((vector) =>
-      vector.vxm(matrix([
+    return this.transform(
+      matrix([
         [x, 0],
         [0, y],
-      ]))
+      ]),
     );
   }
 
-  get start() {
-    return (this.points[0] as MCommand);
-  }
-
   d() {
-    const coms: string[] = [];
-    const P = this.points.length;
     const space = this.space();
     const xs = space.scaleOf("x");
     const ys = space.scaleOf("y");
-    for (let i = 0; i < P; i++) {
-      const point = this.points[i];
-      if (is_M(point)) {
-        const x = xs(point.M.x);
-        const y = ys(point.M.y);
-        coms.push(`M${x},${y}`);
-        continue;
-      }
-      if (is_L(point)) {
-        const x = xs(point.L.x);
-        const y = ys(point.L.y);
-        coms.push(`L${x},${y}`);
-        continue;
-      }
-      if (is_H(point)) {
-        const x = xs(point.H.x);
-        coms.push(`H${x}`);
-        continue;
-      }
-      if (is_V(point)) {
-        const y = ys(point.V.y);
-        coms.push(`V${y}`);
-        continue;
-      }
-      if (is_Z(point)) {
-        coms.push(`Z`);
-        continue;
-      }
-      if (is_Q(point)) {
-        const [control, end] = point.Q;
-        const ctrl_x = xs(control.x);
-        const ctrl_y = ys(control.y);
-        const end_x = xs(end.x);
-        const end_y = ys(end.y);
-        coms.push(`Q${ctrl_x},${ctrl_y} ${end_x},${end_y}`);
-        continue;
-      }
-      if (is_C(point)) {
-        const [end, startCtrl, endCtrl] = point.C;
-        const startCtrlX = xs(startCtrl.x);
-        const startCtrlY = ys(startCtrl.y);
-        const endCtrlX = xs(endCtrl.x);
-        const endCtrlY = ys(endCtrl.y);
-        const endX = xs(end.x);
-        const endY = ys(end.y);
-        coms.push(
-          `C${startCtrlX},${startCtrlY} ${endCtrlX},${endCtrlY} ${endX},${endY}`,
-        );
-        continue;
-      }
-    }
-    return coms.join(" ");
+    const scaler = pathScaler(xs, ys);
+    return this.points.map((p) => pathStringer(scaler(p))).join(" ");
   }
 
-  /**
-   * @internal
-   * Updates the current and last read
-   * commands.
-   */
-  private updateCursor(vector: Vector) {
-    this.cursor = vector;
-  }
-
-  /**
-   * @internal
-   * Appends commands that take one coordinate.
-   */
-  private push1Ary(
-    command: "L" | "M" | "H" | "V" | "Z",
-    coord: [number, number] | Vector,
-  ) {
-    const v = Vector.from(coord);
-    this.points.push({ [`${command}`]: v } as PathCommand);
-    this.updateCursor(v);
+  push(command: PathCommand) {
+    this.points.push(command);
+    this.cursor = Vector.from(command.end);
     return this;
   }
-
   /**
    * Given the current position `(a,b)`,
    * draws a quadratic Bezier curve
@@ -271,12 +139,9 @@ export class Path extends PATH {
     width: number,
   ) {
     const current = this.cursor;
-    const end = v2(current.x, current.y + height);
-    const control = v2(current.x + width, current.y + height / 2);
-    const Q: QCommand = { Q: [control, end] };
-    this.updateCursor(end);
-    this.points.push(Q);
-    return this;
+    const end = [current.x, current.y + height];
+    const control = [current.x + width, current.y + height / 2];
+    return this.push(Q(control, end));
   }
   /**
    * Given the current position `(a,b)`,
@@ -291,13 +156,11 @@ export class Path extends PATH {
     height: number,
   ) {
     const current = this.cursor;
-    const end = v2(current.x + width, current.y);
-    const control = v2(current.x + width / 2, current.y + height);
-    const Q: QCommand = { Q: [control, end] };
-    this.updateCursor(end);
-    this.points.push(Q);
-    return this;
+    const end = [current.x + width, current.y];
+    const control = [current.x + (width / 2), current.y + height];
+    return this.push(Q(control, end));
   }
+
   /**
    * Given the current position `(a,b)`, draws
    * a quadraic Bezier curve with the given `endPoint`,
@@ -309,28 +172,19 @@ export class Path extends PATH {
    * control.
    */
   Q(
-    endPoint: [number, number] | Vector,
-    controlPoint: [number, number] | Vector,
+    endPoint: [number, number],
+    controlPoint: [number, number],
   ) {
-    const control = Vector.from(controlPoint);
-    const end = Vector.from(endPoint);
-    const Q: QCommand = { Q: [control, end] };
-    this.updateCursor(end);
-    this.points.push(Q);
+    this.push(Q(controlPoint, endPoint));
     return this;
   }
 
   C(
-    startControlPoint: [number, number] | Vector,
-    endPoint: [number, number] | Vector,
-    endControlPoint: [number, number] | Vector,
+    startControlPoint: [number, number],
+    endPoint: [number, number],
+    endControlPoint: [number, number],
   ) {
-    const end = Vector.from(endPoint);
-    const startCtrl = Vector.from(startControlPoint);
-    const endCtrl = Vector.from(endControlPoint);
-    const C: CCommand = { C: [end, startCtrl, endCtrl] };
-    this.updateCursor(end);
-    this.points.push(C);
+    this.push(C(startControlPoint, endControlPoint, endPoint));
     return this;
   }
 
@@ -341,8 +195,7 @@ export class Path extends PATH {
    */
   v(y: number) {
     const current = this.cursor;
-    const newposition = v2(current.x, current.y + y);
-    return this.push1Ary("L", newposition);
+    return this.push(L(current.x, current.y + y));
   }
 
   /**
@@ -352,8 +205,8 @@ export class Path extends PATH {
    */
   V(y: number) {
     const current = this.cursor;
-    const newposition = v2(current.x, y);
-    return this.push1Ary("L", newposition);
+    // const newposition = v2(current.x, y);
+    return this.push(V(current.x, y));
   }
 
   /**
@@ -363,8 +216,7 @@ export class Path extends PATH {
    */
   h(x: number) {
     const current = this.cursor;
-    const newposition = v2(current.x + x, current.y);
-    return this.push1Ary("L", newposition);
+    return this.push(L(current.x + x, current.y));
   }
 
   /**
@@ -374,11 +226,11 @@ export class Path extends PATH {
    */
   H(x: number) {
     const current = this.cursor;
-    return this.push1Ary("L", [x, current.y]);
+    return this.push(L(x, current.y));
   }
 
   Z() {
-    return this.push1Ary("Z", this.start.M);
+    return this.push(Z(this.cursor.x, this.cursor.y));
   }
 
   /**
@@ -388,22 +240,23 @@ export class Path extends PATH {
    */
   l(x: number, y: number) {
     const current = this.cursor;
-    const newPosition = current.add([x, y]);
-    return this.push1Ary("L", newPosition);
+    return this.push(L(current.x + x, current.y + y));
   }
   /**
    * Draws a line from the current cursor
    * position to the absolute position `(x,y)`.
    */
   L(x: number, y: number) {
-    return this.push1Ary("L", [x, y]);
+    return this.push(L(x, y));
+    // return this.push1Ary("L", [x, y]);
   }
   /**
    * Moves the cursor to the absolute
    * position `(x,y)`.
    */
   M(x: number, y: number) {
-    return this.push1Ary("M", [x, y]);
+    return this.push(M(x, y));
+    // return this.push1Ary("M", [x, y]);
   }
   /**
    * Given the current cursor position
@@ -412,16 +265,15 @@ export class Path extends PATH {
    */
   m(x: number, y: number) {
     const current = this.cursor;
-    const newPosition = current.add([x, y]);
-    return this.push1Ary("M", newPosition);
+    return this.push(M(current.x + x, current.y + y));
   }
 }
 
 /**
  * Instantiates a new Path object.
  */
-export const path = (origin?: number[] | Vector) => (
-  new Path(Vector.from(origin ? origin : v2(0, 0)))
+export const path = (startX: number = 0, startY: number = 0) => (
+  new Path(startX, startY)
 );
 
 export const isPath = (node: FigNode): node is Path => (

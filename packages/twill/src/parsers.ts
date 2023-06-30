@@ -67,4 +67,12 @@ export const anglevalue = list([num, maybe(PI), maybe(angle_unit)])
     }
   });
 
+export const parseRadians = (angle: string) =>
+  anglevalue.map((r) =>
+    r.unit === "deg" ? (r.value * (Math.PI / 180)) : r.value
+  ).parse(angle).result.unwrap(0);
 
+export const parseDegrees = (angle: string) =>
+  anglevalue.map((r) =>
+    r.unit === "rad" ? (r.value * (180 / Math.PI)) : r.value
+  ).parse(angle).result.unwrap(0);
