@@ -1,13 +1,13 @@
-import { Binode, binode } from "./nodes/binode.js";
+import { BNode, bnode } from "./nodes/bnode.js";
 import { linkedList } from "./list.js";
 
 class BST<T> {
-  root: Binode<T>;
+  root: BNode<T>;
   getid: (data: T | null) => string | number;
   /** The number of nodes in this tree. */
   length: number;
   constructor(getid: (data: T) => string | number) {
-    this.root = binode();
+    this.root = bnode();
     this.getid = (data: T | null) => (data === null) ? "" : getid(data);
     this.length = 0;
   }
@@ -37,7 +37,7 @@ class BST<T> {
     return out;
   }
   postorder(callback: (data: T) => void) {
-    const traverse = (node: Binode<T>) => {
+    const traverse = (node: BNode<T>) => {
       if (node.left.isSomething()) traverse(node.left);
       if (node.right.isSomething()) traverse(node.right);
       node.map((d) => callback(d));
@@ -46,7 +46,7 @@ class BST<T> {
     return this;
   }
   inorder(callback: (data: T) => void) {
-    const traverse = (node: Binode<T>) => {
+    const traverse = (node: BNode<T>) => {
       if (node.left.isSomething()) traverse(node.left);
       node.map((d) => callback(d));
       if (node.right.isSomething()) traverse(node.right);
@@ -55,7 +55,7 @@ class BST<T> {
     return this;
   }
   preorder(callback: (data: T) => void) {
-    const traverse = (node: Binode<T>) => {
+    const traverse = (node: BNode<T>) => {
       node.map((d) => callback(d));
       if (node.left.isSomething()) traverse(node.left);
       if (node.right.isSomething()) traverse(node.right);
@@ -64,7 +64,7 @@ class BST<T> {
     return this;
   }
   bfs(callback: (data: T) => void) {
-    const queue = linkedList<Binode<T>>(this.root);
+    const queue = linkedList<BNode<T>>(this.root);
     while (queue.length !== 0) {
       const node = queue.shift();
       if (node === null) break;
@@ -81,13 +81,13 @@ class BST<T> {
     return this;
   }
   push(data: T): this {
-    const newnode = binode(data);
+    const newnode = bnode(data);
     if (this.root.isNothing()) {
       this.root = newnode;
       this.length++;
       return this;
     } else {
-      const insert = (node: Binode<T>): boolean => {
+      const insert = (node: BNode<T>): boolean => {
         if (this.getid(newnode.data) < this.getid(node.data)) {
           if (node.left.isNothing()) {
             node.left = newnode;

@@ -1,5 +1,4 @@
-import { cos, pi, sin } from "./aux.js";
-import { linear, LinearScale, Matrix, matrix, ScaleFn, v2 } from "./index.js";
+import { Matrix, ScaleFn, v2 } from "./index.js";
 
 export type CommandHandler<T> = {
   M: (command: MCommand) => T;

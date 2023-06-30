@@ -1,8 +1,25 @@
 export { v2, v3, Vector, vector, vray } from "./vector.js";
 export { diagonal, Matrix, matrix } from "./matrix.js";
-export { Color, rgb, hsl, color } from "./color.js";
+export { Color, color, hsl, rgb } from "./color.js";
+export {
+  A,
+  C,
+  comHandler,
+  H,
+  L,
+  M,
+  P,
+  pathScaler,
+  pathStringer,
+  Q,
+  S,
+  T,
+  transformer2D,
+  V,
+  Z,
+} from "./pathcoms.js";
 export { Space } from "./space.js";
-export { isPath, Path, path } from "./path.js";
+export { circ, isPath, Path, path, rect } from "./path.js";
 export { linear, LinearScale } from "./scale.js";
 import { ArrowDefNode } from "./arrow.js";
 import { Circle } from "./circle.js";
@@ -119,7 +136,7 @@ export type Node2D =
   | TextNode
   | Path
   | Circle
-  | Line
+  | Line;
 
 export type Plottable = Integral;
 export type LayoutNode = Plane | TreeSpace | ForceSpace;

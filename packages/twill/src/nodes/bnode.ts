@@ -1,17 +1,17 @@
-export class Binode<T> {
+export class BNode<T> {
   data: T | null;
-  private R: () => Binode<T>;
-  private L: () => Binode<T>;
+  private R: () => BNode<T>;
+  private L: () => BNode<T>;
   constructor(data: T | null) {
     this.data = data;
-    this.R = () => Binode.none();
-    this.L = () => Binode.none();
+    this.R = () => BNode.none();
+    this.L = () => BNode.none();
   }
   /**
-   * Returns a copy of this binode.
+   * Returns a copy of this bnode.
    */
   copy() {
-    const out = new Binode(this.data);
+    const out = new BNode(this.data);
     const left = this.L();
     const right = this.R();
     out.L = () => left;
@@ -19,18 +19,18 @@ export class Binode<T> {
     return out;
   }
   /**
-   * Flattens this binode.
+   * Flattens this bnode.
    */
-  flatten(): Binode<T> | T {
-    return this.data === null ? Binode.none<T>() : this.data;
+  flatten(): BNode<T> | T {
+    return this.data === null ? BNode.none<T>() : this.data;
   }
   map<K>(callback: (data: T) => K) {
     if (this.data) {
-      return Binode.some<K>(callback(this.data));
-    } else return Binode.none<K>();
+      return BNode.some<K>(callback(this.data));
+    } else return BNode.none<K>();
   }
   /**
-   * Sets the value of this binode.
+   * Sets the value of this bnode.
    */
   set value(data: T) {
     this.data = data;
@@ -50,23 +50,23 @@ export class Binode<T> {
   get right() {
     return this.R();
   }
-  set right(node: Binode<T>) {
+  set right(node: BNode<T>) {
     this.R = () => node;
   }
   get left() {
     return this.L();
   }
-  set left(node: Binode<T>) {
+  set left(node: BNode<T>) {
     this.L = () => node;
   }
   static none<T>() {
-    return new Binode<T>(null);
+    return new BNode<T>(null);
   }
   static some<T>(data: T) {
-    return new Binode(data);
+    return new BNode(data);
   }
 }
 
-export const binode = <T>(data?: T) => {
-  return data === undefined ? Binode.none<T>() : Binode.some<T>(data);
+export const bnode = <T>(data?: T) => {
+  return data === undefined ? BNode.none<T>() : BNode.some<T>(data);
 };

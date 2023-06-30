@@ -1,4 +1,4 @@
-import { cos, pi, sin, unsafe } from "./aux.js";
+import { cos, sin, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable";
 import { FigNode, linear, Matrix, matrix, v2, Vector } from "./index.js";
@@ -6,6 +6,7 @@ import { parseDegrees, parseRadians } from "./parsers.js";
 import {
   A,
   C,
+  H,
   L,
   M,
   P,
@@ -329,6 +330,26 @@ export class Path extends PATH {
     const c = center !== undefined ? center : [this.cursor.x, this.cursor.y];
     return this.push(P(c, [radius, radius]));
   }
+
+  // Relative Commands
+  /**
+   * Given the current starting position `(a,b)`,
+   * draws a line to the position `(a + dx, b)`.
+   */
+  h(dx: number) {
+    const x = this.cursor.x + dx;
+    const y = this.cursor.y;
+    return this.push(H(x, y));
+  }
+  /**
+   * Given the current starting position `(a,b)`,
+   * draws a line to the position `(a, b + dy)`.
+   */
+  v(dy: number) {
+    const x = this.cursor.x;
+    const y = this.cursor.y + dy;
+    return this.push(V(x, y));
+  }
 }
 
 /**
@@ -342,4 +363,19 @@ export const path = (startX: number = 0, startY: number = 0) => (
 
 export const isPath = (node: FigNode): node is Path => (
   !unsafe(node) && node.isType("path")
+);
+
+export const circ = (radius: number, center: number[] = [0, 0]) => (
+  path(center[0], center[1]).O(radius)
+);
+export const rect = (
+  width: number,
+  height: number,
+  center: number[] = [0, 0],
+) => (
+  path(center[0] - (width / 2), center[1] - (height / 2))
+    .h(width)
+    .v(height)
+    .h(-width)
+    .v(-height)
 );

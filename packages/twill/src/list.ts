@@ -1,12 +1,12 @@
-import { Binode, binode } from "./nodes/binode.js";
+import { BNode, bnode } from "./nodes/bnode.js";
 
 export class LinkedList<T> {
-  #head: Binode<T>;
-  #tail: Binode<T>;
+  #head: BNode<T>;
+  #tail: BNode<T>;
   #length: number;
   constructor() {
-    this.#head = binode();
-    this.#tail = binode();
+    this.#head = bnode();
+    this.#tail = bnode();
     this.#length = 0;
   }
   /**
@@ -41,7 +41,7 @@ export class LinkedList<T> {
    */
   #item(index: number) {
     if (!this.#validIndex(index)) {
-      return binode<T>();
+      return bnode<T>();
     } else {
       let count = 0;
       let current = this.#head;
@@ -60,7 +60,7 @@ export class LinkedList<T> {
     return this.#item(index).data;
   }
   unshift(element: T) {
-    const node = binode(element);
+    const node = bnode(element);
     if (this.isEmpty) {
       this.#head = node;
       this.#tail = node;
@@ -76,12 +76,12 @@ export class LinkedList<T> {
     if (this.isEmpty) return null;
     let previousHead = this.#head;
     if (this.isUnary) {
-      this.#head = binode();
-      this.#tail = binode();
+      this.#head = bnode();
+      this.#tail = bnode();
     } else {
       this.#head = previousHead.right;
-      this.#head.left = binode();
-      previousHead.right = binode();
+      this.#head.left = bnode();
+      previousHead.right = bnode();
     }
     this.#length--;
     return previousHead.data;
@@ -101,7 +101,7 @@ export class LinkedList<T> {
     if (this.lastIndex === atIndex) {
       return this.push(element);
     }
-    const node = binode(element);
+    const node = bnode(element);
     const before = this.#item(atIndex - 1);
     const after = before.right;
     before.right = node;
@@ -126,12 +126,12 @@ export class LinkedList<T> {
     if (list.isEmpty) return list;
     let previousHead = list.#head;
     if (list.isUnary) {
-      list.#head = binode();
-      list.#tail = binode();
+      list.#head = bnode();
+      list.#tail = bnode();
     } else {
       list.#head = previousHead.right;
-      list.#head.left = binode();
-      previousHead.right = binode();
+      list.#head.left = bnode();
+      previousHead.right = bnode();
     }
     list.#length--;
     return list;
@@ -160,19 +160,19 @@ export class LinkedList<T> {
   }
 
   clear() {
-    this.#head = binode();
+    this.#head = bnode();
   }
 
   pop() {
     if (this.isEmpty) return null;
     let popped = this.#tail;
     if (this.isUnary) {
-      this.#head = binode();
-      this.#tail = binode();
+      this.#head = bnode();
+      this.#tail = bnode();
     } else {
       this.#tail = popped.left;
-      this.#tail.right = binode();
-      popped.left = binode();
+      this.#tail.right = bnode();
+      popped.left = bnode();
     }
     this.#length--;
     return popped.data;
@@ -207,7 +207,7 @@ export class LinkedList<T> {
   }
 
   push(element: T) {
-    const node = binode(element);
+    const node = bnode(element);
     if (this.#head.isNothing()) {
       this.#head = node;
       this.#tail = node;
