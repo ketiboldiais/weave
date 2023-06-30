@@ -1,4 +1,4 @@
-import { isAngle, Space2D } from "./index.js";
+import { Space2D } from "./index.js";
 import { typed } from "./typed.js";
 import { FigNode, Node2D } from "./index.js";
 import { isLine } from "./line.js";
@@ -21,24 +21,7 @@ export class Plane extends PLANE {
   figure() {
     this.nodes.forEach((n) => {
       n.scope(this);
-      // handle angles
-      if (isAngle(n)) {
-        n.initial.copyColors(n);
-        n.terminal.copyColors(n);
-        n.initial.scope(this);
-        n.terminal.scope(this);
-        n.terminal.isArrowed() && this.defineArrow(n.terminal);
-        n.initial.isArrowed() && this.defineArrow(n.initial);
-        n.children.forEach((l) => {
-          l.scope(this);
-          l.copyColors(n);
-          if (isLine(l) && l.isArrowed()) {
-            this.defineArrow(l);
-          }
-        });
-      }
-      // handle lines
-      isLine(n) && n.isArrowed() && this.defineArrow(n);
+      isLine(n) && n.arrowed && this.defineArrow(n);
     });
     return this;
   }

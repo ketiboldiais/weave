@@ -1,4 +1,4 @@
-import { axis, circle, color, matrix, path, plot, rect, rgb } from "@weave/twill";
+import { axis, circle, color, matrix, path, plot, rgb } from "@weave/twill";
 import { Figure } from "./figure";
 import { plane } from "@weave/twill";
 import { Fragment } from "react";

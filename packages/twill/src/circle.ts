@@ -21,34 +21,12 @@ export class Circle extends CIRCLE_BASE {
     return this;
   }
 
-  /**
-   * Returns the diameter of this circle,
-   * per its current radius.
-   */
-  diameter() {
-    return (2 * this.r);
-  }
-
-  /**
-   * Returns the circumference of this
-   * circle, per its current radius.
-   */
-  circumference() {
-    return (2 * Math.PI * this.r);
-  }
-
-  /**
-   * Returns the area of this circle,
-   * per its current radius.
-   */
-  area() {
-    return (Math.PI) * (this.r ** 2);
-  }
   constructor(radius: number) {
     super([0, 0, 0]);
     this.r = radius;
     this.type = "circle";
   }
+
   /**
    * Returns the scaled radius of this circle.
    */

@@ -11,7 +11,7 @@ export const Arrow = ({ of }: { of: ArrowDefNode }) => {
       refX={of.refX}
       refY={of.refY}
     >
-      <g className={of.klasse()}>
+      <g>
         <path
           d={of.d}
           fill={of.strokeColor}

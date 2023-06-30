@@ -16,9 +16,9 @@ import {
   Z,
 } from "./pathcoms.js";
 import { scopable } from "./scopable.js";
-import { atyped } from "./typed.js";
+import { typed } from "./typed.js";
 
-const PATH = atyped(colorable(scopable(Base)));
+const PATH = typed(colorable(scopable(Base)));
 
 export class Path extends PATH {
   points: (PathCommand)[];
@@ -279,3 +279,4 @@ export const path = (startX: number = 0, startY: number = 0) => (
 export const isPath = (node: FigNode): node is Path => (
   !unsafe(node) && node.isType("path")
 );
+

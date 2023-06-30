@@ -1,5 +1,4 @@
 import { choice, digits, list, lit, maybe, regex, word } from "@weave/reed";
-import { Angle, AngleUnit } from "./angle.js";
 
 const pint = regex(/^[1-9]\d*/);
 const zero = regex(/^[0]/);
@@ -52,12 +51,12 @@ export const anglevalue = list([num, maybe(PI), maybe(angle_unit)])
       const v = val * 1;
       const p = Math.PI;
       const value = v * p;
-      const unit: AngleUnit = u;
+      const unit = u;
       return { value, unit };
     } else if (r.length === 2) {
       const [val, u] = r;
       const value = val * 1;
-      const unit: AngleUnit = u;
+      const unit = u;
       return { value, unit };
     } else {
       const [val] = r;

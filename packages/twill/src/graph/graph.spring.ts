@@ -3,12 +3,12 @@ import { Base } from "../base.js";
 import { Edge, FigNode, Node2D } from "../index.js";
 import { scopable } from "../scopable.js";
 import { Space2D } from "../space2d.js";
-import { atyped, typed } from "../typed.js";
+import { typed } from "../typed.js";
 import { v2, Vector, vector } from "../vector.js";
 import { Graph } from "./graph.js";
 import { Vertex } from "./vertex.js";
 
-const PARTICLE = atyped(scopable(Base));
+const PARTICLE = typed(scopable(Base));
 
 export class Particle extends PARTICLE {
   p: Vector;
@@ -37,7 +37,7 @@ export const pt = (data: Vertex, position: Vector) => (
   new Particle(data, position)
 );
 
-const SPRING = atyped(scopable(Base));
+const SPRING = typed(scopable(Base));
 
 export class Spring extends SPRING {
   point1: Particle;

@@ -9,7 +9,7 @@ import {
   shift,
   TextNode,
 } from "./index.js";
-import { round, toFrac, tuple, unsafe } from "./aux.js";
+import { toFrac, tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
 import { scopable } from "./scopable.js";
@@ -17,24 +17,21 @@ import { Base } from "./base.js";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
 
-export class PolarAxis extends AXIS_BASE {
-  tickCount: number;
-  constructor() {
-    super();
-    this.type = "polar-axis";
-    this.tickCount = 5;
-  }
-  
-
+export class Axis extends AXIS_BASE {
   /**
-   * Sets the number of ticks
-   * along this axis.
+   * @property
+   * Indicates whether this axis runs
+   * along the x, y, or z direction.
    */
-  ticks(value: number) {
-    this.tickCount = value;
-    return this;
-  }
+  readonly direction: "x" | "y" | "polar";
 
+  tickFormat: "F" | "Q" = "F";
+
+  constructor(direction: "x" | "y" | "polar") {
+    super();
+    this.type = "axis";
+    this.direction = direction;
+  }
   /**
    * Returns the polar plot’s
    * cicular axes, an array of
@@ -53,20 +50,12 @@ export class PolarAxis extends AXIS_BASE {
     ];
     return out;
   }
-  hiddens: Set<string> = new Set();
-  hide(option: "ticks" | "zero" | "axis-line") {
-    this.hiddens.add(option);
-    return this;
-  }
-  hasNo(option: "ticks" | "zero" | "axis-line") {
-    return this.hiddens.has(option);
-  }
   /**
    * Returns an array of the radial
    * lines comprising the polar axis’s
    * ticks.
    */
-  axisTicks(): Line[] {
+  polarAxisTicks() {
     const ticks: Line[] = [];
     const space = this.space();
     const xs = space.scaleOf("x");
@@ -86,27 +75,6 @@ export class PolarAxis extends AXIS_BASE {
       ticks.push(axisLine);
     }
     return ticks;
-  }
-}
-
-export const isPolarAxis = (node: FigNode): node is PolarAxis => (
-  !unsafe(node) && node.isType("polar-axis")
-);
-
-export class Axis extends AXIS_BASE {
-  /**
-   * @property
-   * Indicates whether this axis runs
-   * along the x, y, or z direction.
-   */
-  readonly direction: "x" | "y";
-
-  tickFormat: "F" | "Q" = "F";
-
-  constructor(direction: "x" | "y") {
-    super();
-    this.type = "axis";
-    this.direction = direction;
   }
 
   /**
@@ -265,12 +233,8 @@ export class Axis extends AXIS_BASE {
   }
 }
 
-export const axis = (of: "x" | "y" | "polar") => {
-  if (of === "polar") return new PolarAxis();
-  return new Axis(of);
-};
+export const axis = (of: "x" | "y" | "polar") => new Axis(of);
 
-export const isAxis = (node: FigNode): node is Axis => {
-  if (unsafe(node)) return false;
-  return node.type === "axis";
-};
+export const isAxis = (node: FigNode): node is Axis => (
+  !unsafe(node) && node.isType("axis")
+);

@@ -5,7 +5,7 @@ type IntegrationProps = {
 };
 export const Integration = ({ of }: IntegrationProps) => {
   return (
-    <g className={of.klasse()}>
+    <g>
       <path
         d={of.area()}
         opacity={of.opacityValue || 0.3}

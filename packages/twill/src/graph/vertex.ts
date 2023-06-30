@@ -1,10 +1,8 @@
-import { uid } from "../aux.js";
-
 export class Vertex<T = any> {
   /**
    * The vertex’s unique identifier, either a string or a number.
    */
-  id: string|number;
+  id: string | number;
   /**
    * The data held by the Vertex, a generic type `T`.
    */
@@ -14,7 +12,7 @@ export class Vertex<T = any> {
     this.data = data;
   }
   obj() {
-    return {id: this.id, data: this.data};
+    return { id: this.id, data: this.data };
   }
   /**
    * Returns true if the Vertex’s data field is null.
@@ -35,7 +33,6 @@ export class Vertex<T = any> {
     const out = new Vertex(this.id, newData);
     return out;
   }
-  
 
   /**
    * Given a callback that takes the
@@ -86,6 +83,6 @@ export class Vertex<T = any> {
   }
 }
 
-export const vtx = <T>(id: string | number, data: T | null=null) => (
+export const vtx = <T>(id: string | number, data: T | null = null) => (
   new Vertex(id, data)
 );

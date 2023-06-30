@@ -1,7 +1,7 @@
 import { unsafe } from "./aux.js";
 import { colorable } from "./colorable";
 import { FigNode } from "./index.js";
-import { typed } from "./typed.js";
+import { tagged, typed } from "./typed.js";
 
 class ArrowDefinition {
   refX: number | string = 8;
@@ -46,7 +46,7 @@ class ArrowDefinition {
   }
 }
 
-const ARROW_NODE = typed(colorable(ArrowDefinition));
+const ARROW_NODE = typed(colorable(tagged(ArrowDefinition)));
 
 export const arrowDef = (
   markerWidth: string | number = 6,

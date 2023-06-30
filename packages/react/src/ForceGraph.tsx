@@ -9,7 +9,7 @@ export const ForceGraph = ({ of }: { of: ForceSpace }) => {
   return (
     <Fragment>
       {children.map((n,i) => (
-        <Fragment key={`${of.id}-axis-${i}`}>
+        <Fragment key={`graph-axis-${i}`}>
           {isAxis(n) && <Axis2D of={n} />}
         </Fragment>
       ))}

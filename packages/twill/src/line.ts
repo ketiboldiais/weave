@@ -1,79 +1,21 @@
-import { safer, toRadians, unsafe } from "./aux.js";
+import { safer, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable";
 import { FigNode } from "./index.js";
 import { scopable } from "./scopable.js";
-import { TextNode } from "./text.js";
-import { typed } from "./typed.js";
-import { Vector, vector } from "./vector.js";
+import { tagged, typed } from "./typed.js";
+import { v2, Vector, vector } from "./vector.js";
 
-const LINE = typed(colorable(scopable(Base)));
+const LINE = typed(colorable(scopable(tagged(Base))));
 
 export class Line extends LINE {
-  text?: string | number | TextNode;
-  isArrowed() {
-    return this.arrowed !== "none";
-  }
-  static from(x1: number, y1: number, x2: number, y2: number) {
-    return new Line(Vector.from([x1, y1]), Vector.from([x2, y2]));
-  }
-  vy() {
-    const line = this.copy();
-    line.x1 = this.x2;
-    line.y1 = 0;
-    line.x2 = this.x2;
-    line.y2 = this.y2;
-    line.copyColors(this);
-    line.arrowed = this.arrowed;
-    return line;
-  }
-  vx(): Line {
-    const line = this.copy();
-    line.y2 = this.x1;
-    line.copyColors(this);
-    line.arrowed = this.arrowed;
-    return line;
-  }
-  label(text: TextNode | string | number) {
-    this.text = text;
-    return this;
-  }
   copy() {
     const start = this.start;
     const end = this.end;
-    const copy = Line.from(start.x, start.y, end.x, end.y);
+    const copy = new Line(v2(start.x, start.y), v2(end.x, end.y));
     copy.arrowed = this.arrowed;
     copy.copyColors(this);
     return copy;
-  }
-  rotate(value: number, unit: "deg" | "rad") {
-    const l = this.copy();
-    const mag = l.end.mag();
-    // deno-fmt-ignore
-    const val = (unit === "deg") 
-      ? (toRadians(value)) 
-      : value;
-    const dx = Math.cos(val);
-    const dy = Math.sin(val);
-    const nx = mag * dx;
-    const ny = mag * dy;
-    l.end = vector(nx, ny);
-    return l;
-  }
-  zero() {
-    const x0 = this.x1;
-    const y0 = this.y1;
-    return vector(x0, y0);
-  }
-  vector() {
-    const x1 = this.x2;
-    const y1 = this.y1;
-    return vector(x1, y1);
-  }
-  displacement() {
-    const o = this.zero();
-    const v = this.vector();
-    return v.sub(o);
   }
   get x1() {
     return this.start.x;
@@ -99,35 +41,13 @@ export class Line extends LINE {
   set y2(value: number) {
     this.end.y = value;
   }
-  get x() {
-    return this.end.x;
-  }
-  get y() {
-    return this.end.y;
-  }
-  /**
-   * Returns a vector corresponding
-   * to the midpoint of this line.
-   */
-  midpoint() {
-    const x = (this.x2 + this.x1) / 2;
-    const y = (this.y2 + this.y2) / 2;
-    return vector(x, y);
-  }
-  /**
-   * Returns the x-distance or y-distance
-   * of this line.
-   */
-  d(of: "x" | "y") {
-    return (of === "x" ? (this.x2 - this.x1) : this.y2 - this.y1);
-  }
   start: Vector;
   end: Vector;
   /**
    * The position of this line’s arrow,
    * if any.
    */
-  arrowed: "start" | "end" | "none" = "none";
+  arrowed?: "start" | "end";
   constructor(start: Vector, end: Vector) {
     super();
     this.start = start;
@@ -139,7 +59,7 @@ export class Line extends LINE {
    * an arrow. If set, the line’s
    * space will include arrow definitions.
    */
-  arrow(on: "start" | "end" | 'none') {
+  arrow(on: "start" | "end") {
     this.arrowed = on;
     return this;
   }

@@ -3,9 +3,9 @@ import { arraySplit, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { linkedList } from "./list.js";
 import { Text } from "./text.js";
-import { typed } from "./typed";
+import { tagged, typed } from "./typed";
 
-const TREENODE = typed(colorable(Text));
+const TREENODE = typed(colorable(tagged(Text)));
 
 abstract class TreeNode extends TREENODE {
   thread: TreeChild | null = null;

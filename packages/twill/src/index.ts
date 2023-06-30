@@ -4,9 +4,7 @@ export { Color, rgb, hsl, color } from "./color.js";
 export { Space } from "./space.js";
 export { isPath, Path, path } from "./path.js";
 export { linear, LinearScale } from "./scale.js";
-import { Angle } from "./angle.js";
 import { ArrowDefNode } from "./arrow.js";
-import { PolarAxis } from "./axis.js";
 import { Circle } from "./circle.js";
 import { Integral } from "./integral.js";
 import { Plane } from "./plane.js";
@@ -30,7 +28,7 @@ export type { Colorable } from "./colorable.js";
 export { textual } from "./textual.js";
 export type { Textual } from "./textual.js";
 export type And<DataClass, Extender> = DataClass & Axiom<Extender>;
-export { Axis, axis, isAxis, isPolarAxis, PolarAxis } from "./axis.js";
+export { Axis, axis, isAxis } from "./axis.js";
 export type { TextNode } from "./text.js";
 export { isTextNode, label, latex, tex } from "./text.js";
 export { isTreeSpace, tree, TreeSpace } from "./tree.js";
@@ -38,8 +36,6 @@ export { isLeaf, isTree, leaf, subtree } from "./treenode.js";
 export type { LeafNode, Tree, TreeChild } from "./treenode.js";
 export { area, Circle, circle, isCircle } from "./circle.js";
 export { clamp, randFloat, randInt, round, toDeg, toRadians } from "./aux.js";
-export { Angle, angle, isAngle } from "./angle.js";
-export { Arc, arc, isArc } from "./arc.js";
 export { Vertex, vtx } from "./graph/vertex.js";
 export { Edge, edge } from "./graph/edge.js";
 export { Graph, graph } from "./graph/graph.js";
@@ -87,27 +83,23 @@ export type NodeType =
   | "unknown";
 
 import type { Line } from "./line.js";
-import type { Arc } from "./arc.js";
 import { Axis } from "./axis.js";
 import { ForceSpace, Particle } from "./graph/graph.spring.js";
 import { Path } from "./path.js";
 
 export type FigNode =
   | Plot
-  | Angle
   | Circle
   | Path
   | Plane
   | Axis
   | TextNode
   | Line
-  | Arc
   | TreeSpace
   | TreeChild
   | ArrowDefNode
   | Particle
   | ForceSpace
-  | PolarAxis
   | Integral;
 
 /**
@@ -124,13 +116,10 @@ export type Node3D = Line;
 export type Node2D =
   | Plot
   | Axis
-  | PolarAxis
   | TextNode
   | Path
   | Circle
   | Line
-  | Arc
-  | Angle
 
 export type Plottable = Integral;
 export type LayoutNode = Plane | TreeSpace | ForceSpace;

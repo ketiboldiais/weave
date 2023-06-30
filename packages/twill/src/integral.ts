@@ -20,14 +20,8 @@ export class Integral extends INTEGRAL_BASE {
     this.bounds = bounds;
     this.type = "integral";
   }
-  samples: number = 100;
-  sampled(n: number) {
-    this.samples = n;
-    return this;
-  }
   area() {
     const plot = this.space();
-    // const xs = plot
     const [xs, ys] = plot.xyScales();
     if (plot.fn === null) return "";
     const space = plot.space();
