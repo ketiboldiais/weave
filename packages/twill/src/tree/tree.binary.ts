@@ -1,5 +1,7 @@
-import { BNode, bnode } from "./nodes/bnode.js";
-import { linkedList } from "./list.js";
+import { BNode, bnode } from "../nodes/bnode.js";
+import { linkedList } from "../list.js";
+import { leaf, subtree } from "../treenode.js";
+import { tree } from "../tree.js";
 
 class BST<T> {
   root: BNode<T>;
@@ -11,35 +13,23 @@ class BST<T> {
     this.getid = (data: T | null) => (data === null) ? "" : getid(data);
     this.length = 0;
   }
-  get isEmpty() {
-    return this.root.isNothing();
+  map<K>(callback:(data:T) => K) {
+    const root = this.root.map(callback);
+    const traverse = (node: BNode<T>) => {
+      node.onLeft((n) => traverse(n));
+      node.onRight((n) => traverse(n));
+      node.map((d) => callback(d));
+    };
   }
   toArray(order: "preorder" | "inorder" | "postorder" | "bfs") {
     const out: T[] = [];
-    switch (order) {
-      case "bfs": {
-        this.bfs((d) => out.push(d));
-        break;
-      }
-      case "preorder": {
-        this.preorder((d) => out.push(d));
-        break;
-      }
-      case "inorder": {
-        this.inorder((d) => out.push(d));
-        break;
-      }
-      case "postorder": {
-        this.postorder((d) => out.push(d));
-        break;
-      }
-    }
+    this[order]((d) => out.push(d));
     return out;
   }
   postorder(callback: (data: T) => void) {
     const traverse = (node: BNode<T>) => {
-      if (node.left.isSomething()) traverse(node.left);
-      if (node.right.isSomething()) traverse(node.right);
+      node.onLeft((n) => traverse(n));
+      node.onRight((n) => traverse(n));
       node.map((d) => callback(d));
     };
     traverse(this.root);
@@ -47,9 +37,9 @@ class BST<T> {
   }
   inorder(callback: (data: T) => void) {
     const traverse = (node: BNode<T>) => {
-      if (node.left.isSomething()) traverse(node.left);
+      node.onLeft((n) => traverse(n));
       node.map((d) => callback(d));
-      if (node.right.isSomething()) traverse(node.right);
+      node.onRight((n) => traverse(n));
     };
     traverse(this.root);
     return this;
@@ -57,8 +47,8 @@ class BST<T> {
   preorder(callback: (data: T) => void) {
     const traverse = (node: BNode<T>) => {
       node.map((d) => callback(d));
-      if (node.left.isSomething()) traverse(node.left);
-      if (node.right.isSomething()) traverse(node.right);
+      node.onLeft((n) => traverse(n));
+      node.onRight((n) => traverse(n));
     };
     traverse(this.root);
     return this;
@@ -69,8 +59,8 @@ class BST<T> {
       const node = queue.shift();
       if (node === null) break;
       node.map((d) => callback(d));
-      if (node.left.isSomething()) queue.push(node.left);
-      if (node.right.isSomething()) queue.push(node.right);
+      node.onLeft((n) => queue.push(n));
+      node.onRight((n) => queue.push(n));
     }
     return this;
   }
@@ -113,17 +103,18 @@ class BST<T> {
  * Creates a new binary search tree
  * from the given array of data.
  */
-const bst = <T>(data: T[]) => ({
-	/** 
-	 * The id accessor function for the data. To ensure
-	 * comparison operations are performed meaningfully,
-	 * all tree data structures require an accessor
-	 * function that takes data provided and returns
-	 * either a string or a number.
-	 */
+export const bst = <T>(data: T[]) => ({
+  /**
+   * The id accessor function for the data. To ensure
+   * comparison operations are performed meaningfully,
+   * all tree data structures require an accessor
+   * function that takes data provided and returns
+   * either a string or a number.
+   */
   id: (getid: (data: T) => string | number) => (
     new BST<T>(getid).nodes(data)
   ),
 });
 
 const b = bst([10, 6, 3, 15, 3, 8, 20]).id((d) => d);
+

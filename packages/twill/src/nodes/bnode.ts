@@ -47,6 +47,18 @@ export class BNode<T> {
   isNothing() {
     return this.data === null;
   }
+  onRight(callback: (rightNode: BNode<T>) => void) {
+    const right = this.R();
+    if (right.isNothing()) return this;
+    callback(right);
+    return this;
+  }
+  onLeft(callback: (leftNode: BNode<T>) => void) {
+    const left = this.L();
+    if (left.isNothing()) return this;
+    callback(left);
+    return this;
+  }
   get right() {
     return this.R();
   }

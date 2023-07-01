@@ -43,7 +43,7 @@ abstract class TreeNode extends TREENODE {
     }
     return null;
   }
-  hasChild(id: string|number) {
+  hasChild(id: string | number) {
     if (this.children.length === 0) return false;
     for (const child of this.children) {
       if (child.id === id) return true;
@@ -71,10 +71,10 @@ export class LeafNode extends TreeNode {
   get isLeaf() {
     return true;
   }
-  onLastChild(callback: (node: TreeChild) => void) {
+  onLastChild(_: (node: TreeChild) => void) {
     return;
   }
-  onFirstChild(callback: (node: TreeChild) => void) {
+  onFirstChild(_: (node: TreeChild) => void) {
     return;
   }
   get hasChildren(): boolean {
