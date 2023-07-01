@@ -88,6 +88,16 @@ export class Vector {
   POW(arg: Vector | number | number[]) {
     return this.binaryOp(arg, (a, b) => a ** b);
   }
+  
+  dx(value:number) {
+    this.x += value;
+    return this;
+  }
+  
+  dy(value:number) {
+    this.y += value;
+    return this;
+  }
 
   /**
    * Returns the order of this vector.
@@ -210,6 +220,16 @@ export class Vector {
     this.x = x;
     this.y = y;
     this.z = 0;
+    return this;
+  }
+  
+  mid2D(v:Vector) {
+    return this.add(v).div(2)
+  }
+  
+  p2D(vector:Vector) {
+    this.x=vector.x;
+    this.y=vector.y;
     return this;
   }
 

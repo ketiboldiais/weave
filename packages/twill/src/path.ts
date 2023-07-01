@@ -28,11 +28,37 @@ const PATH = typed(colorable(scopable(Base)));
 export class Path extends PATH {
   points: (PathCommand)[];
   cursor: Vector;
-  constructor(initX: number, initY: number) {
+  get end() {
+    if (this.points.length) return Vector.from(this.points[this.points.length-1].end);
+    return Vector.from([0,0]);
+  }
+  get start() {
+    if (this.points.length) return Vector.from(this.points[0].end);
+    return Vector.from([0,0]); 
+  }
+  constructor(initX?: number, initY?: number) {
     super();
-    this.points = [M(initX, initY)];
-    this.cursor = v2(initX, initY);
+    const defined = initX !== undefined && initY !== undefined;
+    this.points = defined ? [M(initX, initY)] : [];
+    this.cursor = defined ? v2(initX, initY) : v2(0, 0);
     this.type = "path";
+  }
+  concat(pathCommands: (PathCommand | Path)[]) {
+    if (pathCommands.length === 0) return this;
+    const pcs = pathCommands
+      .map((p) => p instanceof Path ? p.points : p)
+      .flat();
+    pcs.forEach((p) => this.points.push(p));
+    this.cursor = Vector.from(pcs[pcs.length - 1].end);
+    return this;
+  }
+  /**
+   * Clears all points on this path currently.
+   */
+  clear() {
+    this.points = [];
+    this.cursor = v2(0, 0);
+    return this;
   }
 
   private tfm(matrix: Matrix) {
@@ -361,6 +387,13 @@ export const path = (startX: number = 0, startY: number = 0) => (
   new Path(startX, startY)
 );
 
+/**
+ * Bundles the provided paths into a single path.
+ */
+export const group = (paths: (PathCommand | Path)[]) => (
+  new Path().clear().concat(paths)
+);
+
 export const isPath = (node: FigNode): node is Path => (
   !unsafe(node) && node.isType("path")
 );
@@ -379,3 +412,5 @@ export const rect = (
     .h(-width)
     .v(-height)
 );
+
+

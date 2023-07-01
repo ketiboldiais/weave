@@ -19,7 +19,7 @@ export {
   Z,
 } from "./pathcoms.js";
 export { Space } from "./space.js";
-export { circ, isPath, Path, path, rect } from "./path.js";
+export { circ, group, isPath, Path, path, rect } from "./path.js";
 export { linear, LinearScale } from "./scale.js";
 import { ArrowDefNode } from "./arrow.js";
 import { Circle } from "./circle.js";

@@ -24,7 +24,6 @@ export class Axis extends AXIS_BASE {
    * along the x, y, or z direction.
    */
   readonly direction: "x" | "y" | "polar";
-
   tickFormat: "F" | "Q" = "F";
 
   constructor(direction: "x" | "y" | "polar") {
@@ -32,6 +31,23 @@ export class Axis extends AXIS_BASE {
     this.type = "axis";
     this.direction = direction;
   }
+
+  axisLine() {
+    const range = this.range();
+    const tickLength = this.TickLength;
+    return [
+      "M",
+      range[0],
+      tickLength,
+      "v",
+      -tickLength,
+      "H",
+      range[1],
+      "v",
+      tickLength,
+    ].join(" ");
+  }
+
   /**
    * Returns the polar plot’s
    * cicular axes, an array of
@@ -162,7 +178,7 @@ export class Axis extends AXIS_BASE {
    * callback function may be provided to
    * target each tick.
    */
-  labelTicks(f?: (tick: TextNode, index: number) => TextNode) {
+  labelTicks() {
     const space = this.space();
     const scale = this.scaleFn();
     const n = this.tickCount;
@@ -188,7 +204,6 @@ export class Axis extends AXIS_BASE {
         txt.x = scale(0);
         txt.y = scale(value);
       }
-      if (f) txt = f(txt, i);
       txt.anchor = txt.anchor
         ? txt.anchor
         : (this.tickLabelAnchor ? this.tickLabelAnchor : (
