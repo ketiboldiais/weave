@@ -175,11 +175,12 @@ export interface Handler<T> {
   frac(node: Fraction): T;
   variable(node: Variable): T;
   binex(node: BinaryExpression): T;
+  unex(node: UnaryExpression): T;
   algex(node: AlgebraicExpression): T;
   call(node: CallExpression): T;
   tuple(node: Tuple): T;
   error(node: Erratum): T;
-  equation(node: Equation): T;
+  relation(node: Relation): T;
 }
 
 export enum NT {
@@ -187,16 +188,23 @@ export enum NT {
   frac,
   variable,
   binex,
+  unex,
   call,
   tuple,
   error,
-  equation,
+  relation,
   algex,
 }
 
 type NodeParser = P<ParseNode>;
 
 type ParseNode = { type: NT };
+// deno-fmt-ignore
+const nodeGuard = <N extends ParseNode>(
+  type: NT,
+) => (
+node: ParseNode
+): node is N => (node.type === type);
 
 type Erratum = { type: NT.error; error: string };
 const err = (error: string): Erratum => ({
@@ -205,14 +213,17 @@ const err = (error: string): Erratum => ({
 });
 
 type Real = { n: number; type: NT.real };
+
 const int = (x: number | string): Real => ({
   n: typeof x === "string" ? Number.parseInt(x) : x,
   type: NT.real,
 });
+
 const real = (x: number | string): Real => ({
   n: typeof x === "string" ? Number.parseFloat(x) : x,
   type: NT.real,
 });
+const isNumber = nodeGuard<Real>(NT.real);
 
 type Fraction = { n: number; d: number; type: NT.frac };
 const frac = ([n, d]: [number, number]): Fraction => ({
@@ -220,8 +231,13 @@ const frac = ([n, d]: [number, number]): Fraction => ({
   d,
   type: NT.frac,
 });
+const isFrac = nodeGuard<Fraction>(NT.frac);
 
 type Numeric = Real | Fraction;
+
+const isNumeric = (node: ParseNode): node is Real | Fraction => (
+  node.type === NT.real || node.type === NT.frac
+);
 
 type BinaryExpression = {
   op: string;
@@ -230,14 +246,23 @@ type BinaryExpression = {
   type: NT.binex;
 };
 const binex = (
-  left: ParseNode,
-  op: string,
-  right: ParseNode,
+  [left, op, right]: [ParseNode, string, ParseNode],
 ): BinaryExpression => ({
   left,
   op,
   right,
   type: NT.binex,
+});
+
+type UnaryExpression = {
+  op: string;
+  arg: ParseNode;
+  type: NT.unex;
+};
+const unex = ([op, arg]: [string, ParseNode]): UnaryExpression => ({
+  op,
+  arg,
+  type: NT.unex,
 });
 
 type AlgebraicExpression = {
@@ -253,16 +278,18 @@ const algex = (op: string, args: ParseNode[]): AlgebraicExpression => ({
   args,
   type: NT.algex,
 });
+/**
+ * Type guard: Returns true if the given node is an
+ * algebraic expression, false otherwise.
+ */
+const isAlgex = nodeGuard<AlgebraicExpression>(NT.algex);
 
 type CallExpression = {
   type: NT.call;
-  caller: Variable;
-  args: Tuple;
+  caller: string;
+  args: ParseNode[];
 };
-const call = (
-  caller: Variable,
-  args: Tuple,
-): CallExpression => ({
+const call = ([caller, args]: [string, ParseNode[]]): CallExpression => ({
   caller,
   args,
   type: NT.call,
@@ -284,115 +311,23 @@ const nconst = (n: "pi" | "e"): Variable => ({
   type: NT.variable,
 });
 
-type Equation = {
-  type: NT.equation;
+type Relation = {
+  type: NT.relation;
   lhs: ParseNode;
   rhs: ParseNode;
+  op: string;
 };
 /**
  * Returns a new equation node.
  */
-const eqn = (lhs: ParseNode, rhs: ParseNode): Equation => ({
+const relation = (
+  [lhs, op, rhs]: [ParseNode, string, ParseNode],
+): Relation => ({
   lhs,
+  op,
   rhs,
-  type: NT.equation,
+  type: NT.relation,
 });
-
-const POSITIVE_FLOAT = /^(0|[1-9]\d*)(\.\d+)?/;
-const POSITIVE_INTEGER = /^\+?([1-9]\d*)/;
-const NATURAL = /^(0|[1-9]\d*)/;
-const INTEGER = /^-?(0|\+?[1-9]\d*)(?<!-0)/;
-const PI = /^(\u{03c0})/u;
-const LETTER = /^(\w+)/;
-const NATIVE_FN = /^(cos|sin|tan)/;
-const addOp = regex(/^(\+|-)/).trim();
-const slash = one("/").trim();
-const mulOp = regex(/^(\/|\*|rem)/).trim();
-const comma = one(",");
-const caretOp = one("^").trim();
-const equal = regex(/^=/).trim();
-const notEqualOp = regex(/^(!=)/).trim();
-const comparisonOp = regex(/^(<|>|<=|>=)/).trim();
-const fname = regex(NATIVE_FN);
-const lparen = lit("(");
-const rparen = lit(")");
-const parend = amid(lparen, rparen);
-const commaSeparated = sepby(comma);
-
-// deno-fmt-ignore
-const nodeGuard = <N extends ParseNode>(
-  type: NT,
-) => (
-node: ParseNode
-): node is N => (node.type === type);
-
-const isNumber = nodeGuard<Real>(NT.real);
-const isNumeric = (node: ParseNode): node is Real | Fraction => (
-  node.type === NT.real || node.type === NT.frac
-);
-
-/**
- * Parses a positive integer.
- */
-export const posint = regex(POSITIVE_INTEGER).map(int);
-
-/**
- * Parses a natural number.
- */
-export const natural = regex(NATURAL).map(int);
-
-/**
- * Parses an integer.
- */
-export const integer = regex(INTEGER).map(int);
-
-/**
- * Parses the constant π.
- * Succeeds on either `Pi`, `pi`, `PI`, or
- * `π`.
- */
-const pi = (choice([
-  lit("pi"),
-  lit("PI"),
-  lit("Pi"),
-]).or(regex(PI))).map(() => nconst("pi"));
-
-/**
- * Parses the constant e (Euler’s number).
- * Succeeds on either `e` or `E`.
- */
-const euler = lit("e").map(() => nconst("e"));
-
-/**
- * Parses an unsigned floating point number.
- */
-export const ufloat = regex(POSITIVE_FLOAT).map(real);
-
-/**
- * Parses a floating point number (possibly
- * signed).
- */
-export const float = list([maybe(addOp), ufloat]).map(([s, { n }]) => {
-  const res = Number.parseFloat(`${s}${n}`);
-  return (res === 0) ? int(0) : (Number.isInteger(res) ? int(res) : real(res));
-});
-
-const fraction = list([integer, slash, integer]).map(([n, _, d]) =>
-  frac([n.n, d.n])
-);
-const isFrac = nodeGuard<Fraction>(NT.frac);
-const numval = choice([fraction, float, integer, pi, euler]);
-const varname = regex(LETTER).map(varx);
-
-const tupleOf = (
-  nodeParser: P<ParseNode>,
-) => parend(commaSeparated(nodeParser)).map(tuple);
-const floats = choice([float, integer, pi, euler]);
-const atom: NodeParser = list([
-  maybe(lparen),
-  choice([numval, varname]),
-  maybe(rparen),
-]).map(([_, b]) => b);
 
 /**
  * Parses the given input expression. The grammar:
@@ -407,114 +342,112 @@ const atom: NodeParser = list([
  * primary -> NUMBER | STRING | '(' expression ')'
  * ~~~
  */
-function parseExpression(input: string) {
-  const binaryExpr = ([left, op, right]: [ParseNode, string, ParseNode]) =>
-    binex(
-      left,
-      op,
-      right,
-    );
-  // const callExpr = ([op, arg]: [string, ParseNode]) => call()
+function expr(input: string) {
+  const POSITIVE_FLOAT = /^(0|[1-9]\d*)(\.\d+)?/;
+  const POSITIVE_INTEGER = /^\+?([1-9]\d*)/;
+  const NATURAL = /^(0|[1-9]\d*)/;
+  const INTEGER = /^-?(0|\+?[1-9]\d*)(?<!-0)/;
+  const PI = /^(\u{03c0})/u;
+  const LETTER = /^(\w+)/;
+  const NATIVE_FN = /^(cos|sin|tan)/;
+  const addOp = regex(/^(\+|-)/).trim();
+  const slash = one("/").trim();
+  const mulOp = regex(/^(\/|\*|rem)/).trim();
+  const comma = one(",");
+  const caretOp = one("^").trim();
+  const equal = regex(/^=/).trim();
+  const notEqualOp = regex(/^(!=)/).trim();
+  const comparisonOp = regex(/^(<|>|<=|>=)/).trim();
+  const fname = regex(NATIVE_FN);
+  const lparen = lit("(");
+  const rparen = lit(")");
+  const parend = amid(lparen, rparen);
+  const commaSeparated = sepby(comma);
+  /**
+   * Parses a positive integer.
+   */
+  const posint = regex(POSITIVE_INTEGER).map(int);
+
+  /**
+   * Parses a natural number.
+   */
+  const natural = regex(NATURAL).map(int);
+
+  /**
+   * Parses an integer.
+   */
+  const integer = regex(INTEGER).map(int);
+
+  /**
+   * Parses the constant π.
+   * Succeeds on either `Pi`, `pi`, `PI`, or
+   * `π`.
+   */
+  const pi = (choice([
+    lit("pi"),
+    lit("PI"),
+    lit("Pi"),
+  ]).or(regex(PI))).map(() => nconst("pi"));
+
+  /**
+   * Parses the constant e (Euler’s number).
+   * Succeeds on either `e` or `E`.
+   */
+  const euler = lit("e").map(() => nconst("e"));
+
+  /**
+   * Parses an unsigned floating point number.
+   */
+  const ufloat = regex(POSITIVE_FLOAT).map(real);
+
+  /**
+   * Parses a floating point number (possibly
+   * signed).
+   */
+  const float = list([maybe(addOp), ufloat]).map(([s, { n }]) => {
+    const res = Number.parseFloat(`${s}${n}`);
+    return (res === 0)
+      ? int(0)
+      : (Number.isInteger(res) ? int(res) : real(res));
+  });
+
+  const fraction = list([integer, slash, integer]).map(([n, _, d]) =>
+    frac([n.n, d.n])
+  );
+
+  const numval = choice([fraction, float, integer, pi, euler]);
+
+  const varname = regex(LETTER).map(varx);
+
+  const parendListOf = <T extends ParseNode>(
+    nodeParser: P<T>,
+  ) => parend(commaSeparated(nodeParser));
+
   const expression: NodeParser = thunk(() => equality);
   const equality: NodeParser = thunk(() => equation.or(compare));
   const compare: NodeParser = thunk(() => comparison.or(sum));
-	const sum: NodeParser = thunk(() => sumExpression.or(term));
-  const term: NodeParser = thunk(() => productExpression.or(factor));
-  const factor: NodeParser = thunk(() => unaryExpression.or(primary));
-  const primary = choice([float, integer, parend(expression)]);
-  const equation = list([primary, equal.or(notEqualOp), expression]).map(
-    binaryExpr,
-  );
-  const comparison = list([primary, comparisonOp, expression]).map(binaryExpr);
-  const sumExpression = list([primary, addOp, expression]).map(binaryExpr);
-  const productExpression = list([primary, mulOp, expression]).map(binaryExpr);
-  const unaryExpression = list([addOp, primary]).map(([op, p]) => p);
-	return expression.parse(input);
+  const sum: NodeParser = thunk(() => sumExpression.or(term));
+  const term: NodeParser = thunk(() => productExpression.or(exponent));
+  const exponent: NodeParser = thunk(() => powerExpression.or(factor));
+  const factor: NodeParser = thunk(() => unaryExpression.or(functionCall));
+  const functionCall: NodeParser = thunk(() => callExpression.or(primary));
+  const primary = choice([numval, varname, parend(expression)]);
+  const equation = list([primary, equal.or(notEqualOp), expression]).map(relation);
+  const comparison = list([primary, comparisonOp, expression]).map(relation);
+  const sumExpression = list([primary, addOp, expression]).map(binex);
+  const productExpression = list([primary, mulOp, expression]).map(binex);
+  const powerExpression = list([primary, caretOp, expression]).map(binex);
+  const unaryExpression = list([addOp, primary]).map(unex);
+  const callExpression = list([fname, parendListOf(expression)]).map(call);
+  return expression.parse(input).result.unwrap(err(`Parser failure`));
 }
 
-const n = parseExpression(`2 + (3 - 5)`);
-console.log(n);
-
-
-
-const expr: NodeParser = thunk(() => choice([sumExpr, term]));
-
-const term: NodeParser = thunk(() => choice([mulExpr, factor]));
-
-const factor: NodeParser = thunk(() => choice([powExpr, power]));
-
-const power: NodeParser = thunk(() => choice([callExpr, fnCall]));
-
-const fnCall: NodeParser = thunk(() => choice([atom, parend(expr)]));
-
-const callExpr = (list([
-  fname,
-  tupleOf(expr),
-]).map(([name, args]) => call(varx(name), args)))
-  .or(list([varname, expr]).map(([l, r]) => binex(l, "*", r)));
-
-/**
- * Parses a power expression. */
-const powExpr = (list([atom, caretOp, expr])).map((
-  [left, op, right],
-) => (
-  binex(left, op, right)
-));
-
-/**
- * Parses a multiplicative expression.
- */
-const mulExpr = (list([atom, mulOp, expr])).map((
-  [left, op, right],
-) => (
-  binex(left, op, right)
-)).or(
-  list([floats, maybe(lparen), expr, maybe(rparen)]).map(([l, _, r]) =>
-    binex(l, "*", r)
-  ),
-);
-
-/**
- * Parses a power expression.
- */
-const sumExpr = list([atom, addOp, expr]).map((
-  [left, op, right],
-) => (
-  binex(left, op, right)
-));
-
-/**
- * Type guard: Returns true if the given node is an
- * algebraic expression, false otherwise.
- */
-const isAlgex = nodeGuard<AlgebraicExpression>(NT.algex);
-
-/**
- * Parses an equation.
- */
-const pEqn = list([expr, equal, expr]).map(([lhs, _, rhs]) => eqn(lhs, rhs));
-
-/**
- * Parses a given expression.
- */
-const prog = choice([pEqn, expr]);
-
 type NameRecord = Record<string, ParseNode>;
-class Evaluator implements Handler<ParseNode> {
+
+class Reducer implements Handler<ParseNode> {
   env: NameRecord;
-  private expression: string;
   erred: null | Erratum = null;
-  evaluate() {
-    const out = this.evalnode(
-      prog.parse(this.expression)
-        .result
-        .unwrap(err(`Parser failure`)),
-    );
-    this.erred = null;
-    return out;
-  }
-  constructor(expression: string) {
-    this.expression = expression;
+  constructor() {
     this.env = {
       pi: real(Math.PI),
       e: real(Math.PI),
@@ -531,10 +464,14 @@ class Evaluator implements Handler<ParseNode> {
       case NT.binex: return this.binex(n);
       case NT.call: return this.call(n);
       case NT.tuple: return this.tuple(n);
-      case NT.equation: return this.equation(n);
+      case NT.relation: return this.relation(n);
 			case NT.algex: return this.algex(n);
       case NT.error: return this.error(n);
+			case NT.unex: return this.unex(n);
     }
+  }
+  unex(node: UnaryExpression): ParseNode {
+    return this.evalnode(node.arg);
   }
   algex(node: AlgebraicExpression): ParseNode {
     const args = node.args.map((p) => this.evalnode(p));
@@ -546,7 +483,7 @@ class Evaluator implements Handler<ParseNode> {
     });
     return algex(node.op, out);
   }
-  equation(node: Equation): ParseNode {
+  relation(node: Relation): ParseNode {
     return node;
   }
   error(node: Erratum) {
@@ -595,9 +532,9 @@ class Evaluator implements Handler<ParseNode> {
     return this.algex(algex(node.op, [left, right]));
   }
   call(node: CallExpression): ParseNode {
-    if (this.erred) return this.erred;
-    const args = node.args.ns.map((p) => this.evalnode(p));
-    const fn = this.evalnode(node.caller);
+    // if (this.erred) return this.erred;
+    // const args = node.args.map((p) => this.evalnode(p));
+    // const fn = this.evalnode(node.caller);
     return node;
   }
   tuple(node: Tuple): Tuple {
@@ -605,12 +542,12 @@ class Evaluator implements Handler<ParseNode> {
   }
 }
 
-const expression = (expr: string) => (
-  new Evaluator(expr)
-);
+function reduce(expression: ParseNode) {
+  const reducer = new Reducer();
+  return reducer.evalnode(expression);
+}
 
-// const e = `(w + x) - (y + z)`;
-// const r = expression(e).evaluate();
-// const r = expr.parse(e);
-// const r = expr.parse("y(3 + 5)");
+const e = expr(`y < 12 + 4`);
+console.log(e);
+// const r = reduce(e);
 // console.log(r);
