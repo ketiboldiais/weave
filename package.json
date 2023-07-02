@@ -7,7 +7,8 @@
 		"reed": "pnpm --filter @weave/reed dev",
 		"twine": "pnpm --filter @weave/twine dev",
 		"twill": "pnpm --filter @weave/twill dev",
-		"react": "pnpm --filter @weave/react dev"
+		"react": "pnpm --filter @weave/react dev",
+		"math": "pnpm --filter @weave/math dev"
 	},
 	"workspaces": [
 		"apps/**",

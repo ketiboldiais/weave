@@ -13,14 +13,6 @@ class BST<T> {
     this.getid = (data: T | null) => (data === null) ? "" : getid(data);
     this.length = 0;
   }
-  map<K>(callback:(data:T) => K) {
-    const root = this.root.map(callback);
-    const traverse = (node: BNode<T>) => {
-      node.onLeft((n) => traverse(n));
-      node.onRight((n) => traverse(n));
-      node.map((d) => callback(d));
-    };
-  }
   toArray(order: "preorder" | "inorder" | "postorder" | "bfs") {
     const out: T[] = [];
     this[order]((d) => out.push(d));

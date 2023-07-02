@@ -1,6 +1,7 @@
 const LOWER_LETTERS = /^[a-z]/;
 const UPPER_LETTERS = /^[A-Z]/;
 const DIGITS = /^[0-9]/;
+const WHITESPACE = /^\s+/;
 
 function cached<Out>(
   f: (state: ParseState<any>) => ParseState<Out>,
@@ -38,7 +39,9 @@ class Maybe<T> {
     return new Maybe<X>(null);
   }
   static of<X>(value: X | null): Maybe<X> {
-    return value ? Maybe.some(value) : Maybe.none<X>();
+    return (value !== null && value !== undefined)
+      ? Maybe.some(value)
+      : Maybe.none<X>();
   }
   concat<U>(other: Maybe<U>) {
     if (this.isNothing()) {
@@ -76,13 +79,13 @@ export type ParseState<T> = {
   error?: string;
 };
 
-const genesis = <T>(text: string): ParseState<T> => ({
+export const genesis = <T>(text: string): ParseState<T> => ({
   text,
   index: 0,
   result: Maybe.none<T>(),
 });
 
-const success = <A, B>(
+export const success = <A, B>(
   previousState: ParseState<A>,
   result: B,
 ): ParseState<B> => ({
@@ -90,7 +93,7 @@ const success = <A, B>(
   result: Maybe.of(result),
 });
 
-const enstate = <T>(
+export const enstate = <T>(
   previousState: ParseState<any>,
   result: T,
   index: number,
@@ -99,7 +102,7 @@ const enstate = <T>(
   index,
 });
 
-const failure = <T>(
+export const failure = <T>(
   previousState: ParseState<any>,
   error: string,
 ): ParseState<T> => ({
@@ -108,7 +111,7 @@ const failure = <T>(
   error,
 });
 
-const erratum = (
+export const erratum = (
   parserName: string,
   message: string,
 ) => `Error[${parserName}]: ${message}`;
@@ -120,23 +123,41 @@ export class P<Out> {
   constructor(p: Pattern<Out>) {
     this.p = cached(p);
   }
-  tie() {
-    const p = this.p;
-    return new P<string>((state) => {
-      if (state.error) return state;
-      const res = p(state);
-      const out = res.result.map((r) => {
-        if (Array.isArray(r)) return success(res, r.join(""));
-        return failure(res, erratum("tie", "called tie on non-array"));
-      });
-      return out.unwrap(state);
-    });
-  }
+
+  /**
+   * Executes the parser on the given
+   * `text`.
+   */
   parse(text: string) {
     const state = genesis(text);
     return this.p(state);
   }
+  /**
+   * Ignores all whitespace before and after
+   * this parser (if any).
+   */
+  trim() {
+    const p = this.p;
+    return new P<Out>((state) => {
+      let nxt = { ...state };
+      let target = state.text.slice(state.index);
+      let match = target.match(WHITESPACE);
+      let L = match !== null ? match[0].length : 0;
+      nxt.index += L;
+      nxt = p(nxt);
+      if (nxt.error) return nxt;
+      target = nxt.text.slice(nxt.index);
+      match = target.match(WHITESPACE);
+      L = match !== null ? match[0].length : 0;
+      nxt.index += L;
+      return nxt;
+    });
+  }
 
+  /**
+   * Transforms the output of this parser
+   * to the returned output of the callback.
+   */
   map<NewOut>(f: (result: Out) => NewOut) {
     const p = this.p;
     return new P<NewOut>((state) => {
@@ -147,6 +168,12 @@ export class P<Out> {
     });
   }
 
+  /**
+   * Returns a new parser (as returned by the callback)
+   * based on the success state of this parser. Chaining
+   * provides a way to specify what parser should
+   * run next if this parser succeeds.
+   */
   chain<T>(f: (x: Out) => P<T>) {
     const p = this.p;
     return new P<T>((state) => {
@@ -295,6 +322,25 @@ export const one = (pattern: string) =>
       return failure(state, msg);
     },
   );
+
+/**
+ * Matches exactly one character from the given string.
+ * If a match is found, returns a success state with
+ * that character as its output. Otherwise, returns
+ * a failed state.
+ */
+export const from = (pattern: string) => (new P((state) => {
+  const exp = pattern.split("");
+  for (let i = 0; i < exp.length; i++) {
+    const ch = state.text[state.index];
+    if (exp.indexOf(ch) >= 0) {
+      return success(state, ch);
+    }
+  }
+  const msg = `Expected one character from [${pattern}]`;
+  const erm = erratum(`from`, msg);
+  return failure(state, erm);
+}));
 
 /**
  * Matches the given string exactly,
@@ -495,15 +541,15 @@ export const sepby = <S>(
     while (next.index < max) {
       const valstate = content.p(next);
       const sepstate = separator.p(valstate);
-      if (valstate.error) {
+      if (valstate.error !== undefined) {
         error = valstate;
         break;
       } else {
-        if (!valstate.result.isNothing()) {
+        if (!valstate.result.value!==null) {
           results.push(valstate.result.value);
         }
       }
-      if (sepstate.error) {
+      if (sepstate.error!==undefined) {
         next = valstate;
         break;
       }
@@ -515,7 +561,7 @@ export const sepby = <S>(
       }
       return error;
     }
-    return success(state, results);
+    return success(next, results);
   });
 
 /**
@@ -600,7 +646,7 @@ export const anybut = <T>(patterns: P<T>[]) =>
 /**
  * Matches on any whitespace.
  */
-export const ws = regex(/^\s+/);
+export const ws = regex(WHITESPACE);
 
 /**
  * Given the provided callback that
@@ -611,7 +657,8 @@ export const ws = regex(/^\s+/);
  */
 export const thunk = <T>(pattern: () => P<T>) =>
   new P<T>((state) => {
-    return pattern().p(state);
+    const pfn = pattern();
+    return pfn.p(state);
   });
 
 /**
@@ -660,4 +707,3 @@ export const ascii = () => {
   const out = many(digit.or(latin("any")));
   return out;
 };
-

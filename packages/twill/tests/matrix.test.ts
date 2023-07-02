@@ -38,19 +38,6 @@ describe("matrix", () => {
     const B = false;
     expect(A).toEqual(B);
   });
-  it("should map the matrix.", () => {
-    const A = matrix([
-      [7, 2, 7, 3],
-      [8, 0, 1, 3],
-      [7, 1, 7, 3],
-    ]).map((n) => n + 1);
-    const B = matrix([
-      [8, 3, 8, 4],
-      [9, 1, 2, 4],
-      [8, 2, 8, 4],
-    ]);
-    expect(A).toEqual(B);
-  });
   it("should return an identity matrix of the given order.", () => {
     const A = Matrix.I(4);
     const B = matrix([

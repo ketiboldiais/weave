@@ -1,5 +1,5 @@
 import { randFloat, randInt, round, toRadians } from "./aux.js";
-import { arrow, Matrix } from "./index.js";
+import { Matrix } from "./index.js";
 import { anglevalue } from "./parsers.js";
 
 export class Vector {
@@ -782,8 +782,3 @@ export const v3 = (
  * Returns a new generic vector.
  */
 export const vector = (...coords: number[]) => new Vector(coords);
-
-/**
- * Renders the provided vector as an arrowed line.
- */
-export const vray = (vector: Vector) => arrow([0, 0, 0], vector);

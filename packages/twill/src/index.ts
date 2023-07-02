@@ -1,4 +1,4 @@
-export { v2, v3, Vector, vector, vray } from "./vector.js";
+export { v2, v3, Vector, vector } from "./vector.js";
 export { diagonal, Matrix, matrix } from "./matrix.js";
 export { Color, color, hsl, rgb } from "./color.js";
 export {
