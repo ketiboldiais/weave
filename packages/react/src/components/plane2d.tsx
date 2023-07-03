@@ -7,7 +7,7 @@ import {
   isPlot,
   isTextNode,
   Plane,
-} from "@weave/twill";
+} from "@weave/loom";
 import { Label } from "./label";
 import { Curve2D } from "./curve2d";
 import { Axis2D } from "./axis2d";

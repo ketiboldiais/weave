@@ -5,5 +5,5 @@ dist
 build/**
 dist/**
 vite.config.ts.timestamp*
-packages/twill/src/prototypes/lab.stage1.ts
-packages/twill/src/prototypes/lab.stage2.ts
+packages/loom/src/prototypes/lab.stage1.ts
+packages/loom/src/prototypes/lab.stage2.ts

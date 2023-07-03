@@ -1,4 +1,4 @@
-import { LayoutNode } from "@weave/twill";
+import { LayoutNode } from "@weave/loom";
 
 export type FigureProps = {
   of: LayoutNode;

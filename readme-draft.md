@@ -13,7 +13,7 @@ any rendering – it only handles the algorithms and data wrangling necessary fo
 A parser combinator module, used for API-specific languages in Weave (e.g., Weave’s trigonometric
 functions).
 
-## @weave/twill
+## @weave/loom
 
 Weave’s core API, a set of primitive shapes and drawing algorithms.
 

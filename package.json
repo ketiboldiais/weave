@@ -6,7 +6,7 @@
 	"scripts": {
 		"reed": "pnpm --filter @weave/reed dev",
 		"twine": "pnpm --filter @weave/twine dev",
-		"twill": "pnpm --filter @weave/twill dev",
+		"loom": "pnpm --filter @weave/loom dev",
 		"react": "pnpm --filter @weave/react dev",
 		"math": "pnpm --filter @weave/math dev"
 	},

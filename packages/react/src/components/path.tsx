@@ -1,4 +1,4 @@
-import { Path } from "@weave/twill";
+import { Path } from "@weave/loom";
 
 export const Path2D = ({ of }: { of: Path }) => {
   const d = of.d();

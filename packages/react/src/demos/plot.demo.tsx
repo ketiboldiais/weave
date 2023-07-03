@@ -1,6 +1,6 @@
-import { axis, color, path } from "@weave/twill";
+import { axis, color, path } from "@weave/loom";
 import { Figure } from "../components/figure";
-import { plane } from "@weave/twill";
+import { plane } from "@weave/loom";
 import { Fragment } from "react";
 
 const line = (

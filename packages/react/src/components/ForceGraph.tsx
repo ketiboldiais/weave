@@ -1,4 +1,4 @@
-import { ForceSpace, isAxis } from "@weave/twill";
+import { ForceSpace, isAxis } from "@weave/loom";
 import { Fragment } from "react";
 import { Axis2D } from "./axis2d";
 

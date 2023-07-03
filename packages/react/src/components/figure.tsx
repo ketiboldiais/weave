@@ -4,7 +4,7 @@ import {
   isPlane,
   isTreeSpace,
   LayoutNode,
-} from "@weave/twill";
+} from "@weave/loom";
 import { CSSProperties } from "react";
 import { Tree } from "./tree";
 import { ForceGraph } from "./ForceGraph";

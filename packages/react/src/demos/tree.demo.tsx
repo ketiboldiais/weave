@@ -1,4 +1,4 @@
-import { leaf, Line, subtree, tree } from "@weave/twill";
+import { leaf, Line, subtree, tree } from "@weave/loom";
 
 import { Figure } from "../components/figure";
 

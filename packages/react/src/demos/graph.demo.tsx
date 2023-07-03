@@ -1,4 +1,4 @@
-import { axis, forceSpace, graph } from "@weave/twill";
+import { axis, forceSpace, graph } from "@weave/loom";
 import { L } from "../components/line";
 import { Fragment } from "react";
 import { Figure } from "../components/figure.js";

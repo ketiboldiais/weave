@@ -4,7 +4,7 @@
 		"paths": {
 			"@weave/twine": ["packages/twine/dist"],
 			"@weave/react": ["packages/react/dist"],
-      "@weave/twill": ["packages/twill/dist"]
+      "@weave/loom": ["packages/loom/dist"]
 		}
   },
   "exclude": [

@@ -1,5 +1,5 @@
 import { CSSProperties, useEffect, useState } from "react";
-import { TextNode } from "@weave/twill";
+import { TextNode } from "@weave/loom";
 import 'katex/dist/katex.min.css';
 
 export type LabelProps = {

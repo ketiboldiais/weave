@@ -1,4 +1,4 @@
-import { label, TreeSpace } from "@weave/twill";
+import { label, TreeSpace } from "@weave/loom";
 import { Label } from "./label";
 import { Arrow } from "./arrow";
 import { L } from './line';

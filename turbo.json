@@ -10,7 +10,7 @@
 		"dev": {
 			"cache": false,
 			"persistent": true,
-			"dependsOn": ["@weave/twine#start", "@weave/twill#start"]
+			"dependsOn": ["@weave/twine#start", "@weave/loom#start"]
 		}
 	}
 }

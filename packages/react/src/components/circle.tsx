@@ -1,4 +1,4 @@
-import { Circle } from "@weave/twill";
+import { Circle } from "@weave/loom";
 import { useMemo } from "react";
 
 export const C = ({

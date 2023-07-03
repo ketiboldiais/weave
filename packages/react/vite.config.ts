@@ -14,7 +14,7 @@ export default defineConfig({
     port: 5200,
   },
   optimizeDeps: {
-    exclude: ["@weave/twill", "@weave/twine"],
+    exclude: ["@weave/loom", "@weave/twine"],
   },
   build: {
     sourcemap: false,

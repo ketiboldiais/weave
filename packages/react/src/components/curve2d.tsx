@@ -1,6 +1,6 @@
 import { Fragment } from "react";
-import { Plot } from "@weave/twill";
-import { isIntegral } from "@weave/twill";
+import { Plot } from "@weave/loom";
+import { isIntegral } from "@weave/loom";
 import { Integration } from "./integration";
 
 type Curve2DProps = {

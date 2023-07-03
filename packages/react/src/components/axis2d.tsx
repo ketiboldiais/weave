@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Axis, TextNode } from "@weave/twill";
+import { Axis, TextNode } from "@weave/loom";
 import { Label } from "./label";
 import {L} from './line';
 

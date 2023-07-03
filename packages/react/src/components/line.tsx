@@ -1,4 +1,4 @@
-import { Line } from "@weave/twill";
+import { Line } from "@weave/loom";
 
 export const L = ({ of, noscale }: { of: Line; noscale?: boolean }) => {
   const space = of.space();

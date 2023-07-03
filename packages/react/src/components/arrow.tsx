@@ -1,4 +1,4 @@
-import { ArrowDefNode } from "@weave/twill";
+import { ArrowDefNode } from "@weave/loom";
 
 export const Arrow = ({ of }: { of: ArrowDefNode }) => {
   return (

@@ -1,4 +1,4 @@
-import { Integral } from "@weave/twill";
+import { Integral } from "@weave/loom";
 
 type IntegrationProps = {
   of: Integral;
