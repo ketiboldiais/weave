@@ -3,7 +3,7 @@ import { colorable } from "./colorable.js";
 import { FigNode, linear } from "./index.js";
 import { scopable } from "./scopable.js";
 import { typed } from "./typed.js";
-import { Vector } from "./vector.js";
+import { Vector } from "@weave/math";
 
 export const area = (radius: number) => (
   Math.PI * (radius ** 2)

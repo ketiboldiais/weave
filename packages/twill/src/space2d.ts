@@ -1,4 +1,5 @@
 import { cos, sin } from "./aux.js";
+import { Vector, vector } from "@weave/math";
 import {
   arrowDef,
   Line,
@@ -7,8 +8,6 @@ import {
   Referable,
   shift,
   Space,
-  Vector,
-  vector,
 } from "./index.js";
 
 export type ScaleName = "linear" | "power" | "radial" | "log";

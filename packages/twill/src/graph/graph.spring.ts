@@ -1,10 +1,10 @@
-import { randInt, unsafe } from "../aux.js";
+import { unsafe } from "../aux.js";
 import { Base } from "../base.js";
 import { Edge, FigNode, Node2D } from "../index.js";
 import { scopable } from "../scopable.js";
 import { Space2D } from "../space2d.js";
 import { typed } from "../typed.js";
-import { v2, Vector, vector } from "../vector.js";
+import { randInt, v2, Vector, vector } from "@weave/math";
 import { Graph } from "./graph.js";
 import { Vertex } from "./vertex.js";
 
@@ -75,9 +75,9 @@ export class ForceSpace extends FORCELAYOUT {
   D: number = 0.4;
   L: number = 30;
   K: number = 200;
-  C: number = 200*200;
+  C: number = 200 * 200;
   iterations: number = 100;
-  epsilon:number=0.0001;
+  epsilon: number = 0.0001;
   constructor(graph: Graph) {
     super();
     this.graph = graph;

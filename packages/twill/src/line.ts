@@ -4,7 +4,7 @@ import { colorable } from "./colorable";
 import { FigNode } from "./index.js";
 import { scopable } from "./scopable.js";
 import { tagged, typed } from "./typed.js";
-import { v2, Vector, vector } from "./vector.js";
+import { v2, Vector, vector } from "@weave/math";
 
 const LINE = typed(colorable(scopable(tagged(Base))));
 

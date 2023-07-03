@@ -1,4 +1,4 @@
-import { latex, v3, Vector } from "./index.js";
+import { Vector } from "./vector.js";
 
 export class Matrix {
   vectors: Vector[] = [];
@@ -22,7 +22,7 @@ export class Matrix {
       }
     }
   }
-  
+
   get square() {
     return this.C === this.R;
   }
@@ -120,16 +120,16 @@ export class Matrix {
   SUB(matrix: Matrix | number | (number[])[]) {
     return this.op(matrix, (a, b) => a - b);
   }
-  
+
   times(matrix: Matrix | number | (number[])[]) {
-    return this.copy().TIMES(matrix)
+    return this.copy().TIMES(matrix);
   }
-  
+
   /**
    * Adds the matrix provided to this matrix..
    */
   TIMES(matrix: Matrix | number | (number[])[]) {
-    return this.op(matrix, (a,b) => a + b);
+    return this.op(matrix, (a, b) => a + b);
   }
 
   /**
@@ -414,7 +414,7 @@ export class Matrix {
  * Returns the maximum number of columns
  * in the given nested array.
  */
-function maxColumnCount<T>(nestedArray: (T[])[]) {
+export function maxColumnCount<T>(nestedArray: (T[])[]) {
   let C = 0;
   const R = nestedArray.length;
   for (let i = 0; i < R; i++) {

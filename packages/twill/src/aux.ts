@@ -48,30 +48,11 @@ export type SafeObj<T> = {
   [P in keyof T]: NonNullable<T[P]>;
 };
 
-export const randInt = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-export const randFloat = (min: number, max: number) => {
-  return Math.random() * (max - min) + min;
-};
-export const clamp = (
-  min: number,
-  input: number,
-  max: number,
-) => Math.min(Math.max(input, min), max);
 export type O<K extends string, T> = Record<K, T>;
 export const isnum = (x: any): x is number => typeof x === "number";
 export const isstr = (x: any): x is string => typeof x === "string";
 
-export const toDeg = (radians: number) => radians * (180 / Math.PI);
-
-export const toRadians = (degrees: number) => degrees * (Math.PI / 180);
-
 export const cc = "currentColor";
-export const round = (value: number, to: number = 2) => {
-  const cap = 10 ** (Math.abs(Math.floor(to)));
-  return Math.round((value + Number.EPSILON) * cap) / cap;
-};
 
 /**
  * Returns a `translate` string for use with the `g`
@@ -81,28 +62,6 @@ export const shift = (
   x: number = 0,
   y: number = 0,
 ) => `translate(${x},${y})`;
-
-export const toFrac = (x0: number) => {
-  let eps = 1.0E-15;
-  let h, h1, h2, k, k1, k2, a, x;
-  x = x0;
-  a = Math.floor(x);
-  h1 = 1;
-  k1 = 0;
-  h = a;
-  k = 1;
-  while (x - a > eps * k * k) {
-    x = 1 / (x - a);
-    a = Math.floor(x);
-    h2 = h1;
-    h1 = h;
-    k2 = k1;
-    k1 = k;
-    h = h2 + a * h1;
-    k = k2 + a * k1;
-  }
-  return [h, k];
-};
 
 export const pi = Math.PI;
 export const cos = Math.cos;
@@ -114,14 +73,3 @@ export const maxof = Math.max;
 export const minof = Math.min;
 export const abs = Math.abs;
 export const square = (x: number) => x * x;
-export const slope = (
-  p1: number[],
-  p2: number[],
-  precision: number = 5,
-) => {
-  const [x1, y1] = p1.length === 2 ? p1 : [1, 1];
-  const [x2, y2] = p2.length === 2 ? p2 : [1, 1];
-  const dydx = (y2 - y1) / (x2 - x1);
-  return round(dydx, precision);
-};
-export const mod = (n: number, d: number) => ((n % d) + d) % d;

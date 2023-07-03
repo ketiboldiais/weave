@@ -9,11 +9,12 @@ import {
   shift,
   TextNode,
 } from "./index.js";
-import { toFrac, tuple, unsafe } from "./aux.js";
+import { tuple, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
 import { scopable } from "./scopable.js";
 import { Base } from "./base.js";
+import { toFrac } from "@weave/math";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
 

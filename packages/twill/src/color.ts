@@ -1,5 +1,4 @@
-import { clamp, v3, Vector, vector } from "./index.js";
-import { mod, safer, toDeg } from "./aux.js";
+import { clamp, toDegrees, mod, v3, Vector, vector } from "@weave/math";
 import { anglevalue } from "./parsers.js";
 
 type MODEL = "rgb" | "hsl" | "rgba" | "hsla";
@@ -173,7 +172,7 @@ export class Color {
     const hsl = this.toHSL();
     const theta = typeof angle === "string"
       ? anglevalue
-        .map((r) => (r.unit === "rad" ? toDeg(r.value) : r.value))
+        .map((r) => (r.unit === "rad" ? toDegrees(r.value) : r.value))
         .parse(angle)
         .result.unwrap(0)
       : angle;

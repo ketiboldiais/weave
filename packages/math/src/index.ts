@@ -50,85 +50,83 @@ export const round = (value: number, decimalPlaces: number = 2) => {
   return Math.round((value + Number.EPSILON) * cap) / cap;
 };
 
-type PTup = number | string | number[] | string[] | PTup[];
+/**
+ * Returns the slope of a given line.
+ * @param p1 - The startpoint, a pair of numbers `(a,b)`.
+ * @param p2 - The endpoint, a pair of numbers `(a,b)`.
+ * @param precision - The number of decimal places to round to.
+ */
+export const slope = (
+  p1: number[],
+  p2: number[],
+  precision: number = 5,
+) => {
+  const [x1, y1] = p1.length === 2 ? p1 : [1, 1];
+  const [x2, y2] = p2.length === 2 ? p2 : [1, 1];
+  const dydx = (y2 - y1) / (x2 - x1);
+  return round(dydx, precision);
+};
 
-import {
-  amid,
-  choice,
-  list,
-  lit,
-  maybe,
-  one,
-  P,
-  regex,
-  sepby,
-  some,
-  thunk,
-} from "@weave/reed";
+/**
+ * Returns the `n mod d`.
+ */
+export const mod = (n: number, d: number) => ((n % d) + d) % d;
 
-function expr(of: string) {
-  const POSITIVE_FLOAT = /^(0|[1-9]\d*)(\.\d+)?/;
-  const POSITIVE_INTEGER = /^\+?([1-9]\d*)/;
-  const NATURAL = /^(0|[1-9]\d*)/;
-  const INTEGER = /^-?(0|\+?[1-9]\d*)(?<!-0)/;
-  const PI = /^(\u{03c0})/u;
-  const LETTER = /^(\w+)/;
-  const NATIVE_FN = /^(cos|sin|tan)/;
-  const minus = regex(/^(-)/).trim();
-  const plus = regex(/^(\+)/).trim();
-  const slash = one("/").trim();
-  const star = one("*").trim();
-  const comma = one(",");
-  const caret = one("^").trim();
-  const equal = regex(/^=/).trim();
-  const notEqualOp = regex(/^(!=)/).trim();
-  const comparisonOp = regex(/^(<|>|<=|>=)/).trim();
-  const fname = regex(NATIVE_FN);
-  const lparen = lit("(");
-  const rparen = lit(")");
-  const parend = amid(lparen, rparen);
-  const commaSeparated = sepby(comma);
-  type NodeParser = P<PTup>;
 
-  /**
-   * Parses an integer.
-   */
-  const integer = regex(INTEGER);
-
-  /**
-   * Parses an unsigned floating point number.
-   */
-  const ufloat = regex(POSITIVE_FLOAT);
-  const floatingPoint = list([maybe(minus), ufloat]).map((r) => r.join(""));
-  const varx = regex(LETTER);
-  const number = choice([
-    floatingPoint,
-    integer,
-  ]);
-
-  const binaryExpr = (operator: P<string>) => (parser: P<PTup>) =>
-    list([
-      parser,
-      some(list([operator, parser])),
-    ]).map(([init, exprs]) =>
-      [init, ...exprs].reduce((acc, curr) => (
-        Array.isArray(curr) ? [acc, curr[0], curr[1]] : curr
-      ))
-    );
-  const expression: NodeParser = thunk(() => choice([sum, term]));
-  const term: NodeParser = thunk(() => choice([product, factor]));
-  const factor: NodeParser = thunk(() => choice([power, exponent]));
-  const exponent: NodeParser = thunk(() => primary);
-  const primary = choice([
-    number.map((r) => (r as any) * 1),
-    varx,
-    parend(expression),
-  ]);
-  const sum = binaryExpr(choice([plus, minus]))(term);
-  const product = binaryExpr(choice([star, slash]))(factor);
-  const power = list([exponent, caret, expression]);
-  return expression.parse(of);
+/**
+ * Converts the provided number into a pair of integers (N,D),
+ * where `N` is the numerator and `D` is the
+ * denominator.
+ */
+export function toFrac(numberValue: number) {
+  let eps = 1.0E-15;
+  let h, h1, h2, k, k1, k2, a, x;
+  x = numberValue;
+  a = Math.floor(x);
+  h1 = 1;
+  k1 = 0;
+  h = a;
+  k = 1;
+  while (x - a > eps * k * k) {
+    x = 1 / (x - a);
+    a = Math.floor(x);
+    h2 = h1;
+    h1 = h;
+    k2 = k1;
+    k1 = k;
+    h = h2 + a * h1;
+    k = k2 + a * k1;
+  }
+  return [h, k];
 }
 
-const p = expr(`3^8 - 2^2`);
-console.log(p);
+/**
+ * Given a numerator `N` and a denominator `D`,
+ * returns a simplified fraction.
+ */
+export function simplify([N, D]: [number, number]) {
+  const sgn = Math.sign(N) * Math.sign(D);
+  const n = Math.abs(N);
+  const d = Math.abs(D);
+  const f = gcd(n, d);
+  return [(sgn * n) / f, (sgn * d) / f];
+}
+
+/**
+ * Returns the greatest common denominator
+ * of the provided integers `a` and `b`.
+ */
+export function gcd(a: number, b: number) {
+  a = Math.floor(a);
+  b = Math.floor(b);
+  let t = a;
+  while (b !== 0) {
+    t = b;
+    b = a % b;
+    a = t;
+  }
+  return a;
+}
+
+export { v2, v3, Vector, vector } from "./vector.js";
+export { diagonal, Matrix, matrix, maxColumnCount } from "./matrix.js";

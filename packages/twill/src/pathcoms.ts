@@ -1,4 +1,5 @@
-import { Matrix, ScaleFn, v2 } from "./index.js";
+import { Matrix, v2 } from "@weave/math";
+import { ScaleFn } from "./index.js";
 
 export type CommandHandler<T> = {
   M: (command: MCommand) => T;

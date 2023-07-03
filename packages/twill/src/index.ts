@@ -1,5 +1,3 @@
-export { v2, v3, Vector, vector } from "./vector.js";
-export { diagonal, Matrix, matrix } from "./matrix.js";
 export { Color, color, hsl, rgb } from "./color.js";
 export {
   A,
@@ -52,7 +50,6 @@ export { isTreeSpace, tree, TreeSpace } from "./tree.js";
 export { isLeaf, isTree, leaf, subtree } from "./treenode.js";
 export type { LeafNode, Tree, TreeChild } from "./treenode.js";
 export { area, Circle, circle, isCircle } from "./circle.js";
-export { clamp, randFloat, randInt, round, toDeg, toRadians } from "./aux.js";
 export { Vertex, vtx } from "./graph/vertex.js";
 export { Edge, edge } from "./graph/edge.js";
 export { Graph, graph } from "./graph/graph.js";

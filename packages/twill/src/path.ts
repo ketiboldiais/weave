@@ -1,7 +1,8 @@
 import { cos, sin, unsafe } from "./aux.js";
 import { Base } from "./base.js";
 import { colorable } from "./colorable";
-import { FigNode, linear, Matrix, matrix, v2, Vector } from "./index.js";
+import { Matrix, matrix, v2, Vector } from "@weave/math";
+import { FigNode, linear } from "./index.js";
 import { parseDegrees, parseRadians } from "./parsers.js";
 import {
   A,
@@ -29,12 +30,14 @@ export class Path extends PATH {
   points: (PathCommand)[];
   cursor: Vector;
   get end() {
-    if (this.points.length) return Vector.from(this.points[this.points.length-1].end);
-    return Vector.from([0,0]);
+    if (this.points.length) {
+      return Vector.from(this.points[this.points.length - 1].end);
+    }
+    return Vector.from([0, 0]);
   }
   get start() {
     if (this.points.length) return Vector.from(this.points[0].end);
-    return Vector.from([0,0]); 
+    return Vector.from([0, 0]);
   }
   constructor(initX?: number, initY?: number) {
     super();
@@ -412,5 +415,3 @@ export const rect = (
     .h(-width)
     .v(-height)
 );
-
-

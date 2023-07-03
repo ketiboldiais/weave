@@ -1,635 +1,783 @@
-// @ts-nocheck
+import { randFloat, randInt, round } from "./index.js";
+import { Matrix } from "./matrix.js";
 
-/**
- * Converts the provided number into a pair of integers (N,D),
- * where `N` is the numerator and `D` is the
- * denominator.
- */
-export function toFrac(numberValue: number | Real | Fraction) {
-  if (typeof numberValue !== "number") {
-    if (isReal(numberValue)) {
-      numberValue = numberValue.n;
-    } else return numberValue;
+export class Vector {
+  elements: number[];
+  constructor(elements: number[]) {
+    this.elements = elements;
   }
-  let eps = 1.0E-15;
-  let h, h1, h2, k, k1, k2, a, x;
-  x = numberValue;
-  a = Math.floor(x);
-  h1 = 1;
-  k1 = 0;
-  h = a;
-  k = 1;
-  while (x - a > eps * k * k) {
-    x = 1 / (x - a);
-    a = Math.floor(x);
-    h2 = h1;
-    h1 = h;
-    k2 = k1;
-    k1 = k;
-    h = h2 + a * h1;
-    k = k2 + a * k1;
-  }
-  return frac([h, k]);
-}
 
-/**
- * Returns the greatest common denominator
- * of the provided integers `a` and `b`.
- */
-export function gcd(a: number, b: number) {
-  a = Math.floor(a);
-  b = Math.floor(b);
-  let t = a;
-  while (b !== 0) {
-    t = b;
-    b = a % b;
-    a = t;
-  }
-  return a;
-}
-
-/**
- * Given a numerator `N` and a denominator `D`,
- * returns a simplified fraction.
- */
-export function simplify(fraction: Fraction) {
-  const N = fraction.n;
-  const D = fraction.d;
-  const sgn = Math.sign(N) * Math.sign(D);
-  const n = Math.abs(N);
-  const d = Math.abs(D);
-  const f = gcd(n, d);
-  return frac([(sgn * n) / f, (sgn * d) / f]);
-}
-
-import {
-  amid,
-  choice,
-  list,
-  lit,
-  many,
-  maybe,
-  one,
-  P,
-  regex,
-  sepby,
-  some,
-  thunk,
-} from "@weave/reed";
-
-export interface Handler<T> {
-  real(node: Real): T;
-  frac(node: Fraction): T;
-  variable(node: Variable): T;
-  binex(node: BinaryExpression): T;
-  unex(node: UnaryExpression): T;
-  algex(node: AlgebraicExpression): T;
-  call(node: CallExpression): T;
-  tuple(node: Tuple): T;
-  error(node: Erratum): T;
-  relation(node: Relation): T;
-}
-
-export enum NT {
-  real,
-  frac,
-  variable,
-  binex,
-  unex,
-  call,
-  tuple,
-  error,
-  relation,
-  algex,
-}
-
-type NodeParser = P<ParseNode>;
-
-type ParseNode = { type: NT };
-// deno-fmt-ignore
-const nodeGuard = <N extends ParseNode>(
-  type: NT,
-) => (
-node: (ParseNode|null)
-): node is N => (node !== null && node.type === type);
-
-type Erratum = { type: NT.error; error: string };
-const err = (error: string): Erratum => ({
-  error,
-  type: NT.error,
-});
-const isErr = nodeGuard<Erratum>(NT.error);
-
-type Real = { n: number; type: NT.real };
-
-const int = (x: number | string): Real => ({
-  n: typeof x === "string" ? Number.parseInt(x) : x,
-  type: NT.real,
-});
-
-const real = (x: number | string): Real => ({
-  n: typeof x === "string" ? Number.parseFloat(x) : x,
-  type: NT.real,
-});
-const isReal = nodeGuard<Real>(NT.real);
-
-type Fraction = { n: number; d: number; type: NT.frac };
-const frac = ([n, d]: [number, number]): Fraction => ({
-  n,
-  d,
-  type: NT.frac,
-});
-const isFrac = nodeGuard<Fraction>(NT.frac);
-
-type Numeric = Real | Fraction;
-
-const isNumeric = (node: ParseNode): node is Real | Fraction => (
-  node.type === NT.real || node.type === NT.frac
-);
-
-type Atomic = Numeric | Variable;
-const isAtomic = (node: ParseNode): node is Atomic => (
-  isNumeric(node) || isVar(node)
-);
-
-type BinaryExpression<Left = ParseNode, Right = ParseNode> = {
-  op: string;
-  left: Left;
-  right: Right;
-  type: NT.binex;
-};
-const binex = (
-  [left, op, right]: [ParseNode, string, ParseNode],
-): BinaryExpression => ({
-  left,
-  op,
-  right,
-  type: NT.binex,
-});
-const isBinex = nodeGuard<BinaryExpression>(NT.binex);
-
-type UnaryExpression = {
-  op: string;
-  arg: ParseNode;
-  type: NT.unex;
-};
-const unex = ([op, arg]: [string, ParseNode]): UnaryExpression => ({
-  op,
-  arg,
-  type: NT.unex,
-});
-
-type AlgebraicExpression = {
-  op: string;
-  args: ParseNode[];
-  type: NT.algex;
-};
-/**
- * Returns an algebraic expression node.
- */
-const algex = (op: string, args: ParseNode[]): AlgebraicExpression => ({
-  op,
-  args,
-  type: NT.algex,
-});
-/**
- * Type guard: Returns true if the given node is an
- * algebraic expression, false otherwise.
- */
-const isAlgex = nodeGuard<AlgebraicExpression>(NT.algex);
-
-type CallExpression = {
-  type: NT.call;
-  caller: string;
-  args: ParseNode[];
-};
-const call = ([caller, args]: [string, ParseNode[]]): CallExpression => ({
-  caller,
-  args,
-  type: NT.call,
-});
-
-type Tuple = { type: NT.tuple; ns: ParseNode[] };
-const tuple = (ns: ParseNode[]): Tuple => ({
-  type: NT.tuple,
-  ns,
-});
-
-type Variable = { n: string; type: NT.variable };
-const varx = (n: string): Variable => ({
-  n,
-  type: NT.variable,
-});
-const nconst = (n: "pi" | "e"): Variable => ({
-  n,
-  type: NT.variable,
-});
-const isVar = nodeGuard<Variable>(NT.variable);
-
-type Relation = {
-  type: NT.relation;
-  lhs: ParseNode;
-  rhs: ParseNode;
-  op: string;
-};
-
-type RationalArithmetic = BinaryExpression<Fraction, Fraction>;
-const isRationalArithmetic = (node: ParseNode): node is RationalArithmetic => (
-  isBinex(node) && isFrac(node.left) && isFrac(node.right)
-);
-
-type RealArithmetic = BinaryExpression<Real, Real>;
-const isArithmeticBinex = (node: ParseNode): node is RealArithmetic => (
-  isBinex(node) && isReal(node.left) && isReal(node.right)
-);
-
-/**
- * Returns a new equation node.
- */
-const relation = (
-  [lhs, op, rhs]: [ParseNode, string, ParseNode],
-): Relation => ({
-  lhs,
-  op,
-  rhs,
-  type: NT.relation,
-});
-
-const POSITIVE_FLOAT = /^(0|[1-9]\d*)(\.\d+)?/;
-const POSITIVE_INTEGER = /^\+?([1-9]\d*)/;
-const NATURAL = /^(0|[1-9]\d*)/;
-const INTEGER = /^-?(0|\+?[1-9]\d*)(?<!-0)/;
-const PI = /^(\u{03c0})/u;
-const LETTER = /^(\w+)/;
-const NATIVE_FN = /^(cos|sin|tan)/;
-const addOp = regex(/^(\+|-)/).trim();
-const slash = one("/").trim();
-const mulOp = regex(/^(\/|\*|rem)/).trim();
-const comma = one(",");
-const caretOp = one("^").trim();
-const equal = regex(/^=/).trim();
-const notEqualOp = regex(/^(!=)/).trim();
-const comparisonOp = regex(/^(<|>|<=|>=)/).trim();
-const fname = regex(NATIVE_FN);
-const lparen = lit("(");
-const rparen = lit(")");
-const parend = amid(lparen, rparen);
-const commaSeparated = sepby(comma);
-/**
- * Parses a positive integer.
- */
-const posint = regex(POSITIVE_INTEGER).map(int);
-
-/**
- * Parses a natural number.
- */
-const natural = regex(NATURAL).map(int);
-
-/**
- * Parses an integer.
- */
-const integer = regex(INTEGER).map(int);
-
-/**
- * Parses the constant π.
- * Succeeds on either `Pi`, `pi`, `PI`, or
- * `π`.
- */
-const pi = (choice([
-  lit("pi"),
-  lit("PI"),
-  lit("Pi"),
-]).or(regex(PI))).map(() => nconst("pi"));
-
-/**
- * Parses the constant e (Euler’s number).
- * Succeeds on either `e` or `E`.
- */
-const euler = lit("e").map(() => nconst("e"));
-
-/**
- * Parses an unsigned floating point number.
- */
-const ufloat = regex(POSITIVE_FLOAT).map(real);
-
-/**
- * Parses a floating point number (possibly
- * signed).
- */
-const float = list([maybe(addOp), ufloat]).map(([s, { n }]) => {
-  const res = Number.parseFloat(`${s}${n}`);
-  return (res === 0) ? int(0) : (Number.isInteger(res) ? int(res) : real(res));
-});
-
-const fraction = list([integer, slash, integer]).map(([n, _, d]) =>
-  frac([n.n, d.n])
-);
-const digitalNumber = choice([float, integer]);
-const numval = choice([fraction, float, integer, pi, euler]);
-const varname = regex(LETTER).map(varx);
-/**
- * Parses the given input expression. The grammar:
- * ~~~ts
- * expression -> equation
- * equation -> [comparison] (('!=' | '==') [comparison])
- * comparison -> [term] (('>'|'>='|'<'|'>=') term)
- * term -> [factor] (('-'|'+') factor)
- * factor -> [unary] (('/'|'*') unary)
- * unary -> ('!'|'*') unary
- *          | primary
- * primary -> NUMBER | STRING | '(' expression ')'
- * ~~~
- */
-const expr = (input: string) => {
-  const parendListOf = <T extends ParseNode>(
-    nodeParser: P<T>,
-  ) => parend(commaSeparated(nodeParser));
-  const expression = thunk(() => sumExpr);
-
-  const sumExpr = thunk(() => list([mulExpr, many(list([addOp, mulExpr]))]))
-
-  return expression.parse(input).result.unwrap(err(`Parser failure`));
-};
-
-type NameRecord = Record<string, ParseNode>;
-
-class Stringifier implements Handler<string> {
-  stringify(node: ParseNode) {
-    if (isErr(node)) return node.error;
-    const n: any = node;
-    switch (node.type) {
-      case NT.real:
-        return this.real(n);
-      case NT.frac:
-        return this.frac(n);
-      case NT.variable:
-        return this.variable(n);
-      case NT.binex:
-        return this.binex(n);
-      case NT.unex:
-        return this.unex(n);
-      case NT.call:
-        return this.call(n);
-      case NT.tuple:
-        return this.tuple(n);
-      case NT.error:
-        return this.error(n);
-      case NT.relation:
-        return this.relation(n);
-      case NT.algex:
-        return this.algex(n);
-    }
-  }
-  real(node: Real): string {
-    return `${node.n}`;
-  }
-  frac(node: Fraction): string {
-    if (node.d === 1) return `${node.n}`;
-    return `${node.n}/${node.d}`;
-  }
-  variable(node: Variable): string {
-    return node.n;
-  }
-  binex(node: BinaryExpression): string {
-    const L = node.left;
-    const R = node.right;
-    const left = this.stringify(L);
-    const right = this.stringify(R);
-    if (node.op === "*") {
-      if (isVar(L) && isReal(R)) {
-        return `${R.n}${L.n}`;
-      }
-      if (isVar(R) && isReal(L)) {
-        return `${L.n}${R.n}`;
-      }
-      if (isBinex(L) && isBinex(R)) {
-        return `(${left})(${right})`;
+  /**
+   * Returns the smallest component
+   * of this vector.
+   */
+  get min() {
+    let min = Infinity;
+    for (let i = 0; i < this.elements.length; i++) {
+      const elem = this.elements[i];
+      if (elem < min) {
+        min = elem;
       }
     }
-    const op = node.op;
-    if (op === "^") {
-      return `${left}^(${right})`;
-    }
-    return `${left} ${op} ${right}`;
+    return min;
   }
-  unex(node: UnaryExpression): string {
-    const arg = this.stringify(node.arg);
-    const op = `${node.op}`;
-    return `${op}${arg}`;
-  }
-  algex(node: AlgebraicExpression): string {
-    const nodes = node.args.map((p) => this.stringify(p));
-    return nodes.join(` ${node.op} `);
-  }
-  call(node: CallExpression): string {
-    const f = node.caller;
-    const args = node.args.map((p) => this.stringify(p)).join(",");
-    return `${f}(${args})`;
-  }
-  tuple(node: Tuple): string {
-    const es = node.ns.map((e) => this.stringify(e)).join(",");
-    return `(${es})`;
-  }
-  error(node: Erratum): string {
-    return node.error;
-  }
-  relation(node: Relation): string {
-    const left = this.stringify(node.lhs);
-    const right = this.stringify(node.rhs);
-    return `${left} ${node.op} ${right}`;
-  }
-}
 
-class Reducer implements Handler<ParseNode> {
-  env: NameRecord;
-  erred: null | Erratum = null;
-  stringifier: Stringifier;
-  constructor() {
-    this.env = {
-      pi: real(Math.PI),
-      e: real(Math.PI),
-    };
-    this.stringifier = new Stringifier();
-  }
-  toString(node: ParseNode) {
-    return this.stringifier.stringify(node);
-  }
-  evalnode(node: ParseNode): ParseNode {
-    if (isErr(node)) return node;
-    const n: any = node;
-    // deno-fmt-ignore
-    switch (node.type) {
-      case NT.real: return this.real(n);
-      case NT.frac: return this.frac(n);
-      case NT.variable: return this.variable(n);
-      case NT.binex: return this.binex(n);
-      case NT.call: return this.call(n);
-      case NT.tuple: return this.tuple(n);
-      case NT.relation: return this.relation(n);
-			case NT.algex: return this.algex(n);
-      case NT.error: return this.error(n);
-			case NT.unex: return this.unex(n);
-    }
-  }
-  unex(node: UnaryExpression): ParseNode {
-    return this.evalnode(node.arg);
-  }
-  algex(node: AlgebraicExpression): ParseNode {
-    const args = node.args.map((p) => this.evalnode(p));
-    if (args.length === 2) {
-      return binex([args[0], node.op, args[1]]);
-    }
-    const out: ParseNode[] = [];
-    args.forEach((p) => {
-      if (isAlgex(p) && p.op === node.op) {
-        p.args.forEach((n) => out.push(n));
-      } else out.push(p);
-    });
-    const sortedNodes = this.sortNodes(out);
-    const nodeStrings = sortedNodes.map((n) => this.toString(n));
-    const fix: ParseNode[] = [];
-    const isMul = node.op === "*";
-    for (let i = 0; i < nodeStrings.length; i++) {
-      const s = nodeStrings[i];
-      if (isMul && s === "1") {
-        continue;
+  /**
+   * Returns the largest component
+   * of this vector.
+   */
+  get max() {
+    let max = -Infinity;
+    for (let i = 0; i < this.elements.length; i++) {
+      const elem = this.elements[i];
+      if (elem > max) {
+        max = elem;
       }
-      const nxt = nodeStrings[i + 1];
-      if ((nxt !== undefined) && (s === nxt)) {
-        const two = real(2);
-        const factor = sortedNodes[i];
-        if (isMul) {
-          fix.push(binex([factor, "^", two]));
-        } else fix.push(binex([two, "*", factor]));
-        i++;
-        continue;
-      }
-      fix.push(sortedNodes[i]);
     }
-    return algex(node.op, fix);
+    return max;
   }
-  sortNodes(nodes: ParseNode[]) {
-    return [...nodes].sort((a, b) =>
-      this.toString(a) < this.toString(b) ? -1 : 1
+
+  /**
+   * Returns the string representation of this vector.
+   */
+  toString() {
+    let out = "⟨";
+    out += this.elements.map((d) => `${d}`).join(",") + "⟩";
+    return out;
+  }
+
+  /**
+   * Returns the unit vector
+   * point from this vector 𝑢
+   * to the provided 𝑣.
+   */
+  normalTo(v: Vector) {
+    const d = this.sub(v);
+    return d.normalize();
+  }
+
+  /**
+   * __Non-mutating method__. Squares each component
+   * of a copy of this vector.
+   */
+  square() {
+    return this.copy().SQUARE();
+  }
+
+  /**
+   * __MUTATING METHOD__. Squares every component of this vector.
+   */
+  SQUARE() {
+    return this.MUL(this);
+  }
+
+  /**
+   * __Non-mutating Method__. Raises every
+   * component of a copy of this vector to
+   * the provided component.
+   */
+  pow(arg: Vector | number | number[]) {
+    return this.copy().POW(arg);
+  }
+
+  /**
+   * __MUTATING METHOD__. Raises every component to the provided
+   * vector.
+   */
+  POW(arg: Vector | number | number[]) {
+    return this.binaryOp(arg, (a, b) => a ** b);
+  }
+
+  /**
+   * Returns the order of this vector.
+   * I.e., the number of components in this
+   * vector.
+   */
+  get order() {
+    return this.elements.length;
+  }
+
+  /**
+   * The x-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
+  get x() {
+    return this.elements[0] !== undefined ? this.elements[0] : NaN;
+  }
+
+  /**
+   * Sets the x-coordinate of this vector.
+   */
+  set x(value: number) {
+    this.elements[0] = value;
+  }
+
+  /**
+   * Returns the y-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
+  get y() {
+    return this.elements[1] !== undefined ? this.elements[1] : NaN;
+  }
+
+  /**
+   * Sets the y-coordinate of this vector.
+   */
+  set y(value: number) {
+    this.elements[1] = value;
+  }
+
+  /**
+   * Returns the z-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
+  get z() {
+    return this.elements[2] !== undefined ? this.elements[2] : NaN;
+  }
+
+  /**
+   * Sets the z-coordinate of this vector. This will
+   * implicitly cast the vector to a 3D vector if
+   * it isn’t already a 3D vector.
+   */
+  set z(value: number) {
+    if (this.elements.length !== 3) {
+      this.elements = [0, 0, 0];
+    }
+    this.elements[2] = value;
+  }
+
+  /**
+   * Returns the w-coordinate of this vector.
+   * If no such coordinate exists, returns NaN.
+   */
+  get w() {
+    return this.elements[3] !== undefined ? this.elements[3] : NaN;
+  }
+
+  /**
+   * Sets the z-coordinate of this vector. This will
+   * implicitly cast the vector to a 3D vector if
+   * it isn’t already a 3D vector.
+   */
+  set w(value: number) {
+    if (this.elements.length !== 4) {
+      this.elements = [0, 0, 0, 0];
+    }
+    this.elements[3] = value;
+  }
+
+  /**
+   * Returns the angle between the two
+   * provided vectors.
+   */
+  theta(other: Vector) {
+    const ab = this.dot(other);
+    const mag = this.mag();
+    const factor = ab / (mag);
+    return Math.acos(factor);
+  }
+
+  /**
+   * Returns the angle between (a) the difference
+   * vector of this vector and the provided
+   * vector, and (b) the x-axis.
+   */
+  gamma(other: Vector) {
+    const dx = this.x - other.x;
+    const dy = this.y - other.y;
+    const gamma = Math.atan2(dy, dx);
+    return gamma;
+  }
+
+  /**
+   * __Mutating method__. Sets this vector’s
+   * 3D position.
+   */
+  xyz(x: number, y: number, z: number) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    return this;
+  }
+
+  /**
+   * __Mutating method__. Sets this vector’s
+   * 2D position.
+   */
+  xy(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+    this.z = 0;
+    return this;
+  }
+
+  mid2D(v: Vector) {
+    return this.add(v).div(2);
+  }
+
+  p2D(vector: Vector) {
+    this.x = vector.x;
+    this.y = vector.y;
+    return this;
+  }
+
+  /**
+   * __Non-mutating method__. Returns
+   * a new copy of this vector, magnified
+   * by the provided new magnitude.
+   */
+  magnify(newMagnitude: number) {
+    return this.copy().MAGNIFY(newMagnitude);
+  }
+
+  /**
+   * __Mutating method__. Magnifies this
+   * vector.
+   */
+  MAGNIFY(newMagnitude: number) {
+    const mag = this.mag();
+    const ratio = newMagnitude / mag;
+    return this.MUL(ratio);
+  }
+
+  /**
+   * Returns the components of this vector
+   * within an array.
+   */
+  array() {
+    return this.elements.map((e) => e);
+  }
+
+  /**
+   * Returns the ith vector component. Following
+   * mathematical conventions, indices start at 1.
+   */
+  n(i: number) {
+    return this.elements[i - 1] !== undefined ? this.elements[i - 1] : 0;
+  }
+  /**
+   * Sets the ith vector component. Following
+   * mathematical conventions, indices start
+   * at 1.
+   */
+  set(i: number, value: number) {
+    if (this.elements[i - 1] !== undefined) {
+      this.elements[i - 1] = value;
+    }
+    return this;
+  }
+
+  private binaryOp(
+    arg: Vector | number | number[],
+    f: (thisVector: number, arg: number) => number,
+  ) {
+    const other = typeof arg === "number"
+      ? Vector.from(new Array(this.elements.length).fill(arg))
+      : Vector.from(arg);
+    for (let i = 1; i <= this.order; i++) {
+      const a = this.n(i);
+      const b = other.n(i);
+      const c = f(a, b);
+      this.elements[i - 1] = c;
+    }
+    return this;
+  }
+
+  private unaryOp(f: (element: number) => number) {
+    for (let i = 1; i <= this.order; i++) {
+      const a = f(this.n(i));
+      this.set(i, a);
+    }
+    return this;
+  }
+
+  /**
+   * __NON-MUTATING METHOD__. Returns a
+   * a new vector, based on dividing this
+   * vector by the provided argument.
+   */
+  div(arg: Vector | number | number[]) {
+    return this.copy().DIV(arg);
+  }
+
+  /**
+   * __MUTATING METHOD__. Divides this
+   * vector by the provided argument.
+   * Note that vector divison is non-commutative.
+   */
+  DIV(arg: Vector | number | number[]) {
+    return this.binaryOp(
+      arg,
+      (thisVector, arg) => (arg === 0 ? 0 : thisVector / arg),
     );
   }
-  relation(node: Relation): ParseNode {
-    return node;
-  }
-  error(node: Erratum) {
-    this.erred = node;
-    return node;
-  }
-  real(node: Real): ParseNode {
-    if (this.erred) return this.erred;
-    return node;
-  }
-  frac(node: Fraction): ParseNode {
-    if (this.erred) return this.erred;
-    if (node.d === 1) return real(node.n);
-    if (node.d === node.n) return real(node.d / node.n);
-    return node;
-  }
-  variable(node: Variable): ParseNode {
-    if (this.erred) return this.erred;
-    const name = node.n;
-    if (this.env[name] !== undefined) {
-      return this.env[name];
-    } else return node;
-  }
-  areEqual(left: ParseNode, right: ParseNode) {
-    const l = this.toString(left);
-    const r = this.toString(right);
-    return l === r;
-  }
-  rationalArithmetic(node: RationalArithmetic) {
-    const left = node.left;
-    const right = node.right;
-    switch (node.op) {
-      case "*":
-        return simplify(frac([
-          left.n * right.n,
-          left.d * right.d,
-        ]));
-      case "/":
-        return simplify(frac([
-          left.n * right.d,
-          left.d * right.n,
-        ]));
-      case "+":
-        return simplify(frac([
-          left.n * right.d + right.n * left.d,
-          left.d * right.d,
-        ]));
-      case "-":
-        return simplify(frac([
-          left.n * right.d - right.n * left.d,
-          left.d * right.d,
-        ]));
-    }
-    return node;
-  }
-  realArithmetic(node: RealArithmetic) {
-    const left = node.left.n;
-    const right = node.right.n;
-    switch (node.op) {
-      case "+":
-        return real(left + right);
-      case "-":
-        return real(left - right);
-      case "*":
-        return real(left * right);
-      case "/":
-        return simplify(frac([left, right]));
-      case "rem":
-        return real(((left % right) + left) % right);
-      case "^":
-        return real(left ** right);
-    }
-    return node;
+
+  /**
+   * __Non-mutating method__. Returns a new
+   * vector, based on subtracting the provided
+   * _from_ this vector.
+   */
+  sub(arg: Vector | number | number[]) {
+    return this.copy().SUB(arg);
   }
 
-  binex(node: BinaryExpression): ParseNode {
-    if (this.erred) return this.erred;
-    let left = this.evalnode(node.left);
-    let right = this.evalnode(node.right);
-    let out: ParseNode = binex([left, node.op, right]);
-    let op = node.op;
-    if (isArithmeticBinex(out)) {
-      return this.realArithmetic(out);
+  /**
+   * __MUTATING METHOD__. Subtracts the
+   * provided vector _from_ this vector.
+   * Bear in mind that vector subtraction
+   * is non-commutative.
+   */
+  SUB(arg: Vector | number | number[]) {
+    return this.binaryOp(arg, (thisVector, arg) => thisVector - arg);
+  }
+
+  /**
+   * Returns the vector-matrix product of
+   * this vector and the provided matrix (
+   * the dot product this vector and each
+   * row in the matrix). If the number
+   * of columns in the provided matrix
+   * is not equal to the order of this
+   * vector, return this vector.
+   */
+  vxm(matrix: Matrix) {
+    if (this.order !== matrix.C) return this;
+    const vector = new Vector([]);
+    for (let i = 1; i <= matrix.R; i++) {
+      const v = matrix.row(i);
+      const d = this.dot(v);
+      vector.elements[i - 1] = d;
     }
-    if (isRationalArithmetic(out)) {
-      return this.rationalArithmetic(out);
+    return vector;
+  }
+
+  /**
+   * Returns true if this vector
+   * and the provided vector are
+   * pointing in roughly the same
+   * direction (i.e., parallel).
+   */
+  acute(other: Vector) {
+    const a = this.dot(other);
+    return a > 0;
+  }
+  /**
+   * Returns true if this vector
+   * and the provided vector are
+   * perpendicular.
+   */
+  aright(other: Vector) {
+    const a = this.dot(other);
+    return a === 0;
+  }
+  /**
+   * Returns true if this vector
+   * and the provided vector are
+   * pointing in roughly
+   * opposite directions.
+   */
+  obtuse(other: Vector) {
+    const a = this.dot(other);
+    return a < 0;
+  }
+
+  /**
+   * __Non-mutating Method__. Returns
+   * a new vector, based on multiplying
+   * this vector by the provided vector.
+   */
+  mul(arg: Vector | number | number[]) {
+    return this.copy().MUL(arg);
+  }
+
+  /**
+   * __MUTATING METHOD__. Multiplies this
+   * vector by the provided vector (scalar
+   * multiplication if a number is passed,
+   * pair-wise multiplication if a vector
+   * is passed). For numbers, values between
+   * 1 and 0 will “shrink” the vector, and
+   * values great than 1 will "elongate"
+   * the vector.
+   */
+  MUL(arg: Vector | number | number[]) {
+    return this.binaryOp(arg, (thisVector, arg) => thisVector * arg);
+  }
+
+  /**
+   * __Non-mutating Method__. Returns
+   * a new vector, based on adding
+   * the provided vector to this vector.
+   */
+  add(arg: Vector | number | number[]) {
+    return this.copy().ADD(arg);
+  }
+
+  /**
+   * __MUTATING METHOD__. Adds the
+   * provided vector this vector.
+   */
+  ADD(arg: Vector | number | number[]) {
+    return this.binaryOp(arg, (thisVector, arg) => thisVector + arg);
+  }
+
+  /**
+   * __Non-mutating method__. Returns a new
+   * vector whose components are the components
+   * of this vector, all non-negative.
+   */
+  abs() {
+    return this.copy().ABS();
+  }
+
+  /**
+   * __MUTATING METHOD__. Sets each
+   * component of this vector to its
+   * absolute value. In practice, equivalent
+   * to ensuring every component is non-negative.
+   */
+  ABS() {
+    return this.unaryOp((e) => (e === 0 ? 0 : Math.abs(e)));
+  }
+
+  /**
+   * __Non-mutating Method__. Returns a new
+   * vector, where each component is this
+   * vector’s component, negated.
+   */
+  neg() {
+    return this.copy().NEG();
+  }
+
+  /**
+   * __MUTATING METHOD__. Negates every component
+   * of this vector.
+   */
+  NEG() {
+    return this.unaryOp((e) => (e === 0 ? 0 : -e));
+  }
+
+  /**
+   * __Non-mutating method__. Returns a new
+   * zero vector.
+   */
+  zero() {
+    return this.copy().ZERO();
+  }
+
+  /**
+   * __MUTATING METHOD__. Zeroes this vector.
+   * I.e., sets every component to zero.
+   */
+  ZERO() {
+    for (let i = 0; i < this.elements.length; i++) {
+      this.elements[i] = 0;
     }
-    if (isNumeric(left) && isNumeric(right)) {
-      return this.rationalArithmetic(binex([
-        toFrac(left),
-        op,
-        toFrac(right),
-      ]) as RationalArithmetic);
+    return this;
+  }
+
+  /**
+   * Returns true if this vector
+   * equals the provided vector.
+   */
+  equals(that: Vector) {
+    if (this.length !== that.length) return false;
+    for (let i = 0; i < this.length; i++) {
+      const e1 = this.elements[i];
+      const e2 = that.elements[i];
+      if (e1 !== e2) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Returns the number of components in this
+   * vector. For the mathematical “length” of
+   * a vector, see {@link Vector.mag}.
+   */
+  get length() {
+    return this.elements.length;
+  }
+
+  /**
+   * Returns the magnitude of this vector.
+   * @param precision - An optional precision value
+   * may be passed roundingthe magnitude to a specified
+   * number of decimal places.
+   */
+  mag(precision?: number) {
+    const x = this.x;
+    const y = this.y;
+    const z = this.z;
+    const xyz = (x * x) + (y * y) + (z * z);
+    let out = Math.sqrt(xyz);
+    if (precision !== undefined) {
+      out = round(out, precision);
     }
     return out;
   }
-  call(node: CallExpression): ParseNode {
-    return node;
+
+  /**
+   * Returns true if this vector
+   * is the zero vector.
+   */
+  isZero() {
+    for (let i = 0; i < this.length; i++) {
+      if (this.elements[i] !== 0) return false;
+    }
+    return true;
   }
-  tuple(node: Tuple): Tuple {
-    return tuple(node.ns.map((n) => this.evalnode(n)));
+
+  /**
+   * __Non-mutating method__. Returns
+   * a new vector corresponding to this
+   * vector’s normal.
+   *
+   * In this library, the normal is equivalent
+   * to the unit vector (i.e., which direction
+   * this vector is pointing in).
+   */
+  normalize() {
+    return this.copy().NORMALIZE();
+  }
+
+  /**
+   * __Mutating Method__. Sets this
+   * vector to its normal
+   */
+  NORMALIZE() {
+    if (this.isZero()) return this;
+    return this.DIV(this.mag());
+  }
+
+  /**
+   * Returns a new 2D vector normal to
+   * this vector.
+   */
+  normal2D() {
+    return new Vector([-this.y, this.x]);
+  }
+
+  /**
+   * Returns the dot product of
+   * this vector and the provided
+   * vector.
+   */
+  dot(vector: Vector | number[]) {
+    const other = Vector.from(vector);
+    const order = this.length;
+    if (other.length !== order) return 0;
+    let sum = 0;
+    for (let i = 0; i < order; i++) {
+      const a = this.elements[i];
+      const b = other.elements[i];
+      const p = a * b;
+      sum += p;
+    }
+    return sum;
+  }
+
+  /**
+   * __Non-mutating Method__. Returns
+   * the cross product of this
+   * vector against the provided
+   * vector as a new vector. Note that in
+   * this library, the cross product
+   * is only defined for 3D vectors.
+   */
+  cross(other: Vector) {
+    return this.copy().CROSS(other);
+  }
+
+  /**
+   * __Mutating Method__. Returns
+   * the cross product of this
+   * vector in-place. The cross
+   * product is used primarily to
+   * compute the vector perpendicular
+   * to two vectors.
+   */
+  CROSS(other: Vector) {
+    const ax = this.x;
+    const ay = this.y;
+    const az = this.z;
+    const bx = other.x;
+    const by = other.y;
+    const bz = other.z;
+    const cx = (ay * bz) - (az * by);
+    const cy = (az * bx) - (ax * bz);
+    const cz = (ax * by) - (ay * bx);
+    this.x = cx;
+    this.y = cy;
+    this.z = cz;
+    return this;
+  }
+  /**
+   * Returns the 2D distance between this
+   * vector and the provided vector.
+   */
+  euclideanDistance(other: Vector) {
+    const dx = other.x - this.x;
+    const dy = other.y - this.y;
+    const dsum = (dx ** 2) + (dy ** 2);
+    return Math.sqrt(dsum);
+  }
+
+  /**
+   * Returns the 3D distance between this
+   * vector and the provided vector.
+   */
+  d3(other: Vector) {
+    const x = other.x - this.x;
+    const y = other.y - this.y;
+    const z = other.z - this.z;
+    const xyz = (x * x) + (y * y) + (z * z);
+    return Math.sqrt(xyz);
+  }
+
+  /**
+   * Returns the projection of
+   * this vector (𝑏) onto the
+   * provided vector (𝑎) (projₐ𝑏).
+   * That is, the projection of 𝑏
+   * onto 𝑎.
+   */
+  project(a: Vector): Vector {
+    const b = this.copy();
+    const prod = a.dot(b);
+    const mag = a.mag();
+    const mag2 = mag * mag;
+    const factor = prod / mag2;
+    const res = a.mul(factor);
+    return res;
+  }
+
+  /**
+   * Returns a copy of this vector.
+   */
+  copy() {
+    return new Vector(this.array());
+  }
+
+  /**
+   * Non-mutating method. Rotates a copy of this
+   * vector.
+   */
+  // rotate2D(origin: Vector | number[], Θ: string | number) {
+  // return this.copy().ROTATE2D(origin, Θ);
+  // }
+
+  /**
+   * Rotates thie vector in place.
+   */
+  // ROTATE2D(origin: Vector | number[], Θ: string | number) {
+  // const angle = (typeof Θ === "number")
+  // ? Θ
+  // : anglevalue.map(({ value, unit }) =>
+  // unit === "deg" ? toRadians(value) : value
+  // ).parse(Θ).result.unwrap(0);
+  // const center = origin instanceof Vector ? origin : Vector.from(origin);
+  // const r = [];
+  // const x = this.x - center.x;
+  // const y = this.y - center.y;
+  // r[0] = (x * Math.cos(angle)) - (y * Math.sin(angle));
+  // r[1] = (x * Math.sin(angle)) + (y * Math.cos(angle));
+  // r[0] += center.x;
+  // r[1] += center.y;
+  // this.x = r[0];
+  // this.y = r[1];
+  // return this;
+  // }
+
+  /**
+   * Returns a new zero vector of the specified
+   * length.
+   */
+  static zero(length: number) {
+    return new Vector(new Array(length).fill(0));
+  }
+
+  /**
+   * Returns a new vector of order L,
+   * filled with the given value.
+   */
+  static fill(L: number, value: number) {
+    return new Vector(new Array(L).fill(value));
+  }
+
+  /**
+   * Returns a vector where each component is the
+   * provided value.
+   */
+  static from(value: number[] | Vector) {
+    if (Array.isArray(value)) {
+      return new Vector(value);
+    } else {
+      return value;
+    }
+  }
+  /**
+   * Given an array of vectors, returns
+   * the vector of the largest {@link Vector.order}.
+   */
+  static maxOrder(vectors: Vector[]) {
+    let max = 0;
+    for (let i = 0; i < vectors.length; i++) {
+      const L = vectors[i].order;
+      if (L > max) max = L;
+    }
+    return max;
+  }
+  /**
+   * Returns a random 2D vector.
+   * @param min - The lower bound of the sampling interval.
+   * @param max - The upper bound of the sampling interval.
+   * @param restrict - If `Z` is passed, random values are
+   * restricted to integers. If `R` is passed, random values
+   * are either integers or floats.
+   */
+  static random2D(min: number, max: number, restrict: "Z" | "R" = "R") {
+    const rfn = (restrict === "Z") ? randInt : randFloat;
+    const x = rfn(min, max);
+    const y = rfn(min, max);
+    return new Vector([x, y]);
+  }
+  /**
+   * Returns a random 2D vector.
+   * @param min - The lower bound of the sampling interval.
+   * @param max - The upper bound of the sampling interval.
+   * @param restrict - If `Z` is passed, random values are
+   * restricted to integers. If `R` is passed, random values
+   * are either integers or floats.
+   */
+  static random3D(min: number, max: number, restrict: "Z" | "R" = "R") {
+    const v = Vector.random2D(min, max, restrict);
+    const x = v.x;
+    const y = v.y;
+    const z = restrict === "Z" ? randInt(min, max) : randFloat(min, max);
+    return new Vector([x, y, z]);
   }
 }
 
-function reduce(expression: ParseNode) {
-  const reducer = new Reducer();
-  return reducer.evalnode(expression);
-}
-function stringify(expression: ParseNode) {
-  const stringifier = new Stringifier();
-  return stringifier.stringify(expression);
-}
+/**
+ * Returns a new 2D vector.
+ */
+export const v2 = (
+  x: number,
+  y: number = x,
+) => new Vector([x, y]);
 
-const e = expr(`6 * 3 - 1`);
-console.log(e);
-// const ex = reduce(e);
-// console.log(ex);
-// const r = stringify(ex);
-// console.log(r);
+/**
+ * Returns a new 3D vector.
+ */
+export const v3 = (
+  x: number,
+  y: number = x,
+  z: number = 1,
+) => new Vector([x, y, z]);
+
+/**
+ * Returns a new generic vector.
+ */
+export const vector = (...coords: number[]) => new Vector(coords);
