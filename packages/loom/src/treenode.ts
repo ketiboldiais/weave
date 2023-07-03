@@ -15,7 +15,7 @@ abstract class TreeNode extends TREENODE {
   change: number = 0;
   shift: number = 0;
   leftmost_sibling: TreeChild | null = null;
-  constructor(name: string, parent: Tree | null) {
+  constructor(name: string | number, parent: Tree | null) {
     super(name);
     this.parent = parent;
     this.r = 5;
@@ -62,7 +62,7 @@ abstract class TreeNode extends TREENODE {
 
 export class LeafNode extends TreeNode {
   ancestor: TreeChild;
-  constructor(name: string, parent: Tree | null = null) {
+  constructor(name: string | number, parent: Tree | null = null) {
     super(name, parent);
     this.ancestor = this;
     this.type = "leaf";
@@ -90,7 +90,7 @@ export class LeafNode extends TreeNode {
   }
 }
 
-export const leaf = (name: string) => {
+export const leaf = (name: string | number) => {
   return new LeafNode(name);
 };
 
@@ -118,7 +118,7 @@ export class Tree extends TreeNode {
     if (c) callback(c);
     return this;
   }
-  constructor(name: string, parent: Tree | null = null) {
+  constructor(name: string | number, parent: Tree | null = null) {
     super(name, parent);
     this.type = "subtree";
     this.ancestor = this;
@@ -194,7 +194,7 @@ export class Tree extends TreeNode {
     return this;
   }
 }
-export const subtree = (name: string) => {
+export const subtree = (name: string | number) => {
   return new Tree(name);
 };
 export const isTree = (node: FigNode): node is Tree =>

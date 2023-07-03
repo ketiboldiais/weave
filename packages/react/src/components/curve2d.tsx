@@ -10,7 +10,7 @@ export const Curve2D = ({ of }: Curve2DProps) => {
   const d = of.path();
   const hasChildren = of.children.length !== 0;
   return (
-    <g>
+    <g transform={of.shift()}>
       <>
         <path
           d={d}
@@ -20,8 +20,8 @@ export const Curve2D = ({ of }: Curve2DProps) => {
         />
       </>
       {hasChildren &&
-        of.children.map((c,i) => (
-          <Fragment key={`fn-${i}-${d.slice(1,3)}`}>
+        of.children.map((c, i) => (
+          <Fragment key={`fn-${i}-${d.slice(1, 3)}`}>
             {isIntegral(c) && <Integration of={c} />}
           </Fragment>
         ))}

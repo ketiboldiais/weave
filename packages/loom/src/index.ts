@@ -28,6 +28,7 @@ import { TextNode } from "./text.js";
 import { TreeSpace } from "./tree.js";
 import { TreeChild } from "./treenode.js";
 export { Space2D } from "./space2d.js";
+export { bst } from "./tree/tree.binary.js";
 export type { ScaleFn } from "./space2d.js";
 export { arrow, isLine, line } from "./geometries/line.js";
 export type { Line } from "./geometries/line.js";

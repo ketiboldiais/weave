@@ -1,14 +1,16 @@
 .nav {
-  position: sticky;
+  position: fixed;
+  z-index: 500;
   top: 0;
   bottom: 0;
   height: 30px;
-  padding: 1%;
+  padding: 5px 10px;
   margin: 0;
-  width: 98%;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: rgb(227, 232, 238);
   button {
     font-size: 1em;
     text-align: center;
@@ -16,6 +18,8 @@
     height: 30px;
     width: 30px;
     cursor: pointer;
+    background-color: inherit;
+    border: 0;
   }
   ul {
     list-style: none;

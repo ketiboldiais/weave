@@ -16,18 +16,6 @@ export const Tree = ({ of }: { of: TreeSpace }) => {
       <defs>
         {definitions.map((a) => <Arrow key={a.id} of={a} />)}
       </defs>
-      <g className={"tree-edgenotes"}>
-        {edgeNotes.map((e) => (
-          <line
-            key={e.id}
-            x1={e.x1}
-            y1={e.y1}
-            x2={e.x2}
-            y2={e.y2}
-            stroke={"currentColor"}
-          />
-        ))}
-      </g>
       <g className={"treelinks"}>
         {edges.map((e) => (
           <line
@@ -36,7 +24,22 @@ export const Tree = ({ of }: { of: TreeSpace }) => {
             y1={e.y1}
             x2={e.x2}
             y2={e.y2}
-            stroke={"currentColor"}
+            stroke={e.strokeColor || "currentColor"}
+            strokeWidth={e.strokeWidth || 1}
+          />
+        ))}
+      </g>
+      <g className={"tree-edgenotes"}>
+        {edgeNotes.map((e) => (
+          <line
+            key={e.id}
+            x1={e.x1}
+            y1={e.y1}
+            x2={e.x2}
+            y2={e.y2}
+            stroke={e.strokeColor}
+            markerEnd={`url(#${e.id})`}
+            strokeWidth={e.strokeWidth || 1}
           />
         ))}
       </g>

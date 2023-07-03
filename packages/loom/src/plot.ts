@@ -66,7 +66,7 @@ export class Plot extends PLOT_BASE {
     const ry = ys(space.amplitude("y") / d) / 2;
     const r = Math.min(rx, ry);
     const domain_max = 2 * Math.PI;
-    const rscale = linear([0, 0.5], [0, xs(r)]);
+    const rscale = linear([0, 2], [0, xs(r)]);
     let points: [number, number][] = [];
     for (let i = 0; i < domain_max; i += 0.01) {
       const x = i;
@@ -79,6 +79,17 @@ export class Plot extends PLOT_BASE {
       .angle((d) => -d[0] + Math.PI / 2)(points);
     if (str !== null) out = str;
     return out;
+  }
+
+  shift() {
+    if (this.system === "cartesian") {
+      return "";
+    } else {
+      const space = this.space();
+      const vw = space.vw / 2;
+      const vh = space.vh / 2;
+      return `translate(${vw},${vh})`;
+    }
   }
 
   private linearPath(): string {
@@ -102,6 +113,7 @@ export class Plot extends PLOT_BASE {
       if (x < xmin || xmax < x) continue;
       else dataset.push(point);
     }
+
     const p = line()
       .y((d) => ys(d[1]))
       .defined((d) => !isNaN(d[1]))

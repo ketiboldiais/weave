@@ -7,7 +7,7 @@ import { typed } from "./typed.js";
 const TEXT = typed(textual(Circle));
 
 export class Text extends TEXT {
-  constructor(content: string) {
+  constructor(content: string|number) {
     super(0);
     this.type = "text";
     this.text=content;

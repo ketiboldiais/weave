@@ -1,21 +1,41 @@
+import { TreeChild, leaf, subtree } from "..";
+
 export class BNode<T> {
   data: T | null;
-  private R: () => BNode<T>;
-  private L: () => BNode<T>;
+  private R: BNode<T> | null;
+  private L: BNode<T> | null;
   constructor(data: T | null) {
     this.data = data;
-    this.R = () => BNode.none();
-    this.L = () => BNode.none();
+    this.R = null;
+    this.L = null;
+  }
+  fignode(idfn: (data: T | null) => string | number) {
+    if (this.R === null && this.L === null) {
+      return leaf(idfn(this.data));
+    }
+    const out = subtree(idfn(this.data));
+    const nodes:TreeChild[] = [];
+    if (this.L !== null) {
+      nodes.push(this.L.fignode(idfn));
+    }
+    if (this.R !== null) {
+      nodes.push(this.R.fignode(idfn));
+    }
+    out.nodes(nodes);
+    return out;
+  }
+  isLeaf() {
+    return this.R === null && this.L === null;
   }
   /**
    * Returns a copy of this bnode.
    */
   copy() {
     const out = new BNode(this.data);
-    const left = this.L();
-    const right = this.R();
-    out.L = () => left;
-    out.R = () => right;
+    const left = this.L;
+    const right = this.R;
+    out.L = left;
+    out.R = right;
     return out;
   }
   /**
@@ -48,28 +68,28 @@ export class BNode<T> {
     return this.data === null;
   }
   onRight(callback: (rightNode: BNode<T>) => void) {
-    const right = this.R();
-    if (right.isNothing()) return this;
+    const right = this.R;
+    if (right === null) return this;
     callback(right);
     return this;
   }
   onLeft(callback: (leftNode: BNode<T>) => void) {
-    const left = this.L();
-    if (left.isNothing()) return this;
+    const left = this.L;
+    if (left === null) return this;
     callback(left);
     return this;
   }
   get right() {
-    return this.R();
+    return this.R;
   }
-  set right(node: BNode<T>) {
-    this.R = () => node;
+  set right(node: BNode<T> | null) {
+    this.R = node;
   }
   get left() {
-    return this.L();
+    return this.L;
   }
-  set left(node: BNode<T>) {
-    this.L = () => node;
+  set left(node: BNode<T> | null) {
+    this.L = node;
   }
   static none<T>() {
     return new BNode<T>(null);

@@ -1,6 +1,4 @@
-import { axis, forceSpace, graph } from "@weave/loom";
-import { L } from "../components/line";
-import { Fragment } from "react";
+import { forceSpace, graph } from "@weave/loom";
 import { Figure } from "../components/figure.js";
 
 const d = forceSpace(graph({

@@ -59,9 +59,7 @@ export class TreeSpace extends TREEBASE {
     this.layout = option;
     return this;
   }
-  private edgeNotes: Partial<
-    Record<Traversal, LinkFunction>
-  > = {};
+  private edgeNotes: Partial< Record<Traversal, LinkFunction> > = {};
   edges(of: Traversal, callback: LinkFunction) {
     this.edgeNotes[of] = callback;
     return this;
@@ -484,7 +482,7 @@ export class TreeSpace extends TREEBASE {
         const c = callback(l, a, b).uid(l.id);
         const arrow = arrowDef()
           .uid(c.id)
-          .ref("x", b.r * 2)
+          .ref("x", b.r*3)
           .sized(b.r, b.r)
           .viewbox(`0 -${b.r} ${b.r * 2} ${b.r * 2}`)
           .path(`M0,-${b.r}L${b.r * 2},0L0,${b.r}Z`)
@@ -513,7 +511,7 @@ export class TreeSpace extends TREEBASE {
   notes: Line[]=[];
 }
 
-export const tree = (name: string) => {
+export const tree = (name: string|number) => {
   return new TreeSpace(subtree(name)).typed("tree");
 };
 export const isTreeSpace = (

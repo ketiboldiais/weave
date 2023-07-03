@@ -46,7 +46,7 @@ export class LinkedList<T> {
       let count = 0;
       let current = this.#head;
       while (count !== index) {
-        current = current.right;
+        current = current.right!;
         count++;
       }
       return current;
@@ -79,7 +79,7 @@ export class LinkedList<T> {
       this.#head = bnode();
       this.#tail = bnode();
     } else {
-      this.#head = previousHead.right;
+      this.#head = previousHead.right!;
       this.#head.left = bnode();
       previousHead.right = bnode();
     }
@@ -107,7 +107,7 @@ export class LinkedList<T> {
     before.right = node;
     node.left = before;
     node.right = after;
-    after.left = node;
+    after!.left = node!;
     this.#length++;
     return this;
   }
@@ -129,7 +129,7 @@ export class LinkedList<T> {
       list.#head = bnode();
       list.#tail = bnode();
     } else {
-      list.#head = previousHead.right;
+      list.#head = previousHead.right!;
       list.#head.left = bnode();
       previousHead.right = bnode();
     }
@@ -155,7 +155,7 @@ export class LinkedList<T> {
     let node = this.#head;
     while (node.isSomething()) {
       yield node.data!;
-      node = node.right;
+      node = node.right!;
     }
   }
 
@@ -170,7 +170,7 @@ export class LinkedList<T> {
       this.#head = bnode();
       this.#tail = bnode();
     } else {
-      this.#tail = popped.left;
+      this.#tail = popped.left!;
       this.#tail.right = bnode();
       popped.left = bnode();
     }
@@ -193,9 +193,9 @@ export class LinkedList<T> {
     if (this.isEmpty) return this;
     let node = this.#head;
     let i = 0;
-    while (!node.isNothing()) {
+    while (node !== null) {
       node.do((d) => f(d, i, this));
-      node = node.right;
+      node = node.right!;
       i++;
     }
   }
@@ -311,7 +311,7 @@ export class LinkedList<T> {
       const right = current.right;
       current.right = current.left;
       current.left = right;
-      current = current.left;
+      current = current.left!;
     }
     const tail = this.#tail;
     this.#tail = this.#head;

@@ -97,7 +97,7 @@ export function colorable<NodeClass extends Axiom>(
       }
     }
     copyColors(node: Colorable) {
-      if (!this.locked && node.colors !== null) {
+      if (!this.locked) {
         const colors = node.colors;
         this.colors = { ...colors };
       }

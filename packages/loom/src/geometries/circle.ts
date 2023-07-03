@@ -15,7 +15,7 @@ export class Circle extends CIRCLE_BASE {
   r: number = 5;
   dx: number = 0;
   dy: number = 0;
-  text: string = "";
+  text: string|number = "";
   label(text: string) {
     this.text = text;
     return this;

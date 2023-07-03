@@ -189,5 +189,4 @@ function expr(text: string) {
 
   return { tokenize, parse };
 }
-const x = expr(`3^x + 4^x`).parse();
-console.log(x);
+
