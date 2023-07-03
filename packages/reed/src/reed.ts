@@ -395,33 +395,6 @@ export const list = <T extends [...P<any>[]]>(
   );
 
 /**
- * Returns a parser that matches the given list of rules.
- * The result will hold either an array of results from
- * the rules successfully matched or an empty array
- * if no rule is matched. Note that a `some` parser
- * never fails – a result array is always returned.
- * @param rules - A list of rules to match.
- */
-export const some = <T extends [...P<any>[]]>(
-  patterns: [...T],
-) =>
-  new P<UnwrapPs<T>>((state) => {
-    const results = [];
-    if (state.error) return state;
-    let newstate = state;
-    const L = patterns.length;
-    for (let i = 0; i < L; i++) {
-      newstate = patterns[i].p(newstate);
-      if (!newstate.result.isNothing()) {
-        const res = newstate.result.value;
-        results.push(res);
-      }
-    }
-    const output = success(newstate, results);
-    return output;
-  });
-
-/**
  * Returns a parser that returns a successful on the first
  * matched pattern. If not a single match is found
  * from the list of patterns, returns an error.
@@ -470,6 +443,37 @@ export const many = <T>(pattern: P<T>) =>
       if (i >= max) break;
     }
     return success(next, results);
+  });
+
+/**
+ * Returns a parser that looks for _at least one_ match from the
+ * given rule, and continuing as many times as possible if a match
+ * is found. If no rule matches, returns a failed state.
+ * Otherwise, returns an array of the matches. Two optional
+ * parameters may be passed, `min` and `max`, setting
+ * the minimum amount of matches (defaults to 1) and the maximum amount
+ * of matches (defaults to Infinity).
+ */
+export const some = <T>(
+  pattern: P<T>,
+  min: number = 1,
+  max: number = Infinity,
+): P<T[]> =>
+  new P((state) => {
+    if (state.error) return state;
+    const resultState = many(pattern).p(state);
+    if (
+      resultState.result.value === null ||
+      (
+        resultState.result.value.length < min ||
+        resultState.result.value.length > max
+      )
+    ) {
+      const msg = `Expected at least one match`;
+      const erm = erratum(`some`, msg);
+      return failure(state, erm);
+    }
+    return resultState;
   });
 
 /**
@@ -545,11 +549,11 @@ export const sepby = <S>(
         error = valstate;
         break;
       } else {
-        if (!valstate.result.value!==null) {
+        if (!valstate.result.value !== null) {
           results.push(valstate.result.value);
         }
       }
-      if (sepstate.error!==undefined) {
+      if (sepstate.error !== undefined) {
         next = valstate;
         break;
       }
