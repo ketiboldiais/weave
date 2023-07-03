@@ -1,9 +1,9 @@
-import { FigNode } from ".";
+import { FigNode } from "./index.js";
 import { arraySplit, unsafe } from "./aux.js";
 import { colorable } from "./colorable.js";
 import { linkedList } from "./list.js";
 import { Text } from "./text.js";
-import { tagged, typed } from "./typed";
+import { tagged, typed } from "./typed.js";
 
 const TREENODE = typed(colorable(tagged(Text)));
 

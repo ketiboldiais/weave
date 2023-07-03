@@ -1,9 +1,9 @@
-import { safer, unsafe } from "./aux.js";
-import { Base } from "./base.js";
-import { colorable } from "./colorable";
-import { FigNode } from "./index.js";
-import { scopable } from "./scopable.js";
-import { tagged, typed } from "./typed.js";
+import { safer, unsafe } from "../aux.js";
+import { Base } from "../base.js";
+import { colorable } from "../colorable.js";
+import { FigNode } from "../index.js";
+import { scopable } from "../scopable.js";
+import { tagged, typed } from "../typed.js";
 import { v2, Vector, vector } from "@weave/math";
 
 const LINE = typed(colorable(scopable(tagged(Base))));

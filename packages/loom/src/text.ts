@@ -1,6 +1,6 @@
 import { unsafe } from "./aux.js";
 import { FigNode } from "./index.js";
-import { Circle } from "./circle.js";
+import { Circle } from "./geometries/circle.js";
 import { textual } from "./textual.js";
 import { typed } from "./typed.js";
 

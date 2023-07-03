@@ -165,8 +165,8 @@ export class Space2D extends Space {
     return out;
   }
   scaleOf(of: "x" | "y"): ScaleFn {
-    const width = this.boxed("width");
-    const height = this.boxed("height");
+    const width = this.vw;
+    const height = this.vh;
     const xdomain = [0, width];
     const ydomain = [height, 0];
     if (of === "y") {

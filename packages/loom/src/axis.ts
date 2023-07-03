@@ -119,8 +119,8 @@ export class Axis extends AXIS_BASE {
   }
   range() {
     const space = this.space();
-    const width = space.boxed("width");
-    const height = space.boxed("height");
+    const width = space.vw;
+    const height = space.vh;
     const range = this.is("x") ? tuple(0, width) : tuple(height, 0);
     return range;
   }

@@ -1,6 +1,6 @@
 import { leaf, Line, subtree, tree } from "@weave/twill";
 
-import { Figure } from "./figure";
+import { Figure } from "../components/figure";
 
 const redline = (line: Line) => line.stroke("red");
 const tree1 = tree("1").nodes([

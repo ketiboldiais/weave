@@ -1,7 +1,7 @@
 import { Space2D } from "./index.js";
 import { typed } from "./typed.js";
 import { FigNode, Node2D } from "./index.js";
-import { isLine } from "./line.js";
+import { isLine } from "./geometries/line.js";
 import { unsafe } from "./aux.js";
 
 const PLANE = typed(Space2D);

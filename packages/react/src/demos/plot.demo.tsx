@@ -1,5 +1,5 @@
 import { axis, color, path } from "@weave/twill";
-import { Figure } from "./figure";
+import { Figure } from "../components/figure";
 import { plane } from "@weave/twill";
 import { Fragment } from "react";
 

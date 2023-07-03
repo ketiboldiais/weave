@@ -1,7 +1,7 @@
 import { axis, forceSpace, graph } from "@weave/twill";
-import { L } from "./line";
+import { L } from "../components/line";
 import { Fragment } from "react";
-import { Figure } from "./figure.js";
+import { Figure } from "../components/figure.js";
 
 const d = forceSpace(graph({
   a: ['b'],

@@ -1,7 +1,7 @@
-import { Tree } from "./tree.demo";
-import { Plot } from "./plot.demo";
+import { Tree } from "./demos/tree.demo";
+import { Plot } from "./demos/plot.demo";
 import { Space3Demo } from "./space3.demo";
-import { ForceGraph1 } from "./graph.demo";
+import { ForceGraph1 } from "./demos/graph.demo";
 
 export const App = () => {
   return (

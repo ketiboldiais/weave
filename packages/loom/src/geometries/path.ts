@@ -1,9 +1,9 @@
-import { cos, sin, unsafe } from "./aux.js";
-import { Base } from "./base.js";
-import { colorable } from "./colorable";
+import { cos, sin, unsafe } from "../aux.js";
+import { Base } from "../base.js";
+import { colorable } from "../colorable.js";
 import { Matrix, matrix, v2, Vector } from "@weave/math";
-import { FigNode, linear } from "./index.js";
-import { parseDegrees, parseRadians } from "./parsers.js";
+import { FigNode, linear } from "../index.js";
+import { parseDegrees, parseRadians } from "../parsers.js";
 import {
   A,
   C,
@@ -21,8 +21,8 @@ import {
   V,
   Z,
 } from "./pathcoms.js";
-import { scopable } from "./scopable.js";
-import { typed } from "./typed.js";
+import { scopable } from "../scopable.js";
+import { typed } from "../typed.js";
 
 const PATH = typed(colorable(scopable(Base)));
 
@@ -165,8 +165,8 @@ export class Path extends PATH {
     const scaler = pathScaler(xs, ys);
     const xmax = (space.xmax() - space.xmin()) / 2;
     const ymax = (space.ymax() - space.ymin()) / 2;
-    const rxs = linear([0, xmax], [0, space.boxed("width") / 2]);
-    const rys = linear([0, ymax], [0, space.boxed("height") / 2]);
+    const rxs = linear([0, xmax], [0, space.vw / 2]);
+    const rys = linear([0, ymax], [0, space.vh / 2]);
     return this.points.map((p) =>
       pathStringer(
         p.type === "P"

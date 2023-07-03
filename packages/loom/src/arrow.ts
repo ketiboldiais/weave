@@ -1,5 +1,5 @@
 import { unsafe } from "./aux.js";
-import { colorable } from "./colorable";
+import { colorable } from "./colorable.js";
 import { FigNode } from "./index.js";
 import { tagged, typed } from "./typed.js";
 
