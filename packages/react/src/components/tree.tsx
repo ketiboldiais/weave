@@ -1,8 +1,8 @@
 import { label, TreeSpace } from "@weave/loom";
 import { Label } from "./label";
 import { Arrow } from "./arrow";
-import { L } from './line';
-
+import { L } from "./line";
+import { Fragment } from "react";
 
 export const Tree = ({ of }: { of: TreeSpace }) => {
   // of.figure();
@@ -12,43 +12,52 @@ export const Tree = ({ of }: { of: TreeSpace }) => {
   const edgeNotes = of.notes;
   const definitions = of.definitions;
   return (
-    <g>
+    <>
       <defs>
         {definitions.map((a) => <Arrow key={a.id} of={a} />)}
       </defs>
-      <g>
-        {edges.map((e) => (
-          <g key={e.id}>
-            <L of={e}/>
-          </g>
-        ))}
-      </g>
-      <g>
+      <g className={"tree-edgenotes"}>
         {edgeNotes.map((e) => (
-          <g key={e.id}>
-            <L of={e}/>
-          </g>
+          <line
+            key={e.id}
+            x1={e.x1}
+            y1={e.y1}
+            x2={e.x2}
+            y2={e.y2}
+            stroke={"currentColor"}
+          />
         ))}
       </g>
-      <g>
+      <g className={"treelinks"}>
+        {edges.map((e) => (
+          <line
+            key={e.id}
+            x1={e.x1}
+            y1={e.y1}
+            x2={e.x2}
+            y2={e.y2}
+            stroke={"currentColor"}
+          />
+        ))}
+      </g>
+      <g className={"treenodes"}>
         {nodes.map((n) => (
-          <g key={n.id}>
+          <Fragment key={n.id}>
             <circle
               r={n.r}
-              cx={n.sx}
-              cy={n.sy}
+              cx={n.x}
+              cy={n.y}
               stroke={n.strokeColor || "currentColor"}
               strokeWidth={n.strokeWidth || 1}
               fill={n.fillColor || "white"}
             />
             <Label
-              of={label(n.text).xy(n.x,n.y)}
-              // position={`translate(${n.sx},${n.sy})`}
+              of={label(n.text)}
+              position={`translate(${n.x},${n.y - 8})`}
             />
-          </g>
+          </Fragment>
         ))}
       </g>
-    </g>
+    </>
   );
 };
-

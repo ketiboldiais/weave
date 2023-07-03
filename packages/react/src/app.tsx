@@ -1,15 +1,10 @@
-import { Tree } from "./demos/tree.demo";
-import { Plot } from "./demos/plot.demo";
-import { Space3Demo } from "./space3.demo";
-import { ForceGraph1 } from "./demos/graph.demo";
+import { Pages } from "./pages.js";
+import css from './styles/app.module.scss';
 
 export const App = () => {
   return (
-    <div>
-      {/* <ForceGraph1 /> */}
-      {/* <Space3Demo /> */}
-      <Plot/>
-      {/* <Tree/> */}
+    <div className={css.app}>
+      <Pages />
     </div>
   );
 };

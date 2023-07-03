@@ -447,7 +447,11 @@ export class TreeSpace extends TREEBASE {
   }
   figure() {
     this.lay();
+    const xs = this.scaleOf('x');
+    const ys = this.scaleOf('y');
     this.tree.bfs((node) => {
+      node.x = xs(node.x);
+      node.y = ys(node.y);
       this.treenodes.push(node);
     });
     this.tree.bfs((node) => {

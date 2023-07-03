@@ -4,14 +4,10 @@ import { Fragment } from "react";
 import { Figure } from "../components/figure.js";
 
 const d = forceSpace(graph({
-  a: ['b'],
-  b: ['c', 'd'],
-  c: ['e']
-}))
-d.x(-5,5);
-d.y(-5,5);
-// d.and([axis("x"), axis("y")])
-d.figure();
+  a: ["b"],
+  b: ["c", "d"],
+  c: ["e"],
+})).w(200).h(200).x(-5,5).y(-5,5).figure();
 
 export const ForceGraph1 = () => {
   return <Figure of={d} />;

@@ -1,0 +1,29 @@
+import { ForceGraph1 } from './graph.demo.tsx';
+import { Tree1 } from './tree.demo.tsx';
+import { Tile } from '../components/tile.tsx';
+import { Plot1 } from './plot.demo.tsx';
+import { Path1 } from './path.demo.tsx';
+
+# Loom
+
+This is the documentation page for Loom, a submodule of the Weave API. Loom contains various
+graphics algorithms. Some examples:
+
+<Tile rows={1} cols={2}>
+  <figure>
+    <ForceGraph1 />
+    <figcaption>A graph drawn with a variation of the Eades algorithm.</figcaption>
+  </figure>
+  <figure>
+    <Tree1 />
+    <figcaption>An M-way tree drawn with the Buccheim-Unger-Leipert algorithm.</figcaption>
+  </figure>
+  <figure>
+    <Plot1 />
+    <figcaption>A plot of $f(x) = x^3 - 3$.</figcaption>
+  </figure>
+  <figure>
+    <Path1 />
+    <figcaption>Geometries with matrix transformations</figcaption>
+  </figure>
+</Tile>

@@ -99,10 +99,10 @@ export class Vector {
 
   /**
    * The x-coordinate of this vector.
-   * If no such coordinate exists, returns NaN.
+   * If no such coordinate exists, returns 0.
    */
   get x() {
-    return this.elements[0] !== undefined ? this.elements[0] : NaN;
+    return this.elements[0] !== undefined ? this.elements[0] : 0;
   }
 
   /**
@@ -114,10 +114,10 @@ export class Vector {
 
   /**
    * Returns the y-coordinate of this vector.
-   * If no such coordinate exists, returns NaN.
+   * If no such coordinate exists, returns 0.
    */
   get y() {
-    return this.elements[1] !== undefined ? this.elements[1] : NaN;
+    return this.elements[1] !== undefined ? this.elements[1] : 0;
   }
 
   /**
@@ -129,10 +129,10 @@ export class Vector {
 
   /**
    * Returns the z-coordinate of this vector.
-   * If no such coordinate exists, returns NaN.
+   * If no such coordinate exists, returns 0.
    */
   get z() {
-    return this.elements[2] !== undefined ? this.elements[2] : NaN;
+    return this.elements[2] !== undefined ? this.elements[2] : 0;
   }
 
   /**
@@ -149,10 +149,10 @@ export class Vector {
 
   /**
    * Returns the w-coordinate of this vector.
-   * If no such coordinate exists, returns NaN.
+   * If no such coordinate exists, returns 0.
    */
   get w() {
-    return this.elements[3] !== undefined ? this.elements[3] : NaN;
+    return this.elements[3] !== undefined ? this.elements[3] : 0;
   }
 
   /**
@@ -517,6 +517,7 @@ export class Vector {
     }
     return out;
   }
+  
 
   /**
    * Returns true if this vector
