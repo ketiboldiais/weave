@@ -1,4 +1,7 @@
 export { Color, color, hsl, rgb } from "./color.js";
+export { BNode, bnode } from "./nodes/bnode.js";
+export { map, none, some } from "./nodes/box.js";
+export type { Option } from "./nodes/box.js";
 export {
   A,
   C,

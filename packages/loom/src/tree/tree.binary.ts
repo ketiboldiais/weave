@@ -1,4 +1,4 @@
-import { BNode, bnode } from "../nodes/bnode.js";
+import { BNode, bnode } from "../index.js";
 import { linkedList } from "../list.js";
 import { leaf, subtree, Tree, TreeChild } from "../treenode.js";
 import { tree, TreeSpace } from "../tree.js";
@@ -74,10 +74,10 @@ class BST<T> {
     let i = 0;
     while (queue.length !== 0) {
       const node = queue.shift();
-      if (node === null) break;
-      node.map((d) => callback(d, node, i));
-      node.onLeft((n) => queue.push(n));
-      node.onRight((n) => queue.push(n));
+      if (node._tag === 'None') break;
+      node.value.map((d) => callback(d, node.value, i));
+      node.value.onLeft((n) => queue.push(n));
+      node.value.onRight((n) => queue.push(n));
       i++;
     }
     return this;
@@ -97,12 +97,12 @@ class BST<T> {
     } else {
       const insert = (node: BNode<T>): boolean => {
         if (this.getid(newnode.data) < this.getid(node.data)) {
-          if (node.left === null) {
+          if (node.left.isNothing()) {
             node.left = newnode;
             return true;
           } else return insert(node.left);
         } else if (this.getid(newnode.data) > this.getid(node.data)) {
-          if (node.right === null) {
+          if (node.right.isNothing()) {
             node.right = newnode;
             return true;
           } else return insert(node.right);
@@ -134,3 +134,5 @@ export const bst = <T>(data: T[]) => ({
   ),
 });
 
+// const bst1 = bst([10, 6, 15, 3, 8, 20]).id(d => d);j
+// console.log(bst1);

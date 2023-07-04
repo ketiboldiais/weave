@@ -11,9 +11,11 @@ export const Codeblock = ({ children }: { children: ReactNode }) => {
   useOutClick(divref, clickout);
   return (
     <div className={css.codeblock} ref={divref}>
-      <button className={appCss.underline} onClick={() => setShow(!show)}>
-        Code
-      </button>
+      <div className={css.btn}>
+        <button className={appCss.underline} onClick={() => setShow(!show)}>
+          Code
+        </button>
+      </div>
       <Fader show={show} duration={300}>
         <div className={css.snippet}>
           {children}

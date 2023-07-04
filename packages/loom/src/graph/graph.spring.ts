@@ -74,8 +74,8 @@ export class ForceSpace extends FORCELAYOUT {
   graph: Graph;
   D: number = 0.4;
   L: number = 30;
-  K: number = 200;
-  C: number = 200 * 200;
+  K: number = 100;
+  C: number = 300 * 300;
   iterations: number = 100;
   epsilon: number = 0.0001;
   constructor(graph: Graph) {

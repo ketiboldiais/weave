@@ -1,5 +1,5 @@
 import { ForceGraph1 } from './graph.demo.tsx';
-import { Tree1, Tree2 } from './tree.demo.tsx';
+import { Tree1, Tree2, Tree3 } from './tree.demo.tsx';
 import { Tile } from '../components/tile.tsx';
 import { Plot1, Plot2 } from './plot.demo.tsx';
 import { Path1 } from './path.demo.tsx';
@@ -82,7 +82,7 @@ export const Tree1 = () => {
 
 <figure>
 <Plot1 />
-<figcaption>Plot of $f(x) = x^3 - 3$.</figcaption>
+<figcaption>Plot of $f(x) = \dfrac{1}{x}$.</figcaption>
 <Codeblock>
 ~~~tsx
 import {
@@ -95,11 +95,10 @@ import { Figure } from "./figure.tsx";
 const plot1 = plane([
   axis("x").ticks(11),
   axis("y").ticks(11).hide("zero"),
-  plot('f(x) = (x^3) - 3'),
+  plot('f(x) = 1/x'),
 ]).margin(10,10)
   .w(300)
   .h(300)
-  .gridlines("xy")
   .figure();
 
 export const Plot1 = () => {
@@ -203,6 +202,44 @@ const bst1 = bst([10, 6, 15, 3, 8, 20])
 
 export const Tree2 = () => {
   return <Figure of={bst1} />;
+};
+~~~
+</Codeblock>
+</figure>
+
+
+
+<figure>
+<Tree3 />
+<figcaption>Binary search tree drawn with an HV algorithm.</figcaption>
+<Codeblock>
+~~~tsx
+import {
+  bst,
+  leaf,
+  subtree,
+  tree
+} from "@weave/loom";
+import {Figure} from "./figure";
+
+const bst2 = bst([
+  25, 20, 
+  10, 22, 
+  5, 12, 
+  28, 36, 
+  30, 40, 
+  38, 48
+]).id((d) => d)
+  .draw()
+  .x(-8, 4)
+  .y(-2, 3)
+  .w(450).h(250)
+  .ala("hv")
+  .figure();
+
+
+export const Tree3 = () => {
+  return <Figure of={hv1} />;
 };
 ~~~
 </Codeblock>

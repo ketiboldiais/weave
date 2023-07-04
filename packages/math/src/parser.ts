@@ -8,7 +8,7 @@ enum tkn {
   percent, eq, neq, lt,
   gt, lte, gte,
   symbol, string, number,
-  unit,
+  unit, bang,
   eof,
 }
 type Tkn = { lex: string; type: tkn };
@@ -36,6 +36,10 @@ const unit = <T extends string>(
   unit,
 });
 
+type Unex = { op: string; arg: PNode };
+const unex = (op:string, arg:PNode): Unex => ({
+  op, arg,
+})
 type Binex = { op: string; L: PNode; R: PNode };
 const binex = (op: string, L: PNode, R: PNode): Binex => ({
   L,
@@ -47,7 +51,7 @@ const sym = (symbol: string): Variable => ({
   sym: symbol,
 });
 type Nil = { type: "nil" };
-type PNode = Binex | Num | Variable | Nil;
+type PNode = Binex | Num | Variable | Nil | Unex;
 const nilnode: Nil = { type: "nil" };
 
 function expr(text: string) {
@@ -62,7 +66,7 @@ function expr(text: string) {
   };
   let last: Tkn | null = null;
   let peek = token(tkn.nil);
-  const bounded = () => current < max;
+  const bounded = () => current <= max;
   const peekchar = () => {
     return text[current];
   };
@@ -122,6 +126,7 @@ function expr(text: string) {
         case "*": return t(tkn.star);
         case "/": return t(tkn.slash);
         case "^": return t(tkn.caret);
+        case "!": return t(tkn.bang);
       }
       return token(tkn.error, `unknown token ${c}`);
     };
@@ -140,21 +145,31 @@ function expr(text: string) {
     return out;
   };
 
-  const exp = (minbp: number = 1) => {
+  const exp = (minbp: number = 1): PNode => {
     let t = next();
     let lhs: PNode = nilnode;
     switch (t.type) {
-      case tkn.number:
-        lhs = num(t.lex);
-        break;
-      case tkn.symbol:
-        lhs = sym(t.lex);
-        break;
+      case tkn.number: lhs = num(t.lex); break;
+      case tkn.symbol: lhs = sym(t.lex); break;
+    }
+    const [_, rbp] = prefixbp(t.type);
+    if (rbp!==null) {
+      const rhs = exp(rbp);
+      lhs = unex(t.lex, rhs);
     }
     while (bounded()) {
       let op = peek;
       if (op.type === tkn.eof) break;
+      const postfix = postfixbp(op.type);
+      if (postfix!==null) {
+        const [lbp] = postfix;
+        if (lbp < minbp) break;
+        next();
+        lhs = unex(op.lex, lhs);
+        continue;
+      }
       const [l_bp, r_bp] = infixbp(op.type);
+      if (l_bp === null || r_bp === null) break;
       if (l_bp < minbp) break;
       next();
       let rhs = exp(r_bp);
@@ -175,10 +190,18 @@ function expr(text: string) {
       default: return [1,1];
     }
   };
-  const postfixbp = (op: tkn) => {
+  const postfixbp = (op:tkn): ([number,null]|null) => {
     switch (op) {
-      case tkn.unit:
-        return [7, null];
+      case tkn.bang: return [7,null];
+      default: return null;
+    }
+  }
+  const prefixbp = (op: tkn): [null, number|null] => {
+    // deno-fmt-ignore
+    switch (op) {
+      case tkn.plus: return [null, 5];
+      case tkn.minus: return [null, 5];
+      default: return [null, null];
     }
   };
 
@@ -190,3 +213,5 @@ function expr(text: string) {
   return { tokenize, parse };
 }
 
+const p = expr(`x!`).parse();
+console.log(p);

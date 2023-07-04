@@ -6,8 +6,8 @@ import { Fragment } from "react";
 const plot1 = plane([
   axis("x").ticks(11),
   axis("y").ticks(11).hide("zero"),
-  plot("f(x) = (x^3) - 3"),
-]).margin(10, 10).w(300).h(300).gridlines("xy").figure();
+  plot("f(x) = 1/x").sampled(100),
+]).margin(10, 10).w(300).h(300).figure();
 
 export const Plot1 = () => {
   return <Figure of={plot1} />;

@@ -50,6 +50,7 @@ abstract class TreeNode extends TREENODE {
     }
     return false;
   }
+  abstract size(): number;
   abstract get hasChildren(): boolean;
   abstract get isLeaf(): boolean;
   abstract onLastChild(
@@ -67,6 +68,13 @@ export class LeafNode extends TreeNode {
     this.ancestor = this;
     this.type = "leaf";
     this.x = -1;
+  }
+  size() {
+    return 1;
+  }
+
+  nodes(nodes: TreeChild[]) {
+    return this;
   }
   get isLeaf() {
     return true;
@@ -99,6 +107,9 @@ export const isLeaf = (node: FigNode): node is LeafNode =>
 
 export class Tree extends TreeNode {
   ancestor: TreeChild;
+  size(): number {
+    return this.children.reduce((prev, curr) => prev + curr.size(), 1);
+  }
   get isLeaf() {
     return false;
   }
@@ -182,9 +193,9 @@ export class Tree extends TreeNode {
     while (queue.length > 0) {
       const tree = queue.shift();
       count--;
-      if (!tree) continue;
-      f(tree, level);
-      tree.children.forEach((c) => queue.push(c));
+      if (tree._tag === "None") continue;
+      f(tree.value, level);
+      tree.value.children.forEach((c) => queue.push(c));
       if (count === 0) {
         level++;
         count = queue.length;

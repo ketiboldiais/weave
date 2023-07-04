@@ -8,6 +8,7 @@ type TreeLayout =
   | "knuth"
   | "wetherell-shannon"
   | "buccheim-unger-leipert"
+  | "hv"
   | "reingold-tilford";
 type Traversal =
   | "preorder"
@@ -59,7 +60,7 @@ export class TreeSpace extends TREEBASE {
     this.layout = option;
     return this;
   }
-  private edgeNotes: Partial< Record<Traversal, LinkFunction> > = {};
+  private edgeNotes: Partial<Record<Traversal, LinkFunction>> = {};
   edges(of: Traversal, callback: LinkFunction) {
     this.edgeNotes[of] = callback;
     return this;
@@ -69,9 +70,69 @@ export class TreeSpace extends TREEBASE {
     this.tree = tree;
     this.type = "tree";
   }
+  private nodefn: ((n: TreeChild) => TreeChild) | null = null;
+  private linkmap: ((l:Line) => Line) | null = null;
+  /**
+   * Applies the given callback to every link in this tree _post-processing_.
+   */
+  edgemap(callback: (l:Line) => Line) {
+    this.linkmap = callback;
+    return this;
+  }
+  /**
+   * Applies the given callback to every node of this tree _post-processing_.
+   */
+  nodemap(callback: (n: TreeChild) => TreeChild) {
+    this.nodefn = callback;
+    return this;
+  }
+  /**
+   * Appends the provided nodes to this tree.
+   */
   nodes(nodes: TreeChild[]) {
     nodes.forEach((n) => this.tree.child(n.scope(this)));
     return this;
+  }
+  private hv() {
+    const largerToRight = (
+      parent: TreeChild,
+    ) => {
+      const left = parent.left();
+      const right = parent.right();
+      if (left === null || right === null) {
+        return;
+      }
+      const sh = 2;
+      if (left.isLeaf && right.isLeaf) {
+        right.x = parent.x + 1;
+        right.y = parent.y;
+        left.x = parent.x;
+        left.y = parent.y - sh;
+        parent.dx = 1;
+      } else {
+        const L = left.size();
+        const R = right.size();
+        if (L > R) {
+          left.x = parent.x + 1 + L;
+          left.y = parent.y;
+          right.x = parent.x;
+          right.y = parent.y - sh;
+          parent.dx += left.x;
+        } else if (L < R) {
+          right.x = parent.x + 1 + R;
+          right.y = parent.y;
+          left.x = parent.x;
+          left.y = parent.y - sh;
+          parent.dx += right.x;
+        }
+      }
+      parent.children.forEach((c) => largerToRight(c));
+    };
+    const xmin = this.xmin();
+    const ymax = this.ymax();
+    this.tree.x = xmin;
+    this.tree.y = ymax;
+    largerToRight(this.tree);
   }
 
   private buccheim() {
@@ -441,12 +502,14 @@ export class TreeSpace extends TREEBASE {
       this.reingoldTilford();
     } else if (layout === "buccheim-unger-leipert") {
       this.buccheim();
+    } else if (layout === "hv") {
+      this.hv();
     }
   }
   figure() {
     this.lay();
-    const xs = this.scaleOf('x');
-    const ys = this.scaleOf('y');
+    const xs = this.scaleOf("x");
+    const ys = this.scaleOf("y");
     this.tree.bfs((node) => {
       node.x = xs(node.x);
       node.y = ys(node.y);
@@ -482,7 +545,7 @@ export class TreeSpace extends TREEBASE {
         const c = callback(l, a, b).uid(l.id);
         const arrow = arrowDef()
           .uid(c.id)
-          .ref("x", b.r*3)
+          .ref("x", b.r * 3)
           .sized(b.r, b.r)
           .viewbox(`0 -${b.r} ${b.r * 2} ${b.r * 2}`)
           .path(`M0,-${b.r}L${b.r * 2},0L0,${b.r}Z`)
@@ -492,26 +555,22 @@ export class TreeSpace extends TREEBASE {
       });
       list.clear();
     };
-    if (this.edgeNotes["inorder"]) {
-      markEdge("inorder", this.edgeNotes["inorder"]);
-    }
-    if (this.edgeNotes["bfs"]) {
-      markEdge("bfs", this.edgeNotes["bfs"]);
-    }
-    if (this.edgeNotes["postorder"]) {
-      markEdge("postorder", this.edgeNotes["postorder"]);
-    }
-    if (this.edgeNotes["preorder"]) {
-      markEdge("preorder", this.edgeNotes["preorder"]);
-    }
+    (this.edgeNotes["inorder"]) && markEdge("inorder", this.edgeNotes["inorder"]);
+    (this.edgeNotes["bfs"]) && markEdge("bfs", this.edgeNotes["bfs"]);
+    (this.edgeNotes["postorder"]) && markEdge("postorder", this.edgeNotes["postorder"]);
+    (this.edgeNotes["preorder"]) && markEdge("preorder", this.edgeNotes["preorder"]);
+    const f = this.nodefn;
+    (f !== null) && (this.treenodes = this.treenodes.map((n) => f(n)));
+    const e = this.linkmap;
+    (e !== null) && (this.links = this.links.map(l => e(l)));
     return this;
   }
-  treenodes: TreeChild[]=[];
-  links: Line[]=[];
-  notes: Line[]=[];
+  treenodes: TreeChild[] = [];
+  links: Line[] = [];
+  notes: Line[] = [];
 }
 
-export const tree = (name: string|number) => {
+export const tree = (name: string | number) => {
   return new TreeSpace(subtree(name)).typed("tree");
 };
 export const isTreeSpace = (

@@ -1,202 +1,74 @@
-import { BNode, bnode } from "./nodes/bnode.js";
+import { BNode, bnode, none, Option, some } from "./index.js";
 
 export class LinkedList<T> {
-  #head: BNode<T>;
-  #tail: BNode<T>;
-  #length: number;
-  constructor() {
-    this.#head = bnode();
-    this.#tail = bnode();
-    this.#length = 0;
-  }
-  /**
-   * Returns the last index of
-   * this list.
-   */
-  get lastIndex() {
-    const l = this.#length;
-    return l === 0 ? l : l - 1;
-  }
-  /**
-   * True if this list has a length
-   * of 1.
-   */
-  get isUnary() {
-    return this.#length === 1;
-  }
-  /**
-   * True if this list is empty, false otherwise.
-   */
-  get isEmpty() {
-    return this.#length === 0 || this.#head.isNothing();
-  }
-  /**
-   * @internal Ensures that indices are valid.
-   */
-  #validIndex(i: number) {
-    return 0 <= i && i < this.length;
-  }
-  /**
-   * 
-   */
-  #item(index: number) {
-    if (!this.#validIndex(index)) {
-      return bnode<T>();
-    } else {
-      let count = 0;
-      let current = this.#head;
-      while (count !== index) {
-        current = current.right!;
-        count++;
-      }
-      return current;
-    }
-  }
-  ith(index: number, fallback: T): T {
-    const out = this.#item(index).data;
-    return out === null ? fallback : out;
-  }
-  item(index: number) {
-    return this.#item(index).data;
-  }
-  unshift(element: T) {
-    const node = bnode(element);
-    if (this.isEmpty) {
-      this.#head = node;
-      this.#tail = node;
-    } else {
-      this.#head.left = node;
-      node.right = this.#head;
-      this.#head = node;
-    }
-    this.#length++;
-    return this;
-  }
-  shift() {
-    if (this.isEmpty) return null;
-    let previousHead = this.#head;
-    if (this.isUnary) {
-      this.#head = bnode();
-      this.#tail = bnode();
-    } else {
-      this.#head = previousHead.right!;
-      this.#head.left = bnode();
-      previousHead.right = bnode();
-    }
-    this.#length--;
-    return previousHead.data;
-  }
-  set(element: T, at: number) {
-    const node = this.#item(at);
-    node.value = element;
-    return this;
-  }
-  insert(element: T, atIndex: number) {
-    if (!this.#validIndex(atIndex)) {
-      return this;
-    }
-    if (atIndex === 0) {
-      return this.unshift(element);
-    }
-    if (this.lastIndex === atIndex) {
-      return this.push(element);
-    }
-    const node = bnode(element);
-    const before = this.#item(atIndex - 1);
-    const after = before.right;
-    before.right = node;
-    node.left = before;
-    node.right = after;
-    after!.left = node!;
-    this.#length++;
-    return this;
-  }
-  tail(fallback: T) {
-    return this.last ? this.last : fallback;
-  }
-  public static from<T>(iterable: Iterable<T>) {
-    return new LinkedList().append(...iterable);
-  }
-  append(...elements: T[]) {
-    elements.forEach((e) => this.push(e));
-    return this;
-  }
+  private head: BNode<T>;
+  private tail: BNode<T>;
+  private count: number;
   cdr() {
     const list = this.clone();
     if (list.isEmpty) return list;
-    let previousHead = list.#head;
-    if (list.isUnary) {
-      list.#head = bnode();
-      list.#tail = bnode();
+    let previousHead = list.head;
+    if (list.count === 1) {
+      list.head = bnode();
+      list.tail = bnode();
     } else {
-      list.#head = previousHead.right!;
-      list.#head.left = bnode();
+      list.head = previousHead.right!;
+      list.head.left = bnode();
       previousHead.right = bnode();
     }
-    list.#length--;
+    list.count--;
     return list;
   }
   car() {
     if (this.isEmpty) return this;
-    const head = this.#head.data!;
+    const head = this.head.data!;
     return new LinkedList<T>().push(head);
   }
-  get last() {
-    return this.#tail.data;
-  }
-  get first() {
-    return this.#head.data;
+  clear() {
+    this.head = bnode();
   }
   get length() {
-    return this.#length;
+    return this.count;
   }
-
+  get isEmpty() {
+    return this.count === 0 || this.head.isNothing();
+  }
+  constructor() {
+    this.count = 0;
+    this.head = bnode();
+    this.tail = bnode();
+  }
   *[Symbol.iterator](): IterableIterator<T> {
-    let node = this.#head;
-    while (node.isSomething()) {
-      yield node.data!;
-      node = node.right!;
+    let node = this.head;
+    while (node.data !== null) {
+      yield node.data;
+      node = node.right;
     }
   }
-
-  clear() {
-    this.#head = bnode();
-  }
-
-  pop() {
-    if (this.isEmpty) return null;
-    let popped = this.#tail;
-    if (this.isUnary) {
-      this.#head = bnode();
-      this.#tail = bnode();
-    } else {
-      this.#tail = popped.left!;
-      this.#tail.right = bnode();
-      popped.left = bnode();
-    }
-    this.#length--;
-    return popped.data;
-  }
-
   toArray(): T[] {
-    if (this.#length === 0) return [];
     return [...this];
   }
-
-  private tick() {
-    this.#length++;
+  safeIdx(i: number) {
+    return 0 <= i && i < this.count;
   }
-
-  forEach(
-    f: (data: T, index: number, list: LinkedList<T>) => void,
-  ) {
-    if (this.isEmpty) return this;
-    let node = this.#head;
-    let i = 0;
-    while (node !== null) {
-      node.do((d) => f(d, i, this));
-      node = node.right!;
-      i++;
+  set(element: T, at: number) {
+    const node = this.at(at);
+    node.data = element;
+    return this;
+  }
+  private at(index: number) {
+    if (!this.safeIdx(index)) {
+      return bnode<T>();
+    } else {
+      let count = 0;
+      let current = this.head;
+      while (count !== index) {
+        let k = current.right;
+        if (k.isNothing()) break;
+        current = k;
+        count++;
+      }
+      return current;
     }
   }
 
@@ -206,19 +78,19 @@ export class LinkedList<T> {
     return list;
   }
 
-  push(element: T) {
-    const node = bnode(element);
-    if (this.#head.isNothing()) {
-      this.#head = node;
-      this.#tail = node;
-    } else {
-      this.#tail.right = node;
-      node.left = this.#tail;
-      this.#tail = node;
+  forEach(
+    f: (data: T, index: number, list: LinkedList<T>) => void,
+  ) {
+    if (this.isEmpty) return this;
+    let node = this.head;
+    let i = 0;
+    while (i < this.count) {
+      node.do((d) => f(d, i, this));
+      node = node.right;
+      i++;
     }
-    this.tick();
-    return this;
   }
+
   clone() {
     const list = new LinkedList<T>();
     this.forEach((d) => list.push(d));
@@ -239,8 +111,8 @@ export class LinkedList<T> {
       if (list.isEmpty) return init;
       else {
         const popped = list[from === 0 ? "shift" : "pop"]();
-        if (popped === null) return init;
-        const updatedValue = reducer(init, popped, i++, list);
+        if (popped._tag === "None") return init;
+        const updatedValue = reducer(init, popped.value, i++, list);
         return fn(list, updatedValue);
       }
     };
@@ -268,28 +140,6 @@ export class LinkedList<T> {
   ): X {
     return this.#reduce(0, reducer, initialValue);
   }
-  foldr<X>(
-    reducer: (
-      accumulator: X,
-      currentValue: T,
-      index: number,
-      list: LinkedList<T>,
-    ) => X,
-    initialValue: X,
-  ): X {
-    return this.#reduce(1, reducer, initialValue);
-  }
-  fold<X>(
-    reducer: (
-      accumulator: X,
-      currentValue: T,
-      index: number,
-      list: LinkedList<T>,
-    ) => X,
-    initialValue: X,
-  ): X {
-    return this.#reduce(0, reducer, initialValue);
-  }
   join(separator: string = "") {
     return [...this].join(separator);
   }
@@ -306,17 +156,25 @@ export class LinkedList<T> {
     return out;
   }
   reverse() {
-    let current = this.#head;
-    while (current.isSomething()) {
+    let current = this.head;
+    let i = 0;
+    while (current.isSomething() && i < this.count) {
       const right = current.right;
       current.right = current.left;
       current.left = right;
-      current = current.left!;
+      let k = current.left;
+      if (k.isNothing() || i > this.count) break;
+      current = k;
+      i++;
     }
-    const tail = this.#tail;
-    this.#tail = this.#head;
-    this.#head = tail;
+    const tail = this.tail;
+    this.tail = this.head;
+    this.head = tail;
     return this;
+  }
+
+  item(index: number) {
+    return this.at(index).data;
   }
 
   zip<K>(list: LinkedList<K>) {
@@ -330,8 +188,71 @@ export class LinkedList<T> {
     });
     return out;
   }
+
+  pop(): Option<T> {
+    if (this.isEmpty) return none();
+    let popped = this.tail;
+    if (this.length === 1) {
+      this.head = bnode();
+      this.tail = bnode();
+    } else {
+      this.tail = popped.left;
+      this.tail.right = bnode();
+      popped.left = bnode();
+    }
+    this.count--;
+    return popped.data === null ? none() : some(popped.data);
+  }
+  unshift(element: T) {
+    const node = bnode(element);
+    if (this.isEmpty) {
+      this.head = node;
+      this.tail = node;
+    } else {
+      this.head.prev = node;
+      node.next = this.head;
+      this.head = node;
+    }
+    this.count++;
+    return this;
+  }
+  shift() {
+    if (this.isEmpty) return none();
+    const previousHead = this.head;
+    if (this.length === 1) {
+      this.head = bnode();
+      this.tail = bnode();
+    } else {
+      this.head = previousHead.next;
+      this.head.prev = bnode();
+      previousHead.prev = bnode();
+    }
+    this.count--;
+    return previousHead.data === null ? none() : some(previousHead.data);
+  }
+  push(element: T) {
+    const node = bnode(element);
+    if (this.head.isNothing()) {
+      this.head = node;
+      this.tail = node;
+    } else {
+      this.tail.next = node;
+      node.prev = this.tail;
+      this.tail = node;
+    }
+    this.count++;
+    return this;
+  }
+  append(...elements: T[]) {
+    elements.forEach((e) => this.push(e));
+    return this;
+  }
 }
 
 export const linkedList = <T>(...elements: T[]) => {
   return new LinkedList<T>().append(...elements);
 };
+
+// const l = linkedList(1, 2, 3, 4);
+// const x = linkedList(3, 5, 2, 1);
+// console.log(l.zip(x));

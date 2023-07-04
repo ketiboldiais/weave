@@ -1,31 +1,82 @@
-import { TreeChild, leaf, subtree } from "..";
+import { leaf, subtree, Tree, TreeChild } from "../index.js";
+import { none, Option, some } from "./box.js";
 
 export class BNode<T> {
   data: T | null;
-  private R: BNode<T> | null;
-  private L: BNode<T> | null;
+  private R: Option<BNode<T>>;
+  private L: Option<BNode<T>>;
   constructor(data: T | null) {
     this.data = data;
-    this.R = null;
-    this.L = null;
+    this.R = none();
+    this.L = none();
+  }
+  get prev() {
+    if (this.L._tag === "None") {
+      return new BNode<T>(null);
+    } else {
+      return this.L.value;
+    }
+  }
+  get next() {
+    if (this.R._tag === "None") {
+      return new BNode<T>(null);
+    } else {
+      return this.R.value;
+    }
+  }
+  get left() {
+    if (this.L._tag === "None") {
+      return new BNode<T>(null);
+    } else {
+      return this.L.value;
+    }
+  }
+  get right() {
+    if (this.R._tag === "None") {
+      return new BNode<T>(null);
+    } else {
+      return this.R.value;
+    }
+  }
+  set next(node: BNode<T>) {
+    this.R = some(node);
+  }
+  set prev(node: BNode<T>) {
+    this.L = some(node);
+  }
+  set right(node: BNode<T>) {
+    this.R = some(node);
+  }
+  set left(node: BNode<T>) {
+    this.L = some(node);
   }
   fignode(idfn: (data: T | null) => string | number) {
-    if (this.R === null && this.L === null) {
+    if (this.L._tag === "None" && this.R._tag === "None") {
       return leaf(idfn(this.data));
     }
     const out = subtree(idfn(this.data));
-    const nodes:TreeChild[] = [];
-    if (this.L !== null) {
-      nodes.push(this.L.fignode(idfn));
+    const nodes: TreeChild[] = [];
+    if (this.L._tag !== "None") {
+      nodes.push(this.L.value.fignode(idfn));
     }
-    if (this.R !== null) {
-      nodes.push(this.R.fignode(idfn));
+    if (this.R._tag !== "None") {
+      nodes.push(this.R.value.fignode(idfn));
     }
     out.nodes(nodes);
     return out;
   }
   isLeaf() {
     return this.R === null && this.L === null;
+  }
+  onRight(callback: (node: BNode<T>) => void) {
+    if (this.R._tag === "Some") {
+      callback(this.R.value);
+    }
+  }
+  onLeft(callback: (node: BNode<T>) => void) {
+    if (this.L._tag === "Some") {
+      callback(this.L.value);
+    }
   }
   /**
    * Returns a copy of this bnode.
@@ -66,30 +117,6 @@ export class BNode<T> {
   }
   isNothing() {
     return this.data === null;
-  }
-  onRight(callback: (rightNode: BNode<T>) => void) {
-    const right = this.R;
-    if (right === null) return this;
-    callback(right);
-    return this;
-  }
-  onLeft(callback: (leftNode: BNode<T>) => void) {
-    const left = this.L;
-    if (left === null) return this;
-    callback(left);
-    return this;
-  }
-  get right() {
-    return this.R;
-  }
-  set right(node: BNode<T> | null) {
-    this.R = node;
-  }
-  get left() {
-    return this.L;
-  }
-  set left(node: BNode<T> | null) {
-    this.L = node;
   }
   static none<T>() {
     return new BNode<T>(null);
