@@ -128,5 +128,19 @@ export function gcd(a: number, b: number) {
   return a;
 }
 
-export { v2, v3, Vector, vector } from "./vector.js";
+export {
+  v2,
+  v3,
+  Vector,
+  vector,
+  binop2D,
+  add2D,
+  sub2D,
+  mul2D,
+  div2D,
+  mag2D,
+  normal2D,
+  normalized2D,
+  distance2D,
+} from "./vector.js";
 export { diagonal, Matrix, matrix, maxColumnCount } from "./matrix.js";

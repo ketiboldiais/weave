@@ -1,8 +1,8 @@
 import { tuple } from "../aux";
-import { Edge, edge } from "./edge";
+import { Edge, EdgeType, edge } from "./edge";
 import { Vertex, vtx } from "./vertex";
 
-export class Graph<T=any,K=any> {
+export class Graph<T = any, K = any> {
   adjacency: Map<string | number, Vertex<T>[]>;
   vertices: Map<string | number, Vertex<T>>;
   edges: Map<string, Edge<T, K>>;
@@ -11,15 +11,33 @@ export class Graph<T=any,K=any> {
     this.vertices = new Map();
     this.edges = new Map();
   }
-  neighbors(vertex:Vertex) {
-    const out:Vertex[] = [];
-    this.edges.forEach(e => {
-      if (e.source.id===vertex.id) out.push(e.target);
-      else if (e.target.id===vertex.id) out.push(e.source);
-    })
+  neighbors(vertex: Vertex) {
+    const out: Vertex[] = [];
+    this.edges.forEach((e) => {
+      if (e.source.id === vertex.id) out.push(e.target);
+      else if (e.target.id === vertex.id) out.push(e.source);
+    });
     return out;
   }
-  
+  adjacent(sourceId: string | number, direction: EdgeType, targetId: string | number) {
+    const st = `${sourceId}${direction}${targetId}`;
+    const ts = `${targetId}${direction}${sourceId}`;
+    return (
+      this.edges.has(st) ||
+      this.edges.has(ts)
+    );
+  }
+  deg(id:string|number) {
+    let degree = 0;
+    this.edges.forEach(e => {
+      const sourceId = e.source.id;
+      if (sourceId === id) {
+        degree++;
+      }
+    })
+    return degree;
+  }
+
   edgeList() {
     const out: Edge[] = [];
     this.edges.forEach((e) => {
@@ -92,3 +110,9 @@ export const graph = (adjacencyList?: Record<string, (string | number)[]>) => {
   }
   return G;
 };
+
+const d = graph({
+  a: ["b", "x", "n"],
+  b: ["c", "d"],
+  c: ["e", "g"],
+});

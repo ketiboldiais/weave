@@ -7,6 +7,15 @@ export class Space {
     this.height = height;
     return this;
   }
+  /**
+   * Returns this figure’s computed
+   * viewport area.
+   */
+  get va() {
+    const width = this.vw;
+    const height = this.vh;
+    return width * height;
+  }
 
   /** The width of this figure. */
   width: number = 500;

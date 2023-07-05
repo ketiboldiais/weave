@@ -517,7 +517,6 @@ export class Vector {
     }
     return out;
   }
-  
 
   /**
    * Returns true if this vector
@@ -658,38 +657,8 @@ export class Vector {
    * Returns a copy of this vector.
    */
   copy() {
-    return new Vector(this.array());
+    return new Vector(this.elements);
   }
-
-  /**
-   * Non-mutating method. Rotates a copy of this
-   * vector.
-   */
-  // rotate2D(origin: Vector | number[], Θ: string | number) {
-  // return this.copy().ROTATE2D(origin, Θ);
-  // }
-
-  /**
-   * Rotates thie vector in place.
-   */
-  // ROTATE2D(origin: Vector | number[], Θ: string | number) {
-  // const angle = (typeof Θ === "number")
-  // ? Θ
-  // : anglevalue.map(({ value, unit }) =>
-  // unit === "deg" ? toRadians(value) : value
-  // ).parse(Θ).result.unwrap(0);
-  // const center = origin instanceof Vector ? origin : Vector.from(origin);
-  // const r = [];
-  // const x = this.x - center.x;
-  // const y = this.y - center.y;
-  // r[0] = (x * Math.cos(angle)) - (y * Math.sin(angle));
-  // r[1] = (x * Math.sin(angle)) + (y * Math.cos(angle));
-  // r[0] += center.x;
-  // r[1] += center.y;
-  // this.x = r[0];
-  // this.y = r[1];
-  // return this;
-  // }
 
   /**
    * Returns a new zero vector of the specified
@@ -782,3 +751,62 @@ export const v3 = (
  * Returns a new generic vector.
  */
 export const vector = (...coords: number[]) => new Vector(coords);
+
+// deno-fmt-ignore
+export const binop2D = (op: (a: number, b: number) => number) => (
+  a: Vector,
+  b: Vector,
+) => v2(op(a.x, b.x), op(a.y, b.y));
+
+/**
+ * Returns the 2D vector sum.
+ */
+export const add2D = binop2D((a, b) => a + b);
+/**
+ * Returns the 2D vector difference.
+ */
+export const sub2D = binop2D((a, b) => a - b);
+/**
+ * Returns the 2D vector multiplication.
+ */
+export const mul2D = binop2D((a, b) => a * b);
+/**
+ * Returns the 2D vector scalar division.
+ */
+export const div2D = (a: Vector, n: number) =>
+  v2(
+    (a.x / n) || 0,
+    (a.y / n) || 0,
+  );
+/**
+ * Returns the 2D vector magnitude.
+ */
+export const mag2D = (vector: Vector) => (
+  Math.sqrt((vector.x ** 2) + (vector.y ** 2))
+);
+/**
+ * Returns the 2D vector’s normal.
+ */
+export const normal2D = (vector: Vector) => (
+  v2(-vector.y, vector.x)
+);
+/**
+ * Returns the 2D vector’s unit vector.
+ */
+export const normalized2D = (vector: Vector) => (
+  div2D(vector, mag2D(vector))
+);
+/**
+ * Returns the euclidean distance between the
+ * two 2D vectors.
+ */
+export const distance2D = (u: Vector, v: Vector) => {
+  const x1 = u.x;
+  const y1 = u.y;
+  const x2 = v.x;
+  const y2 = v.y;
+  const dx = x1 - x2;
+  const dy = y1 - y2;
+  const sum = (dx ** 2) + (dy ** 2);
+  return sum > 0 ? Math.sqrt(sum) : 0;
+};

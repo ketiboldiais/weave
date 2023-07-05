@@ -27,10 +27,10 @@ export const ForceGraph = ({ of }: { of: ForceSpace }) => {
       ))}
       {vertices.map((v) => (
         <g key={v.id} transform={`translate(${v.p.x},${v.p.y})`}>
-          <circle r={3} fill={"tomato"} stroke={"currentColor"} />
+          <circle r={2} fill={"tomato"} stroke={"currentColor"} />
           <text
             fontFamily={"system-ui"}
-            fontSize={"11px"}
+            fontSize={"8px"}
             fill={"currentColor"}
             dy={-5}
           >
