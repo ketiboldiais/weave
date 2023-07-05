@@ -1,4 +1,97 @@
-import { choice, list, lit, maybe, regex, ws } from "@weave/reed";
+import { choice, list, maybe, regex } from "@weave/reed";
+import { floor } from "./index.js";
+
+// deno-fmt-ignore
+enum tkn {
+  nil, error, lparen, rparen, lbrace,
+  rbrace, comma, dot,
+
+  // numeric operators
+  minus, plus, slash, caret,
+  star,rem,mod, percent,
+  bang,
+
+  // relational operators
+  eq, neq, lt,
+  gt, lte, gte,
+
+  // atoms
+  symbol, string, number,
+  unit, 
+
+  // function calls
+  eof,
+}
+type Tkn = { lex: string; type: tkn };
+
+enum ntype {
+  error,
+  unit,
+  unex,
+  binex,
+  number,
+  symbol,
+  nil,
+  call,
+}
+interface ParsedNode {
+  type: ntype;
+}
+
+interface Err extends ParsedNode {
+  error: string;
+  type: ntype.error;
+}
+
+interface Num extends ParsedNode {
+  num: number;
+  type: ntype.number;
+}
+
+interface Unit extends ParsedNode {
+  num: number;
+  unit: string;
+  type: ntype.unit;
+}
+
+interface Unex extends ParsedNode {
+  op: string;
+  arg: ParsedNode;
+  type: ntype.unex;
+}
+
+interface Binex extends ParsedNode {
+  op: string;
+  L: ParsedNode;
+  R: ParsedNode;
+  type: ntype.binex;
+}
+
+interface Variable extends ParsedNode {
+  sym: string;
+  type: ntype.symbol;
+}
+
+interface Nil extends ParsedNode {
+  type: ntype.nil;
+}
+
+interface Call extends ParsedNode {
+  f: string;
+  args: ParsedNode[];
+  type: ntype.call;
+}
+
+interface NodeHandler<T> {
+  err(node: Err): T;
+  num(node: Num): T;
+  unit(node: Unit): T;
+  unex(node: Unex): T;
+  binex(node: Binex): T;
+  sym(node: Variable): T;
+  nil(node: Nil): T;
+  call(node: Call): T;
+}
 
 const INTEGER = /^-?(0|\+?[1-9]\d*)(?<!-0)/;
 const pInt = regex(INTEGER);
@@ -11,83 +104,146 @@ const LETTER = /^(\w+)/;
 const pVar = regex(LETTER);
 const pNum = choice([pFloat, pInt]);
 
-// deno-fmt-ignore
-enum tkn {
-  nil, error, lparen, rparen, lbrace,
-  rbrace, comma, dot, minus,
-  plus, slash, caret, star,rem,mod,
-  percent, eq, neq, lt,
-  gt, lte, gte,
-  symbol, string, number,
-  unit, bang,
-  eof,
-}
-
-
-type Tkn = { lex: string; type: tkn };
-type Err = { error: string };
-enum ntype {
-}
-type Num = { num: number };
-type Unit<T extends string = string> = { num: number; unit: T };
-type Unex = { op: string; arg: PNode };
-type Binex = { op: string; L: PNode; R: PNode };
-type Variable = { sym: string };
-type Nil = { type: "nil" };
-type PNode = Binex | Num | Variable | Nil | Unex | Err | Call;
-
-const err = (error: string) => ({ error });
-
+const err = (error: string) => ({ error, type: ntype.error });
 
 const num = (x: string | number): Num => ({
   num: typeof x === "string" ? (x as any) * 1 : x,
+  type: ntype.number,
 });
 
-const unit = <T extends string>(
+const unit = (
   num: number,
-  unit: T,
-): Unit<T> => ({
+  unit: string,
+): Unit => ({
   num,
   unit,
+  type: ntype.unit,
 });
 
-
-const unex = (op: string, arg: PNode): Unex => ({
+const unex = (op: string, arg: ParsedNode): Unex => ({
   op,
   arg,
+  type: ntype.unex,
 });
 
-const binex = (op: string, L: PNode, R: PNode): Binex => ({
+const binex = (op: string, L: ParsedNode, R: ParsedNode): Binex => ({
   L,
   op,
   R,
+  type: ntype.binex,
 });
-const sym = (symbol: string): Variable => ({
-  sym: symbol,
+const sym = (sym: string): Variable => ({
+  sym,
+  type: ntype.symbol,
 });
 
+const nilnode: Nil = { type: ntype.nil };
 
-const nilnode: Nil = { type: "nil" };
-
-type Call = { f: string; args: PNode[] };
-
-const call = (f: string, args: PNode[]) => ({
+const call = (f: string, args: ParsedNode[]): Call => ({
   f,
   args,
+  type: ntype.call,
 });
 
-function expr(text: string) {
+const token = (type: tkn, lex: string = ""): Tkn => ({
+  lex,
+  type,
+});
+
+const binopReal = (a: Num, op: string, b: Num): ParsedNode => {
+  const x = a.num;
+  const y = b.num;
+  switch (op) {
+    case "+":
+      return num(x + y);
+    case "*":
+      return num(x * y);
+    case "/":
+      return num(x / y);
+    case "-":
+      return num(x - y);
+    case "^":
+      return num(x ** y);
+    case "mod":
+      return num(((floor(x) % floor(y)) + floor(x)) % floor(y));
+    case "rem":
+      return num(floor(x) % floor(y));
+    default:
+      return err(`Unknown operator: ${op}`);
+  }
+};
+
+class Evaluator implements NodeHandler<ParsedNode> {
+  evaluate(node: ParsedNode) {
+    const n: any = node;
+    // deno-fmt-ignore
+    switch (node.type) {
+      case ntype.error: return this.err(n);
+      case ntype.unit: return this.unit(n);
+      case ntype.unex: return this.unex(n);
+      case ntype.binex: return this.binex(n);
+      case ntype.number: return this.num(n);
+      case ntype.symbol: return this.sym(n);
+      case ntype.nil: return this.nil(n);
+      case ntype.call: return this.call(n);
+    }
+  }
+  err(node: Err): ParsedNode {
+    return node;
+  }
+  num(node: Num): ParsedNode {
+    return node;
+  }
+  unit(node: Unit): ParsedNode {
+    return node;
+  }
+  unex(node: Unex): ParsedNode {
+    return node;
+  }
+  binex(node: Binex): ParsedNode {
+    const lhs = this.evaluate(node.L);
+    const rhs = this.evaluate(node.R);
+    if (lhs.type === ntype.number && rhs.type === ntype.number) {
+      // @ts-ignore
+      return binopReal(lhs, node.op, rhs);
+    }
+    return node;
+  }
+  sym(node: Variable): ParsedNode {
+    return node;
+  }
+  nil(node: Nil): ParsedNode {
+    return node;
+  }
+  call(node: Call): ParsedNode {
+    return node;
+  }
+}
+
+function tokenize(text:string) {
+  
+}
+
+function parse(text: string) {
   const max = text.length;
-  const token = (type: tkn, lex: string = ""): Tkn => ({
-    lex,
-    type,
-  });
+
+  const keywords = new Map<string, Tkn>([
+    ["rem", token(tkn.rem, "rem")],
+    ["mod", token(tkn.mod, "mod")],
+  ]);
+
+  const functions = new Map<string, Tkn>([
+    ["rem", token(tkn.rem, "rem")],
+    ["mod", token(tkn.mod, "mod")],
+  ]);
+
   let current = 0;
   const advance = () => text[current++];
   let last: Tkn | null = null;
   let peek = token(tkn.nil);
   const bounded = () => current <= max;
   const peekchar = () => text[current];
+
   const next = () => {
     if (current > max) return token(tkn.eof);
     const skipws = () => {
@@ -102,10 +258,7 @@ function expr(text: string) {
         }
       }
     };
-    const keywords = new Map<string, Tkn>([
-      ["rem", token(tkn.rem, "rem")],
-      ["mod", token(tkn.mod, "mod")],
-    ]);
+
     let start = 0;
     const scan = () => {
       skipws();
@@ -168,9 +321,9 @@ function expr(text: string) {
     return out;
   };
 
-  const exp = (minbp: number = 1): PNode => {
+  const exp = (minbp: number = 1): ParsedNode => {
     let t = next();
-    let lhs: PNode = nilnode;
+    let lhs: ParsedNode = nilnode;
     switch (t.type) {
       case tkn.lparen:
         lhs = exp(0);
@@ -193,6 +346,8 @@ function expr(text: string) {
         break;
       case tkn.symbol:
         lhs = sym(t.lex);
+        if (peek.type === tkn.rparen) {
+        }
         break;
     }
     const [_, rbp] = prefixbp(t.type);
@@ -257,58 +412,12 @@ function expr(text: string) {
       default: return [null, null];
     }
   };
-  const parse = () => {
+  const node = () => {
     next();
     return exp();
   };
-  return { tokenize, parse };
+  return { node };
 }
 
-interface NodeHandler<T> {
-  err(node: Err): T;
-  num(node: Num): T;
-  unit(node: Unit): T;
-  unex(node: Unex): T;
-  binex(node: Binex): T;
-  sym(node: Variable): T;
-  nil(node: Nil): T;
-  call(node: Call): T;
-}
-
-
-class Evaluator implements NodeHandler<PNode> {
-  evaluate(node:PNode) {
-    // switch ()
-  }
-  err(node: Err): PNode {
-    return node;
-  }
-  num(node: Num): PNode {
-    return node;
-  }
-  unit(node: Unit<string>): PNode {
-    return node;
-  }
-  unex(node: Unex): PNode {
-    return node;
-  }
-  binex(node: Binex): PNode {
-    switch (node.op) {
-    }
-    return node;
-  }
-  sym(node: Variable): PNode {
-    return node;
-  }
-  nil(node: Nil): PNode {
-    return node;
-  }
-  call(node: Call): PNode {
-    return node;
-  }
-}
-
-
-
-
-const p = expr(`a = 2 - a`).parse();
+const p = parse(`let f(x) = cos(x)`);
+console.log(p);

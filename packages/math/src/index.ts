@@ -72,7 +72,6 @@ export const slope = (
  */
 export const mod = (n: number, d: number) => ((n % d) + d) % d;
 
-
 /**
  * Converts the provided number into a pair of integers (N,D),
  * where `N` is the numerator and `D` is the
@@ -128,19 +127,24 @@ export function gcd(a: number, b: number) {
   return a;
 }
 
+export const floor = Math.floor;
+export const cos = Math.cos;
+export const sin = Math.sin;
+export const tan = Math.tan;
+
 export {
+  add2D,
+  binop2D,
+  distance2D,
+  div2D,
+  mag2D,
+  mul2D,
+  normal2D,
+  normalized2D,
+  sub2D,
   v2,
   v3,
   Vector,
   vector,
-  binop2D,
-  add2D,
-  sub2D,
-  mul2D,
-  div2D,
-  mag2D,
-  normal2D,
-  normalized2D,
-  distance2D,
 } from "./vector.js";
 export { diagonal, Matrix, matrix, maxColumnCount } from "./matrix.js";

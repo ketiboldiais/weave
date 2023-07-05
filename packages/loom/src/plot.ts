@@ -15,8 +15,8 @@ export class Plot extends PLOT_BASE {
   fn: Right<(...args: any[]) => RVal> | null;
   samples: number = 300;
   children: Plottable[] = [];
-  system: "cartesian" | "polar" = "cartesian";
-  sys(of: "cartesian" | "polar") {
+  system: "cartesian" | "polar" | "contour-3D" = "cartesian";
+  sys(of: "cartesian" | "polar" | 'contour-3D') {
     this.system = of;
     return this;
   }
@@ -80,7 +80,11 @@ export class Plot extends PLOT_BASE {
     if (str !== null) out = str;
     return out;
   }
-
+  
+  private contour3D() {
+    
+  }
+  
   shift() {
     if (this.system === "cartesian") {
       return "";
@@ -125,13 +129,14 @@ export class Plot extends PLOT_BASE {
   path(): string {
     const fn = this.fn;
     if (fn === null) return "";
-    if (this.system === "cartesian") {
-      return this.linearPath();
+    switch (this.system) {
+      case "cartesian":
+        return this.linearPath();
+      case "polar":
+        return this.radialPath();
+      default:
+        return "";
     }
-    if (this.system === "polar") {
-      return this.radialPath();
-    }
-    return "";
   }
 }
 
