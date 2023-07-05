@@ -24,7 +24,7 @@ const PARTICLE = typed(scopable(Base));
 
 export class Particle extends PARTICLE {
   p: Vector;
-  a: Vector;
+  private a: Vector;
   r: number = 5;
   m: number = 1;
   v: Vector;
@@ -40,6 +40,14 @@ export class Particle extends PARTICLE {
   place(time: number) {
     const displacement = mul2D(this.v, v2(time));
     this.p = add2D(this.p, displacement);
+  }
+  A(timestep: number) {
+    return mul2D(this.a, v2(timestep));
+  }
+  zero() {
+    this.a.x = 0;
+    this.a.y = 0;
+    return this;
   }
   applyForce(force: Vector) {
     const accel = div2D(force, this.m);
@@ -91,8 +99,8 @@ export class ForceSpace extends FORCELAYOUT {
   children: Node2D[] = [];
   graph: Graph;
   timestep: number = 0.03;
-  D: number = 0.9;
-  max_speed: number = Infinity;
+  D: number = 0.6;
+  max_speed: number = 20;
   C_spring: number = 1;
   iterations: number = 100;
   epsilon: number = 0.0001;
@@ -158,16 +166,20 @@ export class ForceSpace extends FORCELAYOUT {
       return spring;
     });
   }
-
   forEachPt(callback: (particle: Particle) => void) {
     this.particles.forEach((p) => callback(p));
   }
-  forEachSpring(callback: (spring: Spring, edge: Edge) => void) {
+  forEachSpring(callback: (spring: Spring, edge: Edge) => Spring) {
     this.graph.edges.forEach((edge) => {
       const source_target = this.springs.get(edge.id);
       const target_source = this.springs.get(edge.revid);
       if (source_target) {
-        callback(source_target, edge);
+        this.springs.set(source_target.id, callback(source_target, edge));
+      } else if (target_source) {
+        this.springs.set(
+          target_source.id,
+          callback(target_source, edge.reverse()),
+        );
       } else {
         const a = this.particles.get(edge.source.id)!;
         const b = this.particles.get(edge.target.id)!;
@@ -195,13 +207,13 @@ export class ForceSpace extends FORCELAYOUT {
   }
   updateVelocity() {
     this.forEachPt((pt) => {
-      const newAccel = mul2D(pt.a, v2(this.timestep));
+      const newAccel = pt.A(this.timestep);
       const newVelocity = add2D(pt.v, mul2D(newAccel, v2(this.D)));
       pt.v = newVelocity;
       if (mag2D(pt.v) > this.max_speed) {
         pt.v = mul2D(normalized2D(pt.v), v2(this.max_speed));
       }
-      pt.a = v2(0, 0);
+      pt.zero();
     });
   }
   updatePosition() {
