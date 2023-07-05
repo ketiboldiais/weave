@@ -16,10 +16,10 @@ export const ForceGraph = ({ of }: { of: ForceSpace }) => {
       {edges.map((e) => (
         <g key={e.id} id={e.id as any}>
           <line
-            x1={e.point1.p.x}
-            y1={e.point1.p.y}
-            x2={e.point2.p.x}
-            y2={e.point2.p.y}
+            x1={e.x1}
+            y1={e.y1}
+            x2={e.x2}
+            y2={e.y2}
             stroke={"grey"}
             strokeWidth={1}
           />

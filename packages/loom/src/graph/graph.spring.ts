@@ -1,16 +1,12 @@
 import { unsafe } from "../aux.js";
 import { Base } from "../base.js";
-import { Edge, FigNode, Node2D } from "../index.js";
+import { FigNode, Line, line, Node2D } from "../index.js";
 import { scopable } from "../scopable.js";
 import { Space2D } from "../space2d.js";
 import { typed } from "../typed.js";
 import {
   add2D,
-  distance2D,
-  div2D,
-  mag2D,
-  mul2D,
-  normalized2D,
+  clamp,
   randInt,
   sub2D,
   v2,
@@ -18,237 +14,170 @@ import {
   vector,
 } from "@weave/math";
 import { Graph } from "./graph.js";
-import { Vertex } from "./vertex.js";
+
+const rsq = (v: Vector, u: Vector) => (
+  ((v.x - u.x) ** 2) + ((v.y - u.y) ** 2)
+);
 
 const PARTICLE = typed(scopable(Base));
 
 export class Particle extends PARTICLE {
   p: Vector;
-  private a: Vector;
-  r: number = 5;
-  m: number = 1;
+  r: number;
   v: Vector;
-  vertex: Vertex;
-  constructor(data: Vertex, position: Vector) {
+  f: Vector;
+  id: string | number;
+  constructor(id: string | number, position: Vector) {
     super();
     this.p = position;
+    this.r = 5;
     this.v = v2(0, 0);
-    this.a = v2(0, 0);
-    this.vertex = data;
+    this.f = v2(0, 0);
+    this.id = id;
     this.type = "force-particle";
   }
-  place(time: number) {
-    const displacement = mul2D(this.v, v2(time));
-    this.p = add2D(this.p, displacement);
-  }
-  A(timestep: number) {
-    return mul2D(this.a, v2(timestep));
-  }
-  zero() {
-    this.a.x = 0;
-    this.a.y = 0;
-    return this;
-  }
-  applyForce(force: Vector) {
-    const accel = div2D(force, this.m);
-    const f = add2D(this.a, accel);
-    this.a = f;
-  }
-  get id() {
-    return this.vertex.id;
-  }
 }
 
-export const pt = (data: Vertex, position: Vector) => (
-  new Particle(data, position)
-);
-
-const SPRING = typed(scopable(Base));
-
-export class Spring extends SPRING {
-  point1: Particle;
-  point2: Particle;
-  id: string | number;
-
-  constructor(
-    point1: Particle,
-    point2: Particle,
-    id: string | number,
-  ) {
-    super();
-    this.point1 = point1;
-    this.point2 = point2;
-    this.type = "force-spring";
-    this.id = id;
-  }
-}
-
-const spring = (
-  point1: Particle,
-  point2: Particle,
-  id: string | number,
-) => (
-  new Spring(point1, point2, id)
+export const pt = (id: string | number, position: Vector) => (
+  new Particle(id, position)
 );
 
 const FORCELAYOUT = typed(Space2D);
-
 export class ForceSpace extends FORCELAYOUT {
-  particles: Map<(string | number), Particle>;
-  springs: Map<(string | number), Spring>;
+  private particles: Map<(string | number), Particle>;
+  private graph: Graph;
   children: Node2D[] = [];
-  graph: Graph;
-  timestep: number = 0.03;
-  D: number = 0.6;
-  max_speed: number = 20;
-  C_spring: number = 1;
-  iterations: number = 100;
-  epsilon: number = 0.0001;
+
+  ITERATIONS: number = 200;
+  /**
+   * Sets the number of iterations
+   * the force layout should run
+   * for.
+   */
+  iterations(value: number) {
+    this.ITERATIONS = value;
+    return this;
+  }
+
+  EPSILON: number = 0.5;
+  /**
+   * Sets the minimum energy
+   * threshhold indicating
+   * when the layout has
+   * reached equilibrium.
+   */
+  epsilon(value: number) {
+    this.EPSILON = value;
+    return this;
+  }
+  private STABLE: boolean = false;
+
+  REPULSION: number = 20;
+  /**
+   * Sets the repulsion constant
+   * for this layout.
+   */
+  repulsion(value: number) {
+    this.REPULSION = value;
+    return this;
+  }
+
+  ATTRACTION: number = 0.06;
+  /**
+   * Sets the attraction constant
+   * for this layout.
+   */
+  attraction(value: number) {
+    this.ATTRACTION = value;
+    return this;
+  }
+
+  DECAY: number = 0.9;
+  /**
+   * Sets the decay value
+   * for this layout.
+   */
+  decay(value: number) {
+    this.DECAY = value;
+    return this;
+  }
+
   constructor(graph: Graph) {
     super();
     this.graph = graph;
     this.type = "force-graph";
     this.particles = new Map();
-    this.springs = new Map();
-  }
-  L?: number;
-
-  /**
-   * The force layout’s computed
-   * attraction constant.
-   */
-  get k() {
-    if (this.L !== undefined) return this.L;
-    const C = this.C_spring;
-    const area = this.va;
-    const num_vertices = this.graph.vertices.size;
-    return C * Math.sqrt(area / num_vertices);
   }
 
-  F_Repulsion(u: Vector, v: Vector) {
-    const d = sub2D(u, v);
-    const mag = mag2D(d);
-    const pvpu = div2D(d, mag);
-    const distance = distance2D(v, u);
-    const k_squared = this.k * this.k;
-    const f_r = (-k_squared) / distance;
-    const f = mul2D(pvpu, v2(f_r));
-    return f;
-  }
-
-  F_attract(u: Vector, v: Vector): Vector {
-    const d = sub2D(v, u);
-    const mag = mag2D(d);
-    const distance = distance2D(v, u);
-    const distance_squared = distance * distance;
-    const pupv = div2D(d, mag);
-    const f_a = distance_squared / this.k;
-    return mul2D(pupv, v2(f_a));
-  }
-
-  coulomb() {
-    this.forEachPt((p1) => {
-      this.forEachPt((p2) => {
-        if (p1.id !== p2.id) {
-          const f_rep = this.F_Repulsion(p1.p, p2.p);
-          p1.applyForce(f_rep);
-          p2.applyForce(f_rep);
-        }
-      });
-    });
-  }
-
-  hooke() {
-    this.forEachSpring((spring) => {
-      const f_spring = this.F_attract(spring.point1.p, spring.point2.p);
-      spring.point1.applyForce(f_spring);
-      spring.point2.applyForce(f_spring);
-      return spring;
-    });
-  }
-  forEachPt(callback: (particle: Particle) => void) {
+  private forEachPt(callback: (particle: Particle) => void) {
     this.particles.forEach((p) => callback(p));
-  }
-  forEachSpring(callback: (spring: Spring, edge: Edge) => Spring) {
-    this.graph.edges.forEach((edge) => {
-      const source_target = this.springs.get(edge.id);
-      const target_source = this.springs.get(edge.revid);
-      if (source_target) {
-        this.springs.set(source_target.id, callback(source_target, edge));
-      } else if (target_source) {
-        this.springs.set(
-          target_source.id,
-          callback(target_source, edge.reverse()),
-        );
-      } else {
-        const a = this.particles.get(edge.source.id)!;
-        const b = this.particles.get(edge.target.id)!;
-        const s = spring(a, b, edge.id);
-        callback(s, edge);
-        this.springs.set(edge.id, s);
-      }
-    });
-  }
-
-  totalEnergy() {
-    let energy = 0;
-    this.forEachPt((p) => {
-      const speed = mag2D(p.v);
-      energy += p.m * speed;
-    });
-    return energy;
-  }
-
-  /**
-   * Sets the timestep for each iteration.
-   */
-  step(value: number) {
-    this.timestep = value;
-  }
-  updateVelocity() {
-    this.forEachPt((pt) => {
-      const newAccel = pt.A(this.timestep);
-      const newVelocity = add2D(pt.v, mul2D(newAccel, v2(this.D)));
-      pt.v = newVelocity;
-      if (mag2D(pt.v) > this.max_speed) {
-        pt.v = mul2D(normalized2D(pt.v), v2(this.max_speed));
-      }
-      pt.zero();
-    });
-  }
-  updatePosition() {
-    this.forEachPt((p) => {
-      p.place(this.timestep);
-    });
   }
 
   /**
    * Begins drawing the force graph.
    */
   figure() {
-    this.setup();
-    this.draw();
+    this.scatter();
+    this.layout();
     return this;
   }
-  draw() {
-    const K = this.iterations;
-    for (let i = 0; i < K; i++) {
-      this.coulomb();
-      this.hooke();
-      this.updateVelocity();
-      this.updatePosition();
-      const t = this.totalEnergy();
-      if (t < this.epsilon) break;
+  private layout() {
+    const xs = this.scaleOf("x");
+    const ys = this.scaleOf("y");
+    const MIN_X = xs(this.xmin());
+    const MAX_X = xs(this.xmax());
+    const MIN_Y = ys(this.ymax());
+    const MAX_Y = ys(this.ymin());
+    for (let i = 0; i < this.ITERATIONS; i++) {
+      this.iterate(MIN_X, MAX_X, MIN_Y, MAX_Y);
+      if (this.STABLE) break;
     }
   }
 
-  setup() {
+  private iterate(
+    MIN_X: number,
+    MAX_X: number,
+    MIN_Y: number,
+    MAX_Y: number,
+  ) {
+    this.forEachPt((v) => {
+      v.f = v2(0, 0);
+      this.forEachPt((u) => {
+        if (v.id !== u.id) {
+          let d2 = rsq(v.p, u.p);
+          if (d2 === 0) d2 = 0.001;
+          const c = this.REPULSION / d2;
+          const f = sub2D(v.p, u.p).mul(c);
+          v.f.ADD(f);
+        }
+      });
+    });
+    this.graph.edges.forEach((e) => {
+      const u = this.particles.get(e.source.id);
+      const v = this.particles.get(e.target.id);
+      if (u && v) {
+        const f = sub2D(u.p, v.p).MUL(this.ATTRACTION);
+        v.f.ADD(f);
+      }
+    });
+    let displacement = 0;
+    this.forEachPt((v) => {
+      v.v = add2D(v.v, v.f).MUL(this.DECAY);
+      displacement += (Math.abs(v.v.x)) + Math.abs(v.v.y);
+      v.p.ADD(v.v);
+      v.p.x = clamp(MIN_X, v.p.x, MAX_X);
+      v.p.y = clamp(MIN_Y, v.p.y, MAX_Y);
+    });
+    this.STABLE = displacement < this.EPSILON;
+  }
+
+  private scatter() {
     const xs = this.scaleOf("x");
     const ys = this.scaleOf("y");
     this.graph.vertices.forEach((v) => {
       const x = randInt(xs(-2), xs(2));
       const y = randInt(ys(-2), ys(2));
-      this.particles.set(v.id, pt(v, vector(x, y)));
+      this.particles.set(v.id, pt(v.id, vector(x, y)));
     });
   }
 
@@ -264,14 +193,19 @@ export class ForceSpace extends FORCELAYOUT {
   /**
    * Returns this spring graph’s edges.
    */
-  edges() {
-    const edges: Spring[] = [];
+  edges(): Line[] {
+    const edges: Line[] = [];
     const ids = new Set<string>();
     this.graph.edges.forEach((e) => {
       const source = this.particles.get(e.source.id);
       const target = this.particles.get(e.target.id);
       if (source && target && !ids.has(e.id)) {
-        edges.push(spring(source, target, e.id));
+        const x1 = source.p.x;
+        const y1 = source.p.y;
+        const x2 = target.p.x;
+        const y2 = target.p.y;
+        const l = line([x1, y1], [x2, y2]).scope(this);
+        edges.push(l);
       }
       ids.add(e.id);
       ids.add(e.revid);

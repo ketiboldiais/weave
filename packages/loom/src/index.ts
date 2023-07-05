@@ -62,7 +62,6 @@ export {
   forceSpace,
   isForceSpace,
   Particle,
-  pt,
 } from "./graph/graph.spring.js";
 export type NodeType =
   | "plane"
