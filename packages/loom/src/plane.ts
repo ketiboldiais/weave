@@ -34,3 +34,4 @@ export const plane = (nodes: (Node2D | Node2D[])[]) => {
 export const isPlane = (node: FigNode): node is Plane => (
   !unsafe(node) && node.isType("plane")
 );
+

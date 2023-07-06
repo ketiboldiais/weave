@@ -99,6 +99,10 @@ export function toFrac(numberValue: number) {
   return [h, k];
 }
 
+export const zip = <A, B>(array1: A[], array2: B[]): ([A, B])[] => (
+  array1.map((k, i) => [k, array2[i]])
+);
+
 /**
  * Given a numerator `N` and a denominator `D`,
  * returns a simplified fraction.

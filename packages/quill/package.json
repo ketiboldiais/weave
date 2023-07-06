@@ -1,0 +1,33 @@
+{
+  "name": "@weave/quill",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite build --watch && tsc --watch",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest --run"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.5",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9",
+    "vite-plugin-dts": "^2.3.0"
+  },
+  "dependencies": {
+    "@weave/reed": "workspace:^",
+    "@weave/twine": "workspace:^",
+    "@weave/math": "workspace:^"
+  }
+}

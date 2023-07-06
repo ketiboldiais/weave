@@ -1,7 +1,7 @@
 import { typed } from "./typed.js";
 import { colorable } from "./colorable.js";
 import { compile, engine } from "@weave/twine";
-import { cos, pi, sin, unsafe } from "./aux.js";
+import { unsafe } from "./aux.js";
 import { line, lineRadial } from "d3-shape";
 import { FigNode, linear, Plottable } from "./index.js";
 import { scopable } from "./scopable.js";

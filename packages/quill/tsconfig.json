@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-
+    
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,
@@ -20,5 +20,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "exclude": ["src/parser.ts"]
+  "exclude": ["tests/**", "./src/prototypes.ts"]
 }

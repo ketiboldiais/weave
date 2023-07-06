@@ -1,7 +1,7 @@
 import { safer } from "./aux.js";
 import { And, Axiom, Color } from "./index.js";
 
-type Palette = {
+export type Palette = {
   stroke: string;
   fill: string;
   strokeWidth: string | number;

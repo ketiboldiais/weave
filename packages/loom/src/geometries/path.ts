@@ -72,6 +72,16 @@ export class Path extends PATH {
   }
 
   /**
+   * Applies the given matrix to the
+   * current paths (a matrix transformation).
+   */
+  t(matrix: (number[])[] | Matrix) {
+    return this.tfm(
+      Array.isArray(matrix) ? Matrix.from(matrix) : matrix,
+    );
+  }
+
+  /**
    * Rotates this path by the given angle.
    * If a number is passed for the angle
    * value, the angle unit is assumed to be
@@ -378,6 +388,33 @@ export class Path extends PATH {
     const x = this.cursor.x;
     const y = this.cursor.y + dy;
     return this.push(V(x, y));
+  }
+
+  /**
+   * Generates grid lines.
+   */
+  grid() {
+    const space = this.space();
+    const xmin = space.xmin();
+    const xmax = space.xmax();
+    const ymin = space.ymin();
+    const ymax = space.ymax();
+    const out = new Path();
+
+    const xi = Math.floor(xmin);
+    const xf = Math.floor(xmax);
+    for (let i = xi; i <= xf; i++) {
+      out.M(i, ymin);
+      out.L(i, ymax);
+    }
+
+    const yi = Math.floor(ymin);
+    const yf = Math.floor(ymax);
+    for (let j = yi; j <= yf; j++) {
+      out.M(xmin, j);
+      out.L(xmax, j);
+    }
+    return out;
   }
 }
 

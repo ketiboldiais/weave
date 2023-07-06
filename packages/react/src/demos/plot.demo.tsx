@@ -1,4 +1,4 @@
-import { axis, plot, polar } from "@weave/loom";
+import { axis, path, plot, polar } from "@weave/loom";
 import { Figure } from "../components/figure";
 import { plane } from "@weave/loom";
 import { Fragment } from "react";
@@ -14,8 +14,9 @@ export const Plot1 = () => {
 };
 
 const plot2 = plane([
-  polar("s(t) = cos(t) * sin(t)"),
-]).margin(10, 10).w(300).h(300).gridlines("xy").figure();
+  // polar("s(t) = cos(t) * sin(t)"),
+  path().grid().stroke('thistle'),
+]).margin(10, 10).w(300).h(300).figure();
 
 export const Plot2 = () => {
   return <Figure of={plot2} />;
