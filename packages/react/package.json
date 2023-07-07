@@ -47,7 +47,6 @@
     "@weave/loom": "workspace:^",
     "@weave/math": "workspace:^",
     "@weave/twine": "workspace:^",
-    "@weave/quill": "workspace:^",
     "katex": "^0.16.7",
     "rehype-katex": "^6.0.3",
     "rehype-slug": "^5.1.0",

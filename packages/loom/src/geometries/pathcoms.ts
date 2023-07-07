@@ -1,4 +1,4 @@
-import { Matrix, v3 } from "@weave/math";
+import { Matrix, v2 } from "@weave/math";
 import { ScaleFn } from "../index.js";
 
 export type CommandHandler<T> = {
@@ -49,8 +49,8 @@ export interface MCommand extends PathCommand {
   type: "M";
 }
 
-export const M = (x: number, y: number, z: number = 1): MCommand => ({
-  end: [x, y, z],
+export const M = (x: number, y: number): MCommand => ({
+  end: [x, y],
   type: "M",
 });
 
@@ -58,8 +58,8 @@ export interface LCommand extends PathCommand {
   type: "L";
 }
 
-export const L = (x: number, y: number, z: number = 1): LCommand => ({
-  end: [x, y, z],
+export const L = (x: number, y: number): LCommand => ({
+  end: [x, y],
   type: "L",
 });
 
@@ -67,8 +67,8 @@ export interface HCommand extends PathCommand {
   type: "H";
 }
 
-export const H = (x: number, y: number, z: number = 1): HCommand => ({
-  end: [x, y, z],
+export const H = (x: number, y: number): HCommand => ({
+  end: [x, y],
   type: "H",
 });
 
@@ -76,33 +76,33 @@ export interface VCommand extends PathCommand {
   type: "V";
 }
 
-export const V = (x: number, y: number, z: number = 1): VCommand => ({
-  end: [x, y, z],
+export const V = (x: number, y: number): VCommand => ({
+  end: [x, y],
   type: "V",
 });
 
 export interface TCommand extends PathCommand {
   type: "T";
 }
-export const T = (x: number, y: number, z: number = 1): TCommand => ({
+export const T = (x: number, y: number): TCommand => ({
   type: "T",
-  end: [x, y, z],
+  end: [x, y],
 });
 
 export interface SCommand extends PathCommand {
   type: "S";
 }
-export const S = (x: number, y: number, z:number=1): SCommand => ({
+export const S = (x: number, y: number): SCommand => ({
   type: "S",
-  end: [x, y, z],
+  end: [x, y],
 });
 
 export interface ZCommand extends PathCommand {
   type: "Z";
 }
 
-export const Z = (x: number, y: number, z:number=1): ZCommand => ({
-  end: [x, y, z],
+export const Z = (x: number, y: number): ZCommand => ({
+  end: [x, y],
   type: "Z",
 });
 
@@ -224,31 +224,31 @@ export const pathScaler = (xscale: ScaleFn, yscale: ScaleFn) =>
 
 export const transformer2D = (matrix: Matrix) =>
   comHandler<PathCommand>({
-    M: (p) => ({ ...p, end: v3(p.end[0], p.end[1], p.end[2]).vxm(matrix).array() }),
-    L: (p) => ({ ...p, end: v3(p.end[0], p.end[1], p.end[2]).vxm(matrix).array() }),
-    H: (p) => ({ ...p, end: v3(p.end[0], p.end[1], p.end[2]).vxm(matrix).array() }),
-    V: (p) => ({ ...p, end: v3(p.end[0], p.end[1], p.end[2]).vxm(matrix).array() }),
+    M: (p) => ({ ...p, end: v2(p.end[0], p.end[1]).vxm(matrix).array() }),
+    L: (p) => ({ ...p, end: v2(p.end[0], p.end[1]).vxm(matrix).array() }),
+    H: (p) => ({ ...p, end: v2(p.end[0], p.end[1]).vxm(matrix).array() }),
+    V: (p) => ({ ...p, end: v2(p.end[0], p.end[1]).vxm(matrix).array() }),
     Z: (p) => p,
     S: (p) => p,
     T: (p) => p,
     Q: (p) => ({
       ...p,
-      ctrl: v3(p.ctrl[0], p.ctrl[1], p.ctrl[2]).vxm(matrix).array(),
-      end: v3(p.end[0], p.end[1], p.ctrl[2]).vxm(matrix).array(),
+      ctrl: v2(p.ctrl[0], p.ctrl[1]).vxm(matrix).array(),
+      end: v2(p.end[0], p.end[1]).vxm(matrix).array(),
     }),
     C: (p) => ({
       ...p,
-      startCtrl: v3(p.startCtrl[0], p.startCtrl[1], p.startCtrl[2]).vxm(matrix).array(),
-      endCtrl: v3(p.endCtrl[0], p.endCtrl[1], p.endCtrl[2]).vxm(matrix).array(),
-      end: v3(p.end[0], p.end[1], p.end[2]).vxm(matrix).array(),
+      startCtrl: v2(p.startCtrl[0], p.startCtrl[1]).vxm(matrix).array(),
+      endCtrl: v2(p.endCtrl[0], p.endCtrl[1]).vxm(matrix).array(),
+      end: v2(p.end[0], p.end[1]).vxm(matrix).array(),
     }),
     A: (p): ACommand => ({
       ...p,
-      end: v3(p.end[0], p.end[1], p.end[2]).vxm(matrix).array(),
+      end: v2(p.end[0], p.end[1]).vxm(matrix).array(),
     }),
     P: (p): PCommand => ({
       ...p,
-      end: v3(p.end[0], p.end[1], p.end[2]).vxm(matrix).array(),
-      rxry: v3(p.rxry[0], p.rxry[1], p.end[2]).vxm(matrix).array(),
+      end: v2(p.end[0], p.end[1]).vxm(matrix).array(),
+      rxry: v2(p.rxry[0], p.rxry[1]).vxm(matrix).array(),
     }),
   });
