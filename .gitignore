@@ -7,3 +7,4 @@ dist/**
 vite.config.ts.timestamp*
 packages/loom/src/prototypes/lab.stage1.ts
 packages/loom/src/prototypes/lab.stage2.ts
+packages/quill/src/prototypes.ts

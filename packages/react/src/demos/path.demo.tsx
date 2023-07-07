@@ -2,7 +2,7 @@ import { color, rect } from "@weave/loom";
 import { Figure } from "../components/figure";
 import { plane } from "@weave/loom";
 
-const coral = color('coral');
+const coral = color("coral");
 const path1 = plane([
   rect(2, 4).fill(coral),
   rect(2, 4).fill(coral.compliment()).opacity(0.5).rotate("45deg"),
