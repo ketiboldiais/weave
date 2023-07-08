@@ -1,214 +1,223 @@
-import { cos, sin, unsafe } from "../aux.js";
-import { Base } from "../base.js";
-import { colorable } from "../colorable.js";
-import { Matrix, matrix, v2, Vector } from "@weave/math";
-import { FigNode, linear } from "../index.js";
-import { parseDegrees, parseRadians } from "../parsers.js";
-import {
-  A,
-  C,
-  H,
-  L,
-  M,
-  P,
-  PathCommand,
-  pathScaler,
-  pathStringer,
-  Q,
-  S,
-  T,
-  transformer2D,
-  V,
-  Z,
-} from "./pathcoms.js";
-import { scopable } from "../scopable.js";
-import { typed } from "../typed.js";
+import { v3, Vector } from "@weave/math";
+import { typed } from "../typed";
+import { colorable } from "../colorable";
+import { Base } from "../base";
+import { scopable } from "../scopable";
+import { FigNode } from "..";
+import { unsafe } from "../aux";
+import { parseDegrees } from "../parsers";
 
-const PATH = typed(colorable(scopable(Base)));
+type CommandPrefix = "M" | "L" | "H" | "V" | "Q" | "C" | "A" | "O";
 
-export class Path extends PATH {
-  points: (PathCommand)[];
+const a3 = (ns: number[]) => (
+  ns.length === 0
+    ? v3(0, 0, 0)
+    : ns.length === 2
+    ? v3(ns[0], ns[1], 0)
+    : v3(ns[0], ns[1], ns[2])
+);
+
+type ComType<T extends CommandPrefix> = {
+  type: T;
+  end: Vector;
+};
+type MCommand = ComType<"M">;
+
+type LCommand = ComType<"L">;
+type HCommand = ComType<"H">;
+type VCommand = ComType<"V">;
+type QCommand = ComType<"Q"> & { ctrl: Vector };
+type CCommand = ComType<"C"> & { ctrl1: Vector; ctrl2: Vector };
+type ACommand = ComType<"A"> & {
+  rx: number;
+  ry: number;
+  rotation: number;
+  largeArc: 0 | 1;
+  sweep: 0 | 1;
+};
+
+type PathCommand =
+  | MCommand
+  | LCommand
+  | HCommand
+  | VCommand
+  | QCommand
+  | CCommand
+  | ACommand;
+
+// deno-fmt-ignore
+const com1 = <T extends ("M" | "L" | "H" | "V")>(type: T) => (
+  x: number,
+  y: number,
+  z: number = 0,
+): ComType<T> => ({ end: v3(x, y, z), type });
+
+export const M = com1("M");
+export const L = com1("L");
+export const H = com1("H");
+export const V = com1("V");
+export const Q = (controlPoint: number[], endPoint: number[]): QCommand => ({
+  end: a3(endPoint),
+  ctrl: a3(controlPoint),
+  type: "Q",
+});
+export const C = (
+  startControl: number[],
+  endControl: number[],
+  endPoint: number[],
+): CCommand => ({
+  end: a3(endPoint),
+  ctrl1: a3(startControl),
+  ctrl2: a3(endControl),
+  type: "C",
+});
+
+export const A = (
+  endPoint: number[],
+  rx: number = 1,
+  ry: number = 1,
+  rotation: number = 0,
+  largeArc: 0 | 1 = 0,
+  sweep: 0 | 1 = 0,
+): ACommand => ({
+  rx,
+  ry,
+  end: a3(endPoint),
+  rotation,
+  largeArc,
+  sweep,
+  type: "A",
+});
+
+const p = (x: number) => Number.isInteger(x) ? `${x}` : x.toPrecision(3);
+
+const scom = (c: PathCommand) => (c.type + (
+  (c.type === "M" || c.type === "L" || c.type === "V" || c.type == "H")
+    ? ``
+    : (c.type === "Q")
+    ? `${p(c.ctrl.x)},${p(c.ctrl.y)},`
+    : (c.type === "C")
+    ? `${p(c.ctrl1.x)},${p(c.ctrl1.y)},${p(c.ctrl2.x)},${p(c.ctrl2.y)},`
+    : (c.type === "A")
+    ? `${p(c.rx)},${p(c.ry)},${p(c.rotation)},${c.largeArc},${c.sweep},`
+    : ``
+) + `${p(c.end.x)},${p(c.end.y)}`);
+
+const PathBase = typed(colorable(scopable(Base)));
+
+export class Path extends PathBase {
+  commands: (PathCommand)[] = [];
   cursor: Vector;
-  /**
-   * Generates grid lines.
-   */
-  grid() {
-    const space = this.space();
-    const xmin = space.xmin();
-    const xmax = space.xmax();
-    const ymin = space.ymin();
-    const ymax = space.ymax();
-    const out = new Path();
-
-    const xi = Math.floor(xmin);
-    const xf = Math.floor(xmax);
-    for (let i = xi; i <= xf; i++) {
-      out.M(i, ymin);
-      out.L(i, ymax);
-    }
-
-    const yi = Math.floor(ymin);
-    const yf = Math.floor(ymax);
-    for (let j = yi; j <= yf; j++) {
-      out.M(xmin, j);
-      out.L(xmax, j);
-    }
-    return out;
-  }
-  get end() {
-    if (this.points.length) {
-      return Vector.from(this.points[this.points.length - 1].end);
-    }
-    return Vector.from([0, 0]);
-  }
-  get start() {
-    if (this.points.length) return Vector.from(this.points[0].end);
-    return Vector.from([0, 0]);
-  }
-  constructor(initX?: number, initY?: number) {
+  constructor(x: number = 0, y: number = 0, z: number = 0) {
     super();
-    const defined = initX !== undefined && initY !== undefined;
-    this.points = defined ? [M(initX, initY)] : [];
-    this.cursor = defined ? v2(initX, initY) : v2(0, 0);
+    this.cursor = v3(x, y, z);
+    this.commands = [M(x, y, z)];
     this.type = "path";
   }
-  concat(pathCommands: (PathCommand | Path)[]) {
-    if (pathCommands.length === 0) return this;
-    const pcs = pathCommands
-      .map((p) => p instanceof Path ? p.points : p)
-      .flat();
-    pcs.forEach((p) => this.points.push(p));
-    this.cursor = Vector.from(pcs[pcs.length - 1].end);
-    return this;
-  }
-  /**
-   * Clears all points on this path currently.
-   */
   clear() {
-    this.points = [];
-    this.cursor = v2(0, 0);
+    this.commands = [];
+    return this;
+  }
+  concat(commands: PathCommand[]) {
+    commands.forEach((c) => this.push(c));
     return this;
   }
 
-  private tfm(matrix: Matrix) {
-    const t = transformer2D(matrix);
-    this.points = this.points.map((p) => t(p));
-    this.cursor = this.cursor.vxm(matrix);
+  o(radius: number = 0.2) {
+    const c1 = this.cursor;
+    this.M(c1.x - (radius), c1.y);
+    this.A([c1.x + radius, c1.y]);
+    const c2 = this.cursor;
+    this.A([c2.x - (radius * 2), c2.y]);
+    this.M(c1.x, c1.y);
     return this;
   }
 
   /**
-   * Rotates this path by the given angle.
-   * If a number is passed for the angle
-   * value, the angle unit is assumed to be
-   * radians. If a string is passed, Weave’s
-   * combinators will attempt to parse an angle,
-   * defaulting to 0 in failure.
+   * Given the current position `(a,b)`,
+   * draws a vertical line to the
+   * absolute position `(a,y)`.
    */
-  rotate(angle: string | number) {
-    const theta = typeof angle === "string" ? parseRadians(angle) : angle;
-    return this.tfm(matrix([
-      [cos(theta), sin(theta)],
-      [-sin(theta), cos(theta)],
-    ]));
+  V(y: number) {
+    const current = this.cursor;
+    // const newposition = v2(current.x, y);
+    return this.push(V(current.x, y));
+  }
+  /**
+   * Given the current position `(a,b)`,
+   * draws a horizontal line to the
+   * absolute position `(x,b)`.
+   */
+  H(x: number) {
+    const current = this.cursor;
+    return this.push(L(x, current.y));
   }
 
   /**
-   * Shears this path along the y-axis
-   * by the given value.
+   * @param end - The arc’s end point.
+   * @param dimensions - Either a pair `(w,h)` where `w` is the width of
+   * the arc, and `h` is the height of the arc, or a number.
+   * If a number is passed, draws an arc where `w = h` (a circular
+   * arc). Defaults to `[1,1]`.
+   * @param rotation - The arc’s rotation along its x-axis. If
+   * a string is passed, Weave’s parsers will attempt to parse
+   * an angle, defaulting to 0 in failure. If a number is
+   * passed, assumes the angle unit is in radians. Defaults to `0`.
+   * @param arc - Either `minor` (the smaller half of the arc,
+   * corresponding to a large arc flag of `0`) or `major` (the
+   * larger half of the arc, corresponding to a large arc
+   * flag of `1`). Defaults to `minor`.
+   * @param sweep - Either `clockwise` (thus drawing the arc
+   * clockwise, a sweep flag of 1) or `counter-clockwise` (
+   * thus drawing the arc counter-clockwise, a sweep flag of
+   * 0). Defaults to `clockwise`.
    */
-  shearY(value: number) {
-    return this.tfm(
-      matrix([
-        [1, 0],
-        [value, 1],
-      ]),
-    );
+  A(
+    end: number[],
+    dimensions: number[] | number = [1, 1],
+    arc: "minor" | "major" = "minor",
+    rotation: number | string = 0,
+    sweep: "clockwise" | "counter-clockwise" = "clockwise",
+  ) {
+    const [RX, RY] = Array.isArray(dimensions)
+      ? dimensions
+      : [dimensions, dimensions];
+    const ROTATION = typeof rotation === "string"
+      ? parseDegrees(rotation)
+      : rotation;
+    const ARC = arc === "major" ? 1 : 0;
+    const SWEEP = sweep === "clockwise" ? 1 : 0;
+    return this.push(A(end, RX, RY, ROTATION, ARC, SWEEP));
   }
 
   /**
-   * Shears this path along the x-axis
-   * by the given value.
+   * Given the current starting position `(a,b)`,
+   * draws a line to the position `(a, b + dy)`.
    */
-  shearX(value: number) {
-    return this.tfm(matrix([
-      [1, value],
-      [0, 1],
-    ]));
+  v(dy: number) {
+    const x = this.cursor.x;
+    const y = this.cursor.y + dy;
+    return this.push(V(x, y));
   }
 
   /**
-   * Reflects this path along its y-axis.
+   * Given the current starting position `(a,b)`,
+   * draws a line to the position `(a + dx, b)`.
    */
-  reflectY() {
-    return this.tfm(
-      matrix([
-        [-1, 0],
-        [0, 1],
-      ]),
-    );
+  h(dx: number) {
+    const x = this.cursor.x + dx;
+    const y = this.cursor.y;
+    return this.push(H(x, y));
   }
 
   /**
-   * Reflects this path along its x-axis.
+   * Moves the cursor to the absolute
+   * position `(x,y)`.
    */
-  reflectX() {
-    return this.tfm(
-      matrix([
-        [1, 0],
-        [0, -1],
-      ]),
-    );
+  M(x: number, y: number) {
+    return this.push(M(x, y));
   }
 
-  /**
-   * Scales this path by the given value.
-   * If a single value is passed or both
-   * `x` and `y` are equal, scales
-   * uniformly. Otherwise, `x` will
-   * scale the path along the x-axis,
-   * and `y` along the y-axis.
-   *
-   * @param x - The x-scale factor.
-   * @param y - The y-scale factor.
-   */
-  scale(x: number, y: number = x) {
-    return this.tfm(
-      matrix([
-        [x, 0],
-        [0, y],
-      ]),
-    );
-  }
-
-  /**
-   * Returns this path’s string.
-   */
-  d() {
-    const space = this.space();
-    const xs = space.scaleOf("x");
-    const ys = space.scaleOf("y");
-    const scaler = pathScaler(xs, ys);
-    const xmax = (space.xmax() - space.xmin()) / 2;
-    const ymax = (space.ymax() - space.ymin()) / 2;
-    const rxs = linear([0, xmax], [0, space.vw / 2]);
-    const rys = linear([0, ymax], [0, space.vh / 2]);
-    return this.points.map((p) =>
-      pathStringer(
-        p.type === "P"
-          ? P([xs(p.end[0]), ys(p.end[1])], [
-            rxs((p as any).rxry[0]),
-            rys((p as any).rxry[1]),
-          ])
-          : scaler(p),
-      )
-    ).join(" ");
-  }
-  private push(command: PathCommand) {
-    this.points.push(command);
-    this.cursor = Vector.from(command.end);
-    return this;
-  }
   /**
    * Given the current position `(a,b)`,
    * draws a quadratic Bezier curve
@@ -243,6 +252,7 @@ export class Path extends PATH {
     const control = [current.x + (width / 2), current.y + height];
     return this.push(Q(control, end));
   }
+
   /**
    * Given the current position `(a,b)`, draws
    * a quadraic Bezier curve with the given `endPoint`,
@@ -260,6 +270,7 @@ export class Path extends PATH {
     this.push(Q(controlPoint, endPoint));
     return this;
   }
+
   /**
    * Appends a cubic Bezier curve command.
    */
@@ -271,173 +282,63 @@ export class Path extends PATH {
     this.push(C(startControlPoint, endControlPoint, endPoint));
     return this;
   }
-  /**
-   * Given the current position `(a,b)`,
-   * draws a vertical line to the
-   * absolute position `(a,y)`.
-   */
-  V(y: number) {
-    const current = this.cursor;
-    // const newposition = v2(current.x, y);
-    return this.push(V(current.x, y));
-  }
-  /**
-   * Given the current position `(a,b)`,
-   * draws a horizontal line to the
-   * absolute position `(x,b)`.
-   */
-  H(x: number) {
-    const current = this.cursor;
-    return this.push(L(x, current.y));
-  }
 
-  /**
-   * Appends an S command.
-   */
-  S() {
-    return this.push(S(this.cursor.x, this.cursor.y));
-  }
-
-  /**
-   * Appends a T command.
-   */
-  T() {
-    return this.push(T(this.cursor.x, this.cursor.y));
-  }
-
-  /**
-   * Closes this path.
-   */
-  Z() {
-    return this.push(Z(this.cursor.x, this.cursor.y));
-  }
   /**
    * Draws a line from the current cursor
    * position to the absolute position `(x,y)`.
    */
   L(x: number, y: number) {
     return this.push(L(x, y));
-    // return this.push1Ary("L", [x, y]);
   }
-  /**
-   * Moves the cursor to the absolute
-   * position `(x,y)`.
-   */
-  M(x: number, y: number) {
-    return this.push(M(x, y));
-    // return this.push1Ary("M", [x, y]);
+  push(command: PathCommand) {
+    this.commands.push(command);
+    this.cursor = command.end;
+    return this;
   }
-  /**
-   * @param end - The arc’s end point.
-   * @param dimensions - Either a pair `(w,h)` where `w` is the width of
-   * the arc, and `h` is the height of the arc, or a number.
-   * If a number is passed, draws an arc where `w = h` (a circular
-   * arc). Defaults to `[1,1]`.
-   * @param rotation - The arc’s rotation along its x-axis. If
-   * a string is passed, Weave’s parsers will attempt to parse
-   * an angle, defaulting to 0 in failure. If a number is
-   * passed, assumes the angle unit is in radians. Defaults to `0`.
-   * @param arc - Either `minor` (the smaller half of the arc,
-   * corresponding to a large arc flag of `0`) or `major` (the
-   * larger half of the arc, corresponding to a large arc
-   * flag of `1`). Defaults to `minor`.
-   * @param sweep - Either `clockwise` (thus drawing the arc
-   * clockwise, a sweep flag of 1) or `counter-clockwise` (
-   * thus drawing the arc counter-clockwise, a sweep flag of
-   * 0). Defaults to `clockwise`.
-   */
-  A(
-    end: number[],
-    dimensions: number[] | number = [1, 1],
-    arc: "minor" | "major" = "minor",
-    rotation: number | string = 0,
-    sweep: "clockwise" | "counter-clockwise" = "clockwise",
-  ) {
-    return this.push(A(
-      Array.isArray(dimensions) ? dimensions : [dimensions, dimensions],
-      typeof rotation === "string" ? parseDegrees(rotation) : rotation,
-      arc === "major" ? 1 : 0,
-      sweep === "clockwise" ? 1 : 0,
-      end,
-    ));
-  }
-
-  /**
-   * Draws an ellipse.
-   * @param radiusX - The width of the ellipse.
-   * @param radiusY - The height of the ellipse.
-   * @param center - Optionally set the center point of the ellipse.
-   * If the center isn’t provided, defaults to the current cursor position.
-   */
-  E(radiusX: number, radiusY: number, center?: number[]) {
-    const c = center !== undefined ? center : [this.cursor.x, this.cursor.y];
-    return this.push(P(c, [radiusX, radiusY]));
-  }
-
-  /**
-   * Draws a circle.
-   * @param radius - The circle’s radius.
-   * @param center - Optionally set the center point of the circle.
-   * If the center isn’t provided, defaults to the current cursor
-   * position.
-   */
-  O(radius: number, center?: number[]) {
-    const c = center !== undefined ? center : [this.cursor.x, this.cursor.y];
-    return this.push(P(c, [radius, radius]));
-  }
-
-  // Relative Commands
-  /**
-   * Given the current starting position `(a,b)`,
-   * draws a line to the position `(a + dx, b)`.
-   */
-  h(dx: number) {
-    const x = this.cursor.x + dx;
-    const y = this.cursor.y;
-    return this.push(H(x, y));
-  }
-  /**
-   * Given the current starting position `(a,b)`,
-   * draws a line to the position `(a, b + dy)`.
-   */
-  v(dy: number) {
-    const x = this.cursor.x;
-    const y = this.cursor.y + dy;
-    return this.push(V(x, y));
+  d() {
+    const space = this.space();
+    const x = space.scaleOf("x");
+    const y = space.scaleOf("y");
+    const out = this.commands.map((p) => {
+      switch (p.type) {
+        case "M":
+          return M(x(p.end.x), y(p.end.y));
+        case "H":
+        case "L":
+        case "V":
+          return L(x(p.end.x), y(p.end.y));
+        case "Q":
+          return Q([x(p.ctrl.x), y(p.ctrl.y)], [x(p.end.x), y(p.end.y)]);
+        case "C":
+          return C(
+            [x(p.ctrl1.x), y(p.ctrl1.y)],
+            [x(p.ctrl2.x), y(p.ctrl2.y)],
+            [x(p.end.x), y(p.end.y)],
+          );
+        case "A":
+          return A(
+            [x(p.end.x), y(p.end.y)],
+            p.rx,
+            p.ry,
+            p.rotation,
+            p.largeArc,
+            p.sweep,
+          );
+      }
+    }).map((v) => scom(v));
+    return out.join("");
   }
 }
 
-/**
- * Instantiates a new Path object.
- * @param startX - An optional starting x-coordinate. Defaults to 0.
- * @param startY - An optional starting y-coordinate. Defaults to 0.
- */
-export const path = (startX: number = 0, startY: number = 0) => (
-  new Path(startX, startY)
+export const path = (x: number = 0, y: number = 0, z: number = 0) => (
+  new Path(x, y, z)
 );
-
-/**
- * Bundles the provided paths into a single path.
- */
-export const group = (paths: (PathCommand | Path)[]) => (
-  new Path().clear().concat(paths)
-);
-
 export const isPath = (node: FigNode): node is Path => (
   !unsafe(node) && node.isType("path")
 );
 
-export const circ = (radius: number, center: number[] = [0, 0]) => (
-  path(center[0], center[1]).O(radius)
-);
-export const rect = (
-  width: number,
-  height: number,
-  center: number[] = [0, 0],
-) => (
-  path(center[0] - (width / 2), center[1] - (height / 2))
-    .h(width)
-    .v(height)
-    .h(-width)
-    .v(-height)
-);
+export const trail = (
+  points: [number, number][],
+) => {
+  const p = path(points[0][0], points[0][1]);
+};

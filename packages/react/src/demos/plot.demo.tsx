@@ -14,8 +14,7 @@ export const Plot1 = () => {
 };
 
 const plot2 = plane([
-  // polar("s(t) = cos(t) * sin(t)"),
-  path().grid().stroke('thistle'),
+  polar("s(t) = cos(t) * sin(t)"),
 ]).margin(10, 10).w(300).h(300).figure();
 
 export const Plot2 = () => {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { choice, list, lit, maybe, regex } from "@weave/reed";
 import { floor, zip } from "./index.js";
 

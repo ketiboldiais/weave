@@ -205,8 +205,17 @@ export const lerp = ([x1, x2]: N2, p: number) => (
  */
 export const ilerp = ([x, y]: N2, a: number) => clamp(0, (a - x) / (y - x), 1);
 
+/**
+ * Returns a linear interpolator. 
+ * @param domain - The interval of input values – a pair of numbers `(a,b)`
+ * where `a` is the smallest possible input and `b` is the largest.
+ * @param range - The interval of scale values - a pair of numbers `(a,b)`
+ * where `a` is the smallest possible scaled value and `b` is the largest.
+ */
 export const interpolator = (domain: N2, range: N2) => (n: number) => (
-  lerp([x(range), y(range)], ilerp([x(domain), y(domain)], n))
+  x(range) + ((
+    (y(range) - x(range)) / (y(domain) - x(domain))
+  ) * (n - x(domain)))
 );
 
 /**

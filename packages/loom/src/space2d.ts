@@ -1,14 +1,5 @@
-import { cos, sin } from "./aux.js";
-import { Vector, vector } from "@weave/math";
-import {
-  arrowDef,
-  Line,
-  line,
-  linear,
-  Referable,
-  shift,
-  Space,
-} from "./index.js";
+import { interpolator, Vector, vector } from "@weave/math";
+import { arrowDef, Line, line, Referable, shift, Space } from "./index.js";
 
 export type ScaleName = "linear" | "power" | "radial" | "log";
 export type ScaleFn = (x: number) => number;
@@ -100,14 +91,6 @@ export class Space2D extends Space {
     return this.Y.y;
   }
 
-  scale() {
-    const type = this.scaletype;
-    switch (type) {
-      default:
-        return linear;
-    }
-  }
-
   scaled(type: ScaleName) {
     this.scaletype = type;
     return this;
@@ -170,9 +153,15 @@ export class Space2D extends Space {
     const xdomain = [0, width];
     const ydomain = [height, 0];
     if (of === "y") {
-      return linear(this.Y.array(), ydomain);
+      return interpolator(
+        this.Y.array() as [number, number],
+        ydomain as [number, number],
+      );
     } else {
-      return linear(this.X.array(), xdomain);
+      return interpolator(
+        this.X.array() as [number, number],
+        xdomain as [number, number],
+      );
     }
   }
 }

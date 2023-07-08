@@ -3,11 +3,12 @@ import { colorable } from "./colorable.js";
 import { compile, engine } from "@weave/twine";
 import { unsafe } from "./aux.js";
 import { line, lineRadial } from "d3-shape";
-import { FigNode, linear, Plottable } from "./index.js";
+import { FigNode, L, path, Plottable, trail } from "./index.js";
 import { scopable } from "./scopable.js";
 import { Base } from "./base.js";
 import { Right } from "@weave/twine";
 import type { RVal } from "@weave/twine";
+import { interpolator } from "@weave/math";
 
 const PLOT_BASE = scopable(typed(colorable(Base)));
 
@@ -16,7 +17,7 @@ export class Plot extends PLOT_BASE {
   samples: number = 300;
   children: Plottable[] = [];
   system: "cartesian" | "polar" | "contour-3D" = "cartesian";
-  sys(of: "cartesian" | "polar" | 'contour-3D') {
+  sys(of: "cartesian" | "polar" | "contour-3D") {
     this.system = of;
     return this;
   }
@@ -66,7 +67,7 @@ export class Plot extends PLOT_BASE {
     const ry = ys(space.amplitude("y") / d) / 2;
     const r = Math.min(rx, ry);
     const domain_max = 2 * Math.PI;
-    const rscale = linear([0, 2], [0, xs(r)]);
+    const rscale = interpolator([0, 2], [0, xs(r)]);
     let points: [number, number][] = [];
     for (let i = 0; i < domain_max; i += 0.01) {
       const x = i;
@@ -80,11 +81,10 @@ export class Plot extends PLOT_BASE {
     if (str !== null) out = str;
     return out;
   }
-  
+
   private contour3D() {
-    
   }
-  
+
   shift() {
     if (this.system === "cartesian") {
       return "";
@@ -117,7 +117,7 @@ export class Plot extends PLOT_BASE {
       if (x < xmin || xmax < x) continue;
       else dataset.push(point);
     }
-
+    // const ps = trail(dataset).d();
     const p = line()
       .y((d) => ys(d[1]))
       .defined((d) => !isNaN(d[1]))

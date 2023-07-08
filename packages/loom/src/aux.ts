@@ -29,8 +29,6 @@ export const safer = <T>(
 
 /** Returns a tuple of type `T`. */
 export const tuple = <T extends any[]>(...data: T) => data;
-export const isNumber = (x: any): x is number => typeof x === "number";
-
 export const dne = (x: any): x is undefined => (x === undefined);
 export const nil = (x: any): x is null => (x === null);
 export const unsafe = (x: any) => dne(x) || nil(x);
@@ -43,16 +41,6 @@ export const arraySplit = <T>(array: T[]) => {
   const right = array.slice(half);
   return [left, right] as [T[], T[]];
 };
-export const isnil = (x: any): x is null => x === null;
-export type SafeObj<T> = {
-  [P in keyof T]: NonNullable<T[P]>;
-};
-
-export type O<K extends string, T> = Record<K, T>;
-export const isnum = (x: any): x is number => typeof x === "number";
-export const isstr = (x: any): x is string => typeof x === "string";
-
-export const cc = "currentColor";
 
 /**
  * Returns a `translate` string for use with the `g`
@@ -62,14 +50,3 @@ export const shift = (
   x: number = 0,
   y: number = 0,
 ) => `translate(${x},${y})`;
-
-export const pi = Math.PI;
-export const cos = Math.cos;
-export const sin = Math.sin;
-export const tan = Math.tan;
-export const arctan = Math.atan;
-export const arctan2 = Math.atan2;
-export const maxof = Math.max;
-export const minof = Math.min;
-export const abs = Math.abs;
-export const square = (x: number) => x * x;

@@ -5,7 +5,6 @@ import {
   label,
   Line,
   line,
-  linear,
   shift,
   TextNode,
 } from "./index.js";
@@ -14,7 +13,7 @@ import { colorable } from "./colorable.js";
 import { typed } from "./typed.js";
 import { scopable } from "./scopable.js";
 import { Base } from "./base.js";
-import { toFrac } from "@weave/math";
+import { interpolator, toFrac } from "@weave/math";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
 
@@ -125,11 +124,9 @@ export class Axis extends AXIS_BASE {
     return range;
   }
   scaleFn() {
-    const space = this.space();
     const domain = this.domain();
     const range = this.range();
-    const scale = space.scale();
-    const out = scale(domain, range);
+    const out = interpolator(domain, range);
     return out;
   }
   translationXY() {
@@ -186,7 +183,7 @@ export class Axis extends AXIS_BASE {
     const isXAxis = this.is("x");
     this.TickLabels = [];
     const ran = isXAxis ? space.X : space.Y;
-    const rescale = linear([0, n - 1], [ran.x, ran.y]);
+    const rescale = interpolator([0, n - 1], [ran.x, ran.y]);
     for (let i = 0; i < n; i++) {
       const value = rescale(i);
 

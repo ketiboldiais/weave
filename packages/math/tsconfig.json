@@ -20,5 +20,4 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "exclude": ["src/parser.ts"]
 }

@@ -1,9 +1,9 @@
 import { unsafe } from "../aux.js";
 import { colorable } from "../colorable.js";
-import { FigNode, linear } from "../index.js";
+import { FigNode } from "../index.js";
 import { scopable } from "../scopable.js";
 import { typed } from "../typed.js";
-import { Vector } from "@weave/math";
+import { Vector, interpolator } from "@weave/math";
 
 export const area = (radius: number) => (
   Math.PI * (radius ** 2)
@@ -33,7 +33,7 @@ export class Circle extends CIRCLE_BASE {
   get sr() {
     const space = this.space();
     const max = (space.xmax() - space.xmin()) / 2;
-    let rs = linear([0, max], [0, space.vw]);
+    let rs = interpolator([0, max], [0, space.vw]);
     return rs(this.r);
   }
   radius(value: number) {

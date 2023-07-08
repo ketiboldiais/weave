@@ -2,26 +2,8 @@ export { Color, color, hsl, rgb } from "./color.js";
 export { BNode, bnode } from "./nodes/bnode.js";
 export { map, none, some } from "./nodes/box.js";
 export type { Option } from "./nodes/box.js";
-export {
-  A,
-  C,
-  comHandler,
-  H,
-  L,
-  M,
-  P,
-  pathScaler,
-  pathStringer,
-  Q,
-  S,
-  T,
-  transformer2D,
-  V,
-  Z,
-} from "./geometries/pathcoms.js";
 export { Space } from "./space.js";
-export { circ, group, isPath, Path, path, rect } from "./geometries/path.js";
-export { linear, LinearScale } from "./scale.js";
+export { isPath, Path, path, trail, M, L, H, V, Q, C, A, } from "./geometries/path.js";
 import { ArrowDefNode } from "./arrow.js";
 import { Circle } from "./geometries/circle.js";
 import { Integral } from "./integral.js";
@@ -107,10 +89,10 @@ import { Path } from "./geometries/path.js";
 export type FigNode =
   | Plot
   | Circle
-  | Path
   | Plane
   | Axis
   | TextNode
+  | Path
   | Line
   | TreeSpace
   | TreeChild
