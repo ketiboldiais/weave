@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Axis, TextNode } from "@weave/loom";
 import { Label } from "./label";
-import {L} from './line';
+import { L } from "./line";
 
 type Axis2DProps = {
   of: Axis;
@@ -17,7 +17,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
     return (
       <g>
         <g>
-          {rticks.map((c,i) => (
+          {rticks.map((c, i) => (
             <circle
               key={`circ-${i}-${c.type}-${c.x}`}
               r={c.r}
@@ -34,7 +34,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
     );
   }
   const ticks = useMemo(() => {
-    return of.axisTicks();
+    return of.tickData();
   }, [domain.join("-"), range.join("-")]);
   const translation = (
     text: TextNode,
@@ -54,17 +54,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
       <g transform={rotate} opacity={of.opacityValue || 0.4}>
         {!of.hasNo("axis-line") && (
           <path
-            d={[
-              "M",
-              range[0],
-              tickLength,
-              "v",
-              -tickLength,
-              "H",
-              range[1],
-              "v",
-              tickLength,
-            ].join(" ")}
+            d={of.axisLine()}
             fill={"none"}
             stroke={of.strokeColor || "currentColor"}
             strokeDasharray={of.strokeDashArray || 0}
@@ -72,24 +62,25 @@ export const Axis2D = ({ of }: Axis2DProps) => {
         )}
       </g>
       {!of.hasNo("ticks") &&
-        ticks.map((text,i) => (
-          <g key={text.text+i} opacity={of.opacityValue || 0.5}>
+        ticks.map(({ text, line }, i) => (
+          <g key={(text.text as any) + i} opacity={of.opacityValue || 0.4}>
             <line
-              y1={-tickLength}
-              y2={tickLength}
-              stroke={text.FontColor || "currentColor"}
-              transform={translation(text) + " " + rotate}
+              x1={line.x1}
+              y1={line.y1}
+              x2={line.x2}
+              y2={line.y2}
+              stroke={line.strokeColor || "currentColor"}
             />
-            <Label
-              of={text}
-              anchor={text.anchor ? text.anchor : isX ? "middle" : "end"}
-              position={translation(
-                text,
-                20,
-                isX ? 0 : -10,
-                isX ? 0 : 3,
-              )}
-            />
+            <text
+              x={text.x}
+              y={text.y}
+              fontSize={"7px"}
+              color={text.FontColor || "currentColor"}
+              textAnchor={text.anchor||'start'}
+            >
+              {text.text}
+            </text>
+            
           </g>
         ))}
     </g>

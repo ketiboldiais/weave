@@ -1,9 +1,9 @@
 import { unsafe } from "../aux.js";
 import { Base } from "../base.js";
 import { FigNode, Line, line, Node2D } from "../index.js";
-import { scopable } from "../scopable.js";
+import { scopable } from "../mixins/scopable.js";
 import { Space2D } from "../space2d.js";
-import { typed } from "../typed.js";
+import { typed } from "../mixins/typed.js";
 import {
   add2D,
   clamp,

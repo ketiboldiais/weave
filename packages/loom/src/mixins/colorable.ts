@@ -1,5 +1,5 @@
-import { safer } from "./aux.js";
-import { And, Axiom, Color } from "./index.js";
+import { safer } from "../aux.js";
+import { And, Axiom, Color } from "../index.js";
 
 export type Palette = {
   stroke: string;

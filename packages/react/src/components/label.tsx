@@ -74,7 +74,7 @@ export const Tex = ({
   const [state, enstate] = useState(html(""));
   useEffect(() => {
     try {
-      const data = katex.renderToString(content, {
+      const data = katex.renderToString(`${content}`, {
         displayMode,
         throwOnError: false,
         output: 'html',

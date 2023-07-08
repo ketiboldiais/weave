@@ -1,40 +1,40 @@
 import { safer, unsafe } from "../aux.js";
 import { Base } from "../base.js";
-import { colorable } from "../colorable.js";
+import { colorable } from "../mixins/colorable.js";
 import { FigNode } from "../index.js";
-import { scopable } from "../scopable.js";
-import { tagged, typed } from "../typed.js";
+import { scopable } from "../mixins/scopable.js";
+import { tagged, typed } from "../mixins/typed.js";
 import { v2, Vector, vector } from "@weave/math";
+import {movable} from '../mixins/placeable.js';
 
-const LINE = typed(colorable(scopable(tagged(Base))));
+const LINE = typed(colorable(scopable(tagged(movable(Base)))));
 
 export class Line extends LINE {
   get x1() {
-    return this.start.x;
+    return this.O.x;
   }
   set x1(value: number) {
-    this.start.x = value;
+    this.O.x = value;
   }
   get y1() {
-    return this.start.y;
+    return this.O.y;
   }
   set y1(value: number) {
-    this.start.y = value;
+    this.O.y = value;
   }
   get x2() {
-    return this.end.x;
+    return this.E.x;
   }
   set x2(value: number) {
-    this.end.x = value;
+    this.E.x = value;
   }
   get y2() {
-    return this.end.y;
+    return this.E.y;
   }
   set y2(value: number) {
-    this.end.y = value;
+    this.E.y = value;
   }
-  start: Vector;
-  end: Vector;
+  E: Vector;
   /**
    * The position of this line’s arrow,
    * if any.
@@ -42,8 +42,8 @@ export class Line extends LINE {
   arrowed?: boolean;
   constructor(start: Vector, end: Vector) {
     super();
-    this.start = start;
-    this.end = end;
+    this.O = start;
+    this.E = end;
     this.type = "line";
   }
   /**

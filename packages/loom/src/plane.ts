@@ -1,8 +1,9 @@
-import { Space2D } from "./index.js";
-import { typed } from "./typed.js";
+import { isQuad, Space2D } from "./index.js";
+import { typed } from "./mixins/typed.js";
 import { FigNode, Node2D } from "./index.js";
 import { isLine } from "./geometries/line.js";
 import { unsafe } from "./aux.js";
+import { interpolator, max } from "@weave/math";
 
 const PLANE = typed(Space2D);
 
@@ -19,9 +20,19 @@ export class Plane extends PLANE {
    * of this figure are properly formatted.
    */
   figure() {
+    const X = this.scaleOf("x");
+    const Y = this.scaleOf("y");
+    const W = interpolator([0, this.xmax()-this.xmin()], [0, this.vw]);
+    const H = interpolator([0, this.ymax()-this.ymin()], [0, this.vh]);
     this.nodes.forEach((n) => {
       n.scope(this);
       isLine(n) && n.arrowed && this.defineArrow(n);
+      if (isQuad(n)) {
+        n.x = X(n.x);
+        n.y = Y(n.y);
+        n.H = H(n.H);
+        n.W = W(n.W);
+      }
     });
     return this;
   }
@@ -34,4 +45,3 @@ export const plane = (nodes: (Node2D | Node2D[])[]) => {
 export const isPlane = (node: FigNode): node is Plane => (
   !unsafe(node) && node.isType("plane")
 );
-

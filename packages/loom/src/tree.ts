@@ -2,7 +2,7 @@ import { tuple, unsafe } from "./aux.js";
 import { arrowDef, FigNode, Line, line, ray, Space2D } from "./index.js";
 import { linkedList } from "./list.js";
 import { subtree, Tree, TreeChild } from "./treenode.js";
-import { typed } from "./typed.js";
+import { typed } from "./mixins/typed.js";
 
 type TreeLayout =
   | "knuth"
@@ -71,11 +71,11 @@ export class TreeSpace extends TREEBASE {
     this.type = "tree";
   }
   private nodefn: ((n: TreeChild) => TreeChild) | null = null;
-  private linkmap: ((l:Line) => Line) | null = null;
+  private linkmap: ((l: Line) => Line) | null = null;
   /**
    * Applies the given callback to every link in this tree _post-processing_.
    */
-  edgemap(callback: (l:Line) => Line) {
+  edgemap(callback: (l: Line) => Line) {
     this.linkmap = callback;
     return this;
   }
@@ -536,7 +536,7 @@ export class TreeSpace extends TREEBASE {
       const rest = list.cdr();
       list.zip(rest).forEach(([a, b]) => {
         const r = 1 / b.r + 0.05;
-        const gamma = b.gamma(a);
+        const gamma = b.O.gamma(a.O);
         const ox = Math.cos(gamma) * r;
         const oy = Math.sin(gamma) * r;
         const tx = b.x - (b.x < 0 ? ox : ox);
@@ -555,14 +555,17 @@ export class TreeSpace extends TREEBASE {
       });
       list.clear();
     };
-    (this.edgeNotes["inorder"]) && markEdge("inorder", this.edgeNotes["inorder"]);
+    (this.edgeNotes["inorder"]) &&
+      markEdge("inorder", this.edgeNotes["inorder"]);
     (this.edgeNotes["bfs"]) && markEdge("bfs", this.edgeNotes["bfs"]);
-    (this.edgeNotes["postorder"]) && markEdge("postorder", this.edgeNotes["postorder"]);
-    (this.edgeNotes["preorder"]) && markEdge("preorder", this.edgeNotes["preorder"]);
+    (this.edgeNotes["postorder"]) &&
+      markEdge("postorder", this.edgeNotes["postorder"]);
+    (this.edgeNotes["preorder"]) &&
+      markEdge("preorder", this.edgeNotes["preorder"]);
     const f = this.nodefn;
     (f !== null) && (this.treenodes = this.treenodes.map((n) => f(n)));
     const e = this.linkmap;
-    (e !== null) && (this.links = this.links.map(l => e(l)));
+    (e !== null) && (this.links = this.links.map((l) => e(l)));
     return this;
   }
   treenodes: TreeChild[] = [];

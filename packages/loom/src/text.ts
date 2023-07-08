@@ -1,8 +1,8 @@
 import { unsafe } from "./aux.js";
 import { FigNode } from "./index.js";
 import { Circle } from "./geometries/circle.js";
-import { textual } from "./textual.js";
-import { typed } from "./typed.js";
+import { textual } from "./mixins/textual.js";
+import { typed } from "./mixins/typed.js";
 
 const TEXT = typed(textual(Circle));
 

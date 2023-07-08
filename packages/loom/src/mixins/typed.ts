@@ -1,5 +1,5 @@
-import { And, Axiom, NodeType } from "./index.js";
-import { uid } from "./index.js";
+import { And, Axiom, NodeType } from "../index.js";
+import { uid } from "../index.js";
 
 export interface Tagged {
   /** The node’s unique id. */

@@ -1,11 +1,12 @@
 import { v3, Vector } from "@weave/math";
-import { typed } from "../typed";
-import { colorable } from "../colorable";
+import { typed } from "../mixins/typed";
+import { colorable } from "../mixins/colorable";
 import { Base } from "../base";
-import { scopable } from "../scopable";
+import { scopable } from "../mixins/scopable";
 import { FigNode } from "..";
 import { unsafe } from "../aux";
 import { parseDegrees } from "../parsers";
+import {movable} from '../mixins/placeable';
 
 type CommandPrefix = "M" | "L" | "H" | "V" | "Q" | "C" | "A" | "O";
 
@@ -103,14 +104,12 @@ const scom = (c: PathCommand) => (c.type + (
     : ``
 ) + `${p(c.end.x)},${p(c.end.y)}`);
 
-const PathBase = typed(colorable(scopable(Base)));
+const PathBase = typed(colorable(scopable(movable(Base))));
 
 export class Path extends PathBase {
   commands: (PathCommand)[] = [];
-  cursor: Vector;
   constructor(x: number = 0, y: number = 0, z: number = 0) {
     super();
-    this.cursor = v3(x, y, z);
     this.commands = [M(x, y, z)];
     this.type = "path";
   }
@@ -124,10 +123,10 @@ export class Path extends PathBase {
   }
 
   o(radius: number = 0.2) {
-    const c1 = this.cursor;
+    const c1 = this.O;
     this.M(c1.x - (radius), c1.y);
     this.A([c1.x + radius, c1.y]);
-    const c2 = this.cursor;
+    const c2 = this.O;
     this.A([c2.x - (radius * 2), c2.y]);
     this.M(c1.x, c1.y);
     return this;
@@ -139,7 +138,7 @@ export class Path extends PathBase {
    * absolute position `(a,y)`.
    */
   V(y: number) {
-    const current = this.cursor;
+    const current = this.O;
     // const newposition = v2(current.x, y);
     return this.push(V(current.x, y));
   }
@@ -149,7 +148,7 @@ export class Path extends PathBase {
    * absolute position `(x,b)`.
    */
   H(x: number) {
-    const current = this.cursor;
+    const current = this.O;
     return this.push(L(x, current.y));
   }
 
@@ -195,8 +194,8 @@ export class Path extends PathBase {
    * draws a line to the position `(a, b + dy)`.
    */
   v(dy: number) {
-    const x = this.cursor.x;
-    const y = this.cursor.y + dy;
+    const x = this.O.x;
+    const y = this.O.y + dy;
     return this.push(V(x, y));
   }
 
@@ -205,8 +204,8 @@ export class Path extends PathBase {
    * draws a line to the position `(a + dx, b)`.
    */
   h(dx: number) {
-    const x = this.cursor.x + dx;
-    const y = this.cursor.y;
+    const x = this.O.x + dx;
+    const y = this.O.y;
     return this.push(H(x, y));
   }
 
@@ -230,7 +229,7 @@ export class Path extends PathBase {
     height: number,
     width: number,
   ) {
-    const current = this.cursor;
+    const current = this.O;
     const end = [current.x, current.y + height];
     const control = [current.x + width, current.y + height / 2];
     return this.push(Q(control, end));
@@ -247,7 +246,7 @@ export class Path extends PathBase {
     width: number,
     height: number,
   ) {
-    const current = this.cursor;
+    const current = this.O;
     const end = [current.x + width, current.y];
     const control = [current.x + (width / 2), current.y + height];
     return this.push(Q(control, end));
@@ -292,7 +291,7 @@ export class Path extends PathBase {
   }
   push(command: PathCommand) {
     this.commands.push(command);
-    this.cursor = command.end;
+    this.O = command.end;
     return this;
   }
   d() {

@@ -1,5 +1,5 @@
-import { typed } from "./typed.js";
-import { colorable } from "./colorable.js";
+import { typed } from "./mixins/typed.js";
+import { colorable } from "./mixins/colorable.js";
 import { Coord, FigNode } from "./index.js";
 import { Plot } from "./plot.js";
 import { area } from "d3-shape";

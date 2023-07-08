@@ -9,13 +9,18 @@ import {
   TextNode,
 } from "./index.js";
 import { tuple, unsafe } from "./aux.js";
-import { colorable } from "./colorable.js";
-import { typed } from "./typed.js";
-import { scopable } from "./scopable.js";
+import { colorable } from "./mixins/colorable.js";
+import { typed } from "./mixins/typed.js";
+import { scopable } from "./mixins/scopable.js";
 import { Base } from "./base.js";
 import { interpolator, toFrac } from "@weave/math";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
+type TickData = { line: Line; text: TextNode };
+const tick = (line: Line, text: TextNode): TickData => ({
+  line,
+  text,
+});
 
 export class Axis extends AXIS_BASE {
   /**
@@ -62,7 +67,7 @@ export class Axis extends AXIS_BASE {
     const ry = ys(space.amplitude("y") / d) / 2;
     const r = Math.min(rx, ry);
     const out: Circle[] = [
-      circle(xs(r)).xy(xs(0), ys(0)),
+      circle(xs(r)).at(xs(0), ys(0)),
     ];
     return out;
   }
@@ -140,7 +145,7 @@ export class Axis extends AXIS_BASE {
     }
   }
 
-  tickCount: number = 5;
+  tickCount?: number;
 
   /**
    * Sets the number of ticks
@@ -151,7 +156,7 @@ export class Axis extends AXIS_BASE {
     return this;
   }
 
-  TickLength: number = 3;
+  TickLength: number = 2;
 
   tickLength(value: number) {
     this.TickLength = value;
@@ -171,58 +176,47 @@ export class Axis extends AXIS_BASE {
     return this;
   }
 
-  /**
-   * Sets the axis tick labels. An optional
-   * callback function may be provided to
-   * target each tick.
-   */
-  labelTicks() {
+  tickData() {
     const space = this.space();
-    const scale = this.scaleFn();
-    const n = this.tickCount;
-    const isXAxis = this.is("x");
-    this.TickLabels = [];
-    const ran = isXAxis ? space.X : space.Y;
-    const rescale = interpolator([0, n - 1], [ran.x, ran.y]);
-    for (let i = 0; i < n; i++) {
-      const value = rescale(i);
-
-      let x = value.toPrecision(this.tickPrecision);
-      if (Number.isInteger(value)) {
-        x = `${value}`;
-      } else if (this.tickFormat === "Q") {
-        const [a, b] = toFrac(value);
-        x = `${a}/${b}`;
+    const xmin = space.xmin();
+    const xmax = space.xmax();
+    const ymin = space.ymin();
+    const ymax = space.ymax();
+    const X = space.scaleOf("x");
+    const Y = space.scaleOf("y");
+    const ticks: TickData[] = [];
+    const t = this.TickLength;
+    if (this.direction === "x") {
+      const xi = Math.floor(xmin);
+      const xf = Math.floor(xmax);
+      for (let i = xi; i <= xf; i++) {
+        let gridline = line([i, ymin], [i, ymax]);
+        gridline.x1 = X(gridline.x1);
+        gridline.x2 = gridline.x1;
+        gridline.y1 = t;
+        gridline.y2 = -t;
+        const txt = label(i).textAnchor("middle");
+        txt.x = gridline.x1;
+        txt.y = gridline.y1 + 10;
+        ticks.push(tick(gridline, txt));
       }
-      let txt = label(x);
-      if (isXAxis) {
-        txt.x = scale(value);
-        txt.y = scale(0);
-      } else {
-        txt.x = scale(0);
-        txt.y = scale(value);
-      }
-      txt.anchor = txt.anchor
-        ? txt.anchor
-        : (this.tickLabelAnchor ? this.tickLabelAnchor : (
-          this.is("x") ? "middle" : "end"
-        ));
-      if (x === "0" && this.hasNo("zero")) {
-        continue;
-      }
-      this.TickLabels.push(txt);
     }
-    return this;
-  }
-
-  /**
-   * Returns an array of tick
-   * objects.
-   */
-  axisTicks(): TextNode[] {
-    if (this.TickLabels.length !== 0) return this.TickLabels;
-    this.labelTicks();
-    return this.TickLabels;
+    if (this.direction === "y") {
+      const yi = Math.floor(ymin);
+      const yf = Math.floor(ymax);
+      for (let j = yi; j <= yf; j++) {
+        let gridline = line([xmin, j], [xmax, j]);
+        gridline.x1 = -t;
+        gridline.x2 = t;
+        gridline.y1 = Y(gridline.y1);
+        gridline.y2 = gridline.y1;
+        const txt = label(j).textAnchor('end');
+        txt.x = gridline.x1 - 2;
+        txt.y = gridline.y1 + 2;
+        ticks.push(tick(gridline, txt));
+      }
+    }
+    return ticks;
   }
 
   /** The axis’s placement. */

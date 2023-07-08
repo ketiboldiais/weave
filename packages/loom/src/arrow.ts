@@ -1,7 +1,7 @@
 import { unsafe } from "./aux.js";
-import { colorable } from "./colorable.js";
+import { colorable } from "./mixins/colorable.js";
 import { FigNode } from "./index.js";
-import { tagged, typed } from "./typed.js";
+import { tagged, typed } from "./mixins/typed.js";
 
 class ArrowDefinition {
   refX: number | string = 8;

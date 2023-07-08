@@ -4,8 +4,8 @@ import { plane } from "@weave/loom";
 import { Fragment } from "react";
 
 const plot1 = plane([
-  axis("x").ticks(11),
-  axis("y").ticks(11).hide("zero"),
+  axis("x"),
+  axis("y").hide("zero"),
   plot("f(x) = 1/x").sampled(100),
 ]).margin(10, 10).size(300,300).figure();
 

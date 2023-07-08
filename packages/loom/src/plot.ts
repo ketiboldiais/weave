@@ -1,10 +1,10 @@
-import { typed } from "./typed.js";
-import { colorable } from "./colorable.js";
+import { typed } from "./mixins/typed.js";
+import { colorable } from "./mixins/colorable.js";
 import { compile, engine } from "@weave/twine";
 import { unsafe } from "./aux.js";
 import { line, lineRadial } from "d3-shape";
 import { FigNode, L, path, Plottable, trail } from "./index.js";
-import { scopable } from "./scopable.js";
+import { scopable } from "./mixins/scopable.js";
 import { Base } from "./base.js";
 import { Right } from "@weave/twine";
 import type { RVal } from "@weave/twine";
