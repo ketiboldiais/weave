@@ -39,16 +39,6 @@ export class Plot extends PLOT_BASE {
       this.fn = null;
     }
   }
-  dom: [number, number] = [-5, 5];
-  domain(interval: [number, number]) {
-    this.dom = interval;
-    return this;
-  }
-  ran: [number, number] = [-5, 5];
-  range(interval: [number, number]) {
-    this.ran = interval;
-    return this;
-  }
   xyScales() {
     const space = this.space();
     const ys = space.scaleOf("y");

@@ -1,9 +1,9 @@
-export function uid(length: number = 4, base = 36) {
-  return Math.random()
+export const uid = (length: number = 4, base = 36) =>
+  Math.random()
     .toString(base)
     .replace(/[^a-z]+/g, "")
     .substring(0, length + 1);
-}
+
 /**
  * Give two values of type `T`,
  * returns the _safer_ value of the two.
@@ -32,7 +32,6 @@ export const tuple = <T extends any[]>(...data: T) => data;
 export const dne = (x: any): x is undefined => (x === undefined);
 export const nil = (x: any): x is null => (x === null);
 export const unsafe = (x: any) => dne(x) || nil(x);
-export const safe = (x: any) => !dne(x) && !nil(x);
 
 export const arraySplit = <T>(array: T[]) => {
   const L = array.length;

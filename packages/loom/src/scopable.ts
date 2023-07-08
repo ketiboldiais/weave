@@ -1,8 +1,4 @@
-import {
-  And,
-  Axiom,
-  Space2D,
-} from "./index.js";
+import { And, Axiom, Space2D } from "./index.js";
 
 export interface Scopable {
   /**

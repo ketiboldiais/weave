@@ -9,7 +9,7 @@ const d = forceSpace(graph({
   e: ["k"],
   j: ["x"],
   n: ["g"],
-})).w(200).h(200).x(-5, 5).y(-5, 5).figure();
+})).size(200,200).x(-5, 5).y(-5, 5).figure();
 
 export const ForceGraph1 = () => {
   return <Figure of={d} />;

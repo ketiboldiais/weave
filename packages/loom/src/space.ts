@@ -1,4 +1,10 @@
 export class Space {
+  /** The width of this figure. */
+  width: number = 500;
+
+  /** The height of this figure. */
+  height: number = 500;
+
   /**
    * Sets the figure’s physical size/
    */
@@ -17,24 +23,6 @@ export class Space {
     return width * height;
   }
 
-  /** The width of this figure. */
-  width: number = 500;
-
-  /** Sets the width of this figure. */
-  w(value: number) {
-    this.width = value;
-    return this;
-  }
-
-  /** The height of this figure. */
-  height: number = 500;
-
-  /** Sets the height of this figure. */
-  h(value: number) {
-    this.height = value;
-    return this;
-  }
-
   /**
    * A computed property – the figure’s height
    * with the top and bottom margins subtracted.
@@ -48,8 +36,8 @@ export class Space {
    */
   get vh() {
     const height = this.height;
-    const top = this.marginOf("top");
-    const bottom = this.marginOf("bottom");
+    const top = this.marginTop;
+    const bottom = this.marginBottom;
     return height - top - bottom;
   }
 
@@ -66,8 +54,8 @@ export class Space {
    */
   get vw() {
     const width = this.width;
-    const left = this.marginOf("left");
-    const right = this.marginOf("right");
+    const left = this.marginLeft;
+    const right = this.marginRight;
     return width - left - right;
   }
 
@@ -102,12 +90,12 @@ export class Space {
     return this;
   }
 
-  marginY() {
-    return this.marginOf("top") + this.marginOf("bottom");
+  get marginY() {
+    return this.marginTop + this.marginBottom;
   }
 
-  marginX() {
-    return this.marginOf("left") + this.marginOf("right");
+  get marginX() {
+    return this.marginLeft + this.marginRight;
   }
 
   /**
@@ -120,24 +108,11 @@ export class Space {
     bottom: number = top,
     left: number = right,
   ) {
-    this.margins[0] = top;
-    this.margins[1] = right;
-    this.margins[2] = bottom;
-    this.margins[3] = left;
+    this.margins = [top, right, bottom, left];
     return this;
   }
-  marginOf(order: "top" | "right" | "bottom" | "left") {
-    switch (order) {
-      case "top":
-        return this.margins[0];
-      case "right":
-        return this.margins[1];
-      case "bottom":
-        return this.margins[2];
-      case "left":
-        return this.margins[3];
-      default:
-        return 50;
-    }
-  }
+  get marginTop() {return this.margins[0]};
+  get marginRight() {return this.margins[1]};
+  get marginBottom() {return this.margins[2]};
+  get marginLeft() {return this.margins[3]};
 }

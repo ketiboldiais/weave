@@ -15,7 +15,7 @@ import { TreeChild } from "./treenode.js";
 export { Space2D } from "./space2d.js";
 export { bst } from "./tree/tree.binary.js";
 export type { ScaleFn } from "./space2d.js";
-export { arrow, isLine, line } from "./geometries/line.js";
+export { ray, isLine, line } from "./geometries/line.js";
 export type { Line } from "./geometries/line.js";
 export { arrowDef, isArrow } from "./arrow.js";
 export type { ArrowDefNode } from "./arrow.js";
@@ -47,15 +47,13 @@ export {
 } from "./graph/graph.spring.js";
 export type NodeType =
   | "plane"
-  | "space-3D"
-  | "axis-3D"
   | "arc"
-  | "ray-3D"
   | "polar-plane"
   | "matrix"
   | "plot"
   | "point"
   | "polygon"
+  | 'quad'
   | "axis"
   | "link"
   | "leaf"
@@ -85,11 +83,13 @@ import type { Line } from "./geometries/line.js";
 import { Axis } from "./axis.js";
 import { ForceSpace, Particle } from "./graph/graph.spring.js";
 import { Path } from "./geometries/path.js";
+import {Quad} from './geometries/rect.js';
 
 export type FigNode =
   | Plot
   | Circle
   | Plane
+  | Quad
   | Axis
   | TextNode
   | Path

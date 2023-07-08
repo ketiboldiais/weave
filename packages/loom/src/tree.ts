@@ -1,5 +1,5 @@
 import { tuple, unsafe } from "./aux.js";
-import { arrowDef, FigNode, Line, line, Space2D } from "./index.js";
+import { arrowDef, FigNode, Line, line, ray, Space2D } from "./index.js";
 import { linkedList } from "./list.js";
 import { subtree, Tree, TreeChild } from "./treenode.js";
 import { typed } from "./typed.js";
@@ -541,7 +541,7 @@ export class TreeSpace extends TREEBASE {
         const oy = Math.sin(gamma) * r;
         const tx = b.x - (b.x < 0 ? ox : ox);
         const ty = b.y - (b.y < 0 ? oy : oy);
-        const l = line([a.x, a.y], [tx, ty]).arrow("end");
+        const l = ray([a.x, a.y], [tx, ty]);
         const c = callback(l, a, b).uid(l.id);
         const arrow = arrowDef()
           .uid(c.id)

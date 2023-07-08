@@ -1,4 +1,4 @@
-import { choice, digits, list, lit, maybe, regex, word } from "@weave/reed";
+import { choice, list, lit, maybe, regex, word } from "@weave/reed";
 
 const pint = regex(/^[1-9]\d*/);
 const zero = regex(/^[0]/);

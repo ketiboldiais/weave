@@ -9,14 +9,6 @@ import { v2, Vector, vector } from "@weave/math";
 const LINE = typed(colorable(scopable(tagged(Base))));
 
 export class Line extends LINE {
-  copy() {
-    const start = this.start;
-    const end = this.end;
-    const copy = new Line(v2(start.x, start.y), v2(end.x, end.y));
-    copy.arrowed = this.arrowed;
-    copy.copyColors(this);
-    return copy;
-  }
   get x1() {
     return this.start.x;
   }
@@ -47,7 +39,7 @@ export class Line extends LINE {
    * The position of this line’s arrow,
    * if any.
    */
-  arrowed?: "start" | "end";
+  arrowed?: boolean;
   constructor(start: Vector, end: Vector) {
     super();
     this.start = start;
@@ -59,8 +51,8 @@ export class Line extends LINE {
    * an arrow. If set, the line’s
    * space will include arrow definitions.
    */
-  arrow(on: "start" | "end") {
-    this.arrowed = on;
+  arrow() {
+    this.arrowed = true;
     return this;
   }
 }
@@ -77,7 +69,7 @@ export const isLine = (node: FigNode): node is Line => (
   !unsafe(node) && node.isType("line")
 );
 
-export const arrow = (
+export const ray = (
   start: Vector | number[],
   end: Vector | number[],
-) => line(start, end).arrow("end");
+) => line(start, end).arrow();

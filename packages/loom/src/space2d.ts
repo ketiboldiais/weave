@@ -142,8 +142,8 @@ export class Space2D extends Space {
     }
   }
   center() {
-    const mx = this.marginX();
-    const my = this.marginY();
+    const mx = this.marginX;
+    const my = this.marginY;
     let out = shift(mx / 2, my / 2);
     return out;
   }

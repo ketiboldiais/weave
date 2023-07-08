@@ -1,7 +1,7 @@
 import { BNode, bnode } from "../index.js";
 import { linkedList } from "../list.js";
-import { leaf, subtree, Tree, TreeChild } from "../treenode.js";
-import { tree, TreeSpace } from "../tree.js";
+import { TreeChild } from "../treenode.js";
+import { tree } from "../tree.js";
 
 class BST<T> {
   root: BNode<T>;

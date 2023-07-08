@@ -3,7 +3,7 @@ import { colorable } from "../colorable.js";
 import { FigNode } from "../index.js";
 import { scopable } from "../scopable.js";
 import { typed } from "../typed.js";
-import { Vector, interpolator } from "@weave/math";
+import { interpolator, Vector } from "@weave/math";
 
 export const area = (radius: number) => (
   Math.PI * (radius ** 2)
@@ -15,11 +15,6 @@ export class Circle extends CIRCLE_BASE {
   r: number = 5;
   dx: number = 0;
   dy: number = 0;
-  text: string|number = "";
-  label(text: string) {
-    this.text = text;
-    return this;
-  }
 
   constructor(radius: number) {
     super([0, 0, 0]);
