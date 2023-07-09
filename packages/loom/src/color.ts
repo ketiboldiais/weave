@@ -161,8 +161,6 @@ export class Color {
     this.vals = color;
     this.model = model;
   }
-  namedColor() {
-  }
   compliment() {
     const out = this.toHSL();
     out.vals.x = mod(out.vals.x + 180, 360);

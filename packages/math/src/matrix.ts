@@ -425,8 +425,11 @@ export function maxColumnCount<T>(nestedArray: (T[])[]) {
   return C;
 }
 
-export const diagonal = (elements: number[]) =>
-  Matrix.diagonal(Vector.from(elements));
+export const diagonal = (elements: number[]) => (
+  Matrix.diagonal(Vector.from(elements))
+);
 
-export const matrix = (elements: (number[] | Vector)[]) =>
-  Matrix.from(elements.map((v) => v instanceof Vector ? v.elements : v));
+export const matrix = (elements: (number[] | Vector)[]) => (
+  Matrix.from(elements.map((v) => v instanceof Vector ? v.elements : v))
+);
+

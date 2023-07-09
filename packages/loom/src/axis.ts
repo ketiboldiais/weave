@@ -13,7 +13,7 @@ import { colorable } from "./mixins/colorable.js";
 import { typed } from "./mixins/typed.js";
 import { scopable } from "./mixins/scopable.js";
 import { Base } from "./base.js";
-import { interpolator, toFrac } from "@weave/math";
+import { interpolator } from "@weave/math";
 
 const AXIS_BASE = scopable(typed(colorable(Base)));
 type TickData = { line: Line; text: TextNode };

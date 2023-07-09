@@ -98,6 +98,90 @@ export class Vector {
   }
 
   /**
+   * Returns a copy of this vector, ensured as 2D.
+   * 
+   * @param x - The fallback x-component if the current x-component
+   * is undefined.
+   * @param y - The fallback y-component if the current y-component
+   * is undefined.
+   */
+  v2D(x: number = 0, y: number = 0) {
+    return new Vector([
+      this.elements[0] !== undefined ? this.elements[0] : x,
+      this.elements[1] !== undefined ? this.elements[1] : y,
+    ]);
+  }
+
+  /**
+   * Returns a copy of this vector, ensured as 3D.
+   * 
+   * @param x - The fallback x-component if the current x-component
+   * is undefined.
+   * @param y - The fallback y-component if the current y-component
+   * is undefined.
+   * @param z - The fallback z-component if the current z-component
+   * is undefined.
+   */
+  v3D(x: number = 0, y: number = 0, z: number = 0) {
+    return new Vector([
+      this.elements[0] !== undefined ? this.elements[0] : x,
+      this.elements[1] !== undefined ? this.elements[1] : y,
+      this.elements[2] !== undefined ? this.elements[2] : z,
+    ]);
+  }
+
+  /**
+   * Returns a copy of this vector, ensured as 4D.
+   * 
+   * @param x - The fallback x-component if the current x-component
+   * is undefined.
+   * @param y - The fallback y-component if the current y-component
+   * is undefined.
+   * @param z - The fallback z-component if the current z-component
+   * is undefined.
+   * @param w - The fallback w-component if the current w-component
+   * is undefined.
+   */
+  v4D(x: number = 0, y: number = 0, z: number = 0, w: number = 0) {
+    return new Vector([
+      this.elements[0] !== undefined ? this.elements[0] : x,
+      this.elements[1] !== undefined ? this.elements[1] : y,
+      this.elements[2] !== undefined ? this.elements[2] : z,
+      this.elements[3] !== undefined ? this.elements[3] : w,
+    ]);
+  }
+
+  /**
+   * Returns a copy of this vector with the x-component set to the
+   * provided value.
+   */
+  vx(value: number) {
+    return new Vector(this.elements.map((v, i) => i === 0 ? value : v));
+  }
+  /**
+   * Returns a copy of this vector with the y-component set to the
+   * provided value.
+   */
+  vy(value: number) {
+    return new Vector(this.elements.map((v, i) => i === 1 ? value : v));
+  }
+  /**
+   * Returns a copy of this vector with the z-component set to the
+   * provided value (assuming the vector is a 3D vector).
+   */
+  vz(value: number) {
+    return new Vector(this.elements.map((v, i) => i === 2 ? value : v));
+  }
+
+  /**
+   * Returns a copy of this vector with the w-component set to the
+   * provided value (assuming the vector is a 4D vector).
+   */
+  vw(value: number) {
+    return new Vector(this.elements.map((v, i) => i === 3 ? value : v));
+  }
+
+  /**
    * The x-coordinate of this vector.
    * If no such coordinate exists, returns 0.
    */

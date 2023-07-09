@@ -206,7 +206,7 @@ export const lerp = ([x1, x2]: N2, p: number) => (
 export const ilerp = ([x, y]: N2, a: number) => clamp(0, (a - x) / (y - x), 1);
 
 /**
- * Returns a linear interpolator. 
+ * Returns a linear interpolator.
  * @param domain - The interval of input values – a pair of numbers `(a,b)`
  * where `a` is the smallest possible input and `b` is the largest.
  * @param range - The interval of scale values - a pair of numbers `(a,b)`
@@ -224,47 +224,6 @@ export const interpolator = (domain: N2, range: N2) => (n: number) => (
  */
 export const iterpolate = (n: number, domain: N2, range: N2) => (
   interpolator(domain, range)(n)
-);
-
-/**
- * Creates a new array with the given length and
- * value.
- */
-const arr = (length: number, value: number) => (
-  new Array(length).fill(value)
-);
-
-/**
- * Returns a 3D-matrix of order
- * 3×3.
- */
-export const mtx = (rows: number[][]) => rows;
-
-/**
- * Returns the transpose of the given matrix A.
- */
-export const transpose = (A: (number[])[]) => (
-  A[0].map((_, c) => A.map((r) => r[c]))
-);
-
-/**
- * Returns the matrix multiplication of A and B.
- * This function does not perform any checks on whether
- * the number of rows in A equals the number of rows in
- * B (a necessary condition for matrix multiplication).
- * Functions using the matrix dot product must handle
- * that themselves.
- */
-export const mdot = (A: (number[])[], B: (number[])[]) => (
-  arr(A.length, 0)
-    .map(() => new Array(B[0].length).fill(0))
-    .map((row, i) =>
-      row.map((_, j) => A[i].reduce((sum, elm, k) => sum + (elm * B[k][j]), 0))
-    )
-);
-
-export const mulx = (A: (number[])[], s: number) => (
-  A.map((r) => r.map((c) => c * s))
 );
 
 /**
