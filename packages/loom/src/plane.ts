@@ -1,4 +1,4 @@
-import { isQuad, Space2D } from "./index.js";
+import { isCircle, isPath, isQuad, Space2D } from "./index.js";
 import { typed } from "./mixins/typed.js";
 import { FigNode, Node2D } from "./index.js";
 import { isLine } from "./geometries/line.js";
@@ -27,9 +27,11 @@ export class Plane extends PLANE {
     this.nodes.forEach((n) => {
       n.scope(this);
       isLine(n) && n.arrowed && this.defineArrow(n);
-      if (isQuad(n)) {
+      if (isQuad(n) || isCircle(n)) {
         n.x = X(n.x);
         n.y = Y(n.y);
+      }
+      if (isQuad(n)) {
         n.H = H(n.H);
         n.W = W(n.W);
       }

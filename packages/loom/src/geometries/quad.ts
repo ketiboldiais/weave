@@ -18,13 +18,11 @@ export class Quad extends QuadBase {
   Rx: number = 0;
   /** The vertical corner radius. */
   Ry: number = 0;
-  origin: Vector;
   constructor(width: number, height: number) {
     super();
     this.W = width;
     this.H = height;
     this.type = "quad";
-    this.origin = v3(0, 0, 0);
   }
   height(value: number) {
     this.H = value;
@@ -47,6 +45,18 @@ export class Quad extends QuadBase {
   rx(value: number) {
     this.Rx = value;
     return this;
+  }
+  get ne() {
+    return v3(this.x, this.y, this.z);
+  }
+  get nw() {
+    return v3(this.x, this.H - (this.H / 2), this.z);
+  }
+  get se() {
+    return v3(this.W + (this.W / 2), this.y, this.z);
+  }
+  get sw() {
+    return v3(this.W + (this.W / 2), this.H - (this.H / 2), this.z);
   }
 }
 

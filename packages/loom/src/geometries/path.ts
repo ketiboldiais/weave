@@ -1,20 +1,20 @@
-import { v3, Vector } from "@weave/math";
+import { cos, Matrix, matrix, sin, v3, Vector } from "@weave/math";
 import { typed } from "../mixins/typed";
 import { colorable } from "../mixins/colorable";
 import { Base } from "../base";
 import { scopable } from "../mixins/scopable";
 import { FigNode } from "..";
 import { unsafe } from "../aux";
-import { parseDegrees } from "../parsers";
-import {movable} from '../mixins/placeable';
+import { parseDegrees, parseRadians } from "../parsers";
+import { movable } from "../mixins/placeable";
 
-type CommandPrefix = "M" | "L" | "H" | "V" | "Q" | "C" | "A" | "O";
+type CommandPrefix = "M" | "L" | "H" | "V" | "Q" | "C" | "A" | "cursor";
 
 const a3 = (ns: number[]) => (
   ns.length === 0
-    ? v3(0, 0, 0)
+    ? v3(0, 0, 1)
     : ns.length === 2
-    ? v3(ns[0], ns[1], 0)
+    ? v3(ns[0], ns[1], 1)
     : v3(ns[0], ns[1], ns[2])
 );
 
@@ -50,7 +50,7 @@ type PathCommand =
 const com1 = <T extends ("M" | "L" | "H" | "V")>(type: T) => (
   x: number,
   y: number,
-  z: number = 0,
+  z: number = 1,
 ): ComType<T> => ({ end: v3(x, y, z), type });
 
 export const M = com1("M");
@@ -106,12 +106,147 @@ const scom = (c: PathCommand) => (c.type + (
 
 const PathBase = typed(colorable(scopable(movable(Base))));
 
+const loc = (v: Vector) => (
+  v3(v.x, v.y, 1)
+);
+const disp = (v: Vector) => (
+  v3(v.x, v.y, 0)
+);
+
 export class Path extends PathBase {
-  commands: (PathCommand)[] = [];
-  constructor(x: number = 0, y: number = 0, z: number = 0) {
+  commands: (PathCommand | "Z")[] = [];
+  cursor: Vector;
+  constructor(x: number = 0, y: number = 0, z: number = 1) {
     super();
-    this.commands = [M(x, y, z)];
+    this.O = v3(x, y, z);
+    this.cursor = v3(0, 0, 0);
+    this.commands = [M(0, 0, 0)];
     this.type = "path";
+  }
+  project(n: Vector) {
+    return this.tfm((v) =>
+      loc(v).vxm(
+        matrix([
+          [n.x, 0, 0],
+          [0, n.y, 0],
+          [0, 0, 1],
+        ]),
+      )
+    );
+  }
+  scale(x: number, y: number) {
+    return this.tfm((v) =>
+      loc(v).vxm(matrix([
+        [x, 0, 0],
+        [0, y, 0],
+        [0, 0, 1],
+      ]))
+    );
+  }
+  translate(x: number, y: number) {
+    return this.tfm((v) =>
+      loc(v).vxm(
+        matrix([
+          [1, 0, x],
+          [0, 1, y],
+          [0, 0, 1],
+        ]),
+      )
+    );
+  }
+  rotate(angle: string | number) {
+    const theta = typeof angle === "string" ? parseRadians(angle) : angle;
+    return this.tfm((v) =>
+      v.vxm(
+        matrix([
+          [cos(theta), sin(theta), 0],
+          [-sin(theta), cos(theta), 0],
+          [0, 0, 1],
+        ]),
+      )
+    );
+  }
+  private tfm(op: (v: Vector) => Vector) {
+    this.commands = this.commands.map((p) => {
+      if (typeof p === "string") return p;
+      const E = op(p.end);
+      switch (p.type) {
+        case "M":
+          return M(E.x, E.y, E.z);
+        case "H":
+        case "L":
+        case "V":
+          return L(E.x, E.y, E.z);
+        case "Q":
+          const c = op(p.ctrl);
+          return Q([c.x, c.y, c.z], [E.x, E.y, E.z]);
+        case "C":
+          const c1 = op(p.ctrl1);
+          const c2 = op(p.ctrl2);
+          return C(
+            [c1.x, c1.x, c1.z],
+            [c2.x, c2.y, c2.z],
+            [E.x, E.y, E.z],
+          );
+        case "A":
+          return A(
+            [E.x, E.y],
+            p.rx,
+            p.ry,
+            p.rotation,
+            p.largeArc,
+            p.sweep,
+          );
+        default:
+          return p;
+      }
+    });
+    return this;
+  }
+  d() {
+    const space = this.space();
+    const x = space.scaleOf("x");
+    const y = space.scaleOf("y");
+    const o = this.O;
+    const out = this.commands.map((p) => {
+      if (typeof p === "string") return p;
+      switch (p.type) {
+        case "M":
+          return M(x(o.x + p.end.x), y(o.y + p.end.y));
+        case "H":
+        case "L":
+        case "V":
+          return L(x(o.x + p.end.x), y(o.y + p.end.y));
+        case "Q":
+          return Q([x(o.x + p.ctrl.x), y(o.y + p.ctrl.y)], [
+            x(o.x + p.end.x),
+            y(o.y + p.end.y),
+          ]);
+        case "C":
+          return C(
+            [x(o.x + p.ctrl1.x), y(o.y + p.ctrl1.y)],
+            [x(o.x + p.ctrl2.x), y(o.y + p.ctrl2.y)],
+            [x(o.x + p.end.x), y(o.y + p.end.y)],
+          );
+        case "A":
+          return A(
+            [x(o.x + p.end.x), y(o.y + p.end.y)],
+            p.rx,
+            p.ry,
+            p.rotation,
+            p.largeArc,
+            p.sweep,
+          );
+      }
+    }).map((v) => (typeof v === "string") ? v : scom(v));
+    return out.join("");
+  }
+
+  Z() {
+    const first = this.commands[0] === "Z" ? v3(0, 0, 0) : this.commands[0].end;
+    this.commands.push("Z");
+    this.cursor = first;
+    return this;
   }
   clear() {
     this.commands = [];
@@ -123,10 +258,10 @@ export class Path extends PathBase {
   }
 
   o(radius: number = 0.2) {
-    const c1 = this.O;
+    const c1 = this.cursor;
     this.M(c1.x - (radius), c1.y);
     this.A([c1.x + radius, c1.y]);
-    const c2 = this.O;
+    const c2 = this.cursor;
     this.A([c2.x - (radius * 2), c2.y]);
     this.M(c1.x, c1.y);
     return this;
@@ -138,7 +273,7 @@ export class Path extends PathBase {
    * absolute position `(a,y)`.
    */
   V(y: number) {
-    const current = this.O;
+    const current = this.cursor;
     // const newposition = v2(current.x, y);
     return this.push(V(current.x, y));
   }
@@ -148,7 +283,7 @@ export class Path extends PathBase {
    * absolute position `(x,b)`.
    */
   H(x: number) {
-    const current = this.O;
+    const current = this.cursor;
     return this.push(L(x, current.y));
   }
 
@@ -194,8 +329,8 @@ export class Path extends PathBase {
    * draws a line to the position `(a, b + dy)`.
    */
   v(dy: number) {
-    const x = this.O.x;
-    const y = this.O.y + dy;
+    const x = this.cursor.x;
+    const y = this.cursor.y + dy;
     return this.push(V(x, y));
   }
 
@@ -204,8 +339,8 @@ export class Path extends PathBase {
    * draws a line to the position `(a + dx, b)`.
    */
   h(dx: number) {
-    const x = this.O.x + dx;
-    const y = this.O.y;
+    const x = this.cursor.x + dx;
+    const y = this.cursor.y;
     return this.push(H(x, y));
   }
 
@@ -229,7 +364,7 @@ export class Path extends PathBase {
     height: number,
     width: number,
   ) {
-    const current = this.O;
+    const current = this.cursor;
     const end = [current.x, current.y + height];
     const control = [current.x + width, current.y + height / 2];
     return this.push(Q(control, end));
@@ -246,7 +381,7 @@ export class Path extends PathBase {
     width: number,
     height: number,
   ) {
-    const current = this.O;
+    const current = this.cursor;
     const end = [current.x + width, current.y];
     const control = [current.x + (width / 2), current.y + height];
     return this.push(Q(control, end));
@@ -291,45 +426,12 @@ export class Path extends PathBase {
   }
   push(command: PathCommand) {
     this.commands.push(command);
-    this.O = command.end;
+    this.cursor = command.end;
     return this;
-  }
-  d() {
-    const space = this.space();
-    const x = space.scaleOf("x");
-    const y = space.scaleOf("y");
-    const out = this.commands.map((p) => {
-      switch (p.type) {
-        case "M":
-          return M(x(p.end.x), y(p.end.y));
-        case "H":
-        case "L":
-        case "V":
-          return L(x(p.end.x), y(p.end.y));
-        case "Q":
-          return Q([x(p.ctrl.x), y(p.ctrl.y)], [x(p.end.x), y(p.end.y)]);
-        case "C":
-          return C(
-            [x(p.ctrl1.x), y(p.ctrl1.y)],
-            [x(p.ctrl2.x), y(p.ctrl2.y)],
-            [x(p.end.x), y(p.end.y)],
-          );
-        case "A":
-          return A(
-            [x(p.end.x), y(p.end.y)],
-            p.rx,
-            p.ry,
-            p.rotation,
-            p.largeArc,
-            p.sweep,
-          );
-      }
-    }).map((v) => scom(v));
-    return out.join("");
   }
 }
 
-export const path = (x: number = 0, y: number = 0, z: number = 0) => (
+export const path = (x: number = 0, y: number = 0, z: number = 1) => (
   new Path(x, y, z)
 );
 export const isPath = (node: FigNode): node is Path => (
