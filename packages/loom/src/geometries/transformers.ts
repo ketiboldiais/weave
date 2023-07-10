@@ -10,13 +10,11 @@ interface Transformer {
   circle(circle: Circle): void;
 }
 
-class Translator implements Transformer {
+class MatrixTransformer implements Transformer {
   path(path: Path): void {
     return;
   }
   line(line: Line): void {
-    const v1 = v3(line.x1, line.y1, line.O.z).vxm(this.matrix);
-    const v2 = v3(line.x2, line.y2, line.O.z).vxm(this.matrix);
     return;
   }
   quad(quad: Quad): void {

@@ -13,12 +13,12 @@ export {
   Path,
   path,
   Q,
-  trail,
+  Segment,
+  segment,
   V,
 } from "./geometries/path.js";
 import { ArrowDefNode } from "./arrow.js";
 import { Circle } from "./geometries/circle.js";
-import { Integral } from "./integral.js";
 import { Plane } from "./plane.js";
 import { Plot } from "./plot.js";
 import { TextNode } from "./text.js";
@@ -32,9 +32,7 @@ export type { Line } from "./geometries/line.js";
 export { arrowDef, isArrow } from "./arrow.js";
 export type { ArrowDefNode } from "./arrow.js";
 export { isPlane, Plane, plane } from "./plane.js";
-export { isPlot, Plot, plot, polar } from "./plot.js";
-export { integral, isIntegral } from "./integral.js";
-export type { Integral } from "./integral.js";
+export { isPlot, Plot, plot } from "./plot.js";
 export { shift, uid } from "./aux.js";
 export type Axiom<T = {}> = new (...args: any[]) => T;
 export type { Colorable } from "./mixins/colorable.js";
@@ -112,7 +110,6 @@ export type FigNode =
   | ArrowDefNode
   | Particle
   | ForceSpace
-  | Integral;
 
 /**
  * A referable is any FigNode that
@@ -132,7 +129,6 @@ export type Node2D =
   | Circle
   | Line;
 
-export type Plottable = Integral;
 export type LayoutNode = Plane | TreeSpace | ForceSpace;
 export type Coord = {
   x1: number;

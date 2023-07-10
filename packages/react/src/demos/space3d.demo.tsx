@@ -1,14 +1,11 @@
-import {
-  cos,
-  interpolator,
-  matrix,
-  pi,
-  sin,
-  tan,
-  v3,
-  Vector,
-} from "@weave/math";
-import { CSSProperties, useEffect, useRef } from "react";
+import { cos, matrix, sin, v3, Vector } from "@weave/math";
+import { CSSProperties } from "react";
+
+const rotationMatrix = (angle: number) =>
+  matrix([
+    [cos(angle), -sin(angle)],
+    [sin(angle), cos(angle)],
+  ]);
 
 // const CUBE_DISTANCE = 20;
 
@@ -136,7 +133,7 @@ export const S3D = () => {
 };
 
 function rotate3D(
-  v:Vector,
+  v: Vector,
   roll: number,
   pitch: number,
   yaw: number,

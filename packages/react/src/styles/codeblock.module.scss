@@ -2,7 +2,7 @@
   font-size: 0.7rem;
   margin: 0.5em 0.2em;
   width: 100%;
-  z-index: 100;
+  // z-index: 100;
   .btn {
     width: 100%;
     display: flex;
@@ -18,14 +18,5 @@
   }
   .snippet {
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: 0;
-    position: absolute;
-    font-size: 0.7rem;
-    width: 100%;
-    margin: 0 auto;
-    height: fit-content;
   }
 }

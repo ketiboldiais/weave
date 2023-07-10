@@ -15,6 +15,11 @@ import { scopable } from "./mixins/scopable.js";
 import { Base } from "./base.js";
 import { interpolator } from "@weave/math";
 
+const range = (start: number, stop: number, step = 1): number[] =>
+  Array(Math.ceil((stop - start) / step)).fill(start).map((x, y) =>
+    x + y * step
+  );
+
 const AXIS_BASE = scopable(typed(colorable(Base)));
 type TickData = { line: Line; text: TextNode };
 const tick = (line: Line, text: TextNode): TickData => ({
@@ -28,10 +33,10 @@ export class Axis extends AXIS_BASE {
    * Indicates whether this axis runs
    * along the x, y, or z direction.
    */
-  readonly direction: "x" | "y" | "polar";
+  readonly direction: "x" | "y";
   tickFormat: "F" | "Q" = "F";
 
-  constructor(direction: "x" | "y" | "polar") {
+  constructor(direction: "x" | "y") {
     super();
     this.type = "axis";
     this.direction = direction;
@@ -51,51 +56,6 @@ export class Axis extends AXIS_BASE {
       "v",
       tickLength,
     ].join(" ");
-  }
-
-  /**
-   * Returns the polar plot’s
-   * cicular axes, an array of
-   * circles.
-   */
-  radialAxes(): Circle[] {
-    const space = this.space();
-    const xs = space.scaleOf("x");
-    const ys = space.scaleOf("y");
-    const d = 2;
-    const rx = xs(space.amplitude("x") / d) / 2;
-    const ry = ys(space.amplitude("y") / d) / 2;
-    const r = Math.min(rx, ry);
-    const out: Circle[] = [
-      circle(xs(r)).at(xs(0), ys(0)),
-    ];
-    return out;
-  }
-  /**
-   * Returns an array of the radial
-   * lines comprising the polar axis’s
-   * ticks.
-   */
-  polarAxisTicks() {
-    const ticks: Line[] = [];
-    const space = this.space();
-    const xs = space.scaleOf("x");
-    const ys = space.scaleOf("y");
-    const d = 2;
-    const rx = space.amplitude("x") / d;
-    const ry = space.amplitude("y") / d;
-    const cx = xs(0);
-    const cy = ys(0);
-    const ub = 2 * Math.PI;
-    const inc = Math.PI / 4;
-    for (let i = 0; i < ub; i += inc) {
-      const x1 = rx * Math.cos(i);
-      const y1 = ry * Math.sin(i);
-      const axisLine = line([xs(x1), ys(y1)], [cx, cy]);
-      axisLine.copyColors(this);
-      ticks.push(axisLine);
-    }
-    return ticks;
   }
 
   /**
@@ -145,14 +105,17 @@ export class Axis extends AXIS_BASE {
     }
   }
 
-  tickCount?: number;
+  ticksep: number = 1;
 
   /**
-   * Sets the number of ticks
-   * along this axis.
+   * Sets the amount of separaton
+   * between the ticks along
+   * this axis.
    */
-  ticks(value: number) {
-    this.tickCount = value;
+  sep(value: number) {
+    if (value > 0) {
+      this.ticksep = value;
+    }
     return this;
   }
 
@@ -186,35 +149,44 @@ export class Axis extends AXIS_BASE {
     const Y = space.scaleOf("y");
     const ticks: TickData[] = [];
     const t = this.TickLength;
+    const k = this.ticksep;
     if (this.direction === "x") {
       const xi = Math.floor(xmin);
       const xf = Math.floor(xmax);
-      for (let i = xi; i <= xf; i++) {
-        let gridline = line([i, ymin], [i, ymax]);
+      let xs = range(xi, xf + 1, k);
+      if (this.hasNo("zero")) {
+        xs = xs.filter((n) => n !== 0);
+      }
+      xs.forEach((n) => {
+        let gridline = line([n, ymin], [n, ymax]);
         gridline.x1 = X(gridline.x1);
         gridline.x2 = gridline.x1;
         gridline.y1 = t;
         gridline.y2 = -t;
-        const txt = label(i).textAnchor("middle");
+        const txt = label(n).textAnchor("middle");
         txt.x = gridline.x1;
         txt.y = gridline.y1 + 10;
         ticks.push(tick(gridline, txt));
-      }
+      });
     }
     if (this.direction === "y") {
       const yi = Math.floor(ymin);
       const yf = Math.floor(ymax);
-      for (let j = yi; j <= yf; j++) {
-        let gridline = line([xmin, j], [xmax, j]);
+      let ys = range(yi, yf + 1, k);
+      if (this.hasNo("zero")) {
+        ys = ys.filter((n) => n !== 0);
+      }
+      ys.forEach((n) => {
+        let gridline = line([xmin, n], [xmax, n]);
         gridline.x1 = -t;
         gridline.x2 = t;
         gridline.y1 = Y(gridline.y1);
         gridline.y2 = gridline.y1;
-        const txt = label(j).textAnchor('end');
+        const txt = label(n).textAnchor("end");
         txt.x = gridline.x1 - 2;
         txt.y = gridline.y1 + 2;
         ticks.push(tick(gridline, txt));
-      }
+      });
     }
     return ticks;
   }
@@ -240,7 +212,7 @@ export class Axis extends AXIS_BASE {
   }
 }
 
-export const axis = (of: "x" | "y" | "polar") => new Axis(of);
+export const axis = (of: "x" | "y") => new Axis(of);
 
 export const isAxis = (node: FigNode): node is Axis => (
   !unsafe(node) && node.isType("axis")

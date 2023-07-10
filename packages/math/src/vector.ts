@@ -23,6 +23,14 @@ export class Vector {
   }
 
   /**
+   * Returns this vector as a matrix.
+   */
+  matrix() {
+    const elements = this.elements.map((n) => new Vector([n]));
+    return new Matrix(elements.length, 1, elements);
+  }
+
+  /**
    * Returns the largest component
    * of this vector.
    */
@@ -99,7 +107,7 @@ export class Vector {
 
   /**
    * Returns a copy of this vector, ensured as 2D.
-   * 
+   *
    * @param x - The fallback x-component if the current x-component
    * is undefined.
    * @param y - The fallback y-component if the current y-component
@@ -114,7 +122,7 @@ export class Vector {
 
   /**
    * Returns a copy of this vector, ensured as 3D.
-   * 
+   *
    * @param x - The fallback x-component if the current x-component
    * is undefined.
    * @param y - The fallback y-component if the current y-component
@@ -132,7 +140,7 @@ export class Vector {
 
   /**
    * Returns a copy of this vector, ensured as 4D.
-   * 
+   *
    * @param x - The fallback x-component if the current x-component
    * is undefined.
    * @param y - The fallback y-component if the current y-component

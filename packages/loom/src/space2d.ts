@@ -4,6 +4,7 @@ import { arrowDef, Line, line, Referable, shift, Space } from "./index.js";
 export type ScaleName = "linear" | "power" | "radial" | "log";
 export type ScaleFn = (x: number) => number;
 
+
 export class Space2D extends Space {
   scaletype: ScaleName = "linear";
   GridLines: Line[] = [];

@@ -23,6 +23,10 @@ export class Matrix {
     }
   }
 
+  /**
+   * Returns true if this matrix is a square
+   * matrix.
+   */
   get square() {
     return this.C === this.R;
   }
@@ -216,6 +220,13 @@ export class Matrix {
     return Matrix.from(copy);
   }
 
+  /**
+   * Returns this matrix as a vector.
+   */
+  vector() {
+    return new Vector(this.array().flat());
+  }
+
   private toMatrix(other: number | Matrix | (number[])[]): Matrix {
     return (
       typeof other === "number"
@@ -256,7 +267,6 @@ export class Matrix {
       return this;
     }
     const B = this.toMatrix(arg);
-    const Br = B.R;
     const Bc = B.C;
     const result: (number[])[] = [];
     for (let i = 0; i < Ar; i++) {
@@ -432,4 +442,3 @@ export const diagonal = (elements: number[]) => (
 export const matrix = (elements: (number[] | Vector)[]) => (
   Matrix.from(elements.map((v) => v instanceof Vector ? v.elements : v))
 );
-

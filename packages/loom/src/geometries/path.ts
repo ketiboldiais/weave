@@ -1,4 +1,4 @@
-import { cos, Matrix, matrix, sin, v3, Vector } from "@weave/math";
+import { cos, Matrix, matrix, pi, sin, v3, Vector } from "@weave/math";
 import { typed } from "../mixins/typed";
 import { colorable } from "../mixins/colorable";
 import { Base } from "../base";
@@ -90,7 +90,8 @@ export const A = (
   type: "A",
 });
 
-const p = (x: number) => Number.isInteger(x) ? `${x}` : x.toPrecision(3);
+// const p = (x: number) => Number.isInteger(x) ? `${x}` : x.toPrecision(5);
+const p = (x: number) => `${x}`;
 
 const scom = (c: PathCommand) => (c.type + (
   (c.type === "M" || c.type === "L" || c.type === "V" || c.type == "H")
@@ -106,37 +107,23 @@ const scom = (c: PathCommand) => (c.type + (
 
 const PathBase = typed(colorable(scopable(movable(Base))));
 
-const loc = (v: Vector) => (
-  v3(v.x, v.y, 1)
-);
-const disp = (v: Vector) => (
-  v3(v.x, v.y, 0)
-);
-
 export class Path extends PathBase {
   commands: (PathCommand | "Z")[] = [];
   cursor: Vector;
-  constructor(x: number = 0, y: number = 0, z: number = 1) {
+  constructor(
+    x: number = 0,
+    y: number = 0,
+    z: number = 1,
+  ) {
     super();
-    this.O = v3(x, y, z);
-    this.cursor = v3(0, 0, 0);
-    this.commands = [M(0, 0, 0)];
+    this.O = v3(0, 0, 0);
+    this.cursor = v3(x, y, z);
+    this.commands = [M(x, y, z)];
     this.type = "path";
-  }
-  project(n: Vector) {
-    return this.tfm((v) =>
-      loc(v).vxm(
-        matrix([
-          [n.x, 0, 0],
-          [0, n.y, 0],
-          [0, 0, 1],
-        ]),
-      )
-    );
   }
   scale(x: number, y: number) {
     return this.tfm((v) =>
-      loc(v).vxm(matrix([
+      (v).vxm(matrix([
         [x, 0, 0],
         [0, y, 0],
         [0, 0, 1],
@@ -145,7 +132,7 @@ export class Path extends PathBase {
   }
   translate(x: number, y: number) {
     return this.tfm((v) =>
-      loc(v).vxm(
+      (v).vxm(
         matrix([
           [1, 0, x],
           [0, 1, y],
@@ -154,10 +141,34 @@ export class Path extends PathBase {
       )
     );
   }
-  rotate(angle: string | number) {
+  rotateY(angle: string | number) {
     const theta = typeof angle === "string" ? parseRadians(angle) : angle;
     return this.tfm((v) =>
-      v.vxm(
+      (v).vxm(
+        matrix([
+          [cos(theta), 0, -sin(theta)],
+          [0, 1, 0],
+          [sin(theta), 0, cos(theta)],
+        ]),
+      )
+    );
+  }
+  rotateX(angle: string | number) {
+    const theta = typeof angle === "string" ? parseRadians(angle) : angle;
+    return this.tfm((v) =>
+      (v).vxm(
+        matrix([
+          [1, 0, 0],
+          [0, cos(theta), -sin(theta)],
+          [0, sin(theta), cos(theta)],
+        ]),
+      )
+    );
+  }
+  rotateZ(angle: string | number) {
+    const theta = typeof angle === "string" ? parseRadians(angle) : angle;
+    return this.tfm((v) =>
+      (v).vxm(
         matrix([
           [cos(theta), sin(theta), 0],
           [-sin(theta), cos(theta), 0],
@@ -166,17 +177,18 @@ export class Path extends PathBase {
       )
     );
   }
-  private tfm(op: (v: Vector) => Vector) {
+  private tfm(
+    op: (v: Vector) => Vector,
+  ) {
     this.commands = this.commands.map((p) => {
       if (typeof p === "string") return p;
       const E = op(p.end);
+      // deno-fmt-ignore
       switch (p.type) {
-        case "M":
-          return M(E.x, E.y, E.z);
+        case "M": return M(E.x, E.y, E.z);
         case "H":
         case "L":
-        case "V":
-          return L(E.x, E.y, E.z);
+        case "V": return L(E.x, E.y, E.z);
         case "Q":
           const c = op(p.ctrl);
           return Q([c.x, c.y, c.z], [E.x, E.y, E.z]);
@@ -203,34 +215,32 @@ export class Path extends PathBase {
     });
     return this;
   }
-  d() {
+  d(noscale: boolean = false) {
     const space = this.space();
-    const x = space.scaleOf("x");
-    const y = space.scaleOf("y");
-    const o = this.O;
+    const x = noscale ? (x: number) => x : space.scaleOf("x");
+    const y = noscale ? (x: number) => x : space.scaleOf("y");
     const out = this.commands.map((p) => {
       if (typeof p === "string") return p;
+      // deno-fmt-ignore
       switch (p.type) {
-        case "M":
-          return M(x(o.x + p.end.x), y(o.y + p.end.y));
+        case "M": return M(x(p.end.x), y(p.end.y));
         case "H":
         case "L":
-        case "V":
-          return L(x(o.x + p.end.x), y(o.y + p.end.y));
+        case "V": return L(x(p.end.x), y(p.end.y));
         case "Q":
-          return Q([x(o.x + p.ctrl.x), y(o.y + p.ctrl.y)], [
-            x(o.x + p.end.x),
-            y(o.y + p.end.y),
+          return Q([x(p.ctrl.x), y(p.ctrl.y)], [
+            x(p.end.x),
+            y(p.end.y),
           ]);
         case "C":
           return C(
-            [x(o.x + p.ctrl1.x), y(o.y + p.ctrl1.y)],
-            [x(o.x + p.ctrl2.x), y(o.y + p.ctrl2.y)],
-            [x(o.x + p.end.x), y(o.y + p.end.y)],
+            [x(p.ctrl1.x), y(p.ctrl1.y)],
+            [x(p.ctrl2.x), y(p.ctrl2.y)],
+            [x(p.end.x), y(p.end.y)],
           );
         case "A":
           return A(
-            [x(o.x + p.end.x), y(o.y + p.end.y)],
+            [x(p.end.x), y(p.end.y)],
             p.rx,
             p.ry,
             p.rotation,
@@ -257,13 +267,11 @@ export class Path extends PathBase {
     return this;
   }
 
-  o(radius: number = 0.2) {
+  o(radius: number = 0.1) {
     const c1 = this.cursor;
-    this.M(c1.x - (radius), c1.y);
-    this.A([c1.x + radius, c1.y]);
+    this.A([c1.x + radius * 4, c1.y]);
     const c2 = this.cursor;
-    this.A([c2.x - (radius * 2), c2.y]);
-    this.M(c1.x, c1.y);
+    this.A([c2.x - (radius * 4), c2.y]);
     return this;
   }
 
@@ -344,47 +352,20 @@ export class Path extends PathBase {
     return this.push(H(x, y));
   }
 
+  l(x: number, y: number, z: number = 1) {
+    const nx = this.cursor.x + x;
+    const ny = this.cursor.y + y;
+    const nz = z;
+    return this.push(L(nx, ny, nz));
+  }
+
   /**
    * Moves the cursor to the absolute
    * position `(x,y)`.
    */
-  M(x: number, y: number) {
-    return this.push(M(x, y));
-  }
-
-  /**
-   * Given the current position `(a,b)`,
-   * draws a quadratic Bezier curve
-   * with the end point `(a, b + height)`,
-   * and the control point `(m + height, b)`,
-   * where `m` is the midpoint of `(a,b)`
-   * and `(a, b + height)`.
-   */
-  By(
-    height: number,
-    width: number,
-  ) {
-    const current = this.cursor;
-    const end = [current.x, current.y + height];
-    const control = [current.x + width, current.y + height / 2];
-    return this.push(Q(control, end));
-  }
-  /**
-   * Given the current position `(a,b)`,
-   * draws a quadratic Bezier curve
-   * with the end point `(a + width, b)`,
-   * and the control point `(a, m + height)`,
-   * where `m` is the midpoint of `(a,b)`
-   * and `(a + width, b)`.
-   */
-  Bx(
-    width: number,
-    height: number,
-  ) {
-    const current = this.cursor;
-    const end = [current.x + width, current.y];
-    const control = [current.x + (width / 2), current.y + height];
-    return this.push(Q(control, end));
+  M(x: number, y: number, z: number = 1) {
+    this.push(M(x, y, z));
+    return this;
   }
 
   /**
@@ -421,8 +402,8 @@ export class Path extends PathBase {
    * Draws a line from the current cursor
    * position to the absolute position `(x,y)`.
    */
-  L(x: number, y: number) {
-    return this.push(L(x, y));
+  L(x: number, y: number, z: number = 1) {
+    return this.push(L(x, y, z));
   }
   push(command: PathCommand) {
     this.commands.push(command);
@@ -431,15 +412,60 @@ export class Path extends PathBase {
   }
 }
 
-export const path = (x: number = 0, y: number = 0, z: number = 1) => (
+export const path = (
+  x: number = 0,
+  y: number = 0,
+  z: number = 1,
+) => (
   new Path(x, y, z)
 );
 export const isPath = (node: FigNode): node is Path => (
   !unsafe(node) && node.isType("path")
 );
 
-export const trail = (
-  points: [number, number][],
-) => {
-  const p = path(points[0][0], points[0][1]);
-};
+export class Segment<T> {
+  Y: (data: T) => number = () => 0;
+  X: (data: T) => number = () => 0;
+  D: (data: T) => boolean = () => true;
+  def(predicate: (data: T) => boolean) {
+    this.D = predicate;
+    return this;
+  }
+  data: T[];
+  constructor(data: T[]) {
+    this.data = data;
+  }
+  path() {
+    const data = this.data;
+    const p = path();
+    const rest = data;
+    let moved = false;
+    for (let i = 0; i < rest.length; i++) {
+      const datum = rest[i];
+      if (this.D(datum)) {
+        if (!moved) {
+          p.M(this.X(datum), this.Y(datum));
+          moved = true;
+        } else p.L(this.X(datum), this.Y(datum));
+      } else {
+        const next = rest[i + 1];
+        if (next !== undefined && this.D(next)) {
+          p.M(this.X(next), this.Y(next));
+        }
+      }
+    }
+    return p;
+  }
+  y(fn: (d: T) => number) {
+    this.Y = fn;
+    return this;
+  }
+
+  x(fn: (d: T) => number) {
+    this.X = fn;
+    return this;
+  }
+}
+export const segment = <T>(data: T[]) => (
+  new Segment(data)
+);

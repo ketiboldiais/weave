@@ -1,20 +1,20 @@
 import { ForceGraph1 } from './graph.demo.tsx';
 import { Tree1, Tree2, Tree3 } from './tree.demo.tsx';
 import { Tile } from '../components/tile.tsx';
-import { Plot1, Plot2 } from './plot.demo.tsx';
+import { Plot1 } from './plot.demo.tsx';
 import { Path1 } from './path.demo.tsx';
 import { Codeblock } from '../components/codeblock.tsx';
 
 # Loom
 
-This is the documentation page for Loom, a module of various graphics algorithms. Some examples:
+This is the documentation page for Loom, a zero-dependency module of various graphics algorithms. Some examples:
 
 <Tile rows={1} cols={2}>
 <figure>
 <ForceGraph1 />
 <figcaption>Graph drawn with a variation of the Eades algorithm.</figcaption>
 <Codeblock>
-~~~tsx
+~~~js
 import {
   forceSpace,
   graph
@@ -43,7 +43,7 @@ const ForceGraph1 = () => <Figure of={d} />;
 <Tree1 />
 <figcaption>M-way tree drawn with the Buccheim-Unger-Leipert algorithm.</figcaption>
 <Codeblock>
-~~~tsx
+~~~js
 import {
   leaf,
   subtree,
@@ -85,7 +85,7 @@ export const Tree1 = () => {
 <Plot1 />
 <figcaption>Plot of $f(x) = \dfrac{1}{x}$.</figcaption>
 <Codeblock>
-~~~tsx
+~~~js
 import {
   axis,
   plot,
@@ -111,72 +111,72 @@ export const Plot1 = () => {
 
 <figure>
 <Path1 />
-<figcaption>Geometries with matrix transformations</figcaption>
+<figcaption>3D figures with matrix transformations.</figcaption>
 <Codeblock>
-~~~tsx
-import {
-  color,
-  rect,
-  plane,
-} from "@weave/loom";
-import { Figure } from "./figure.tsx";
-
-const coral = color('coral');
-const yg = color('yellowgreen');
-const path1 = plane([
-  rect(2,4).fill(coral),
-  rect(2,4).fill(coral.compliment())
-    .opacity(0.5)
-    .rotate('45deg'),
-  rect(2,4).fill(yg)
-    .opacity(0.5)
-    .shearX(2),
-]).margin(10, 10)
-  .w(300)
-  .h(300)
-  .gridlines("xy").figure();
-
-export const Path1 = () => {
-  return <Figure of={path1} />;
-};
-~~~
-</Codeblock>
-</figure>
-
-<figure>
-<Plot2 />
-<figcaption>Polar plot of $s(t) = \cos(t)\sin(t)$.</figcaption>
-<Codeblock>
-~~~tsx
+~~~js
 import {
   axis,
-  plot,
+  path,
   plane
 } from "@weave/loom";
 import { Figure } from "./figure.tsx";
+import { v3 } from "@weave/math";
 
-const plot2 = plane([
-  polar("s(t) = cos(t) * sin(t)"),
-]).margin(10, 10)
-  .w(300)
-  .h(300)
-  .gridlines("xy")
+const cube = () => {
+  const out = path();
+  const cs = [
+    v3(-1,-1,-1),
+    v3(1,-1,-1),
+    v3(1,1,-1),
+    v3(-1,1,-1),
+    v3(-1,-1,1),
+    v3(1,-1,1),
+    v3(1,1,1),
+    v3(-1,1,1),
+  ];
+  for (let i = 0; i < 4; i++) {
+    const A = cs[i];
+    out.M(A.x, A.y, A.z);
+    const B = cs[(i + 1) % 4];
+    out.L(B.x, B.y, B.z);
+    const C = cs[i + 4];
+    out.M(C.x, C.y, C.z);
+    const D = cs[((i + 1) % 4) + 4];
+    out.L(D.x, D.y, D.z);
+    const E = cs[i];
+    out.M(E.x, E.y, E.z);
+    const F = cs[i + 4];
+    out.L(F.x, F.y, F.z);
+  }
+  return out;
+};
+
+const path1 = plane([
+  axis("y"),
+  axis("x"),
+  cube()
+    .rotateX("45deg")
+    .rotateY("20deg")
+    .rotateZ("5deg"),
+]).x(-5,5)
+  .y(-5,5)
+  .margin(5,5)
+  .size(300,300)
   .figure();
 
-export const Plot2 = () => {
-  return <Figure of={plot2} />;
-};
+const Path1 = () => (
+  <Figure of={path1} />
+)
 ~~~
 </Codeblock>
 </figure>
-
 
 
 <figure>
 <Tree2 />
 <figcaption>Binary search tree drawn with the Reingold-Tilford algorithm, its breadth-first traversal annotated in green.</figcaption>
 <Codeblock>
-~~~tsx
+~~~js
 import {
   bst,
   leaf,
@@ -214,7 +214,7 @@ export const Tree2 = () => {
 <Tree3 />
 <figcaption>Binary search tree drawn with an HV algorithm.</figcaption>
 <Codeblock>
-~~~tsx
+~~~js
 import {
   bst,
   leaf,
