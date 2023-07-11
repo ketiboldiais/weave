@@ -1,6 +1,6 @@
 import { axis, path, plane } from "@weave/loom";
 import { Figure } from "../components/figure";
-import { matrix, v3 } from "@weave/math";
+import { matrix, sqrt, v3 } from "@weave/math";
 
 const cube = () => {
   const out = path();
@@ -30,6 +30,8 @@ const cube = () => {
   }
   return out;
 };
+
+
 
 const path1 = plane([
   axis("x"),
