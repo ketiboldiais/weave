@@ -121,7 +121,7 @@ const isGreekLetterName = (c: string) => (
  * character.
  */
 const isLatinGreek = (c: string) => (
-  /^[a-zA-Z_$\u00C0-\u02AF\u0370-\u03FF\u2100-\u214F]$/.test(c)
+  /^[a-zA-Z_\u00C0-\u02AF\u0370-\u03FF\u2100-\u214F]/.test(c)
 );
 
 // § - Either Type
@@ -236,21 +236,16 @@ enum tt {
   dquote, quote,
 
   /**
-   * 
+   * An dollar token indicates to the parser
+   * that this particular string maps to an
+   * algebraic expression.
    */
-  backtick, 
-  /**
-   * An algebra token indicates to the parser
-   * that this particular maps to {@link AlgebraToken},
-   * which in turn indicates that the corresponding
-   * node should be treated as a pure algebraic expression.
-   */
-  algebra,
-
+  dollar, 
 	
   // Operator Tokens
   minus, plus, slash,
-  caret, star, bang,
+  caret, star,
+  bang,
   percent, eq, deq, neq, lt, gt, leq, geq,
 
   
@@ -280,12 +275,26 @@ enum tt {
 }
 
 // § - Binding power enum.
-// deno-fmt-ignore
 export enum bp {
-  nil, lowest, assign, atom, or,
-  nor, and, nand, xor, xnor, not, eq,
-  rel, sum, prod, quot, pow,
-  postfix, call,
+  nil,
+  lowest,
+  assign,
+  atom,
+  or,
+  nor,
+  and,
+  nand,
+  xor,
+  xnor,
+  not,
+  eq,
+  rel,
+  sum,
+  prod,
+  quot,
+  pow,
+  postfix,
+  call,
 }
 
 // § - Token Class
@@ -313,21 +322,6 @@ class Token {
   }
 }
 
-class AlgebraToken extends Token {
-  tokens: Token[];
-  constructor(tokens: Token[]) {
-    super(tt.algebra, "");
-    this.tokens = tokens;
-  }
-}
-const isAlgebraToken = (token: Token): token is AlgebraToken => (
-  token.type === tt.algebra
-);
-
-const alg = (tokens: Token[]) => (
-  new AlgebraToken(tokens)
-);
-
 const tk = (type: tt, lex: string) => (
   new Token(type, lex)
 );
@@ -337,12 +331,13 @@ const tk = (type: tt, lex: string) => (
 enum nt {
   assign, binex, call, group,
   int, float, rational, string,
-  sym, algebra, nil,
+  sym, unex, algebra, nil,
 }
 
 interface Visitor<T> {
   assign(node: Assign): T;
   binex(node: Binex): T;
+  unex(node: Unex): T;
   call(node: Call): T;
   group(node: Group): T;
   int(node: Int): T;
@@ -419,6 +414,24 @@ class Binex extends Expr {
 
 const binex = (left: Expr, op: Token, right: Expr) => (
   new Binex(left, op, right)
+);
+
+// § - Unary Expression Node.
+class Unex extends Expr {
+  op: Token;
+  arg: Expr;
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.unex(this);
+  }
+  constructor(op: Token, arg: Expr) {
+    super(nt.unex);
+    this.op = op;
+    this.arg = arg;
+  }
+}
+
+const unex = (op: Token, arg: Expr) => (
+  new Unex(op, arg)
 );
 
 // § - Call Node
@@ -679,6 +692,41 @@ const loop = (cond: Expr, body: Stmt) => (
   new Loop(cond, body)
 );
 
+const splittable = (t: Token) => (
+  t.is(tt.sym) && !isGreekLetterName(t.lex) && !t.lex.includes("_")
+);
+const symsplit = (tokens: Token[]) => (
+  tokens.map((t) =>
+    splittable(t) ? t.lex.split("").map((c) => (tk(tt.sym, c))) : t
+  ).flat()
+);
+
+const imul = (tkns: Token[]) => {
+  const STAR = tk(tt.star, "*");
+  const out: Token[] = [];
+  const tokens = zip(tkns, tkns.slice(1));
+  for (let i = 0; i < tokens.length; i++) {
+    const [now, nxt] = tokens[i];
+    out.push(now);
+    if (now.is(tt.rparen)) {
+      if (nxt.is(tt.sym)) {
+        out.push(STAR);
+      } else if (nxt.is(tt.lparen)) {
+        out.push(STAR);
+      }
+    } else if (now.isnum() && nxt.is(tt.call)) {
+      out.push(STAR);
+    } else if (now.isnum() && nxt.is(tt.sym)) {
+      out.push(STAR);
+    } else if (now.isnum() && nxt.is(tt.lparen)) {
+      out.push(STAR);
+    } else if (now.is(tt.sym) && nxt.is(tt.sym)) {
+      out.push(STAR);
+    }
+  }
+  return out;
+};
+
 const tokenize = (text: string) => {
   let start = 0;
   let current = 0;
@@ -728,17 +776,17 @@ const tokenize = (text: string) => {
     }
     return newtkn(type);
   };
-  const string = () => {
-    while (peek(0) !== `"` && !atEnd()) {
+  const string = (type: tt.str | tt.dollar) => {
+    const delimiter = type === tt.str ? `"` : `$`;
+    while (peek(0) !== delimiter && !atEnd()) {
       tick();
     }
     if (atEnd()) return newtkn(tt.error, `Unterminated string.`);
     tick();
     const s = str().slice(1, -1);
-    return newtkn(tt.str, s);
+    return newtkn(type, s);
   };
   const sym = () => {
-    let type = tt.sym;
     while (isLatinGreek(peek(0)) || isDigit(peek(0))) {
       tick();
     }
@@ -773,6 +821,7 @@ const tokenize = (text: string) => {
     }
     return newtkn(tt.sym);
   };
+
   const scan = () => {
     skipws();
     start = current;
@@ -797,55 +846,17 @@ const tokenize = (text: string) => {
 			case '/': return newtkn(tt.slash);
 			case '%': return newtkn(tt.percent);
 			case ';': return newtkn(tt.semicolon);
-			case '`': return newtkn(tt.backtick);
 			case `'`: return newtkn(tt.quote);
 			case '!': return newtkn(match('=') ? tt.neq : tt.bang);
 			case '=': return newtkn(match('=') ? tt.deq : tt.eq);
 			case '<': return newtkn(match('=') ? tt.leq : tt.lt);
 			case '>': return newtkn(match('=') ? tt.geq : tt.gt);
-      case `"`: return string();
+      case `"`: return string(tt.str);
+			case '$': return string(tt.dollar);
 		}
     return newtkn(tt.error, `unknown token [${c}]`);
   };
 
-  const splittable = (t: Token) => (
-    t.is(tt.sym) && !isGreekLetterName(t.lex) && !t.lex.includes("_")
-  );
-  const symsplit = (tokens: Token[]) => (
-    tokens.map((t) =>
-      splittable(t) ? t.lex.split("").map((c) => (tk(tt.sym, c))) : t
-    ).flat()
-  );
-  const imul = (tkns: Token[]) => {
-    const STAR = tk(tt.star, "*");
-    const out: Token[] = [];
-    const tokens = zip(tkns, tkns.slice(1));
-    let skip = false;
-    for (let i = 0; i < tokens.length; i++) {
-      const [now, nxt] = tokens[i];
-      out.push(now);
-      if (skip) {
-        skip = true;
-        continue;
-      }
-      if (now.is(tt.rparen)) {
-        if (nxt.is(tt.sym)) {
-          out.push(STAR);
-        } else if (nxt.is(tt.lparen)) {
-          out.push(STAR);
-        }
-      } else if (now.isnum() && nxt.is(tt.call)) {
-        out.push(STAR);
-      } else if (now.isnum() && nxt.is(tt.sym)) {
-        out.push(STAR);
-      } else if (now.isnum() && nxt.is(tt.lparen)) {
-        out.push(STAR);
-      } else if (now.is(tt.sym) && nxt.is(tt.sym)) {
-        out.push(STAR);
-      }
-    }
-    return out;
-  };
   const tokenize = () => {
     const out: Token[] = [];
     for (let i = 0; i < text.length; i++) {
@@ -854,39 +865,19 @@ const tokenize = (text: string) => {
       out.push(t);
     }
     out.push(tk(tt.eof, "EOF"));
-    const out2: Token[] = [];
-    for (let i = 0; i < out.length; i++) {
-      const now = out[i];
-      if (now.is(tt.backtick)) {
-        const sub: Token[] = [];
-        let j = i + 1;
-        for (; j < out.length; j++) {
-          sub.push(out[j]);
-          if (out[j].is(tt.backtick)) {
-            break;
-          }
-        }
-        const ts: Token[] = [];
-        symsplit(sub).forEach((t) => {
-          ts.push(t);
-        });
-        out2.push(alg(imul(ts)));
-        i = j;
-      } else {
-        out2.push(now);
-      }
-    }
-    return out2;
+    return out;
   };
   return imul(tokenize());
 };
 
 type ASTNode = Expr | Stmt;
+type PrecEntry = [bp, Parslet, bp];
 type Parslet = (
   current: Token,
-  peek: Token,
+  lastNode: Expr,
   prev: Token,
-) => Either<Err, ASTNode>;
+  peek: Token,
+) => Either<Err, Expr>;
 type PSpec = Record<tt, [Parslet, Parslet, bp]>;
 
 const isexpr = (node: ASTNode): node is Expr => (
@@ -906,6 +897,12 @@ class State {
     if (!this.tokens[tokens.length - 1].is(tt.eof)) {
       this.tokens.push(tk(tt.eof, "eof"));
     }
+  }
+  tickIfNextIs(type: tt) {
+    if (this.peek.is(type)) {
+      this.next();
+    }
+    return this;
   }
   peekIsNot<K>(tokenType: tt, callback: (token: Token) => K) {
     if (!this.peek.is(tokenType)) {
@@ -956,6 +953,10 @@ class State {
     this.peek = newtoken;
     return prev;
   }
+  ok<T extends ASTNode>(node: T) {
+    this.lastParsed(node);
+    return right(node);
+  }
   err(error: string, source: string) {
     this.error = err(`[${source}]:${error}`);
     return left(this.error);
@@ -992,7 +993,7 @@ const parse = (text: string | Token[]) => {
     if (!prev.is(tt.sym)) {
       return state.err(`Expected symbol.`, "glyph");
     }
-    return right(sym(prev));
+    return state.ok(sym(prev));
   };
 
   const atom = (prev: Token) => {
@@ -1000,9 +1001,9 @@ const parse = (text: string | Token[]) => {
     const lex = prev.lex;
     // deno-fmt-ignore
     switch (type) {
-      case tt.str: return right(str(lex))
-      case tt.int: return right(int(lex));
-      case tt.float: return right(float(lex));
+      case tt.str: return state.ok(str(lex))
+      case tt.int: return state.ok(int(lex));
+      case tt.float: return state.ok(float(lex));
       default: return state.err(`Expected atom, got ${lex}`, 'atom');
     }
   };
@@ -1014,30 +1015,27 @@ const parse = (text: string | Token[]) => {
         const [base, exponent] = parts;
         const B = Number.isInteger(+base) ? int(base) : float(base);
         const E = int(exponent);
-        return right(binex(B, tk(tt.caret, "^"), E));
+        return state.ok(binex(B, tk(tt.caret, "^"), E));
       }
     }
     return state.err(`Expected scientific number`, "scinum");
   };
 
-  const infix = (op: Token) => {
-    const lastnode = state.lastnode;
-    return expr().chain((n) =>
-      isexpr(lastnode) && isexpr(n)
-        ? right(binex(lastnode, op, n))
-        : state.err(`Expected expression`, "infix")
-    );
+  const prefix: Parslet = (op) => {
+    const p = precof(op.type);
+    return expr(p).chain((n) => state.ok(unex(op, n)));
+  };
+
+  const infix: Parslet = (op, node) => {
+    const p = precof(op.type);
+    return expr(p).chain((n) => state.ok(binex(node, op, n)));
   };
 
   const primary = () => {
     const result = expr();
     if (result.isLeft()) return result;
     state.next();
-    const out = result.chain((n) => {
-      if (!isexpr(n)) {
-        return state.err(`Expected expression.`, "primary");
-      } else return right(group(n));
-    });
+    const out = result.chain((n) => state.ok(group(n)));
     return out;
   };
 
@@ -1054,29 +1052,41 @@ const parse = (text: string | Token[]) => {
       });
       return state.ifNextIs(
         tt.rparen,
-        () => right(call(sym(name), args)),
+        () => state.ok(call(sym(name), args)),
         () => state.err(`Expected “)”`, "nativeCall"),
       );
     }, () => state.err(`Expected “(”`, "nativeCall"));
     return out;
   };
 
-  const algebraic = (token: Token) => {
-    if (isAlgebraToken(token)) {
-      const tokens = token.tokens;
-      const E = parse(tokens);
-      if (E.length === 0) {
-        return state.err(`Expected algebraic expression.`, "algebraic");
-      }
-      const expr = E[0];
-      if (expr.isLeft()) return expr;
-      const exp = expr.unwrap();
-      if (!isexpr(exp)) {
-        return state.err(`Expected algebraic expression.`, "algebraic");
+  const algebraString = (token: Token) => {
+    const src = `algebraString`;
+    if (!token.is(tt.dollar)) {
+      return state.err(`Unexpected algebra production`, src);
+    }
+    const s = token.lex;
+    const ts = tokenize(s);
+    const tokens: Token[] = [];
+    for (let i = 0; i < ts.length; i++) {
+      const t = ts[i];
+      if (t.is(tt.eq)) {
+        tokens.push(tk(tt.deq, "=="));
       } else {
-        return right(algebra(exp));
+        tokens.push(t);
       }
-    } else return state.err(`Unexpected algebra token.`, "algebraic");
+    }
+    tokens.push(tk(tt.eof, "EOF"));
+    const tidyTokens = imul(symsplit(tokens));
+    const n = parse(tidyTokens);
+    if (n.length === 0) {
+      return state.err(`Empty algebra string`, src);
+    }
+    const [node] = n;
+    if (!isexpr(node)) {
+      return state.err(`Non-expression algebra string`, src);
+    }
+    const out = algebra(node);
+    return state.ok(out);
   };
 
   const rules: PSpec = {
@@ -1087,10 +1097,9 @@ const parse = (text: string | Token[]) => {
     [tt.else]: [__, __, __o],
     [tt.struct]: [__, __, __o],
     [tt.error]: [__, __, __o],
-    [tt.algebra]: [algebraic, __, __o],
     [tt.dquote]: [__, __, __o],
     [tt.quote]: [__, __, __o],
-    [tt.lparen]: [primary, __, __o],
+    [tt.lparen]: [primary, __, bp.call],
     [tt.rparen]: [__, __, __o],
     [tt.lbrace]: [__, __, __o],
     [tt.lbrack]: [__, __, __o],
@@ -1098,10 +1107,10 @@ const parse = (text: string | Token[]) => {
     [tt.rbrace]: [__, __, __o],
     [tt.comma]: [__, __, __o],
     [tt.dot]: [__, __, __o],
-    [tt.minus]: [__, infix, bp.sum],
-    [tt.plus]: [__, infix, bp.sum],
-    [tt.slash]: [__, infix, bp.prod],
+    [tt.minus]: [prefix, infix, bp.sum],
+    [tt.plus]: [prefix, infix, bp.sum],
     [tt.caret]: [__, infix, bp.pow],
+    [tt.slash]: [__, infix, bp.prod],
     [tt.star]: [__, infix, bp.prod],
     [tt.rem]: [__, infix, bp.quot],
     [tt.mod]: [__, infix, bp.quot],
@@ -1122,7 +1131,7 @@ const parse = (text: string | Token[]) => {
     [tt.scinum]: [scinum, __, bp.atom],
     [tt.call]: [nativeCall, __, bp.call],
     [tt.eof]: [__, __, __o],
-    [tt.backtick]: [__, __, __o],
+    [tt.dollar]: [algebraString, __, __o],
     [tt.let]: [__, __, __o],
     [tt.print]: [__, __, __o],
     [tt.fn]: [__, __, __o],
@@ -1152,24 +1161,22 @@ const parse = (text: string | Token[]) => {
     rules[t][2]
   );
 
-  const expr = (minbp = bp.lowest) => {
+  const expr = (minbp: bp = bp.lowest): Left<Err> | Right<Expr> => {
     let prev = state.prev;
     let token = state.next();
     let peek = state.peek;
     const pre = prefixRule(token.type);
-    let lhs = pre(token, peek, prev);
+    let lhs = pre(token, nil(), prev, peek);
     if (lhs.isLeft()) return lhs;
-    state.lastParsed(lhs.unwrap());
     while (minbp < precof(state.peek.type)) {
       if (state.atEnd()) break;
-      prev = token;
+      prev = peek;
       token = state.next();
       peek = state.peek;
       const r = infixRule(token.type);
-      const rhs = r(token, peek, prev);
+      const rhs = r(token, lhs.unwrap(), prev, peek);
       if (rhs.isLeft()) return rhs;
       lhs = rhs;
-      state.lastParsed(lhs.unwrap());
     }
     return lhs;
   };
@@ -1189,27 +1196,24 @@ const parse = (text: string | Token[]) => {
   };
 
   const LET = () => {
+    // deno-fmt-ignore
     const out = state.ifNextIs(
       tt.sym,
-      (s) =>
-        state.ifNextIs(
+      (s) => state.ifNextIs(
           tt.eq,
           () => {
             const out = expr().chain((x) =>
               !isexpr(x)
                 ? state.err(`Expected valid rhs`, "LET")
-                : right(vardef(s, x))
+                : state.ok(vardef(s, x))
             );
             return out;
-            k;
           },
           (t) => right(vardef(t, nil())),
         ),
       () => state.err(`Expected identifier`, "LET"),
     );
-    if (state.peek.is(tt.semicolon)) {
-      state.next();
-    }
+    state.tickIfNextIs(tt.semicolon);
     return out;
   };
 
@@ -1224,7 +1228,9 @@ const parse = (text: string | Token[]) => {
     let out = [];
     while (!state.atEnd()) {
       const n = STMT();
-      out.push(n);
+      if (n.isRight()) {
+        out.push(n.unwrap());
+      } else break;
     }
     return out;
   };
@@ -1235,5 +1241,7 @@ const tokenlist = (tokens: Token[]) => (
   tokens.map((t) => `${tt[t.type]}( ${t.lex} )`)
 );
 
-const k = parse("`2x + 1`");
-console.log(k);
+const k = parse(`
+(2x - 5)(3x + 5)
+`);
+console.log(astLog(k));
