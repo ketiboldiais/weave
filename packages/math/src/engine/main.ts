@@ -266,12 +266,15 @@ enum tt {
 
   // § Strictly unary-postfix factorial
   bang,
+  
+  // § Strictly vector based operations
+  at, // @
 
 	rem, mod, div, call,
 
-  sym, str, int, float,
+  id, str, int, float,
   complex,
-  scinum,
+  scinum,sym,
   
   // keywords
   let,print,fn,
@@ -404,10 +407,10 @@ const tokenlist = (tokens: Token[], raw: boolean = true) => (
 enum nt {
   assign, binex, call, group,
   int, float, rational, string,
-  sym, unex, algebra, nil,
+  variable, unex, algebra, nil,
   tuple, vector, matrix,
   complex, bool, logic,
-  relation,
+  relation, symbol,
   
   block,expression,fn,predicate,
   return,vardef,loop,
@@ -422,8 +425,9 @@ interface Visitor<T> {
   nil(node: NullLiteral): T;
   rational(node: RationalLiteral): T;
   string(node: StringLiteral): T;
-  sym(node: SymbolLiteral): T;
+  variable(node: VariableExpr): T;
   bool(node: BooleanLiteral): T;
+  symbol(node: SymbolLiteral): T;
 
   // -- Nodes that should ultimately reduce to base cases. --
 
@@ -481,6 +485,11 @@ abstract class ASTNode {
   abstract accept<T>(visitor: Visitor<T>): T;
 }
 
+const nodeTypeGuard =
+  <T extends ASTNode>(type: nt) => (node: ASTNode): node is T => (
+    node.type === type
+  );
+
 // § - Node Definitions
 abstract class Expr extends ASTNode {
   abstract accept<T>(visitor: Visitor<T>): T;
@@ -489,6 +498,21 @@ abstract class Expr extends ASTNode {
     this.type = type;
   }
 }
+
+class SymbolLiteral extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.symbol(this);
+  }
+  sym: string;
+  constructor(sym: string) {
+    super(nt.symbol);
+    this.sym = sym;
+  }
+}
+
+const symval = (value: string) => (
+  new SymbolLiteral(value)
+);
 
 // § - Boolean Node
 
@@ -506,6 +530,7 @@ const boolval = (value: boolean) => (
   new BooleanLiteral(value)
 );
 
+// § - Relation Node
 class RelationExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.relation(this);
@@ -675,9 +700,7 @@ class IntegerLiteral extends Expr {
 const int = (value: number | string) => (
   new IntegerLiteral(typeof value === "string" ? +value : value)
 );
-const isint = (node: ASTNode): node is IntegerLiteral => (
-  node.type === nt.int
-);
+const isIntNode = nodeTypeGuard<IntegerLiteral>(nt.int);
 
 // § - Float Node
 class FloatLiteral extends Expr {
@@ -728,22 +751,22 @@ const str = (value: string) => (
 );
 
 // § - Symbol Node
-class SymbolLiteral extends Expr {
+class VariableExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.sym(this);
+    return visitor.variable(this);
   }
   name: Token;
   constructor(name: Token) {
-    super(nt.sym);
+    super(nt.variable);
     this.name = name;
   }
 }
-const isSym = (node: ASTNode): node is SymbolLiteral => (
-  node.type === nt.sym
+const isVariableNode = (node: ASTNode): node is VariableExpr => (
+  node.type === nt.variable
 );
 
-const sym = (t: Token) => (
-  new SymbolLiteral(t)
+const variable = (t: Token) => (
+  new VariableExpr(t)
 );
 
 // § Stmt Type
@@ -806,7 +829,7 @@ class FunctionStmt extends Stmt {
   }
 }
 
-const fn = (name: Token, params: Token[], body: Stmt[]) => (
+const fnStmt = (name: Token, params: Token[], body: Stmt[]) => (
   new FunctionStmt(name, params, body)
 );
 
@@ -878,9 +901,7 @@ class VectorExpr extends Expr {
 const vectorExpr = (elements: Expr[]) => (
   new VectorExpr(elements)
 );
-const isvector = (node: ASTNode): node is VectorExpr => (
-  node.type === nt.vector
-);
+const isVectorNode = nodeTypeGuard<VectorExpr>(nt.vector);
 
 class MatrixExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
@@ -900,6 +921,7 @@ class MatrixExpr extends Expr {
 const matrixExpr = (elements: VectorExpr[], rows: number, cols: number) => (
   new MatrixExpr(elements, rows, cols)
 );
+const isMatrixNode = nodeTypeGuard<MatrixExpr>(nt.matrix);
 
 class ComplexLiteral extends Expr {
   accept<T>(visitor: Visitor<T>): T {
@@ -954,7 +976,7 @@ const splittable = (t: Token) => (
 );
 const symsplit = (tokens: Token[]) => (
   tokens.map((t) =>
-    splittable(t) ? t.lex.split("").map((c) => (tk(tt.sym, c))) : t
+    splittable(t) ? t.lex.split("").map((c) => (tk(tt.id, c))) : t
   ).flat()
 );
 
@@ -965,20 +987,22 @@ const imul = (tkns: Token[]) => {
   const tokens = zip(tkns, tkns.slice(1));
   for (let i = 0; i < tokens.length; i++) {
     const [now, nxt] = tokens[i];
-    out.push(now);
+    if (now.is(tt.id)) {
+      out.push(tk(tt.sym, now.lex));
+    } else out.push(now);
     if (now.is(tt.rparen)) {
-      if (nxt.is(tt.sym)) {
+      if (nxt.is(tt.id)) {
         out.push(STAR);
       } else if (nxt.is(tt.lparen)) {
         out.push(STAR);
       }
     } else if (now.isnum() && nxt.is(tt.call)) {
       out.push(STAR);
-    } else if (now.isnum() && nxt.is(tt.sym)) {
+    } else if (now.isnum() && nxt.is(tt.id)) {
       out.push(STAR);
     } else if (now.isnum() && nxt.is(tt.lparen)) {
       out.push(STAR);
-    } else if (now.is(tt.sym) && nxt.is(tt.sym)) {
+    } else if (now.is(tt.id) && nxt.is(tt.id)) {
       out.push(STAR);
     }
   }
@@ -990,7 +1014,7 @@ const tokenize = (text: string) => {
   let start = 0;
   let current = 0;
   let status_ok = true;
-  const atEnd = () => (current >= text.length) && status_ok;
+  const atEnd = () => (current === text.length) && status_ok;
   const match = (c: string) => (
     (!atEnd()) && (text[current] === c) && (current++)
   );
@@ -1018,7 +1042,7 @@ const tokenize = (text: string) => {
     if (peek(0) === "." && isDigit(peek(1))) {
       tick();
       type = tt.float;
-      while (isDigit(peek(0))) tick();
+      while (isDigit(peek(0)) && !atEnd()) tick();
     }
     // if (peek(0) === "E") {
     if (peek(0) === "E") {
@@ -1026,7 +1050,7 @@ const tokenize = (text: string) => {
       if (isDigit(c)) {
         type = tt.scinum;
         tick(); // eat the 'E'
-        while (isDigit(peek(0))) tick();
+        while (isDigit(peek(0)) && !atEnd()) tick();
       } else if (c === "+" || c === "-") {
         type = tt.scinum;
         if (isDigit(peek(2))) {
@@ -1084,7 +1108,7 @@ const tokenize = (text: string) => {
 			case 'cos':
 			case 'tan': return newtkn(tt.call);
     }
-    return newtkn(tt.sym);
+    return newtkn(tt.id);
   };
 
   const scan = () => {
@@ -1112,6 +1136,7 @@ const tokenize = (text: string) => {
 			case '%': return newtkn(tt.percent);
 			case ';': return newtkn(tt.semicolon);
 			case `'`: return newtkn(tt.quote);
+      case '@': return newtkn(tt.at);
 			case '!': return newtkn(match('=') ? tt.neq : tt.bang);
 			case '=': return newtkn(match('=') ? tt.deq : tt.eq);
 			case '<': return newtkn(match('=') ? tt.leq : tt.lt);
@@ -1125,8 +1150,9 @@ const tokenize = (text: string) => {
   const tokenize = () => {
     let i = 0;
     const out: Token[] = [];
-    while (current < text.length) {
+    while (current < text.length && i < text.length) {
       const t = scan();
+      if (t.is(tt.error)) return [t, tk(tt.eof, "EOF")];
       if (t.is(tt.eof)) break;
       out.push(t);
       i++;
@@ -1298,6 +1324,8 @@ class State {
       : tk(tt.eof, "EOF");
     if (newtoken.is(tt.error)) {
       this.error = err(newtoken.lex);
+    } else if (prev.is(tt.error)) {
+      this.error = err(prev.lex);
     }
     this.peek = newtoken;
     return prev;
@@ -1366,10 +1394,10 @@ const parse = (text: string | Token[]) => {
   const state = enstate(typeof text === "string" ? tokenize(text) : text);
 
   const glyph = (prev: Token) => {
-    if (!prev.is(tt.sym)) {
+    if (!prev.is(tt.id)) {
       return state.err(`Expected symbol.`, "glyph");
     }
-    return state.ok(sym(prev));
+    return state.ok(variable(prev));
   };
 
   const atom = (prev: Token) => {
@@ -1385,6 +1413,7 @@ const parse = (text: string | Token[]) => {
       case tt.true: return state.ok(boolval(true));
       case tt.false: return state.ok(boolval(false));
       case tt.nil: return state.ok(nil());
+      case tt.sym: return state.ok(symval(lex));
       default: return state.err(`Expected atom, got ${lex}`, 'atom');
     }
   };
@@ -1429,12 +1458,26 @@ const parse = (text: string | Token[]) => {
       });
     };
 
+  const vectorInfix: Parslet = (op, node) => {
+    const p = precof(op.type);
+    const src = `vector-infix`;
+    return expr(p).chain((n) => {
+      if (
+        (isVectorNode(node) && isVectorNode(n)) ||
+        (isMatrixNode(node) && isMatrixNode(n))
+      ) {
+        return state.ok(binex(node, op, n));
+      }
+      return state.err(`Operator ${op.lex} only applies to vectors.`, src);
+    });
+  };
+
   const relationInfix: Parslet = subInfix(relation);
   const logicInfix: Parslet = subInfix(logex);
   const infix: Parslet = (op, node) => {
     const p = precof(op.type);
     return expr(p).chain((n) => {
-      const out = (isint(n) && isint(node) && op.is(tt.slash))
+      const out = (isIntNode(n) && isIntNode(node) && op.is(tt.slash))
         ? (rational(node.value, n.value))
         : (binex(node, op, n));
       return state.ok(out);
@@ -1442,7 +1485,7 @@ const parse = (text: string | Token[]) => {
   };
 
   const assignment: Parslet = (_, node, p) => {
-    if (isSym(node)) {
+    if (isVariableNode(node)) {
       return expr().chain(
         (n) => state.ok(assign(node.name, n)),
       );
@@ -1510,7 +1553,7 @@ const parse = (text: string | Token[]) => {
         const E = _es.unwrap();
         let colcount = -1;
         E.forEach((exp) => {
-          if (isvector(exp)) {
+          if (isVectorNode(exp)) {
             colcount = exp.elements.length;
           }
           elems.push(exp);
@@ -1519,7 +1562,7 @@ const parse = (text: string | Token[]) => {
           const vs: VectorExpr[] = [];
           for (let i = 0; i < elems.length; i++) {
             const exp = elems[i];
-            if (!isvector(exp)) {
+            if (!isVectorNode(exp)) {
               return state.err(`Mixed vectors prohibited`, src);
             }
             if (exp.elements.length !== colcount) {
@@ -1554,7 +1597,7 @@ const parse = (text: string | Token[]) => {
       });
       return state.ifNextIs(
         tt.rparen,
-        () => state.ok(call(sym(name), args)),
+        () => state.ok(call(variable(name), args)),
         () => state.err(`Expected “)”`, "nativeCall"),
       );
     }, () => state.err(`Expected “(”`, "nativeCall"));
@@ -1596,6 +1639,9 @@ const parse = (text: string | Token[]) => {
 
   const __o = bp.nil;
   const __ = (t: Token) => {
+    if (state.error) {
+      return left(state.error);
+    }
     const msg = `Expected an expression, but got: “${t.lex}”`;
     const e = err(msg);
     return left(e);
@@ -1618,7 +1664,8 @@ const parse = (text: string | Token[]) => {
     [tt.rbrack]: [__, __, __o],
     [tt.rbrace]: [__, __, __o],
     [tt.comma]: [__, __, __o],
-    [tt.dot]: [__, __, __o],
+    [tt.at]: [__, vectorInfix, bp.call],
+    [tt.dot]: [__, __, bp.prod],
     [tt.complex]: [complexNumber, __, bp.atom],
     [tt.minus]: [prefix, infix, bp.sum],
     [tt.plus]: [prefix, infix, bp.sum],
@@ -1652,7 +1699,8 @@ const parse = (text: string | Token[]) => {
     [tt.geq]: [__, relationInfix, bp.rel],
 
     // atomic expressions
-    [tt.sym]: [glyph, __, bp.atom],
+    [tt.id]: [glyph, __, bp.atom],
+    [tt.sym]: [atom, __, bp.atom],
     [tt.str]: [atom, __, bp.atom],
     [tt.int]: [atom, __, bp.atom],
     [tt.float]: [atom, __, bp.atom],
@@ -1702,13 +1750,10 @@ const parse = (text: string | Token[]) => {
     return lhs;
   };
 
-  // name: Token;
-  // params: Token[];
-  // body: Stmt[];
   const FUNCTION = () => {
     const name = state.next();
     const src = `FUNCTION`;
-    if (!name.is(tt.sym)) {
+    if (!name.is(tt.id)) {
       return state.err(`Expected symbol, but got “${name.lex}”.`, src);
     }
     const leftDelim = state.next();
@@ -1722,7 +1767,7 @@ const parse = (text: string | Token[]) => {
     if (!state.check(tt.rparen)) {
       do {
         const arg = state.next();
-        if (!arg.is(tt.sym)) {
+        if (!arg.is(tt.id)) {
           return state.err(`Non-symbol argument encountered`, src);
         }
         params.push(arg);
@@ -1735,7 +1780,7 @@ const parse = (text: string | Token[]) => {
       const expression = EXPR();
       if (expression.isLeft()) return expression;
       const body = [expression.unwrap()];
-      return state.ok(fn(name, params, body));
+      return state.ok(fnStmt(name, params, body));
     }
     if (!state.nextIs(tt.lbrace)) {
       return state.err(`Expected “{” or “=” to begin body`, src);
@@ -1743,7 +1788,7 @@ const parse = (text: string | Token[]) => {
     const b = BLOCK();
     if (b.isLeft()) return b;
     const body = b.unwrap().stmts;
-    return state.ok(fn(name, params, body));
+    return state.ok(fnStmt(name, params, body));
   };
 
   const EXPR = () => {
@@ -1760,7 +1805,7 @@ const parse = (text: string | Token[]) => {
 
   const LET = () => {
     const out = state.ifNextIs(
-      tt.sym,
+      tt.id,
       (s) =>
         state.ifNextIs(
           tt.eq,
@@ -1859,6 +1904,26 @@ const parse = (text: string | Token[]) => {
   return run();
 };
 
+class Fn {
+  private declaration: FunctionStmt;
+  private closure: Environment | null;
+  constructor(declaration: FunctionStmt, closure: Environment | null = null) {
+    this.declaration = declaration;
+    this.closure = closure;
+  }
+  call(interpreter: Interpreter, args: RuntimeValue[]) {
+    const env = new Environment(this.closure);
+    for (let i = 0; i < this.declaration.params.length; i++) {
+      const p = this.declaration.params[i];
+      const n = p.lex;
+      const arg = args[i];
+      env.define(n, arg);
+    }
+    const out = interpreter.execStmts(this.declaration.body, env);
+    return out;
+  }
+}
+
 type TypeName =
   | "fraction"
   | "complex"
@@ -1866,19 +1931,62 @@ type TypeName =
   | "number"
   | "bool"
   | "string"
+  | "fn"
+  | "symbol"
   | "empty"
   | `list`
+  | "vector"
+  | "matrix"
   | "unknown";
+type RuntimeFn = [Fn, "fn"];
+const fn = (
+  declaration: FunctionStmt,
+  env: Environment | null = null,
+): RuntimeFn => [new Fn(declaration, env), "fn"];
+
+const typeGuard =
+  <T extends RuntimeValue>(typename: TypeName) => (r: RuntimeValue): r is T => (
+    safe(r) && isarray(r) && r.length === 2 && r[1] === typename
+  );
+const isFn = typeGuard<RuntimeFn>("fn");
+const isFrac = typeGuard<Frac>("fraction");
+const isComplex = typeGuard<Cpx>("complex");
+const isError = typeGuard<RuntimeError>("error");
+const isList = typeGuard<ListValue>("list");
+const isNum = typeGuard<Num>("number");
+const isString = typeGuard<Str>("string");
+const isBool = typeGuard<Bool>("bool");
+const isEmpty = typeGuard<Empty>("empty");
+const isVector = typeGuard<VList>("vector");
+const isMatrix = typeGuard<Mtx>("matrix");
+const isSym = typeGuard<Sym>("symbol");
+const typename = (value: RuntimeValue) => value[1];
 
 type RuntimeError = [string, "error"];
 type Str = [string, "string"];
+const string = (value: string): Str => [value, "string"];
+
 type Empty = [null, "empty"];
 const empty = (): Empty => [null, "empty"];
-const string = (value: string): Str => [value, "string"];
+
+type Sym = [string, "symbol"];
+const sym = (value: string): Sym => [value, "symbol"];
+
 type Num = [number, "number"];
 const num = (value: number): Num => [
   value,
   "number",
+];
+
+type VList = [number[], "vector"];
+const vlist = (values: number[]): VList => [
+  values,
+  "vector",
+];
+type Mtx = [(number[])[], "matrix"];
+const mtx = (values: (number[])[]): Mtx => [
+  values,
+  "matrix",
 ];
 
 type Bool = [boolean, "bool"];
@@ -1915,20 +2023,6 @@ const unsafe = (n: any): n is null | undefined => (isnull(n) || dne(n));
 const safe = (n: any) => !unsafe(n);
 const isarray = (n: any) => Array.isArray(n);
 
-const typeGuard =
-  <T extends RuntimeValue>(typename: TypeName) => (r: RuntimeValue): r is T => (
-    safe(r) && isarray(r) && r.length === 2 && r[1] === typename
-  );
-
-const isFrac = typeGuard<Frac>("fraction");
-const isComplex = typeGuard<Cpx>("complex");
-const isError = typeGuard<RuntimeError>("error");
-const isList = typeGuard<ListValue>("list");
-const isNum = typeGuard<Num>("number");
-const isString = typeGuard<Str>("string");
-const isBool = typeGuard<Bool>("bool");
-const isEmpty = typeGuard<Empty>("empty");
-
 type ListValue = [RuntimeValue[], "list"];
 
 const list = (values: RuntimeValue[]): ListValue => [values, "list"];
@@ -1938,9 +2032,13 @@ type RuntimeValue =
   | Num
   | Frac
   | Cpx
+  | Sym
   | Bool
+  | RuntimeFn
   | RuntimeError
   | ListValue
+  | VList
+  | Mtx
   | Empty;
 
 // § - Unary Op Factory
@@ -2059,6 +2157,9 @@ const pbinop = <N extends TypeName>(op: PairBinop, kind: N) => (
 
 const frac = (a: number, b: number): Frac => [[a, b], "fraction"];
 const cpx = (a: number, b: number = 0): Cpx => [[a, b], "complex"];
+const toNumber = ([[a, b]]: Frac) => (a / b);
+
+// const callable = ()
 
 /**
  * Returns true if the two given fractions are equal.
@@ -2154,11 +2255,27 @@ const vsub = vbinop((a, b) => a - b);
 /** Returns the component-wise product. */
 const vmul = vbinop((a, b) => a * b);
 
+const vdiv = vbinop((a, b) => a / b);
+
 /** Returns the dot product of the two number arrays. */
 const vdot = (A: number[], B: number[]) => (
   (([a, b]: [number[], number[]]) =>
     a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n))(equalize(A, B))
 );
+
+const vectorop = (A: VList, op: tt, B: VList) => {
+  const a = A[0];
+  const b = B[0];
+  // deno-fmt-ignore
+  switch (op) {
+    case tt.plus: return vlist(vadd(a, b));
+    case tt.minus: return vlist(vsub(a, b));
+    case tt.star: return vlist(vmul(a, b));
+    case tt.at: return num(vdot(a,b));
+    case tt.slash: return vlist(vdiv(a,b));
+    default: return nodefop(op, ["vector", "vector"]);
+  }
+};
 
 // deno-fmt-ignore
 const boolBinop = (op: (a: boolean, b: boolean) => boolean) => (
@@ -2172,7 +2289,6 @@ const nandL = boolBinop((a, b) => !(a && b));
 const xorL = boolBinop((a, b) => a !== b);
 const xnorL = boolBinop((a, b) => !(xorL(a, b)));
 const norL = boolBinop((a, b) => !(a || b));
-const notL = (a: boolean) => !a;
 
 const logicop = (A: Bool, op: tt, B: Bool) => {
   const a = A[0];
@@ -2271,20 +2387,61 @@ const isComplexable = (a: RuntimeValue): a is Frac | Cpx | Num => (
   isComplex(a) || isnum(a) || isFrac(a)
 );
 
+class Environment {
+  private values: Map<string, RuntimeValue> = new Map();
+  enclosing: Environment | null = null;
+  constructor(enclosing: Environment | null = null) {
+    this.enclosing = enclosing;
+  }
+  assign(name: string, value: RuntimeValue): RuntimeValue {
+    if (this.values.has(name)) {
+      this.values.set(name, value);
+      return value;
+    } else if (this.enclosing !== null) {
+      return this.enclosing.assign(name, value);
+    } else return croak(`Identifier ${name} is not defined.`);
+  }
+  define(name: string, value: RuntimeValue): RuntimeValue {
+    this.values.set(name, value);
+    return value;
+  }
+  get(name: string): RuntimeValue {
+    if (this.values.has(name)) {
+      return this.values.get(name)!;
+    } else if (this.enclosing !== null) {
+      return this.enclosing.get(name);
+    } else return croak(`Identifier ${name} does not exist.`);
+  }
+}
+
 class Interpreter implements Visitor<RuntimeValue> {
+  globals: Environment;
+  env: Environment;
+  error: null | RuntimeError = null;
+  constructor() {
+    this.globals = new Environment();
+    this.env = this.globals;
+  }
   run(program: Program) {
     if (program.error !== null) {
-      return program.error;
+      return croak(program.error);
     }
     let out: RuntimeValue = empty();
     const nodes = program.nodes;
     for (let i = 0; i < nodes.length; i++) {
       out = this.evalnode(nodes[i]);
+      if (this.error) {
+        return this.error;
+      }
     }
     return out;
   }
   private evalnode(node: ASTNode) {
-    return node.accept(this);
+    const out = node.accept(this);
+    if (isError(out)) {
+      this.error = out;
+    }
+    return out;
   }
   relation(node: RelationExpr): RuntimeValue {
     const a = this.evalnode(node.left);
@@ -2297,7 +2454,7 @@ class Interpreter implements Visitor<RuntimeValue> {
       const B = makeFrac(b);
       return relQ(A, op, B);
     }
-    throw new Error("Method not implemented.");
+    return nodefop(op, [typename(a), typename(b)]);
   }
   logic(node: LogicExpr): RuntimeValue {
     const a = this.evalnode(node.left);
@@ -2307,50 +2464,83 @@ class Interpreter implements Visitor<RuntimeValue> {
   bool(node: BooleanLiteral): RuntimeValue {
     return bool(node.value);
   }
-  complex(node: ComplexLiteral): RuntimeValue {
+  complex(node: ComplexLiteral): Cpx {
     const r = node.r;
     const i = node.i;
     return cpx(r, i);
   }
   assign(node: AssignExpr): RuntimeValue {
-    throw new Error("Method not implemented.");
+    const value = this.evalnode(node.value);
+    const name = node.name.lex;
+    const out = this.env.assign(name, value);
+    return out;
   }
   binex(node: BinaryExpr): RuntimeValue {
     const a = this.evalnode(node.left);
     const b = this.evalnode(node.right);
-    if (isNum(a) && isNum(b)) return numop(a, node.op.type, b);
+    const op = node.op.type;
+    if (isNum(a) && isNum(b)) return numop(a, op, b);
     if ((isDivisible(a)) && (isDivisible(b))) {
       const A = makeFrac(a);
       const B = makeFrac(b);
-      return fracop(A, node.op.type, B);
+      return fracop(A, op, B);
     }
     if ((isComplexable(a)) && (isComplexable(b))) {
       const A = makeCpx(a);
       const B = makeCpx(b);
-      return cpxop(A, node.op.type, B);
+      return cpxop(A, op, B);
     }
-    return empty();
+    if (isVector(a) && isVector(b)) {
+      return vectorop(a, op, b);
+    }
+    return nodefop(op, [typename(a), typename(b)]);
   }
   unex(node: UnaryExpr): RuntimeValue {
     const arg = this.evalnode(node.arg);
+    const op = node.op.type;
     if (node.op.is(tt.not)) {
       return bool(truthy(arg)[0]);
     } else if (isNum(arg)) {
-      return unaryNumOp(node.op.type, arg);
+      return unaryNumOp(op, arg);
     }
-    throw new Error("Method not implemented.");
+    return nodefop(op, [typename(arg)]);
+  }
+  private evalList(nodes: ASTNode[]) {
+    const out: RuntimeValue[] = [];
+    for (let i = 0; i < nodes.length; i++) {
+      out.push(this.evalnode(nodes[i]));
+    }
+    return out;
   }
   call(node: CallExpr): RuntimeValue {
-    throw new Error("Method not implemented.");
+    const callee = this.evalnode(node.callee);
+    const args: RuntimeValue[] = [];
+    for (let i = 0; i < node.args.length; i++) {
+      args.push(this.evalnode(node.args[i]));
+    }
+    if (isFn(callee)) {
+      const f = callee[0];
+      return f.call(this, args);
+    }
+    return croak(`Only functions may be called`);
   }
   group(node: GroupExpr): RuntimeValue {
-    throw new Error("Method not implemented.");
+    return this.evalnode(node.expr);
   }
-  vector(node: VectorExpr): RuntimeValue {
-    throw new Error("Method not implemented.");
+  vector(node: VectorExpr): VList {
+    return vlist(
+      this.evalList(node.elements).map((v) =>
+        isNum(v) ? v[0] : (
+          isFrac(v) ? toNumber(v) : NaN
+        )
+      ),
+    );
   }
-  matrix(node: MatrixExpr): RuntimeValue {
-    throw new Error("Method not implemented.");
+  matrix(node: MatrixExpr): Mtx {
+    const elements = node.elements.map((v) => this.vector(v)).map((vl) =>
+      vl[0]
+    );
+    return mtx(elements);
   }
   int(node: IntegerLiteral): RuntimeValue {
     return num(node.value);
@@ -2359,10 +2549,10 @@ class Interpreter implements Visitor<RuntimeValue> {
     return num(node.value);
   }
   tuple(node: TupleExpr): RuntimeValue {
-    throw new Error("Method not implemented.");
+    return list(this.evalList(node.items));
   }
-  nil(node: NullLiteral): RuntimeValue {
-    throw new Error("Method not implemented.");
+  nil(_: NullLiteral): RuntimeValue {
+    return empty();
   }
   rational(node: RationalLiteral): RuntimeValue {
     const n = node.N;
@@ -2372,28 +2562,38 @@ class Interpreter implements Visitor<RuntimeValue> {
   string(node: StringLiteral): RuntimeValue {
     return string(node.value);
   }
-  sym(node: SymbolLiteral): RuntimeValue {
-    throw new Error("Method not implemented.");
+  variable(node: VariableExpr): RuntimeValue {
+    return this.env.get(node.name.lex);
+  }
+  symbol(node: SymbolLiteral): RuntimeValue {
+    return sym(node.sym);
   }
   algebra(node: AlgebraExpr): RuntimeValue {
-    throw new Error("Method not implemented.");
+    return this.evalnode(node.expr);
   }
-  private evalblock(node: BlockStmt) {
+  execStmts(nodes: Stmt[], env: Environment) {
     let out: RuntimeValue = empty();
-    const nodes = node.stmts;
+    const previousEnv = this.env;
+    this.env = env;
     for (let i = 0; i < nodes.length; i++) {
       out = this.evalnode(nodes[i]);
+      if (nodes[i].type === nt.return) {
+        return out;
+      }
     }
+    this.env = previousEnv;
     return out;
   }
   block(node: BlockStmt): RuntimeValue {
-    return this.evalblock(node);
+    return this.execStmts(node.stmts, new Environment(this.env));
   }
   expression(node: ExprStmt): RuntimeValue {
     return this.evalnode(node.expression);
   }
-  fn(node: FunctionStmt): RuntimeValue {
-    throw new Error("Method not implemented.");
+  fn(node: FunctionStmt): Empty {
+    const f = fn(node, this.env);
+    this.env.define(node.name.lex, f);
+    return empty();
   }
   predicate(node: ConditionalStmt): RuntimeValue {
     const cond = this.evalnode(node.condition);
@@ -2407,10 +2607,16 @@ class Interpreter implements Visitor<RuntimeValue> {
     return this.evalnode(node.value);
   }
   vardef(node: VarDefStmt): RuntimeValue {
-    throw new Error("Method not implemented.");
+    const value = this.evalnode(node.init);
+    this.env.define(node.name.lex, value);
+    return value;
   }
   loop(node: LoopStmt): RuntimeValue {
-    throw new Error("Method not implemented.");
+    let out: RuntimeValue = empty();
+    while (truthy(this.evalnode(node.condition))) {
+      out = this.evalnode(node.body);
+    }
+    return out;
   }
 }
 
@@ -2419,10 +2625,9 @@ const reduce = (program: Program) => (
 );
 
 const src = `
-1/2 + 3/4
+~ 2xy - 5x^2 + 1 ~ 
 `;
 // console.log(addQ(frac(1,2),frac(3,4)))
 const j = parse(src);
 // const r = reduce(j);
 console.log(astLog(j));
-// console.log(r);
