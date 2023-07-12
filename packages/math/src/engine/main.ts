@@ -253,13 +253,18 @@ enum tt {
    */
   tilde, 
 	
-  // Operator Tokens
-  minus, plus, slash,
-  caret, star,
-  bang,
+  // § Binary-unary Operator Tokens
+  minus, // subtraction and negation
+  plus, // subtraction and positivization
+  
+  // § Strictly binary tokens
+  slash,
+  caret,
+  star,
   percent, eq, deq, neq, lt, gt, leq, geq,
 
-  
+  // § Strictly unary-postfix factorial
+  bang,
 
 	rem, mod, div, call,
 
@@ -282,8 +287,10 @@ enum tt {
   nan, inf,
 
   // logical operators
-  and, nand, not, or, nor,
+  and, nand, or, nor,
   xor, xnor,
+
+  not, // strictly unary
 }
 
 // § - Binding power enum.
@@ -317,6 +324,22 @@ class Token {
   constructor(type: tt, lex: string) {
     this.type = type;
     this.lex = lex;
+  }
+  /**
+   * Returns true if this
+   * token is a logical binary
+   * operator token (does not
+   * test for `not`).
+   */
+  isLogicBinop() {
+    return (
+      (this.type === tt.and) ||
+      (this.type === tt.nand) ||
+      (this.type === tt.or) ||
+      (this.type === tt.nor) ||
+      (this.type === tt.xor) ||
+      (this.type === tt.xnor)
+    );
   }
   map<K>(callback: (token: Token) => K) {
     return callback(this);
@@ -365,8 +388,8 @@ const tk = (type: tt, lex: string) => (
 /**
  * Returns the array of tokens stringified.
  */
-const tokenlist = (tokens: Token[], raw:boolean=true) => (
-  tokens.map((t) => (raw ? '' : `${tt[t.type]}`) + `${t.lex}`)
+const tokenlist = (tokens: Token[], raw: boolean = true) => (
+  tokens.map((t) => (raw ? "" : `${tt[t.type]}`) + `${t.lex}`)
 );
 
 // § - Node Type Enum
@@ -382,7 +405,7 @@ enum nt {
   int, float, rational, string,
   sym, unex, algebra, nil,
   tuple, vector, matrix,
-  complex, bool,
+  complex, bool, logic,
   
   block,expression,fn,predicate,
   return,vardef,loop,
@@ -411,6 +434,7 @@ interface Visitor<T> {
   matrix(node: MatrixExpr): T;
   tuple(node: TupleExpr): T;
   algebra(node: AlgebraExpr): T;
+  logic(node: LogicExpr): T;
 
   // --- All nodes after this line are statements ---
 
@@ -509,6 +533,25 @@ class AlgebraExpr extends Expr {
 
 const algebra = (expr: Expr) => (
   new AlgebraExpr(expr)
+);
+
+// § - Logical Expression Node.
+class LogicExpr extends Expr {
+  left: Expr;
+  op: Token;
+  right: Expr;
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.logic(this);
+  }
+  constructor(left: Expr, op: Token, right: Expr) {
+    super(nt.logic);
+    this.left = left;
+    this.op = op;
+    this.right = right;
+  }
+}
+const logex = (left: Expr, op: Token, right: Expr) => (
+  new LogicExpr(left, op, right)
 );
 
 // § - Binary Expression Node.
@@ -1118,9 +1161,10 @@ const isStmt = (node: ASTNode): node is Stmt => (
   node.kind === nk.stmt
 );
 
+// § - State Definition
 class State {
-  tokens: Token[];
-  i: number = 0;
+  private i: number = 0;
+  readonly tokens: Token[];
   error: Err | null = null;
   peek: Token = tk(tt.empty, "");
   prev: Token = tk(tt.empty, "");
@@ -1132,27 +1176,54 @@ class State {
       this.tokens.push(tk(tt.eof, "eof"));
     }
   }
+  /**
+   * Returns true if an implicit
+   * semicolon is encountered. An implicit
+   * semicolons exists if:
+   *
+   * 1. The upcoming token is the end of input (`eof` token), or
+   * 2. The upcoming token is a right brace (`rbrace` token), or
+   * 3. The token stream has reached an unexpected end of input.
+   */
+  implicitSemicolonOK() {
+    return (
+      this.peek.is(tt.eof) ||
+      this.peek.is(tt.rbrace) ||
+      this.atEnd()
+    );
+  }
+
+  /**
+   * Moves the state’s position forward
+   * if the next token is the provided type.
+   */
   tickIfNextIs(type: tt) {
     if (this.peek.is(type)) {
       this.next();
     }
     return this;
   }
+  /**
+   * Executes the provided callback _only if_ the
+   * next token is not the provided token type.
+   */
   peekIsNot<K>(tokenType: tt, callback: (token: Token) => K) {
     if (!this.peek.is(tokenType)) {
       callback(this.peek);
     }
   }
-  peekIs<K>(tokenType: tt, callback: (token: Token) => K) {
-    if (this.peek.is(tokenType)) {
-      callback(this.peek);
-    }
-  }
+  /**
+   * Returns the token at the `currentIndex + index`
+   * _without_ changing the index.
+   */
   lookahead(index: number) {
     const out = this.tokens[this.i + index];
     if (out) return out;
     return tk(tt.eof, "EOF");
   }
+  /**
+   * Sets the last parsed node.
+   */
   lastParsed(node: ASTNode) {
     this.lastnode = node;
     return this;
@@ -1172,6 +1243,11 @@ class State {
       return callback(t);
     } else return elsefn(this.prev);
   }
+  /**
+   * Returns true if the next token
+   * is the provided type _without_
+   * consuming the token.
+   */
   check(type: tt) {
     if (this.atEnd()) return false;
     return this.peek.is(type);
@@ -1205,14 +1281,36 @@ class State {
     this.peek = newtoken;
     return prev;
   }
+  /**
+   * If called, sets the state’s last
+   * parsed node to the provided node T,
+   * and returns `Right<T>` (See {@link Right}).
+   * All nodes should ultimately return their
+   * results through this method so
+   * as to allow other nodes to keep
+   * track of what was last parsed.
+   */
   ok<T extends ASTNode>(node: T) {
     this.lastParsed(node);
     return right(node);
   }
+  /**
+   * If called, sets the state’s error
+   * status to the provided error message,
+   * and returns a {@link Left}. If
+   * the state’s error field is initialized
+   * (by default `null`), then the parser
+   * will halt immediately and return the
+   * error message.
+   */
   err(error: string, source: string) {
     this.error = err(`[${source}] ${error}`);
     return left(this.error);
   }
+  /**
+   * Returns true if the state has reached
+   * the end of input.
+   */
   atEnd() {
     return (
       (this.i === this.tokens.length - 1) ||
@@ -1221,16 +1319,28 @@ class State {
       (this.error !== null)
     );
   }
+  /**
+   * Returns the current token being read.
+   */
   get current(): Token {
     const out = this.tokens[this.i];
     if (out) return out;
     return tk(tt.error, `Unexpected end of input.`);
   }
 }
+
+/**
+ * Returns a new state with the provided
+ * tokens.
+ */
 const enstate = (tokens: Token[]) => (
   new State(tokens)
 );
 
+/**
+ * Parses the given string or array of
+ * tokens.
+ */
 const parse = (text: string | Token[]) => {
   const state = enstate(typeof text === "string" ? tokenize(text) : text);
 
@@ -1289,6 +1399,13 @@ const parse = (text: string | Token[]) => {
     return expr(p).chain((n) => state.ok(unex(op, n)));
   };
 
+  const logicInfix: Parslet = (op, node) => {
+    const p = precof(op.type);
+    return expr(p).chain((n) => {
+      return state.ok(logex(node, op, n));
+    });
+  };
+
   const infix: Parslet = (op, node) => {
     const p = precof(op.type);
     return expr(p).chain((n) => {
@@ -1331,11 +1448,20 @@ const parse = (text: string | Token[]) => {
     const out = result.chain((n) => state.ok(group(n)));
     return out;
   };
-  
-  
-  const callExpression = () => {
-    
-  }
+
+  const callExpression: Parslet = (_, lastNode) => {
+    const callee = lastNode;
+    let args: Expr[] = [];
+    if (!state.check(tt.rparen)) {
+      const arglist = comlist();
+      if (arglist.isLeft()) return arglist;
+      args = arglist.unwrap();
+    }
+    if (!state.nextIs(tt.rparen)) {
+      return state.err(`Expected “)” to close parameters.`, "call");
+    }
+    return state.ok(call(callee, args));
+  };
 
   const comlist = () => {
     const elements: Expr[] = [];
@@ -1349,6 +1475,7 @@ const parse = (text: string | Token[]) => {
 
   const vector: Parslet = () => {
     const result = expr();
+    const src = `vector`;
     if (result.isLeft()) return result;
     if (state.nextIs(tt.comma)) {
       let elems: Expr[] = [result.unwrap()];
@@ -1368,10 +1495,10 @@ const parse = (text: string | Token[]) => {
           for (let i = 0; i < elems.length; i++) {
             const exp = elems[i];
             if (!isvector(exp)) {
-              return state.err(`Mixed vectors prohibited`, "vector");
+              return state.err(`Mixed vectors prohibited`, src);
             }
             if (exp.elements.length !== colcount) {
-              return state.err(`Jagged vectors prohibited`, "vector");
+              return state.err(`Jagged vectors prohibited`, src);
             }
             vs.push(exp);
           }
@@ -1380,7 +1507,7 @@ const parse = (text: string | Token[]) => {
         }
       }
       if (!state.nextIs(tt.rbrack)) {
-        return state.err(`Expected closing right-bracket`, "vector");
+        return state.err(`Expected closing right-bracket`, src);
       }
       return state.ok(vectorExpr(elems));
     }
@@ -1459,7 +1586,7 @@ const parse = (text: string | Token[]) => {
     [tt.error]: [__, __, __o],
     [tt.dquote]: [__, __, __o],
     [tt.quote]: [__, __, __o],
-    [tt.lparen]: [primary, __, bp.call],
+    [tt.lparen]: [primary, callExpression, bp.call],
     [tt.rparen]: [__, __, __o],
     [tt.lbrace]: [__, __, __o],
     [tt.lbrack]: [vector, __, bp.list],
@@ -1478,14 +1605,20 @@ const parse = (text: string | Token[]) => {
     [tt.div]: [__, infix, bp.quot],
     [tt.percent]: [__, infix, bp.quot],
     [tt.bang]: [__, postfix, bp.postfix],
-    [tt.and]: [__, infix, bp.and],
-    [tt.nand]: [__, infix, bp.nand],
+
+    // logical operations
+    [tt.and]: [__, logicInfix, bp.and],
+    [tt.nand]: [__, logicInfix, bp.nand],
     [tt.not]: [prefix, __, bp.not],
-    [tt.or]: [__, infix, bp.or],
-    [tt.nor]: [__, infix, bp.nor],
-    [tt.xor]: [__, infix, bp.xor],
-    [tt.xnor]: [__, infix, bp.xnor],
+    [tt.or]: [__, logicInfix, bp.or],
+    [tt.nor]: [__, logicInfix, bp.nor],
+    [tt.xor]: [__, logicInfix, bp.xor],
+    [tt.xnor]: [__, logicInfix, bp.xnor],
+
+    // assignment
     [tt.eq]: [__, assignment, bp.assign],
+
+    // relational expressions
     [tt.deq]: [__, infix, bp.eq],
     [tt.neq]: [__, infix, bp.rel],
     [tt.lt]: [__, infix, bp.rel],
@@ -1542,15 +1675,56 @@ const parse = (text: string | Token[]) => {
     return lhs;
   };
 
+  // name: Token;
+  // params: Token[];
+  // body: Stmt[];
+  const FUNCTION = () => {
+    const name = state.next();
+    const src = `FUNCTION`;
+    if (!name.is(tt.sym)) {
+      return state.err(`Expected symbol, but got “${name.lex}”.`, src);
+    }
+    const leftDelim = state.next();
+    if (!leftDelim.is(tt.lparen)) {
+      return state.err(
+        `Expected “(” to open argument list, but got “${name.lex}”.`,
+        src,
+      );
+    }
+    const params: Token[] = [];
+    if (!state.check(tt.rparen)) {
+      do {
+        const arg = state.next();
+        if (!arg.is(tt.sym)) {
+          return state.err(`Non-symbol argument encountered`, src);
+        }
+        params.push(arg);
+      } while (state.nextIs(tt.comma));
+    }
+    if (!state.nextIs(tt.rparen)) {
+      return state.err(`Expected “)” to close parameters.`, src);
+    }
+    if (state.nextIs(tt.eq)) {
+      const expression = EXPR();
+      if (expression.isLeft()) return expression;
+      const body = [expression.unwrap()];
+      return state.ok(fn(name, params, body));
+    }
+    if (!state.nextIs(tt.lbrace)) {
+      return state.err(`Expected “{” or “=” to begin body`, src);
+    }
+    const b = BLOCK();
+    if (b.isLeft()) return b;
+    const body = b.unwrap().stmts;
+    return state.ok(fn(name, params, body));
+  };
+
   const EXPR = () => {
     const out = expr();
     if (out.isLeft()) return out;
     if (
       state.nextIs(tt.semicolon) ||
-      state.peek.is(tt.eof) ||
-      state.peek.is(tt.rbrace) ||
-      state.prev.is(tt.semicolon) ||
-      state.atEnd()
+      state.implicitSemicolonOK()
     ) {
       return state.ok(expression(out.unwrap()));
     }
@@ -1558,10 +1732,10 @@ const parse = (text: string | Token[]) => {
   };
 
   const LET = () => {
-    // deno-fmt-ignore
     const out = state.ifNextIs(
       tt.sym,
-      (s) => state.ifNextIs(
+      (s) =>
+        state.ifNextIs(
           tt.eq,
           () => {
             const out = expr().chain((x) =>
@@ -1578,12 +1752,12 @@ const parse = (text: string | Token[]) => {
     state.tickIfNextIs(tt.semicolon);
     return out;
   };
-  
-  
 
-  const WHILE = () => {
+  // § Parse Loop
+  const LOOP = () => {
   };
 
+  // § Parse Predicate
   const PREDICATE = () => {
     const cond = expr();
     const src = `predicate`;
@@ -1621,8 +1795,22 @@ const parse = (text: string | Token[]) => {
     );
   };
 
+  const RETURN = () => {
+    const value = expr();
+    if (value.isLeft()) return value;
+    if (
+      state.nextIs(tt.semicolon) ||
+      state.implicitSemicolonOK()
+    ) {
+      return state.ok(returnStmt(value.unwrap()));
+    }
+    return state.err(`Expected “;” to end statement`, `return`);
+  };
+
   const STMT = (): Left<Err> | Right<Stmt> => {
+    if (state.nextIs(tt.return)) return RETURN();
     if (state.nextIs(tt.let)) return LET();
+    if (state.nextIs(tt.fn)) return FUNCTION();
     if (state.nextIs(tt.lbrace)) return BLOCK();
     if (state.nextIs(tt.if)) return PREDICATE();
     return EXPR();
@@ -1642,6 +1830,111 @@ const parse = (text: string | Token[]) => {
     return prog(out, null);
   };
   return run();
+};
+
+type TypeName = "fraction" | "complex" | "error" | "number" | "bool";
+
+type RuntimeError = [string, "error"];
+
+const croak = (message: string): RuntimeError => [
+  message,
+  "error",
+];
+
+type Pair<N extends TypeName> = [number, number, N];
+
+type PairRel = (
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+) => boolean;
+
+type PairBinop = (
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+) => [number, number];
+type Frac = Pair<"fraction">;
+type Cpx = Pair<"complex">;
+
+const isnull = (n: any): n is null => n === null;
+const dne = (n: any): n is undefined => n === undefined;
+const unsafe = (n: any): n is null | undefined => (isnull(n) || dne(n));
+const safe = (n: any) => !unsafe(n);
+const isarray = (n: any) => Array.isArray(n);
+const isfrac = (n: any): n is Frac => (
+  safe(n) && isarray(n) && n.length === 3 && n[2] === "fraction"
+);
+const iscpx = (n: any): n is Cpx => (
+  safe(n) && isarray(n) && n.length === 3 && n[2] === "complex"
+);
+const isError = (n: any) => (
+  safe(n) && isarray(n) && n.length === 2 && n[1] === "error"
+);
+
+type Str = [string, "string"];
+const string = (value: string) => [value, "string"];
+
+type Num = [number, "number"];
+const num = (value: number): Num => [
+  value,
+  "number",
+];
+
+type Bool = [boolean, "bool"];
+const boolean = (value: boolean): Bool => [
+  value,
+  "bool",
+];
+
+type RuntimeValue =
+  | Str
+  | number
+  | Frac
+  | Cpx
+  | boolean
+  | RuntimeError
+  | string[]
+  | number[]
+  | boolean[]
+  | null;
+
+// § - Unary Op Factory
+// deno-fmt-ignore
+const opN1 = (op:(a:number) => number) => (
+  x:number
+) => op(x)
+
+const negN = opN1((a) => -a);
+const plusN = opN1((a) => +a);
+
+// § - Numeric Literal Binary Op Factory
+// deno-fmt-ignore
+const opN2 = (op: (a: number, b: number) => number) => (
+  x: number,
+  y: number,
+) => (op(x, y));
+
+const { floor, ceil } = Math;
+const addN = opN2((a, b) => a + b);
+const subN = opN2((a, b) => a - b);
+const mulN = opN2((a, b) => a * b);
+const divN = opN2((a, b) => a / b);
+const powN = opN2((a, b) => a ** b);
+const modN = opN2((a, b) => ((a % b) + b) % b);
+const remN = opN2((a, b) => a % b);
+const quotN = opN2((a, b) => floor(a / b));
+const percN = opN2((a, b) => (100 * a) / b);
+
+const unaryNumOp = (op: tt, x: number) => {
+  // deno-fmt-ignore
+  switch (op) {
+    case tt.minus: return negN(x);
+    case tt.plus: return plusN(x);
+    default: return nodefop(op, ["number", "number"]);
+  }
 };
 
 /**
@@ -1668,7 +1961,7 @@ const toFrac = (numberValue: number): Frac => {
     h = h2 + a * h1;
     k = k2 + a * k1;
   }
-  return [h, k, "frac"];
+  return [h, k, "fraction"];
 };
 
 /**
@@ -1696,53 +1989,23 @@ const simplify = ([N, D]: Frac): Frac => {
   const n = Math.abs(N);
   const d = Math.abs(D);
   const f = gcd(n, d);
-  return [(sgn * n) / f, d / f, "frac"];
+  return [(sgn * n) / f, d / f, "fraction"];
 };
 
-type PairName = "frac" | "complex";
-type Pair<N extends PairName> = [number, number, N];
-
-type PairRel = (
-  a: number,
-  b: number,
-  c: number,
-  d: number,
-) => boolean;
 // deno-fmt-ignore
-const prel = <N extends PairName>(op: PairRel) => (
+const prel = <N extends TypeName>(op: PairRel) => (
   [n1, d1]: Pair<N>,
   [n2, d2]: Pair<N>,
 ): boolean => op(n1, d1, n2, d2);
 
-type PairBinop = (
-  a: number,
-  b: number,
-  c: number,
-  d: number,
-) => [number, number];
-type Frac = Pair<"frac">;
-type Cpx = Pair<"complex">;
-
 // deno-fmt-ignore
-const pbinop = <N extends PairName>(op: PairBinop, kind: N) => (
+const pbinop = <N extends TypeName>(op: PairBinop, kind: N) => (
   [n1, d1]: Pair<N>,
   [n2, d2]: Pair<N>,
 ): Pair<N> => [...op(n1, d1, n2, d2), kind];
 
-const frac = (a: number, b: number): Frac => [a, b, "frac"];
+const frac = (a: number, b: number): Frac => [a, b, "fraction"];
 const cpx = (a: number, b: number = 0): Cpx => [a, b, "complex"];
-const isnull = (n: any): n is null => n === null;
-const dne = (n: any): n is undefined => n === undefined;
-const unsafe = (n: any): n is null | undefined => (isnull(n) || dne(n));
-const safe = (n: any) => !unsafe(n);
-const isarray = (n: any) => Array.isArray(n);
-
-const isfrac = (n: any): n is Frac => (
-  safe(n) && isarray(n) && n.length === 3 && n[2] === "frac"
-);
-const iscpx = (n: any): n is Cpx => (
-  safe(n) && isarray(n) && n.length === 3 && n[2] === "complex"
-);
 
 /**
  * Returns true if the two given fractions are equal.
@@ -1764,7 +2027,7 @@ const complexStr = ([a,b]:Cpx) => (
 ).join('')
 
 const qbinop = (op: PairBinop) => (a: Frac, b: Frac) => (
-  simplify(pbinop(op, "frac")(simplify(a), simplify(b)))
+  simplify(pbinop(op, "fraction")(simplify(a), simplify(b)))
 );
 const qrel = (op: PairRel) => (a: Frac, b: Frac) => (
   prel(op)(simplify(a), simplify(b))
@@ -1844,11 +2107,46 @@ const vdot = (A: number[], B: number[]) => (
     a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n))(equalize(A, B))
 );
 
+// deno-fmt-ignore
+const boolBinop = (op: (a: boolean, b: boolean) => boolean) => (
+  A: boolean,
+  B: boolean,
+) => op(A, B);
+
+const andL = boolBinop((a, b) => a && b);
+const orL = boolBinop((a, b) => a || b);
+const nandL = boolBinop((a, b) => !(a && b));
+const xorL = boolBinop((a, b) => a !== b);
+const xnorL = boolBinop((a, b) => !(xorL(a, b)));
+const norL = boolBinop((a, b) => !(a || b));
+const notL = (a: boolean) => !a;
+
+const logicop = (a: boolean, op: tt, b: boolean) => {
+  // deno-fmt-ignore
+  switch (op) {
+    case tt.and: return andL(a, b);
+    case tt.nand: return nandL(a, b);
+    case tt.nor: return norL(a, b);
+    case tt.xor: return xorL(a, b);
+    case tt.xnor: return xnorL(a, b);
+    case tt.or: return orL(a,b);
+    default: return nodefop(op, ['bool', 'bool']);
+  }
+};
+
 const truthy = (value: RuntimeValue) => (
   value ? true : false
 );
 const isnum = (x: any): x is number => (
   typeof x === "number"
+);
+
+const nodefop = (op: tt, operands: TypeName[]) => (
+  croak(
+    `${operands.length}-ary operator “${tt[op]}” is not defined on (${
+      operands.join(" × ")
+    })`,
+  )
 );
 
 const cpxop = (A: Cpx, op: tt, B: Cpx) => {
@@ -1857,7 +2155,7 @@ const cpxop = (A: Cpx, op: tt, B: Cpx) => {
     case tt.plus: return addC(A, B);
     case tt.minus: return subC(A, B);
     case tt.star: return mulC(A, B);
-    default: return cpx(0,0)
+    default: return nodefop(op, ['complex', 'complex'])
   }
 };
 
@@ -1874,42 +2172,31 @@ const fracop = (A: Frac, op: tt, B: Frac) => {
     case tt.geq: return gteQ(A, B);
     case tt.neq: return !equalQ(A, B);
     case tt.deq: return equalQ(A, B);
-    default: return frac(Infinity, Infinity);
+    default: return nodefop(op, ['fraction', 'fraction']);
   }
 };
 
 const numop = (x: number, op: tt, y: number) => {
   // deno-fmt-ignore
   switch (op) {
-    case tt.plus: return x + y;
-    case tt.minus: return x - y;
-    case tt.star: return x * y;
-    case tt.slash: return x / y;
-    case tt.caret: return x ** y;
-    case tt.mod: return ((x % y) + x) % y;
-    case tt.rem: return x % y;
+    case tt.plus: return addN(x,y);
+    case tt.minus: return subN(x,y);
+    case tt.star: return mulN(x, y);
+    case tt.slash: return divN(x,y);
+    case tt.caret: return powN(x,y);
+    case tt.mod: return modN(x,y);
+    case tt.rem: return remN(x,y);
     case tt.lt: return x < y;
     case tt.gt: return x > y;
     case tt.leq: return x <= y;
     case tt.geq: return x >= y;
     case tt.neq: return x !== y;
     case tt.deq: return x === y;
-    case tt.div: return Math.floor(x / y);
-    case tt.percent: return (100 * x) / y;
-    default: return 0;
+    case tt.div: return quotN(x,y);
+    case tt.percent: return percN(x,y);
+    default: return nodefop(op, ['number','number']);
   }
 };
-
-type RuntimeValue =
-  | string
-  | number
-  | Frac
-  | Cpx
-  | boolean
-  | string[]
-  | number[]
-  | boolean[]
-  | null;
 
 class Interpreter implements Visitor<RuntimeValue> {
   run(program: Program) {
@@ -1925,6 +2212,11 @@ class Interpreter implements Visitor<RuntimeValue> {
   }
   private evalnode(node: ASTNode) {
     return node.accept(this);
+  }
+  logic(node: LogicExpr): RuntimeValue {
+    const a = this.evalnode(node.left);
+    const b = this.evalnode(node.right);
+    return logicop(truthy(a), node.op.type, truthy(b));
   }
   bool(node: BooleanLiteral): RuntimeValue {
     return node.value;
@@ -1957,6 +2249,12 @@ class Interpreter implements Visitor<RuntimeValue> {
     return null;
   }
   unex(node: UnaryExpr): RuntimeValue {
+    const arg = this.evalnode(node.arg);
+    if (node.op.is(tt.not)) {
+      return !truthy(arg);
+    } else if (isnum(arg)) {
+      return unaryNumOp(node.op.type, arg);
+    }
     throw new Error("Method not implemented.");
   }
   call(node: CallExpr): RuntimeValue {
@@ -1989,7 +2287,7 @@ class Interpreter implements Visitor<RuntimeValue> {
     return frac(n, d);
   }
   string(node: StringLiteral): RuntimeValue {
-    return node.value;
+    return string(node.value);
   }
   sym(node: SymbolLiteral): RuntimeValue {
     throw new Error("Method not implemented.");
@@ -2037,5 +2335,12 @@ const reduce = (program: Program) => (
   new Interpreter().run(program)
 );
 
-const j = tokenize(`x(a)`);
-console.log(tokenlist(j));
+const src = `
+fn f(x) {
+  let y = j = 4;
+  return y
+}
+`;
+
+const j = parse(src);
+console.log(astLog(j));
