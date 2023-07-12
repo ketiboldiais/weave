@@ -41,13 +41,16 @@ export function astLog<T extends Object>(
         if (!circ && lastState[0] === root) circ = true;
       });
       line += prefix(key, last) + key.toString();
-      let k = root;
       if (root instanceof Expr) {
-        k = nt[root.type];
+        root.kind = nk[root.kind] as any;
+        root.type = nt[root.type] as any;
+      } else if (root instanceof Stmt) {
+        root.kind = nk[root.kind] as any;
+        root.type = nt[root.type] as any;
       } else if (root instanceof Token) {
-        k = tt[root.type];
+        root.type = tt[root.type] as any;
       }
-      if (typeof k !== "object") line += ": " + k;
+      if (typeof root !== "object") line += ": " + root;
       circ && (line += " (circular ref.)");
       cb(line);
     }
@@ -70,6 +73,14 @@ export function astLog<T extends Object>(
   );
   return output;
 }
+type Program = {
+  nodes: ASTNode[];
+  error: string | null;
+};
+const prog = (nodes: ASTNode[], error: string | null): Program => ({
+  nodes,
+  error,
+});
 
 /**
  * Utility function for generating ranges..
@@ -253,6 +264,7 @@ enum tt {
 	rem, mod, div, call,
 
   sym, str, int, float,
+  complex,
   scinum,
   
   // keywords
@@ -280,6 +292,7 @@ export enum bp {
   lowest,
   assign,
   atom,
+  list,
   or,
   nor,
   and,
@@ -322,16 +335,37 @@ class Token {
   }
 }
 
+/**
+ * Returns a new token.
+ */
 const tk = (type: tt, lex: string) => (
   new Token(type, lex)
 );
 
+/**
+ * Returns the array of tokens stringified.
+ */
+const tokenlist = (tokens: Token[]) => (
+  tokens.map((t) => `${tt[t.type]}( ${t.lex} )`)
+);
+
 // § - Node Type Enum
+/**
+ * A enum value corresponding to the node’s type.
+ * The JavaScript `instanceof` operator should
+ * __never__ be used when checking node types because
+ * of how the nodes are subclassed.
+ */
 // deno-fmt-ignore
 enum nt {
   assign, binex, call, group,
   int, float, rational, string,
   sym, unex, algebra, nil,
+  tuple, vector, matrix,
+  complex,
+  
+  block,expression,fn,predicate,
+  return,vardef,loop,
 }
 
 interface Visitor<T> {
@@ -340,8 +374,12 @@ interface Visitor<T> {
   unex(node: Unex): T;
   call(node: Call): T;
   group(node: Group): T;
+  vector(node: VectorExpr): T;
+  matrix(node: MatrixExpr): T;
   int(node: Int): T;
   float(node: Float): T;
+  complex(node: Complex): T;
+  tuple(node: Tuple): T;
   nil(node: Nil): T;
   rational(node: Rational): T;
   string(node: Str): T;
@@ -356,11 +394,40 @@ interface Visitor<T> {
   loop(node: Loop): T;
 }
 
-// § - Node Definitions
-abstract class Expr {
-  abstract accept<T>(visitor: Visitor<T>): T;
+/**
+ * Enum corresponding to the node’s kind.
+ * All nodes are either statements (`stmt`)
+ * or expressions (`expr`).
+ */
+enum nk {
+  stmt,
+  expr,
+}
+
+/**
+ * All statements and expressions
+ * are extensions of the abstract
+ * class ASTNode. This class ensures
+ * that every node has a `kind` (for
+ * distinguishing between statements
+ * and expressions quickly) and a `type`
+ * (the node’s specific type).
+ */
+abstract class ASTNode {
+  kind: nk;
   type: nt;
+  constructor(kind: nk, type: nt) {
+    this.kind = kind;
+    this.type = type;
+  }
+  abstract accept<T>(visitor: Visitor<T>): T;
+}
+
+// § - Node Definitions
+abstract class Expr extends ASTNode {
+  abstract accept<T>(visitor: Visitor<T>): T;
   constructor(type: nt) {
+    super(nk.expr, type);
     this.type = type;
   }
 }
@@ -496,6 +563,9 @@ class Int extends Expr {
 const int = (value: number | string) => (
   new Int(typeof value === "string" ? +value : value)
 );
+const isint = (node: ASTNode): node is Int => (
+  node.type === nt.int
+);
 
 // § - Float Node
 class Float extends Expr {
@@ -517,15 +587,15 @@ class Rational extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.rational(this);
   }
-  N: Int;
-  D: Int;
-  constructor(N: Int, D: Int) {
+  N: number;
+  D: number;
+  constructor(N: number, D: number) {
     super(nt.rational);
     this.N = N;
     this.D = D;
   }
 }
-const rational = (N: Int, D: Int) => (
+const rational = (N: number, D: number) => (
   new Rational(N, D)
 );
 
@@ -556,14 +626,21 @@ class Sym extends Expr {
     this.name = name;
   }
 }
+const isSym = (node: ASTNode): node is Sym => (
+  node.type === nt.sym
+);
 
 const sym = (t: Token) => (
   new Sym(t)
 );
 
 // § Stmt Type
-abstract class Stmt {
+abstract class Stmt extends ASTNode {
   abstract accept<T>(visitor: Visitor<T>): T;
+  constructor(type: nt) {
+    super(nk.stmt, type);
+    this.type = type;
+  }
 }
 
 // § Block Statement
@@ -573,7 +650,7 @@ class Block extends Stmt {
   }
   stmts: Stmt[];
   constructor(stmts: Stmt[]) {
-    super();
+    super(nt.block);
     this.stmts = stmts;
   }
 }
@@ -589,7 +666,7 @@ class Expression extends Stmt {
   }
   expression: Expr;
   constructor(expression: Expr) {
-    super();
+    super(nt.expression);
     this.expression = expression;
   }
 }
@@ -607,7 +684,7 @@ class Fn extends Stmt {
   params: Token[];
   body: Stmt[];
   constructor(name: Token, params: Token[], body: Stmt[]) {
-    super();
+    super(nt.fn);
     this.name = name;
     this.params = params;
     this.body = body;
@@ -624,17 +701,17 @@ class Predicate extends Stmt {
     return visitor.predicate(this);
   }
   condition: Expr;
-  thenBranch: Stmt;
-  elseBranch: Stmt;
-  constructor(condition: Expr, thenBranch: Stmt, elseBranch: Stmt) {
-    super();
+  thenBranch: Block;
+  elseBranch: Block;
+  constructor(condition: Expr, thenBranch: Block, elseBranch: Block) {
+    super(nt.predicate);
     this.condition = condition;
     this.thenBranch = thenBranch;
     this.elseBranch = elseBranch;
   }
 }
 
-const predicate = (cond: Expr, thenB: Stmt, elseB: Stmt) => (
+const predicate = (cond: Expr, thenB: Block, elseB: Block) => (
   new Predicate(cond, thenB, elseB)
 );
 
@@ -643,17 +720,15 @@ class Return extends Stmt {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.returnStmt(this);
   }
-  keyword: Token;
   value: Expr;
-  constructor(keyword: Token, value: Expr) {
-    super();
-    this.keyword = keyword;
+  constructor(value: Expr) {
+    super(nt.return);
     this.value = value;
   }
 }
 
-const returnStmt = (keyword: Token, value: Expr) => (
-  new Return(keyword, value)
+const returnStmt = (value: Expr) => (
+  new Return(value)
 );
 
 // § - Variable Definition
@@ -664,7 +739,7 @@ class VarDef extends Stmt {
   name: Token;
   init: Expr;
   constructor(name: Token, init: Expr) {
-    super();
+    super(nt.vardef);
     this.name = name;
     this.init = init;
   }
@@ -672,6 +747,73 @@ class VarDef extends Stmt {
 
 const vardef = (name: Token, init: Expr) => (
   new VarDef(name, init)
+);
+
+class VectorExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.vector(this);
+  }
+  elements: Expr[];
+  constructor(elements: Expr[]) {
+    super(nt.vector);
+    this.elements = elements;
+  }
+}
+
+const vectorExpr = (elements: Expr[]) => (
+  new VectorExpr(elements)
+);
+const isvector = (node: ASTNode): node is VectorExpr => (
+  node.type === nt.vector
+);
+
+class MatrixExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.matrix(this);
+  }
+  elements: VectorExpr[];
+  rows: number;
+  cols: number;
+  constructor(elements: VectorExpr[], rows: number, cols: number) {
+    super(nt.matrix);
+    this.elements = elements;
+    this.rows = rows;
+    this.cols = cols;
+  }
+}
+
+const matrixExpr = (elements: VectorExpr[], rows: number, cols: number) => (
+  new MatrixExpr(elements, rows, cols)
+);
+
+class Complex extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.complex(this);
+  }
+  r: number;
+  i: number;
+  constructor(r: number, i: number) {
+    super(nt.complex);
+    this.r = r;
+    this.i = i;
+  }
+}
+const complex = (r: number, i: number) => (
+  new Complex(r, i)
+);
+
+class Tuple extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.tuple(this);
+  }
+  items: Expr[];
+  constructor(items: Expr[]) {
+    super(nt.tuple);
+    this.items = items;
+  }
+}
+const tuple = (items: Expr[]) => (
+  new Tuple(items)
 );
 
 //§ - Loop Statement
@@ -682,7 +824,7 @@ class Loop extends Stmt {
   condition: Expr;
   body: Stmt;
   constructor(condition: Expr, body: Stmt) {
-    super();
+    super(nt.loop);
     this.condition = condition;
     this.body = body;
   }
@@ -723,6 +865,21 @@ const imul = (tkns: Token[]) => {
     } else if (now.is(tt.sym) && nxt.is(tt.sym)) {
       out.push(STAR);
     }
+  }
+  return out;
+};
+const detrail = (tokens: Token[]) => {
+  const out: Token[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    const nxt = tokens[i + 1];
+    if (
+      nxt !== undefined && t.is(tt.comma) &&
+      (nxt.is(tt.rparen) || nxt.is(tt.rbrack))
+    ) {
+      continue;
+    }
+    out.push(t);
   }
   return out;
 };
@@ -865,13 +1022,23 @@ const tokenize = (text: string) => {
       out.push(t);
     }
     out.push(tk(tt.eof, "EOF"));
-    return out;
+    const out2: Token[] = [];
+    for (let i = 0; i < out.length; i++) {
+      const t = out[i];
+      const nxt = out[i + 1];
+      if (
+        nxt !== undefined && t.is(tt.comma) &&
+        (nxt.is(tt.rparen) || nxt.is(tt.rbrack))
+      ) {
+        continue;
+      }
+      out2.push(t);
+    }
+    return out2;
   };
-  return imul(tokenize());
+  return imul((tokenize()));
 };
 
-type ASTNode = Expr | Stmt;
-type PrecEntry = [bp, Parslet, bp];
 type Parslet = (
   current: Token,
   lastNode: Expr,
@@ -880,8 +1047,11 @@ type Parslet = (
 ) => Either<Err, Expr>;
 type PSpec = Record<tt, [Parslet, Parslet, bp]>;
 
-const isexpr = (node: ASTNode): node is Expr => (
-  node instanceof Expr
+const isExpr = (node: ASTNode): node is Expr => (
+  node.kind === nk.expr
+);
+const isStmt = (node: ASTNode): node is Stmt => (
+  node.kind === nk.stmt
 );
 
 class State {
@@ -914,6 +1084,11 @@ class State {
       callback(this.peek);
     }
   }
+  lookahead(index: number) {
+    const out = this.tokens[this.i + index];
+    if (out) return out;
+    return tk(tt.eof, "EOF");
+  }
   lastParsed(node: ASTNode) {
     this.lastnode = node;
     return this;
@@ -933,6 +1108,16 @@ class State {
       return callback(t);
     } else return elsefn(this.prev);
   }
+  check(type: tt) {
+    if (this.atEnd()) return false;
+    return this.peek.is(type);
+  }
+  /**
+   * If the given type matches
+   * the upcoming token (the peek),
+   * moves the state forward. Otherwise,
+   * leaves the state as is.
+   */
   nextIs(type: tt) {
     if (this.peek.is(type)) {
       this.next();
@@ -940,6 +1125,9 @@ class State {
     }
     return false;
   }
+  /**
+   * Moves the state forward.
+   */
   next() {
     if (!this.atEnd()) this.i++;
     const prev = this.peek;
@@ -958,7 +1146,7 @@ class State {
     return right(node);
   }
   err(error: string, source: string) {
-    this.error = err(`[${source}]:${error}`);
+    this.error = err(`[${source}] ${error}`);
     return left(this.error);
   }
   atEnd() {
@@ -1021,6 +1209,10 @@ const parse = (text: string | Token[]) => {
     return state.err(`Expected scientific number`, "scinum");
   };
 
+  const postfix: Parslet = (op, node) => {
+    return state.ok(unex(op, node));
+  };
+
   const prefix: Parslet = (op) => {
     const p = precof(op.type);
     return expr(p).chain((n) => state.ok(unex(op, n)));
@@ -1028,14 +1220,96 @@ const parse = (text: string | Token[]) => {
 
   const infix: Parslet = (op, node) => {
     const p = precof(op.type);
-    return expr(p).chain((n) => state.ok(binex(node, op, n)));
+    return expr(p).chain((n) => {
+      const out = (isint(n) && isint(node) && op.is(tt.slash))
+        ? (rational(n.value, node.value))
+        : (binex(node, op, n));
+      return state.ok(out);
+    });
   };
 
-  const primary = () => {
+  const assignment: Parslet = (_, node, p) => {
+    if (isSym(node)) {
+      return expr().chain(
+        (n) => state.ok(assign(node.name, n)),
+      );
+    }
+    return state.err(
+      `Invalid assignment target. Expected symbol, got ${p.lex}.`,
+      "assignment",
+    );
+  };
+
+  const primary: Parslet = () => {
     const result = expr();
     if (result.isLeft()) return result;
+    if (state.nextIs(tt.comma)) {
+      let elems: Expr[] = [result.unwrap()];
+      if (!state.check(tt.rparen)) {
+        const es = comlist();
+        if (es.isLeft()) return es;
+        elems.push(...es.unwrap());
+      }
+      if (!state.nextIs(tt.rparen)) {
+        return state.err(`Expected closing right-paren`, "tuple");
+      } else {
+        return state.ok(tuple(elems));
+      }
+    }
     state.next();
     const out = result.chain((n) => state.ok(group(n)));
+    return out;
+  };
+
+  const comlist = () => {
+    const elements: Expr[] = [];
+    do {
+      const e = expr();
+      if (e.isLeft()) return e;
+      elements.push(e.unwrap());
+    } while (state.nextIs(tt.comma));
+    return right(elements);
+  };
+
+  const vector: Parslet = () => {
+    const result = expr();
+    if (result.isLeft()) return result;
+    if (state.nextIs(tt.comma)) {
+      let elems: Expr[] = [result.unwrap()];
+      if (!state.check(tt.rbrack)) {
+        const _es = comlist();
+        if (_es.isLeft()) return _es;
+        const E = _es.unwrap();
+        let colcount = -1;
+        E.forEach((exp) => {
+          if (isvector(exp)) {
+            colcount = exp.elements.length;
+          }
+          elems.push(exp);
+        });
+        if (colcount !== -1) {
+          const vs: VectorExpr[] = [];
+          for (let i = 0; i < elems.length; i++) {
+            const exp = elems[i];
+            if (!isvector(exp)) {
+              return state.err(`Mixed vectors prohibited`, "vector");
+            }
+            if (exp.elements.length !== colcount) {
+              return state.err(`Jagged vectors prohibited`, "vector");
+            }
+            vs.push(exp);
+          }
+          state.next();
+          return state.ok(matrixExpr(vs, elems.length, colcount));
+        }
+      }
+      if (!state.nextIs(tt.rbrack)) {
+        return state.err(`Expected closing right-bracket`, "vector");
+      }
+      return state.ok(vectorExpr(elems));
+    }
+    state.next();
+    const out = state.ok(vectorExpr([result.unwrap()]));
     return out;
   };
 
@@ -1047,7 +1321,7 @@ const parse = (text: string | Token[]) => {
           const node = expr();
           if (node.isLeft()) return node;
           const n = node.unwrap();
-          if (isexpr(n)) args.push(n);
+          if (isExpr(n)) args.push(n);
         } while (state.nextIs(tt.comma));
       });
       return state.ifNextIs(
@@ -1078,11 +1352,14 @@ const parse = (text: string | Token[]) => {
     tokens.push(tk(tt.eof, "EOF"));
     const tidyTokens = imul(symsplit(tokens));
     const n = parse(tidyTokens);
-    if (n.length === 0) {
+    if (n.error !== null) {
+      return state.err(n.error, "algebra");
+    }
+    if (n.nodes.length === 0) {
       return state.err(`Empty algebra string`, src);
     }
-    const [node] = n;
-    if (!isexpr(node)) {
+    const [node] = n.nodes;
+    if (!isExpr(node)) {
       return state.err(`Non-expression algebra string`, src);
     }
     const out = algebra(node);
@@ -1102,11 +1379,12 @@ const parse = (text: string | Token[]) => {
     [tt.lparen]: [primary, __, bp.call],
     [tt.rparen]: [__, __, __o],
     [tt.lbrace]: [__, __, __o],
-    [tt.lbrack]: [__, __, __o],
+    [tt.lbrack]: [vector, __, bp.list],
     [tt.rbrack]: [__, __, __o],
     [tt.rbrace]: [__, __, __o],
     [tt.comma]: [__, __, __o],
     [tt.dot]: [__, __, __o],
+    [tt.complex]: [__, __, __o],
     [tt.minus]: [prefix, infix, bp.sum],
     [tt.plus]: [prefix, infix, bp.sum],
     [tt.caret]: [__, infix, bp.pow],
@@ -1116,8 +1394,8 @@ const parse = (text: string | Token[]) => {
     [tt.mod]: [__, infix, bp.quot],
     [tt.div]: [__, infix, bp.quot],
     [tt.percent]: [__, infix, bp.quot],
-    [tt.bang]: [__, __, __o],
-    [tt.eq]: [__, __, __o],
+    [tt.bang]: [__, postfix, bp.postfix],
+    [tt.eq]: [__, assignment, bp.assign],
     [tt.deq]: [__, infix, bp.eq],
     [tt.neq]: [__, infix, bp.eq],
     [tt.lt]: [__, infix, bp.eq],
@@ -1170,7 +1448,7 @@ const parse = (text: string | Token[]) => {
     if (lhs.isLeft()) return lhs;
     while (minbp < precof(state.peek.type)) {
       if (state.atEnd()) break;
-      prev = peek;
+      prev = token;
       token = state.next();
       peek = state.peek;
       const r = infixRule(token.type);
@@ -1183,6 +1461,7 @@ const parse = (text: string | Token[]) => {
 
   const EXPR = () => {
     const out = expr();
+    if (out.isLeft()) return out;
     if (
       state.nextIs(tt.semicolon) ||
       state.peek.is(tt.eof) ||
@@ -1190,7 +1469,7 @@ const parse = (text: string | Token[]) => {
       state.prev.is(tt.semicolon) ||
       state.atEnd()
     ) {
-      return out;
+      return state.ok(expression(out.unwrap()));
     }
     return state.err(`Expected expression`, "EXPR");
   };
@@ -1203,7 +1482,7 @@ const parse = (text: string | Token[]) => {
           tt.eq,
           () => {
             const out = expr().chain((x) =>
-              !isexpr(x)
+              !isExpr(x)
                 ? state.err(`Expected valid rhs`, "LET")
                 : state.ok(vardef(s, x))
             );
@@ -1217,31 +1496,356 @@ const parse = (text: string | Token[]) => {
     return out;
   };
 
-  const STMT = () => {
-    if (state.nextIs(tt.let)) {
-      return LET();
+  const WHILE = () => {
+  };
+
+  const PREDICATE = () => {
+    const cond = expr();
+    const src = `predicate`;
+    if (cond.isLeft()) return cond;
+    if (!state.nextIs(tt.lbrace)) {
+      const msg = `Expected block after if-condition.`;
+      return state.err(msg, src);
     }
+    const ifblock = BLOCK();
+    if (ifblock.isLeft()) return ifblock;
+    let elseblock = block([returnStmt(nil())]);
+    if (state.nextIs(tt.else)) {
+      if (!state.nextIs(tt.lbrace)) {
+        const msg = `Expected block after else-condition`;
+        return state.err(msg, src);
+      }
+      const b = BLOCK();
+      if (b.isLeft()) return b;
+      elseblock = b.unwrap();
+    }
+    return state.ok(predicate(cond.unwrap(), ifblock.unwrap(), elseblock));
+  };
+
+  const BLOCK = () => {
+    const stmts: Stmt[] = [];
+    while (!state.check(tt.rbrace) && !state.atEnd()) {
+      const s = STMT();
+      if (s.isLeft()) return s;
+      stmts.push(s.unwrap());
+    }
+    return state.ifNextIs(
+      tt.rbrace,
+      () => state.ok(block(stmts)),
+      () => state.err(`Expected closing left brace`, "block"),
+    );
+  };
+
+  const STMT = (): Left<Err> | Right<Stmt> => {
+    if (state.nextIs(tt.let)) return LET();
+    if (state.nextIs(tt.lbrace)) return BLOCK();
+    if (state.nextIs(tt.if)) return PREDICATE();
     return EXPR();
   };
 
   const run = () => {
-    let out = [];
+    let out: ASTNode[] = [];
     while (!state.atEnd()) {
       const n = STMT();
       if (n.isRight()) {
         out.push(n.unwrap());
-      } else break;
+      } else {
+        const out = n.unwrap();
+        return prog([], out.message);
+      }
     }
-    return out;
+    return prog(out, null);
   };
   return run();
 };
 
-const tokenlist = (tokens: Token[]) => (
-  tokens.map((t) => `${tt[t.type]}( ${t.lex} )`)
+const k = tokenize(`
+[1,2,3,]
+`);
+console.log(k)
+
+/**
+ * Converts the provided number into a pair of integers (N,D),
+ * where `N` is the numerator and `D` is the
+ * denominator.
+ */
+const toFrac = (numberValue: number): Frac => {
+  let eps = 1.0E-15;
+  let h, h1, h2, k, k1, k2, a, x;
+  x = numberValue;
+  a = Math.floor(x);
+  h1 = 1;
+  k1 = 0;
+  h = a;
+  k = 1;
+  while (x - a > eps * k * k) {
+    x = 1 / (x - a);
+    a = Math.floor(x);
+    h2 = h1;
+    h1 = h;
+    k2 = k1;
+    k1 = k;
+    h = h2 + a * h1;
+    k = k2 + a * k1;
+  }
+  return [h, k, "frac"];
+};
+
+/**
+ * Returns the greatest common denominator
+ * of the provided integers `a` and `b`.
+ */
+const gcd = (a: number, b: number) => {
+  a = Math.floor(a);
+  b = Math.floor(b);
+  let t = a;
+  while (b !== 0) {
+    t = b;
+    b = a % b;
+    a = t;
+  }
+  return a;
+};
+
+/**
+ * Given a numerator `N` and a denominator `D`,
+ * returns a simplified fraction.
+ */
+const simplify = ([N, D]: Frac): Frac => {
+  const sgn = Math.sign(N) * Math.sign(D);
+  const n = Math.abs(N);
+  const d = Math.abs(D);
+  const f = gcd(n, d);
+  return [(sgn * n) / f, (sgn * d) / f, "frac"];
+};
+
+type PairName = "frac" | "complex";
+type Pair<N extends PairName> = [number, number, N];
+
+type PairRel = (
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+) => boolean;
+// deno-fmt-ignore
+const prel = <N extends PairName>(op: PairRel) => (
+  [n1, d1]: Pair<N>,
+  [n2, d2]: Pair<N>,
+): boolean => op(n1, d1, n2, d2);
+
+type PairBinop = (
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+) => [number, number];
+type Frac = Pair<"frac">;
+type Cpx = Pair<"complex">;
+
+// deno-fmt-ignore
+const pbinop = <N extends PairName>(op: PairBinop, kind: N) => (
+  [n1, d1]: Pair<N>,
+  [n2, d2]: Pair<N>,
+): Pair<N> => [...op(n1, d1, n2, d2), kind];
+
+const frac = (a: number, b: number): Frac => [a, b, "frac"];
+const cpx = (a: number, b: number = 0): Cpx => [a, b, "complex"];
+
+/**
+ * Returns true if the two given fractions are equal.
+ */
+const equalQ = (a: Frac, b: Frac) => (
+  zip(simplify(a), simplify(b)).reduce((p, [a, b]) => p && (a === b), true)
 );
 
-const k = parse(`
-(2x - 5)(3x + 5)
-`);
-console.log(astLog(k));
+const cbinop = (op: PairBinop) => (a: Cpx, b: Cpx) => (
+  pbinop(op, "complex")(a, b)
+);
+
+// deno-fmt-ignore
+const complexStr = ([a,b]:Cpx) => (
+  b === 0 ? [a,'i']
+    : b > 0
+    ? [a,' + ',b,'i']
+    : [a,' - ',b,'i']
+).join('')
+
+const qbinop = (op: PairBinop) => (a: Frac, b: Frac) => (
+  simplify(pbinop(op, "frac")(simplify(a), simplify(b)))
+);
+const qrel = (op: PairRel) => (a: Frac, b: Frac) => (
+  prel(op)(simplify(a), simplify(b))
+);
+
+/**
+ * Performs rational multiplication.
+ */
+const mulQ = qbinop((n1, d1, n2, d2) => [n1 * n2, d1 * d2]);
+
+/**
+ * Performs rational division.
+ */
+const divQ = qbinop((n1, d1, n2, d2) => [n1 * d1, d2 * n2]);
+/**
+ * Performs rational addition.
+ */
+const addQ = qbinop((n1, d1, n2, d2) => [
+  n1 * d2 + n2 * d1,
+  d1 * d2,
+]);
+/**
+ * Perform rational subtraction.
+ */
+const subQ = qbinop((n1, d1, n2, d2) => [
+  n1 * d2 - n2 * d1,
+  d1 * d2,
+]);
+
+const lteQ = qrel((n1, d1, n2, d2) => n1 * d2 <= n2 * d1);
+const ltQ = (a: Frac, b: Frac) => (lteQ(a, b) && !equalQ(a, b));
+const gtQ = (a: Frac, b: Frac) => (!lteQ(a, b));
+const gteQ = (a: Frac, b: Frac) => (gtQ(a, b) || equalQ(a, b));
+const addC = cbinop((a, b, c, d) => [a + c, b + d]);
+const subC = cbinop((a, b, c, d) => [a - c, b - d]);
+const mulC = cbinop((a, b, c, d) => [(a * c) - (b * d), (a * d) + (b * c)]);
+
+type RuntimeValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | number[]
+  | boolean[]
+  | null;
+
+const truthy = (value: RuntimeValue) => (
+  value ? true : false
+);
+const isnum = (x: any): x is number => (
+  typeof x === "number"
+);
+
+const numop = (x: number, op: tt, y: number) => {
+  // deno-fmt-ignore
+  switch (op) {
+    case tt.plus: return x + y;
+    case tt.minus: return x - y;
+    case tt.star: return x * y;
+    case tt.slash: return x / y;
+    case tt.caret: return x ** y;
+    case tt.mod: return ((x % y) + x) % y;
+    case tt.rem: return x % y;
+    case tt.lt: return x < y;
+    case tt.gt: return x > y;
+    case tt.leq: return x <= y;
+    case tt.geq: return x >= y;
+    case tt.neq: return x !== y;
+    case tt.deq: return x === y;
+    case tt.div: return Math.floor(x / y);
+    case tt.percent: return (100 * x) / y;
+    default: return 0;
+  }
+};
+
+class Interpreter implements Visitor<RuntimeValue> {
+  run(program: Program) {
+    if (program.error !== null) {
+      return program.error;
+    }
+    let out: RuntimeValue = null;
+    const nodes = program.nodes;
+    for (let i = 0; i < nodes.length; i++) {
+      out = this.evalnode(nodes[i]);
+    }
+    return out;
+  }
+  private evalnode(node: ASTNode) {
+    return node.accept(this);
+  }
+  complex(node: Complex): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  assign(node: Assign): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  binex(node: Binex): RuntimeValue {
+    const a = this.evalnode(node.left);
+    const b = this.evalnode(node.right);
+    if (isnum(a) && isnum(b)) return numop(a, node.op.type, b);
+    return null;
+  }
+  unex(node: Unex): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  call(node: Call): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  group(node: Group): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  vector(node: VectorExpr): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  matrix(node: MatrixExpr): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  int(node: Int): RuntimeValue {
+    return node.value;
+  }
+  float(node: Float): RuntimeValue {
+    return node.value;
+  }
+  tuple(node: Tuple): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  nil(node: Nil): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  rational(node: Rational): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  string(node: Str): RuntimeValue {
+    return node.value;
+  }
+  sym(node: Sym): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  algebra(node: Algebra): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  private evalblock(node: Block) {
+    let out: RuntimeValue = null;
+    const nodes = node.stmts;
+    for (let i = 0; i < nodes.length; i++) {
+      out = this.evalnode(nodes[i]);
+    }
+    return out;
+  }
+  block(node: Block): RuntimeValue {
+    return this.evalblock(node);
+  }
+  expression(node: Expression): RuntimeValue {
+    return this.evalnode(node.expression);
+  }
+  fn(node: Fn): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  predicate(node: Predicate): RuntimeValue {
+    const cond = this.evalnode(node.condition);
+    if (truthy(cond)) {
+      return this.evalnode(node.thenBranch);
+    } else {
+      return this.evalnode(node.elseBranch);
+    }
+  }
+  returnStmt(node: Return): RuntimeValue {
+    return this.evalnode(node.value);
+  }
+  vardef(node: VarDef): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+  loop(node: Loop): RuntimeValue {
+    throw new Error("Method not implemented.");
+  }
+}

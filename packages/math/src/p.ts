@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { choice, list, lit, regex } from "@weave/reed";
 import { floor } from "./index.js";
 
@@ -418,3 +419,137 @@ function parse(input: string | Tkn[]) {
 
 const p = parse(`3 + 8`);
 console.log(p);
+
+  /*evaluate(program: Program) {
+    if (program.error !== null) {
+      return program.error;
+    }
+    let result: Option<RuntimeValue> = none();
+    const nodes = program.nodes;
+    for (let i = 0; i < nodes.length; i++) {
+      result = this.evalnode(nodes[i]);
+    }
+    if (result._tag === "None") {
+      return null;
+    } else return result.value;
+  }*/
+  
+
+
+  
+class Ratio {
+  n: number;
+  d: number;
+  constructor([n, d]: [number, number]) {
+    this.n = n;
+    this.d = d;
+  }
+  invert() {
+    return Ratio.of(this.d, this.n);
+  }
+  abs() {
+    return Ratio.of(Math.abs(this.n), Math.abs(this.d));
+  }
+  static get one() {
+    return new Ratio([1, 1]);
+  }
+  static get infinity() {
+    return new Ratio([Infinity, Infinity]);
+  }
+  ceil() {
+    const one = new Ratio([1, 0]);
+    return this.equals(this.floor()) ? this : this.floor().add(one);
+  }
+  floor() {
+    const one = new Ratio([1, 0]);
+    const trunc = Ratio.of(this.n / this.d, 1);
+    if (this.gte(one) || trunc.equals(this)) {
+      return trunc;
+    }
+    return trunc.sub(one);
+  }
+  lt(other: Ratio) {
+    return this.lte(other) && !this.equals(other);
+  }
+
+  gt(other: Ratio) {
+    return !this.lte(other);
+  }
+
+  gte(other: Ratio) {
+    return this.gt(other) || this.equals(other);
+  }
+  lte(other: Ratio) {
+    const { n: thisN, d: thisD } = Ratio.of(
+      this.n,
+      this.d,
+    );
+    const { n: otherN, d: otherD } = Ratio.of(
+      other.n,
+      other.d,
+    );
+    return thisN * otherD <= otherN * thisD;
+  }
+  sub(x: Ratio) {
+    return Ratio.of(
+      this.n * x.d - x.n * this.d,
+      this.d * x.d,
+    );
+  }
+  add(x: Ratio) {
+    return Ratio.of(
+      this.n * x.d + x.n * this.d,
+      this.d * x.d,
+    );
+  }
+  div(x: Ratio) {
+    return Ratio.of(
+      this.n * x.d,
+      this.d * x.n,
+    );
+  }
+  times(x: Ratio) {
+    return Ratio.of(
+      x.n * this.d,
+      x.d * this.d,
+    );
+  }
+  toString() {
+    return `${this.n}/${this.d}`;
+  }
+  toFloat() {
+    return this.n / this.d;
+  }
+  equals(other: Ratio) {
+    const a = Ratio.from(this);
+    const b = Ratio.from(other);
+    return (
+      a.n === b.n &&
+      a.d === b.d
+    );
+  }
+  pair(): [number, number] {
+    return [this.n, this.d];
+  }
+  simplify() {
+    return Ratio.from(this);
+  }
+
+  static of(n: number, d: number) {
+    return new Ratio(simplify([n, d]));
+  }
+  static from(value: number | Ratio) {
+    if (typeof value === "number") {
+      return new Ratio(simplify(toFrac(value)));
+    } else {
+      return new Ratio(simplify(value.pair()));
+    }
+  }
+}
+
+const ratio = (n: number, d: number) => (
+  new Ratio([n, d])
+);
+
+const a = ratio(1, 2).sub(ratio(1, 2));
+console.log(a);
