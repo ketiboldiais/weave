@@ -1,4 +1,5 @@
 // § - Utility functions.
+const isnum = (x: any): x is number => typeof x === "number";
 /**
  * Utility function for printing the AST.
  */
@@ -406,6 +407,7 @@ enum nt {
   sym, unex, algebra, nil,
   tuple, vector, matrix,
   complex, bool, logic,
+  relation,
   
   block,expression,fn,predicate,
   return,vardef,loop,
@@ -427,6 +429,7 @@ interface Visitor<T> {
 
   assign(node: AssignExpr): T;
   binex(node: BinaryExpr): T;
+  relation(node: RelationExpr): T;
   unex(node: UnaryExpr): T;
   call(node: CallExpr): T;
   group(node: GroupExpr): T;
@@ -499,8 +502,26 @@ class BooleanLiteral extends Expr {
     this.value = value;
   }
 }
-const bool = (value: boolean) => (
+const boolval = (value: boolean) => (
   new BooleanLiteral(value)
+);
+
+class RelationExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.relation(this);
+  }
+  left: Expr;
+  op: Token;
+  right: Expr;
+  constructor(left: Expr, op: Token, right: Expr) {
+    super(nt.relation);
+    this.left = left;
+    this.op = op;
+    this.right = right;
+  }
+}
+const relation = (left: Expr, op: Token, right: Expr) => (
+  new RelationExpr(left, op, right)
 );
 
 // § - Assigment Node.
@@ -1361,8 +1382,8 @@ const parse = (text: string | Token[]) => {
       case tt.inf: return state.ok(int(Infinity));
       case tt.nan: return state.ok(int(NaN));
       case tt.float: return state.ok(float(lex));
-      case tt.true: return state.ok(bool(true));
-      case tt.false: return state.ok(bool(false));
+      case tt.true: return state.ok(boolval(true));
+      case tt.false: return state.ok(boolval(false));
       case tt.nil: return state.ok(nil());
       default: return state.err(`Expected atom, got ${lex}`, 'atom');
     }
@@ -1399,13 +1420,17 @@ const parse = (text: string | Token[]) => {
     return expr(p).chain((n) => state.ok(unex(op, n)));
   };
 
-  const logicInfix: Parslet = (op, node) => {
-    const p = precof(op.type);
-    return expr(p).chain((n) => {
-      return state.ok(logex(node, op, n));
-    });
-  };
+  const subInfix =
+    <T extends Expr>(fn: (left: Expr, op: Token, right: Expr) => T): Parslet =>
+    (op, node) => {
+      const p = precof(op.type);
+      return expr(p).chain((n) => {
+        return state.ok(fn(node, op, n));
+      });
+    };
 
+  const relationInfix: Parslet = subInfix(relation);
+  const logicInfix: Parslet = subInfix(logex);
   const infix: Parslet = (op, node) => {
     const p = precof(op.type);
     return expr(p).chain((n) => {
@@ -1619,12 +1644,14 @@ const parse = (text: string | Token[]) => {
     [tt.eq]: [__, assignment, bp.assign],
 
     // relational expressions
-    [tt.deq]: [__, infix, bp.eq],
-    [tt.neq]: [__, infix, bp.rel],
-    [tt.lt]: [__, infix, bp.rel],
-    [tt.gt]: [__, infix, bp.rel],
-    [tt.leq]: [__, infix, bp.rel],
-    [tt.geq]: [__, infix, bp.rel],
+    [tt.deq]: [__, relationInfix, bp.eq],
+    [tt.neq]: [__, relationInfix, bp.rel],
+    [tt.lt]: [__, relationInfix, bp.rel],
+    [tt.gt]: [__, relationInfix, bp.rel],
+    [tt.leq]: [__, relationInfix, bp.rel],
+    [tt.geq]: [__, relationInfix, bp.rel],
+
+    // atomic expressions
     [tt.sym]: [glyph, __, bp.atom],
     [tt.str]: [atom, __, bp.atom],
     [tt.int]: [atom, __, bp.atom],
@@ -1832,16 +1859,39 @@ const parse = (text: string | Token[]) => {
   return run();
 };
 
-type TypeName = "fraction" | "complex" | "error" | "number" | "bool";
+type TypeName =
+  | "fraction"
+  | "complex"
+  | "error"
+  | "number"
+  | "bool"
+  | "string"
+  | "empty"
+  | `list`
+  | "unknown";
 
 type RuntimeError = [string, "error"];
+type Str = [string, "string"];
+type Empty = [null, "empty"];
+const empty = (): Empty => [null, "empty"];
+const string = (value: string): Str => [value, "string"];
+type Num = [number, "number"];
+const num = (value: number): Num => [
+  value,
+  "number",
+];
 
+type Bool = [boolean, "bool"];
+const bool = (value: boolean): Bool => [
+  value,
+  "bool",
+];
 const croak = (message: string): RuntimeError => [
   message,
   "error",
 ];
 
-type Pair<N extends TypeName> = [number, number, N];
+type Pair<N extends TypeName> = [[number, number], N];
 
 type PairRel = (
   a: number,
@@ -1864,42 +1914,34 @@ const dne = (n: any): n is undefined => n === undefined;
 const unsafe = (n: any): n is null | undefined => (isnull(n) || dne(n));
 const safe = (n: any) => !unsafe(n);
 const isarray = (n: any) => Array.isArray(n);
-const isfrac = (n: any): n is Frac => (
-  safe(n) && isarray(n) && n.length === 3 && n[2] === "fraction"
-);
-const iscpx = (n: any): n is Cpx => (
-  safe(n) && isarray(n) && n.length === 3 && n[2] === "complex"
-);
-const isError = (n: any) => (
-  safe(n) && isarray(n) && n.length === 2 && n[1] === "error"
-);
 
-type Str = [string, "string"];
-const string = (value: string) => [value, "string"];
+const typeGuard =
+  <T extends RuntimeValue>(typename: TypeName) => (r: RuntimeValue): r is T => (
+    safe(r) && isarray(r) && r.length === 2 && r[1] === typename
+  );
 
-type Num = [number, "number"];
-const num = (value: number): Num => [
-  value,
-  "number",
-];
+const isFrac = typeGuard<Frac>("fraction");
+const isComplex = typeGuard<Cpx>("complex");
+const isError = typeGuard<RuntimeError>("error");
+const isList = typeGuard<ListValue>("list");
+const isNum = typeGuard<Num>("number");
+const isString = typeGuard<Str>("string");
+const isBool = typeGuard<Bool>("bool");
+const isEmpty = typeGuard<Empty>("empty");
 
-type Bool = [boolean, "bool"];
-const boolean = (value: boolean): Bool => [
-  value,
-  "bool",
-];
+type ListValue = [RuntimeValue[], "list"];
+
+const list = (values: RuntimeValue[]): ListValue => [values, "list"];
 
 type RuntimeValue =
   | Str
-  | number
+  | Num
   | Frac
   | Cpx
-  | boolean
+  | Bool
   | RuntimeError
-  | string[]
-  | number[]
-  | boolean[]
-  | null;
+  | ListValue
+  | Empty;
 
 // § - Unary Op Factory
 // deno-fmt-ignore
@@ -1928,14 +1970,25 @@ const remN = opN2((a, b) => a % b);
 const quotN = opN2((a, b) => floor(a / b));
 const percN = opN2((a, b) => (100 * a) / b);
 
-const unaryNumOp = (op: tt, x: number) => {
+const unaryNumOp = (op: tt, N: Num) => {
+  const x = N[0];
   // deno-fmt-ignore
   switch (op) {
-    case tt.minus: return negN(x);
-    case tt.plus: return plusN(x);
+    case tt.minus: return num(negN(x));
+    case tt.plus: return num(plusN(x));
     default: return nodefop(op, ["number", "number"]);
   }
 };
+
+//§ - Numeric Literary 2-ary relation factory
+const relN2 = (op: (a: number, b: number) => boolean) => (
+  (a: number, b: number) => op(a, b)
+);
+const ltN = relN2((a, b) => a < b);
+const gtN = relN2((a, b) => a > b);
+const leqN = relN2((a, b) => a <= b);
+const geqN = relN2((a, b) => a >= b);
+const eqN = relN2((a, b) => a === b);
 
 /**
  * Converts the provided number into a pair of integers (N,D),
@@ -1961,7 +2014,7 @@ const toFrac = (numberValue: number): Frac => {
     h = h2 + a * h1;
     k = k2 + a * k1;
   }
-  return [h, k, "fraction"];
+  return [[h, k], "fraction"];
 };
 
 /**
@@ -1984,28 +2037,28 @@ const gcd = (a: number, b: number) => {
  * Given a numerator `N` and a denominator `D`,
  * returns a simplified fraction.
  */
-const simplify = ([N, D]: Frac): Frac => {
+const simplify = ([[N, D]]: Frac): Frac => {
   const sgn = Math.sign(N) * Math.sign(D);
   const n = Math.abs(N);
   const d = Math.abs(D);
   const f = gcd(n, d);
-  return [(sgn * n) / f, d / f, "fraction"];
+  return [[(sgn * n) / f, d / f], "fraction"];
 };
 
 // deno-fmt-ignore
 const prel = <N extends TypeName>(op: PairRel) => (
-  [n1, d1]: Pair<N>,
-  [n2, d2]: Pair<N>,
+  [[n1, d1]]: Pair<N>,
+  [[n2, d2]]: Pair<N>,
 ): boolean => op(n1, d1, n2, d2);
 
 // deno-fmt-ignore
 const pbinop = <N extends TypeName>(op: PairBinop, kind: N) => (
-  [n1, d1]: Pair<N>,
-  [n2, d2]: Pair<N>,
-): Pair<N> => [...op(n1, d1, n2, d2), kind];
+  [[n1, d1]]: Pair<N>,
+  [[n2, d2]]: Pair<N>,
+): Pair<N> => [[...op(n1, d1, n2, d2)], kind];
 
-const frac = (a: number, b: number): Frac => [a, b, "fraction"];
-const cpx = (a: number, b: number = 0): Cpx => [a, b, "complex"];
+const frac = (a: number, b: number): Frac => [[a, b], "fraction"];
+const cpx = (a: number, b: number = 0): Cpx => [[a, b], "complex"];
 
 /**
  * Returns true if the two given fractions are equal.
@@ -2019,7 +2072,7 @@ const cbinop = (op: PairBinop) => (a: Cpx, b: Cpx) => (
 );
 
 // deno-fmt-ignore
-const complexStr = ([a,b]:Cpx) => (
+const complexStr = ([[a,b]]:Cpx) => (
   b === 0 ? [a,'i']
     : b > 0
     ? [a,' + ',b,'i']
@@ -2064,14 +2117,14 @@ const gteQ = (a: Frac, b: Frac) => (gtQ(a, b) || equalQ(a, b));
 const addC = cbinop((a, b, c, d) => [a + c, b + d]);
 const subC = cbinop((a, b, c, d) => [a - c, b - d]);
 const mulC = cbinop((a, b, c, d) => [(a * c) - (b * d), (a * d) + (b * c)]);
-const makeFrac = (a: Frac | number) => (
-  isfrac(a) ? a : toFrac(a)
+const makeFrac = (a: Frac | Num) => (
+  isFrac(a) ? a : toFrac(a[0])
 );
-const enfloat = (a: Frac) => (
+const enfloat = ([a]: Frac) => (
   a[0] / a[1]
 );
-const makeCpx = (a: Cpx | number | Frac) => (
-  iscpx(a) ? a : isfrac(a) ? cpx(enfloat(a)) : cpx(a)
+const makeCpx = (a: Cpx | Num | Frac) => (
+  isComplex(a) ? a : isFrac(a) ? cpx(enfloat(a)) : cpx(a[0])
 );
 const equalize = (u: number[], v: number[]): [number[], number[]] => (
   u.length === v.length
@@ -2121,25 +2174,22 @@ const xnorL = boolBinop((a, b) => !(xorL(a, b)));
 const norL = boolBinop((a, b) => !(a || b));
 const notL = (a: boolean) => !a;
 
-const logicop = (a: boolean, op: tt, b: boolean) => {
+const logicop = (A: Bool, op: tt, B: Bool) => {
+  const a = A[0];
+  const b = B[0];
   // deno-fmt-ignore
   switch (op) {
-    case tt.and: return andL(a, b);
-    case tt.nand: return nandL(a, b);
-    case tt.nor: return norL(a, b);
-    case tt.xor: return xorL(a, b);
-    case tt.xnor: return xnorL(a, b);
-    case tt.or: return orL(a,b);
+    case tt.and: return bool(andL(a, b));
+    case tt.nand: return bool(nandL(a, b));
+    case tt.nor: return bool(norL(a, b));
+    case tt.xor: return bool(xorL(a, b));
+    case tt.xnor: return bool(xnorL(a, b));
+    case tt.or: return bool(orL(a,b));
     default: return nodefop(op, ['bool', 'bool']);
   }
 };
 
-const truthy = (value: RuntimeValue) => (
-  value ? true : false
-);
-const isnum = (x: any): x is number => (
-  typeof x === "number"
-);
+const truthy = (value: RuntimeValue): Bool => [value ? true : false, "bool"];
 
 const nodefop = (op: tt, operands: TypeName[]) => (
   croak(
@@ -2166,44 +2216,67 @@ const fracop = (A: Frac, op: tt, B: Frac) => {
     case tt.minus: return subQ(A, B);
     case tt.star: return mulQ(A, B);
     case tt.slash: return divQ(A, B);
-    case tt.lt: return ltQ(A, B);
-    case tt.gt: return gtQ(A, B);
-    case tt.leq: return lteQ(A, B);
-    case tt.geq: return gteQ(A, B);
-    case tt.neq: return !equalQ(A, B);
-    case tt.deq: return equalQ(A, B);
     default: return nodefop(op, ['fraction', 'fraction']);
   }
 };
 
-const numop = (x: number, op: tt, y: number) => {
+const relQ = (A: Frac, op: tt, B: Frac) => {
   // deno-fmt-ignore
   switch (op) {
-    case tt.plus: return addN(x,y);
-    case tt.minus: return subN(x,y);
-    case tt.star: return mulN(x, y);
-    case tt.slash: return divN(x,y);
-    case tt.caret: return powN(x,y);
-    case tt.mod: return modN(x,y);
-    case tt.rem: return remN(x,y);
-    case tt.lt: return x < y;
-    case tt.gt: return x > y;
-    case tt.leq: return x <= y;
-    case tt.geq: return x >= y;
-    case tt.neq: return x !== y;
-    case tt.deq: return x === y;
-    case tt.div: return quotN(x,y);
-    case tt.percent: return percN(x,y);
+    case tt.lt: return bool(ltQ(A, B));
+    case tt.gt: return bool(gtQ(A, B));
+    case tt.leq: return bool(lteQ(A, B));
+    case tt.geq: return bool(gteQ(A, B));
+    case tt.neq: return bool(!equalQ(A, B));
+    case tt.deq: return bool(equalQ(A, B));
+    default: return nodefop(op, ["fraction", "fraction"]);
+  }
+};
+
+const numrel = (A: Num, op: tt, B: Num) => {
+  const x = A[0];
+  const y = B[0];
+  // deno-fmt-ignore
+  switch (op) {
+    case tt.lt: return bool(ltN(x, y));
+    case tt.gt: return bool(gtN(x, y));
+    case tt.leq: return bool(leqN(x, y));
+    case tt.geq: return bool(geqN(x, y));
+    case tt.neq: return bool(!eqN(x, y));
+    default: return nodefop(op, ["number", "number"]);
+  }
+};
+
+const numop = (A: Num, op: tt, B: Num) => {
+  const x = A[0];
+  const y = B[0];
+  // deno-fmt-ignore
+  switch (op) {
+    case tt.plus: return num(addN(x,y));
+    case tt.minus: return num(subN(x,y));
+    case tt.star: return num(mulN(x, y));
+    case tt.slash: return num(divN(x,y));
+    case tt.caret: return num(powN(x,y));
+    case tt.mod: return num(modN(x,y));
+    case tt.rem: return num(remN(x,y));
+    case tt.div: return num(quotN(x,y));
+    case tt.percent: return num(percN(x,y));
     default: return nodefop(op, ['number','number']);
   }
 };
+const isDivisible = (a: RuntimeValue): a is Frac | Num => (
+  isFrac(a) || isNum(a)
+);
+const isComplexable = (a: RuntimeValue): a is Frac | Cpx | Num => (
+  isComplex(a) || isnum(a) || isFrac(a)
+);
 
 class Interpreter implements Visitor<RuntimeValue> {
   run(program: Program) {
     if (program.error !== null) {
       return program.error;
     }
-    let out: RuntimeValue = null;
+    let out: RuntimeValue = empty();
     const nodes = program.nodes;
     for (let i = 0; i < nodes.length; i++) {
       out = this.evalnode(nodes[i]);
@@ -2213,13 +2286,26 @@ class Interpreter implements Visitor<RuntimeValue> {
   private evalnode(node: ASTNode) {
     return node.accept(this);
   }
+  relation(node: RelationExpr): RuntimeValue {
+    const a = this.evalnode(node.left);
+    const b = this.evalnode(node.right);
+    const op = node.op.type;
+    if (isNum(a) && isNum(b)) {
+      return numrel(a, op, b);
+    } else if (isDivisible(a) && isDivisible(b)) {
+      const A = makeFrac(a);
+      const B = makeFrac(b);
+      return relQ(A, op, B);
+    }
+    throw new Error("Method not implemented.");
+  }
   logic(node: LogicExpr): RuntimeValue {
     const a = this.evalnode(node.left);
     const b = this.evalnode(node.right);
     return logicop(truthy(a), node.op.type, truthy(b));
   }
   bool(node: BooleanLiteral): RuntimeValue {
-    return node.value;
+    return bool(node.value);
   }
   complex(node: ComplexLiteral): RuntimeValue {
     const r = node.r;
@@ -2232,27 +2318,24 @@ class Interpreter implements Visitor<RuntimeValue> {
   binex(node: BinaryExpr): RuntimeValue {
     const a = this.evalnode(node.left);
     const b = this.evalnode(node.right);
-    if (isnum(a) && isnum(b)) return numop(a, node.op.type, b);
-    if ((isfrac(a) || isnum(a)) && (isfrac(b) || isnum(b))) {
+    if (isNum(a) && isNum(b)) return numop(a, node.op.type, b);
+    if ((isDivisible(a)) && (isDivisible(b))) {
       const A = makeFrac(a);
       const B = makeFrac(b);
       return fracop(A, node.op.type, B);
     }
-    if (
-      (iscpx(a) || isnum(a) || isfrac(a)) &&
-      (iscpx(b) || isnum(b) || isfrac(b))
-    ) {
+    if ((isComplexable(a)) && (isComplexable(b))) {
       const A = makeCpx(a);
       const B = makeCpx(b);
       return cpxop(A, node.op.type, B);
     }
-    return null;
+    return empty();
   }
   unex(node: UnaryExpr): RuntimeValue {
     const arg = this.evalnode(node.arg);
     if (node.op.is(tt.not)) {
-      return !truthy(arg);
-    } else if (isnum(arg)) {
+      return bool(truthy(arg)[0]);
+    } else if (isNum(arg)) {
       return unaryNumOp(node.op.type, arg);
     }
     throw new Error("Method not implemented.");
@@ -2270,10 +2353,10 @@ class Interpreter implements Visitor<RuntimeValue> {
     throw new Error("Method not implemented.");
   }
   int(node: IntegerLiteral): RuntimeValue {
-    return node.value;
+    return num(node.value);
   }
   float(node: FloatLiteral): RuntimeValue {
-    return node.value;
+    return num(node.value);
   }
   tuple(node: TupleExpr): RuntimeValue {
     throw new Error("Method not implemented.");
@@ -2296,7 +2379,7 @@ class Interpreter implements Visitor<RuntimeValue> {
     throw new Error("Method not implemented.");
   }
   private evalblock(node: BlockStmt) {
-    let out: RuntimeValue = null;
+    let out: RuntimeValue = empty();
     const nodes = node.stmts;
     for (let i = 0; i < nodes.length; i++) {
       out = this.evalnode(nodes[i]);
@@ -2336,11 +2419,10 @@ const reduce = (program: Program) => (
 );
 
 const src = `
-fn f(x) {
-  let y = j = 4;
-  return y
-}
+1/2 + 3/4
 `;
-
+// console.log(addQ(frac(1,2),frac(3,4)))
 const j = parse(src);
+// const r = reduce(j);
 console.log(astLog(j));
+// console.log(r);
