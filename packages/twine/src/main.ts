@@ -34,8 +34,7 @@ import { nTuple } from "./nodes/node.tuple.js";
 import { nUnex } from "./nodes/node.unex.js";
 import { nVarDef } from "./nodes/node.vardef.js";
 import { nVector } from "./nodes/node.vector.js";
-import { nDerivative } from "./nodes/node.derivative.js";
-import {compile} from './compiler.js';
+import { compile } from "./compiler.js";
 
 const isWS = (c: string) => (
   c === " " ||
@@ -229,7 +228,6 @@ const char = (c: string) => {
     case "!": return token(tkn.bang);
     case "=": return token(tkn.eq);
     case '"': return token(tkn.string);
-    case `'`: return token(tkn.derivative);
     default: return token(tkn.unknown);
   }
 };
@@ -242,7 +240,6 @@ const keyword = (text: string) => {
 		case 'sqrt': return token(tkn.sqrt);
 		case 'fn': return token(tkn.fn);
 		case 'rem': return token(tkn.rem);
-		case 'div': return token(tkn.div);
 		case 'mod': return token(tkn.mod);
 		case 'and': return token(tkn.and);
 		case 'nand': return token(tkn.nand);
@@ -475,13 +472,13 @@ export function engine() {
   };
 
   const prefix = (op: Token) => {
-    const res = expr();
+    const res = expr(precOf(op._type));
     return res.map((arg) => nUnex(op, arg));
   };
 
   const infix = (op: Token) => {
     const lastnode = state._lastnode;
-    return expr().map((n) => nBinex(lastnode, op, n));
+    return expr(precOf(op._type)).map((n) => nBinex(lastnode, op, n));
   };
 
   const group = (op: Token) => {
@@ -604,7 +601,6 @@ export function engine() {
     [tkn.let]: [__, __, __o],
     [tkn.print]: [__, __, __o],
     [tkn.fn]: [__, __, __o],
-    [tkn.derivative]: [__, __, __o],
     [tkn.rem]: [__, infix, bp.quot],
     [tkn.div]: [__, infix, bp.quot],
     [tkn.mod]: [__, infix, bp.quot],
@@ -728,58 +724,12 @@ export function engine() {
     return right(nCond(cond.unwrap(), ifblock.unwrap(), elseblock));
   };
 
-  const derivativeExpr = () => {
-    // last call should be function statement
-    const name = state._prev;
-    const src = `derivative`;
-    if (!name.is(tkn.symbol)) {
-      const msg = `Expected identifier before derivative operator.`;
-      return report(src, msg);
-    }
-    let order = 0;
-    while (state.peekIs(tkn.derivative)) {
-      push();
-      order++;
-    }
-    const params: Token[] = [];
-    const t1 = push();
-    if (t1.isnt(tkn.left_paren)) {
-      const msg = `Expected “(” to open parameters.`;
-      return report(src, msg);
-    }
-    if (!state.peekIs(tkn.right_paren)) {
-      do {
-        const id = push();
-        if (id.isnt(tkn.symbol)) {
-          const msg = expect(`parameter name`, id);
-          return report(src, msg);
-        }
-        params.push(id);
-      } while (nextTokenIs(tkn.comma));
-    }
-    const t2 = push();
-    if (t2.isnt(tkn.right_paren)) {
-      const msg = `Expected “)” to close parameters.`;
-      return report(src, msg);
-    }
-    if (nextTokenIs(tkn.eq)) {
-      const body = exprStmt();
-      return body.map((b) => nDerivative(name, params, b, order));
-    } else {
-      const msg = `Expected “=” after derivative parameters.`;
-      return report(src, msg);
-    }
-  };
-
   const functionStmt = () => {
     const src = `functionStmt`;
     const name = push();
     if (name.isnt(tkn.symbol)) {
       const msg = expect(`identifer`, name);
       return report(src, msg);
-    }
-    if (state.peekIs(tkn.derivative)) {
-      return derivativeExpr();
     }
     const t1 = push();
     if (t1.isnt(tkn.left_paren)) {
@@ -878,4 +828,3 @@ export function engine() {
     tokenize,
   };
 }
-

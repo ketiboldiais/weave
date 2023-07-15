@@ -23,7 +23,6 @@ import { VarDef } from "./nodes/node.vardef.js";
 import { VectorExpr} from "./nodes/node.vector.js";
 import { Visitor } from "./nodes/node.visitor.js";
 import { Stack, stack } from "./nodes/stack.js";
-import {Derivative} from './nodes/node.derivative.js';
 
 export type LocalScope = Map<ASTNode, number>;
 export type Scope = Map<string, boolean>;
@@ -86,7 +85,7 @@ export class Resolver implements Visitor<void> {
     this.scopes.pop();
     return;
   }
-  private resolveFn(node: FunDef|Derivative, type: functionType): void {
+  private resolveFn(node: FunDef, type: functionType): void {
     const enclosingFunction = this.currentFunction;
     this.currentFunction = type;
     this.begin();
@@ -162,12 +161,6 @@ export class Resolver implements Visitor<void> {
     this.define(node.name._lexeme);
   }
   funStmt(node: FunDef): void {
-    this.declare(node.name);
-    this.define(node.name._lexeme);
-    this.resolveFn(node, functionType.function);
-    return;
-  }
-  derivative(node: Derivative): void {
     this.declare(node.name);
     this.define(node.name._lexeme);
     this.resolveFn(node, functionType.function);

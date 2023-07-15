@@ -1,5 +1,3 @@
-// § - Utility functions.
-const isnum = (x: any): x is number => typeof x === "number";
 /**
  * Utility function for printing the AST.
  */
@@ -82,14 +80,6 @@ const prog = (nodes: ASTNode[], error: string | null): Program => ({
   nodes,
   error,
 });
-
-/**
- * Utility function for generating ranges..
- */
-const range = (start: number, stop: number, step = 1): number[] =>
-  Array(Math.ceil((stop - start) / step)).fill(start).map((x, y) =>
-    x + y * step
-  );
 
 /**
  * Utility function for zipping lists.
@@ -247,13 +237,6 @@ enum tt {
   comma, dot, semicolon,
   dquote, quote,
 
-  /**
-   * A tilde token indicates to the parser
-   * that this particular string maps to an
-   * algebraic expression.
-   */
-  tilde, 
-	
   // § Binary-unary Operator Tokens
   minus, // subtraction and negation
   plus, // subtraction and positivization
@@ -273,7 +256,7 @@ enum tt {
 	rem, mod, div, call,
 
   id, str, int, float,
-  complex,
+  complex,rational,
   scinum,sym,
   
   // keywords
@@ -380,6 +363,22 @@ const cpxTkn = (r: number, op: "-" | "+", i: number) => (
 );
 const isCpxTkn = (t: Token): t is ComplexToken => (
   t.type === tt.complex
+);
+
+class RationalToken extends Token {
+  n: number;
+  d: number;
+  constructor(n: number, d: number) {
+    super(tt.rational, `${n}//${d}`);
+    this.n = n;
+    this.d = d;
+  }
+}
+const ratioTkn = (n: number, d: number) => (
+  new RationalToken(n, d)
+);
+const isRatioTkn = (t: Token): t is RationalToken => (
+  t.type === tt.rational
 );
 
 /**
@@ -1034,7 +1033,9 @@ const tokenize = (text: string) => {
       else return;
     }
   };
-  const digit = (init: tt.int | tt.float | tt.scinum) => {
+  const digit = (
+    init: tt.int | tt.float | tt.scinum | tt.rational | tt.complex,
+  ) => {
     let type = init;
     while (isDigit(peek(0)) && !atEnd()) {
       tick();
@@ -1060,11 +1061,26 @@ const tokenize = (text: string) => {
         }
       }
     }
-
+    if (
+      type === tt.int && peek(0) === "/" && peek(1) === "/" && isDigit(peek(2))
+    ) {
+      tick(); // eat the first '/'
+      tick(); // eat the second '/'
+      type = tt.rational;
+      while (isDigit(peek(0)) && !atEnd()) {
+        tick();
+      }
+    }
+    if (type === tt.rational) {
+      const [a, b] = str().split("//");
+      const n = Math.floor(+a);
+      const d = Math.floor(+b);
+      return ratioTkn(n, d);
+    }
     return newtkn(type);
   };
-  const string = (type: tt.str | tt.tilde) => {
-    const delimiter = type === tt.str ? `"` : `~`;
+  const string = (type: tt.str | tt.quote) => {
+    const delimiter = type === tt.str ? `"` : `'`;
     while (peek(0) !== delimiter && !atEnd()) {
       tick();
     }
@@ -1102,6 +1118,7 @@ const tokenize = (text: string) => {
       case 'else': return newtkn(tt.else);
       case 'struct': return newtkn(tt.struct);
       case "rem": return newtkn(tt.rem);
+      case "div": return newtkn(tt.div);
       case "mod": return newtkn(tt.mod);
       case "div": return newtkn(tt.div);
 			case 'sin':
@@ -1135,14 +1152,13 @@ const tokenize = (text: string) => {
 			case '/': return newtkn(tt.slash);
 			case '%': return newtkn(tt.percent);
 			case ';': return newtkn(tt.semicolon);
-			case `'`: return newtkn(tt.quote);
       case '@': return newtkn(tt.at);
 			case '!': return newtkn(match('=') ? tt.neq : tt.bang);
 			case '=': return newtkn(match('=') ? tt.deq : tt.eq);
 			case '<': return newtkn(match('=') ? tt.leq : tt.lt);
 			case '>': return newtkn(match('=') ? tt.geq : tt.gt);
       case `"`: return string(tt.str);
-			case '~': return string(tt.tilde);
+			case `'`: return string(tt.quote);
 		}
     return newtkn(tt.error, `unknown token [${c}]`);
   };
@@ -1477,10 +1493,7 @@ const parse = (text: string | Token[]) => {
   const infix: Parslet = (op, node) => {
     const p = precof(op.type);
     return expr(p).chain((n) => {
-      const out = (isIntNode(n) && isIntNode(node) && op.is(tt.slash))
-        ? (rational(node.value, n.value))
-        : (binex(node, op, n));
-      return state.ok(out);
+      return state.ok(binex(node, op, n));
     });
   };
 
@@ -1606,7 +1619,7 @@ const parse = (text: string | Token[]) => {
 
   const algebraString = (token: Token) => {
     const src = `algebraString`;
-    if (!token.is(tt.tilde)) {
+    if (!token.is(tt.quote)) {
       return state.err(`Unexpected algebra production`, src);
     }
     const s = token.lex;
@@ -1647,6 +1660,13 @@ const parse = (text: string | Token[]) => {
     return left(e);
   };
 
+  const fraction: Parslet = (t) => {
+    if (!isRatioTkn(t)) {
+      return state.err(`Expected rational number`, "fraction");
+    }
+    return state.ok(rational(t.n, t.d));
+  };
+
   const rules: PSpec = {
     [tt.empty]: [__, __, __o],
     [tt.eof]: [__, __, __o],
@@ -1656,7 +1676,6 @@ const parse = (text: string | Token[]) => {
     [tt.struct]: [__, __, __o],
     [tt.error]: [__, __, __o],
     [tt.dquote]: [__, __, __o],
-    [tt.quote]: [__, __, __o],
     [tt.lparen]: [primary, callExpression, bp.call],
     [tt.rparen]: [__, __, __o],
     [tt.lbrace]: [__, __, __o],
@@ -1703,6 +1722,7 @@ const parse = (text: string | Token[]) => {
     [tt.sym]: [atom, __, bp.atom],
     [tt.str]: [atom, __, bp.atom],
     [tt.int]: [atom, __, bp.atom],
+    [tt.rational]: [fraction, __, bp.atom],
     [tt.float]: [atom, __, bp.atom],
     [tt.scinum]: [scinum, __, bp.atom],
     [tt.true]: [atom, __, bp.atom],
@@ -1711,7 +1731,7 @@ const parse = (text: string | Token[]) => {
     [tt.inf]: [atom, __, bp.atom],
     [tt.nil]: [atom, __, bp.atom],
     [tt.call]: [nativeCall, __, bp.call],
-    [tt.tilde]: [algebraString, __, __o],
+    [tt.quote]: [algebraString, __, __o],
     [tt.let]: [__, __, __o],
     [tt.print]: [__, __, __o],
     [tt.fn]: [__, __, __o],
@@ -1827,6 +1847,15 @@ const parse = (text: string | Token[]) => {
 
   // § Parse Loop
   const LOOP = () => {
+    const cond = expr();
+    if (cond.isLeft()) return cond;
+    if (!state.nextIs(tt.lbrace)) {
+      const msg = `Expected block after condition.`;
+      return state.err(msg, "LOOP");
+    }
+    const body = STMT();
+    if (body.isLeft()) return body;
+    return state.ok(loop(cond.unwrap(), body.unwrap()));
   };
 
   // § Parse Predicate
@@ -1880,6 +1909,7 @@ const parse = (text: string | Token[]) => {
   };
 
   const STMT = (): Left<Err> | Right<Stmt> => {
+    if (state.nextIs(tt.while)) return LOOP();
     if (state.nextIs(tt.return)) return RETURN();
     if (state.nextIs(tt.let)) return LET();
     if (state.nextIs(tt.fn)) return FUNCTION();
@@ -1904,730 +1934,166 @@ const parse = (text: string | Token[]) => {
   return run();
 };
 
-class Fn {
-  private declaration: FunctionStmt;
-  private closure: Environment | null;
-  constructor(declaration: FunctionStmt, closure: Environment | null = null) {
-    this.declaration = declaration;
-    this.closure = closure;
-  }
-  call(interpreter: Interpreter, args: RuntimeValue[]) {
-    const env = new Environment(this.closure);
-    for (let i = 0; i < this.declaration.params.length; i++) {
-      const p = this.declaration.params[i];
-      const n = p.lex;
-      const arg = args[i];
-      env.define(n, arg);
-    }
-    const out = interpreter.execStmts(this.declaration.body, env);
-    return out;
-  }
-}
-
-type TypeName =
-  | "fraction"
-  | "complex"
-  | "error"
-  | "number"
-  | "bool"
-  | "string"
-  | "fn"
-  | "symbol"
-  | "empty"
-  | `list`
-  | "vector"
-  | "matrix"
-  | "unknown";
-type RuntimeFn = [Fn, "fn"];
-const fn = (
-  declaration: FunctionStmt,
-  env: Environment | null = null,
-): RuntimeFn => [new Fn(declaration, env), "fn"];
-
-const typeGuard =
-  <T extends RuntimeValue>(typename: TypeName) => (r: RuntimeValue): r is T => (
-    safe(r) && isarray(r) && r.length === 2 && r[1] === typename
-  );
-const isFn = typeGuard<RuntimeFn>("fn");
-const isFrac = typeGuard<Frac>("fraction");
-const isComplex = typeGuard<Cpx>("complex");
-const isError = typeGuard<RuntimeError>("error");
-const isList = typeGuard<ListValue>("list");
-const isNum = typeGuard<Num>("number");
-const isString = typeGuard<Str>("string");
-const isBool = typeGuard<Bool>("bool");
-const isEmpty = typeGuard<Empty>("empty");
-const isVector = typeGuard<VList>("vector");
-const isMatrix = typeGuard<Mtx>("matrix");
-const isSym = typeGuard<Sym>("symbol");
-const typename = (value: RuntimeValue) => value[1];
-
-type RuntimeError = [string, "error"];
-type Str = [string, "string"];
-const string = (value: string): Str => [value, "string"];
-
-type Empty = [null, "empty"];
-const empty = (): Empty => [null, "empty"];
-
-type Sym = [string, "symbol"];
-const sym = (value: string): Sym => [value, "symbol"];
-
-type Num = [number, "number"];
-const num = (value: number): Num => [
-  value,
-  "number",
-];
-
-type VList = [number[], "vector"];
-const vlist = (values: number[]): VList => [
-  values,
-  "vector",
-];
-type Mtx = [(number[])[], "matrix"];
-const mtx = (values: (number[])[]): Mtx => [
-  values,
-  "matrix",
-];
-
-type Bool = [boolean, "bool"];
-const bool = (value: boolean): Bool => [
-  value,
-  "bool",
-];
-const croak = (message: string): RuntimeError => [
-  message,
-  "error",
-];
-
-type Pair<N extends TypeName> = [[number, number], N];
-
-type PairRel = (
-  a: number,
-  b: number,
-  c: number,
-  d: number,
-) => boolean;
-
-type PairBinop = (
-  a: number,
-  b: number,
-  c: number,
-  d: number,
-) => [number, number];
-type Frac = Pair<"fraction">;
-type Cpx = Pair<"complex">;
-
-const isnull = (n: any): n is null => n === null;
-const dne = (n: any): n is undefined => n === undefined;
-const unsafe = (n: any): n is null | undefined => (isnull(n) || dne(n));
-const safe = (n: any) => !unsafe(n);
-const isarray = (n: any) => Array.isArray(n);
-
-type ListValue = [RuntimeValue[], "list"];
-
-const list = (values: RuntimeValue[]): ListValue => [values, "list"];
-
-type RuntimeValue =
-  | Str
-  | Num
-  | Frac
-  | Cpx
-  | Sym
-  | Bool
-  | RuntimeFn
-  | RuntimeError
-  | ListValue
-  | VList
-  | Mtx
-  | Empty;
-
-// § - Unary Op Factory
-// deno-fmt-ignore
-const opN1 = (op:(a:number) => number) => (
-  x:number
-) => op(x)
-
-const negN = opN1((a) => -a);
-const plusN = opN1((a) => +a);
-
-// § - Numeric Literal Binary Op Factory
-// deno-fmt-ignore
-const opN2 = (op: (a: number, b: number) => number) => (
-  x: number,
-  y: number,
-) => (op(x, y));
-
-const { floor, ceil } = Math;
-const addN = opN2((a, b) => a + b);
-const subN = opN2((a, b) => a - b);
-const mulN = opN2((a, b) => a * b);
-const divN = opN2((a, b) => a / b);
-const powN = opN2((a, b) => a ** b);
-const modN = opN2((a, b) => ((a % b) + b) % b);
-const remN = opN2((a, b) => a % b);
-const quotN = opN2((a, b) => floor(a / b));
-const percN = opN2((a, b) => (100 * a) / b);
-
-const unaryNumOp = (op: tt, N: Num) => {
-  const x = N[0];
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.minus: return num(negN(x));
-    case tt.plus: return num(plusN(x));
-    default: return nodefop(op, ["number", "number"]);
-  }
-};
-
-//§ - Numeric Literary 2-ary relation factory
-const relN2 = (op: (a: number, b: number) => boolean) => (
-  (a: number, b: number) => op(a, b)
-);
-const ltN = relN2((a, b) => a < b);
-const gtN = relN2((a, b) => a > b);
-const leqN = relN2((a, b) => a <= b);
-const geqN = relN2((a, b) => a >= b);
-const eqN = relN2((a, b) => a === b);
-
-/**
- * Converts the provided number into a pair of integers (N,D),
- * where `N` is the numerator and `D` is the
- * denominator.
- */
-const toFrac = (numberValue: number): Frac => {
-  let eps = 1.0E-15;
-  let h, h1, h2, k, k1, k2, a, x;
-  x = numberValue;
-  a = Math.floor(x);
-  h1 = 1;
-  k1 = 0;
-  h = a;
-  k = 1;
-  while (x - a > eps * k * k) {
-    x = 1 / (x - a);
-    a = Math.floor(x);
-    h2 = h1;
-    h1 = h;
-    k2 = k1;
-    k1 = k;
-    h = h2 + a * h1;
-    k = k2 + a * k1;
-  }
-  return [[h, k], "fraction"];
-};
-
-/**
- * Returns the greatest common denominator
- * of the provided integers `a` and `b`.
- */
-const gcd = (a: number, b: number) => {
-  a = Math.floor(a);
-  b = Math.floor(b);
-  let t = a;
-  while (b !== 0) {
-    t = b;
-    b = a % b;
-    a = t;
-  }
-  return a;
-};
-
-/**
- * Given a numerator `N` and a denominator `D`,
- * returns a simplified fraction.
- */
-const simplify = ([[N, D]]: Frac): Frac => {
-  const sgn = Math.sign(N) * Math.sign(D);
-  const n = Math.abs(N);
-  const d = Math.abs(D);
-  const f = gcd(n, d);
-  return [[(sgn * n) / f, d / f], "fraction"];
-};
-
-// deno-fmt-ignore
-const prel = <N extends TypeName>(op: PairRel) => (
-  [[n1, d1]]: Pair<N>,
-  [[n2, d2]]: Pair<N>,
-): boolean => op(n1, d1, n2, d2);
-
-// deno-fmt-ignore
-const pbinop = <N extends TypeName>(op: PairBinop, kind: N) => (
-  [[n1, d1]]: Pair<N>,
-  [[n2, d2]]: Pair<N>,
-): Pair<N> => [[...op(n1, d1, n2, d2)], kind];
-
-const frac = (a: number, b: number): Frac => [[a, b], "fraction"];
-const cpx = (a: number, b: number = 0): Cpx => [[a, b], "complex"];
-const toNumber = ([[a, b]]: Frac) => (a / b);
-
-// const callable = ()
-
-/**
- * Returns true if the two given fractions are equal.
- */
-const equalQ = (a: Frac, b: Frac) => (
-  zip(simplify(a), simplify(b)).reduce((p, [a, b]) => p && (a === b), true)
-);
-
-const cbinop = (op: PairBinop) => (a: Cpx, b: Cpx) => (
-  pbinop(op, "complex")(a, b)
-);
-
-// deno-fmt-ignore
-const complexStr = ([[a,b]]:Cpx) => (
-  b === 0 ? [a,'i']
-    : b > 0
-    ? [a,' + ',b,'i']
-    : [a,' - ',b,'i']
-).join('')
-
-const qbinop = (op: PairBinop) => (a: Frac, b: Frac) => (
-  simplify(pbinop(op, "fraction")(simplify(a), simplify(b)))
-);
-const qrel = (op: PairRel) => (a: Frac, b: Frac) => (
-  prel(op)(simplify(a), simplify(b))
-);
-
-/**
- * Performs rational multiplication.
- */
-const mulQ = qbinop((n1, d1, n2, d2) => [n1 * n2, d1 * d2]);
-
-/**
- * Performs rational division.
- */
-const divQ = qbinop((n1, d1, n2, d2) => [n1 * d1, d2 * n2]);
-/**
- * Performs rational addition.
- */
-const addQ = qbinop((n1, d1, n2, d2) => [
-  n1 * d2 + n2 * d1,
-  d1 * d2,
-]);
-/**
- * Perform rational subtraction.
- */
-const subQ = qbinop((n1, d1, n2, d2) => [
-  n1 * d2 - n2 * d1,
-  d1 * d2,
-]);
-
-const lteQ = qrel((n1, d1, n2, d2) => n1 * d2 <= n2 * d1);
-const ltQ = (a: Frac, b: Frac) => (lteQ(a, b) && !equalQ(a, b));
-const gtQ = (a: Frac, b: Frac) => (!lteQ(a, b));
-const gteQ = (a: Frac, b: Frac) => (gtQ(a, b) || equalQ(a, b));
-const addC = cbinop((a, b, c, d) => [a + c, b + d]);
-const subC = cbinop((a, b, c, d) => [a - c, b - d]);
-const mulC = cbinop((a, b, c, d) => [(a * c) - (b * d), (a * d) + (b * c)]);
-const makeFrac = (a: Frac | Num) => (
-  isFrac(a) ? a : toFrac(a[0])
-);
-const enfloat = ([a]: Frac) => (
-  a[0] / a[1]
-);
-const makeCpx = (a: Cpx | Num | Frac) => (
-  isComplex(a) ? a : isFrac(a) ? cpx(enfloat(a)) : cpx(a[0])
-);
-const equalize = (u: number[], v: number[]): [number[], number[]] => (
-  u.length === v.length
-    ? [u, v]
-    : (u.length > v.length
-      ? [u, [...v, ...(range(0, u.length - v.length).map((_) => 0))]]
-      : [v, [...u, ...(range(0, v.length - u.length).map((_) => 0))]])
-);
-
-// deno-fmt-ignore
-const vbinop = (
-  op: (a: number, b: number) => number, 
-  eq:boolean=true,
-) => (
-  u: number[], v: number[]
-) => (
-  (([A,B]:[number[],number[]]) => A.map((n,i) => op(n,B[i])))
-  (eq ? equalize(u,v) : [u,v])
-);
-
-/** Returns the component-wise sum. */
-const vadd = vbinop((a, b) => a + b);
-
-/** Returns the component-wise difference. */
-const vsub = vbinop((a, b) => a - b);
-
-/** Returns the component-wise product. */
-const vmul = vbinop((a, b) => a * b);
-
-const vdiv = vbinop((a, b) => a / b);
-
-/** Returns the dot product of the two number arrays. */
-const vdot = (A: number[], B: number[]) => (
-  (([a, b]: [number[], number[]]) =>
-    a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n))(equalize(A, B))
-);
-
-const vectorop = (A: VList, op: tt, B: VList) => {
-  const a = A[0];
-  const b = B[0];
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.plus: return vlist(vadd(a, b));
-    case tt.minus: return vlist(vsub(a, b));
-    case tt.star: return vlist(vmul(a, b));
-    case tt.at: return num(vdot(a,b));
-    case tt.slash: return vlist(vdiv(a,b));
-    default: return nodefop(op, ["vector", "vector"]);
-  }
-};
-
-// deno-fmt-ignore
-const boolBinop = (op: (a: boolean, b: boolean) => boolean) => (
-  A: boolean,
-  B: boolean,
-) => op(A, B);
-
-const andL = boolBinop((a, b) => a && b);
-const orL = boolBinop((a, b) => a || b);
-const nandL = boolBinop((a, b) => !(a && b));
-const xorL = boolBinop((a, b) => a !== b);
-const xnorL = boolBinop((a, b) => !(xorL(a, b)));
-const norL = boolBinop((a, b) => !(a || b));
-
-const logicop = (A: Bool, op: tt, B: Bool) => {
-  const a = A[0];
-  const b = B[0];
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.and: return bool(andL(a, b));
-    case tt.nand: return bool(nandL(a, b));
-    case tt.nor: return bool(norL(a, b));
-    case tt.xor: return bool(xorL(a, b));
-    case tt.xnor: return bool(xnorL(a, b));
-    case tt.or: return bool(orL(a,b));
-    default: return nodefop(op, ['bool', 'bool']);
-  }
-};
-
-const truthy = (value: RuntimeValue): Bool => [value ? true : false, "bool"];
-
-const nodefop = (op: tt, operands: TypeName[]) => (
-  croak(
-    `${operands.length}-ary operator “${tt[op]}” is not defined on (${
-      operands.join(" × ")
-    })`,
-  )
-);
-
-const cpxop = (A: Cpx, op: tt, B: Cpx) => {
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.plus: return addC(A, B);
-    case tt.minus: return subC(A, B);
-    case tt.star: return mulC(A, B);
-    default: return nodefop(op, ['complex', 'complex'])
-  }
-};
-
-const fracop = (A: Frac, op: tt, B: Frac) => {
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.plus: return addQ(A, B);
-    case tt.minus: return subQ(A, B);
-    case tt.star: return mulQ(A, B);
-    case tt.slash: return divQ(A, B);
-    default: return nodefop(op, ['fraction', 'fraction']);
-  }
-};
-
-const relQ = (A: Frac, op: tt, B: Frac) => {
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.lt: return bool(ltQ(A, B));
-    case tt.gt: return bool(gtQ(A, B));
-    case tt.leq: return bool(lteQ(A, B));
-    case tt.geq: return bool(gteQ(A, B));
-    case tt.neq: return bool(!equalQ(A, B));
-    case tt.deq: return bool(equalQ(A, B));
-    default: return nodefop(op, ["fraction", "fraction"]);
-  }
-};
-
-const numrel = (A: Num, op: tt, B: Num) => {
-  const x = A[0];
-  const y = B[0];
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.lt: return bool(ltN(x, y));
-    case tt.gt: return bool(gtN(x, y));
-    case tt.leq: return bool(leqN(x, y));
-    case tt.geq: return bool(geqN(x, y));
-    case tt.neq: return bool(!eqN(x, y));
-    default: return nodefop(op, ["number", "number"]);
-  }
-};
-
-const numop = (A: Num, op: tt, B: Num) => {
-  const x = A[0];
-  const y = B[0];
-  // deno-fmt-ignore
-  switch (op) {
-    case tt.plus: return num(addN(x,y));
-    case tt.minus: return num(subN(x,y));
-    case tt.star: return num(mulN(x, y));
-    case tt.slash: return num(divN(x,y));
-    case tt.caret: return num(powN(x,y));
-    case tt.mod: return num(modN(x,y));
-    case tt.rem: return num(remN(x,y));
-    case tt.div: return num(quotN(x,y));
-    case tt.percent: return num(percN(x,y));
-    default: return nodefop(op, ['number','number']);
-  }
-};
-const isDivisible = (a: RuntimeValue): a is Frac | Num => (
-  isFrac(a) || isNum(a)
-);
-const isComplexable = (a: RuntimeValue): a is Frac | Cpx | Num => (
-  isComplex(a) || isnum(a) || isFrac(a)
-);
-
-class Environment {
-  private values: Map<string, RuntimeValue> = new Map();
-  enclosing: Environment | null = null;
-  constructor(enclosing: Environment | null = null) {
-    this.enclosing = enclosing;
-  }
-  assign(name: string, value: RuntimeValue): RuntimeValue {
-    if (this.values.has(name)) {
-      this.values.set(name, value);
-      return value;
-    } else if (this.enclosing !== null) {
-      return this.enclosing.assign(name, value);
-    } else return croak(`Identifier ${name} is not defined.`);
-  }
-  define(name: string, value: RuntimeValue): RuntimeValue {
-    this.values.set(name, value);
-    return value;
-  }
-  get(name: string): RuntimeValue {
-    if (this.values.has(name)) {
-      return this.values.get(name)!;
-    } else if (this.enclosing !== null) {
-      return this.enclosing.get(name);
-    } else return croak(`Identifier ${name} does not exist.`);
-  }
-}
-
-class Interpreter implements Visitor<RuntimeValue> {
-  globals: Environment;
-  env: Environment;
-  error: null | RuntimeError = null;
-  constructor() {
-    this.globals = new Environment();
-    this.env = this.globals;
-  }
-  run(program: Program) {
-    if (program.error !== null) {
-      return croak(program.error);
-    }
-    let out: RuntimeValue = empty();
-    const nodes = program.nodes;
-    for (let i = 0; i < nodes.length; i++) {
-      out = this.evalnode(nodes[i]);
-      if (this.error) {
-        return this.error;
-      }
-    }
-    return out;
-  }
-  private evalnode(node: ASTNode) {
-    const out = node.accept(this);
-    if (isError(out)) {
-      this.error = out;
-    }
-    return out;
-  }
-  relation(node: RelationExpr): RuntimeValue {
-    const a = this.evalnode(node.left);
-    const b = this.evalnode(node.right);
-    const op = node.op.type;
-    if (isNum(a) && isNum(b)) {
-      return numrel(a, op, b);
-    } else if (isDivisible(a) && isDivisible(b)) {
-      const A = makeFrac(a);
-      const B = makeFrac(b);
-      return relQ(A, op, B);
-    }
-    return nodefop(op, [typename(a), typename(b)]);
-  }
-  logic(node: LogicExpr): RuntimeValue {
-    const a = this.evalnode(node.left);
-    const b = this.evalnode(node.right);
-    return logicop(truthy(a), node.op.type, truthy(b));
-  }
-  bool(node: BooleanLiteral): RuntimeValue {
-    return bool(node.value);
-  }
-  complex(node: ComplexLiteral): Cpx {
-    const r = node.r;
-    const i = node.i;
-    return cpx(r, i);
-  }
-  assign(node: AssignExpr): RuntimeValue {
-    const value = this.evalnode(node.value);
-    const name = node.name.lex;
-    const out = this.env.assign(name, value);
-    return out;
-  }
-  binex(node: BinaryExpr): RuntimeValue {
-    const a = this.evalnode(node.left);
-    const b = this.evalnode(node.right);
-    const op = node.op.type;
-    if (isNum(a) && isNum(b)) return numop(a, op, b);
-    if ((isDivisible(a)) && (isDivisible(b))) {
-      const A = makeFrac(a);
-      const B = makeFrac(b);
-      return fracop(A, op, B);
-    }
-    if ((isComplexable(a)) && (isComplexable(b))) {
-      const A = makeCpx(a);
-      const B = makeCpx(b);
-      return cpxop(A, op, B);
-    }
-    if (isVector(a) && isVector(b)) {
-      return vectorop(a, op, b);
-    }
-    return nodefop(op, [typename(a), typename(b)]);
-  }
-  unex(node: UnaryExpr): RuntimeValue {
-    const arg = this.evalnode(node.arg);
-    const op = node.op.type;
-    if (node.op.is(tt.not)) {
-      return bool(truthy(arg)[0]);
-    } else if (isNum(arg)) {
-      return unaryNumOp(op, arg);
-    }
-    return nodefop(op, [typename(arg)]);
-  }
-  private evalList(nodes: ASTNode[]) {
-    const out: RuntimeValue[] = [];
-    for (let i = 0; i < nodes.length; i++) {
-      out.push(this.evalnode(nodes[i]));
-    }
-    return out;
-  }
-  call(node: CallExpr): RuntimeValue {
-    const callee = this.evalnode(node.callee);
-    const args: RuntimeValue[] = [];
-    for (let i = 0; i < node.args.length; i++) {
-      args.push(this.evalnode(node.args[i]));
-    }
-    if (isFn(callee)) {
-      const f = callee[0];
-      return f.call(this, args);
-    }
-    return croak(`Only functions may be called`);
-  }
-  group(node: GroupExpr): RuntimeValue {
-    return this.evalnode(node.expr);
-  }
-  vector(node: VectorExpr): VList {
-    return vlist(
-      this.evalList(node.elements).map((v) =>
-        isNum(v) ? v[0] : (
-          isFrac(v) ? toNumber(v) : NaN
-        )
-      ),
-    );
-  }
-  matrix(node: MatrixExpr): Mtx {
-    const elements = node.elements.map((v) => this.vector(v)).map((vl) =>
-      vl[0]
-    );
-    return mtx(elements);
-  }
-  int(node: IntegerLiteral): RuntimeValue {
-    return num(node.value);
-  }
-  float(node: FloatLiteral): RuntimeValue {
-    return num(node.value);
-  }
-  tuple(node: TupleExpr): RuntimeValue {
-    return list(this.evalList(node.items));
-  }
-  nil(_: NullLiteral): RuntimeValue {
-    return empty();
-  }
-  rational(node: RationalLiteral): RuntimeValue {
-    const n = node.N;
-    const d = node.D;
-    return frac(n, d);
-  }
-  string(node: StringLiteral): RuntimeValue {
-    return string(node.value);
-  }
-  variable(node: VariableExpr): RuntimeValue {
-    return this.env.get(node.name.lex);
-  }
-  symbol(node: SymbolLiteral): RuntimeValue {
-    return sym(node.sym);
-  }
-  algebra(node: AlgebraExpr): RuntimeValue {
-    return this.evalnode(node.expr);
-  }
-  execStmts(nodes: Stmt[], env: Environment) {
-    let out: RuntimeValue = empty();
-    const previousEnv = this.env;
-    this.env = env;
-    for (let i = 0; i < nodes.length; i++) {
-      out = this.evalnode(nodes[i]);
-      if (nodes[i].type === nt.return) {
-        return out;
-      }
-    }
-    this.env = previousEnv;
-    return out;
-  }
-  block(node: BlockStmt): RuntimeValue {
-    return this.execStmts(node.stmts, new Environment(this.env));
-  }
-  expression(node: ExprStmt): RuntimeValue {
-    return this.evalnode(node.expression);
-  }
-  fn(node: FunctionStmt): Empty {
-    const f = fn(node, this.env);
-    this.env.define(node.name.lex, f);
-    return empty();
-  }
-  predicate(node: ConditionalStmt): RuntimeValue {
-    const cond = this.evalnode(node.condition);
-    if (truthy(cond)) {
-      return this.evalnode(node.thenBranch);
-    } else {
-      return this.evalnode(node.elseBranch);
-    }
-  }
-  returnStmt(node: ReturnStmt): RuntimeValue {
-    return this.evalnode(node.value);
-  }
-  vardef(node: VarDefStmt): RuntimeValue {
-    const value = this.evalnode(node.init);
-    this.env.define(node.name.lex, value);
-    return value;
-  }
-  loop(node: LoopStmt): RuntimeValue {
-    let out: RuntimeValue = empty();
-    while (truthy(this.evalnode(node.condition))) {
-      out = this.evalnode(node.body);
-    }
-    return out;
-  }
-}
-
-const reduce = (program: Program) => (
-  new Interpreter().run(program)
-);
+const print = (x: any) => (console.log(astLog(x)));
 
 const src = `
-~ 2xy - 5x^2 + 1 ~ 
+1//12 + 2//4
 `;
-// console.log(addQ(frac(1,2),frac(3,4)))
-const j = parse(src);
-// const r = reduce(j);
-console.log(astLog(j));
+const k = parse(src);
+print(k);
+
+class Ratio {
+  n: number;
+  d: number;
+  constructor(n: number, d: number) {
+    this.n = n;
+    this.d = d;
+  }
+}
+
+class Complex {
+  r: number;
+  d: number;
+  constructor(r: number, d: number) {
+    this.r = r;
+    this.d = d;
+  }
+}
+
+class Vector {
+  elements: number[];
+  constructor(elements: number[]) {
+    this.elements = elements;
+  }
+}
+
+class Matrix {
+  vectors: Vector[];
+  constructor(vectors: Vector[]) {
+    this.vectors = vectors;
+  }
+}
+
+class Sym {
+  s: string;
+  constructor(sym: string) {
+    this.s = sym;
+  }
+}
+
+class Binex {
+  left: Value;
+  op: string;
+  right: Value;
+  constructor(left: Value, op: string, right: Value) {
+    this.left = left;
+    this.op = op;
+    this.right = right;
+  }
+}
+
+class Callex {
+  op: string;
+  args: Value[];
+  constructor(op: string, args: Value[]) {
+    this.op = op;
+    this.args = args;
+  }
+}
+
+type Value =
+  | number
+  | string
+  | boolean
+  | null
+  | Vector
+  | Matrix
+  | Ratio
+  | Complex
+  | Sym
+  | Binex
+  | Callex;
+
+class Compiler implements Visitor<Value> {
+  int(node: IntegerLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  float(node: FloatLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  complex(node: ComplexLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  nil(node: NullLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  rational(node: RationalLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  string(node: StringLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  variable(node: VariableExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  bool(node: BooleanLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  symbol(node: SymbolLiteral): Value {
+    throw new Error("Method not implemented.");
+  }
+  assign(node: AssignExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  binex(node: BinaryExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  relation(node: RelationExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  unex(node: UnaryExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  call(node: CallExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  group(node: GroupExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  vector(node: VectorExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  matrix(node: MatrixExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  tuple(node: TupleExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  algebra(node: AlgebraExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  logic(node: LogicExpr): Value {
+    throw new Error("Method not implemented.");
+  }
+  block(node: BlockStmt): Value {
+    throw new Error("Method not implemented.");
+  }
+  expression(node: ExprStmt): Value {
+    throw new Error("Method not implemented.");
+  }
+  fn(node: FunctionStmt): Value {
+    throw new Error("Method not implemented.");
+  }
+  predicate(node: ConditionalStmt): Value {
+    throw new Error("Method not implemented.");
+  }
+  returnStmt(node: ReturnStmt): Value {
+    throw new Error("Method not implemented.");
+  }
+  vardef(node: VarDefStmt): Value {
+    throw new Error("Method not implemented.");
+  }
+  loop(node: LoopStmt): Value {
+    throw new Error("Method not implemented.");
+  }
+}

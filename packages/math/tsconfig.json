@@ -21,5 +21,8 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  // "exclude": ["src/parser.ts"]
+  "exclude": [
+    "src/engine/dupe.ts",
+    "src/engine/ll.ts"
+  ]
 }

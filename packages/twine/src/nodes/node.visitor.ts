@@ -16,7 +16,6 @@ import { Unex } from "./node.unex.js";
 import { VarDef } from "./node.vardef.js";
 import { VectorExpr } from "./node.vector.js";
 import { Tuple } from "./node.tuple.js";
-import {Derivative} from './node.derivative.js';
 
 export interface Visitor<t = any> {
   atom<x>(node: Atom<x>): t;
@@ -25,7 +24,6 @@ export interface Visitor<t = any> {
   setex(node: Setex): t;
   binex(node: Binex): t;
   unex(node: Unex): t;
-  derivative(node: Derivative): t;
   group(node: Group): t;
   tuple(node: Tuple): t;
   callex(node: Call): t;

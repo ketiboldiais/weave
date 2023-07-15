@@ -26,7 +26,6 @@ import { tkn } from "./token.js";
 import { RVal } from "./typings.js";
 import { env, Environment } from "./environment.js";
 import { LocalScope, resolve } from "./resolver.js";
-import { Derivative } from "./nodes/node.derivative.js";
 
 function tval(x: any): boolean {
   if (x === null) return false;
@@ -258,11 +257,6 @@ export class Compiler implements Visitor {
     const name = node.name._lexeme;
     this.env.write(name, fn);
     return fn;
-  }
-  derive1(node: Binex) {
-  }
-  derivative(node: Derivative) {
-    throw new Error('method unimplemented')
   }
   cmpBlock(block: Block, env: Environment<RVal>) {
     const stmts = block.stmts;

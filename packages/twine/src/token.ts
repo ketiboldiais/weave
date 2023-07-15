@@ -155,7 +155,6 @@ export enum tkn {
   null,
   if,
   else,
-  derivative,
 }
 
 export type $Token = {
