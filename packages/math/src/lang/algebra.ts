@@ -1,4 +1,7 @@
+import { simplify } from "../index.js";
 import {
+  addF,
+  divF,
   dne,
   Either,
   floor,
@@ -8,11 +11,16 @@ import {
   Left,
   left,
   mod,
+  mulF,
+  percent,
   print,
+  quot,
   Right,
   right,
   stringUnion,
   strTree,
+  subF,
+  toFrac,
   zip,
 } from "./util.js";
 
@@ -21,19 +29,25 @@ type CompositeNumber = "frac" | "sci";
 type Numeric = BasicNumber | CompositeNumber;
 type StmtKind = "fn" | "let" | "expr" | "if" | "loop" | "block";
 type NonNumeric = "bool" | "sym" | "string" | "nil";
-type NativeFn =
-  | "sin"
-  | "cos"
-  | "tan"
-  | "sum"
-  | "mul"
-  | "pow";
+type UnaryOperator = "-" | "+" | "!";
+
+/**
+ * A token type corresponding to built-in native
+ * functions.
+ */
+// deno-fmt-ignore
+type NativeFn = 
+  | "sin" | "cos" | "tan"
+  | 'lg' | 'ln' | 'log'
+  | "+" | "*";
+
 type Operator =
   | RelationalOperator
   | ArithmeticOperator
   | UnaryOperator
   | NativeFn
   | `call-${string}`;
+
 type ExprKind =
   | RelationalOperator
   | ArithmeticOperator
@@ -42,7 +56,8 @@ type ExprKind =
   | NonNumeric
   | CompositeNumber
   | NativeFn
-  | ":="
+  | `group`
+  | `assign`
   | `call`;
 type NodeKind = StmtKind | ExprKind;
 type RelationalOperator = ">" | "<" | "!=" | "<=" | ">=" | "==";
@@ -54,7 +69,6 @@ type Keyword =
   | "if"
   | "else"
   | "return";
-type UnaryOperator = "-" | "+" | "!";
 type Delimiter =
   | "("
   | ")"
@@ -613,7 +627,8 @@ const parserError = (message: string) => (
 );
 
 interface Visitor<T> {
-  num(node: Num): T;
+  integer(node: Integer): T;
+  float(node: Float): T;
   ratio(node: Ratio): T;
   symbol(node: Sym): T;
   nil(node: Nil): T;
@@ -633,12 +648,13 @@ interface Visitor<T> {
   exprStmt(node: ExprStmt): T;
 }
 
-interface ExprVisitor<T> {
+interface ExprOp<T> {
   nil(node: Nil): T;
+  integer(node: Integer): T;
+  float(node: Float): T;
   bool(node: Bool): T;
   string(node: Str): T;
   symbol(node: Sym): T;
-  num(node: Num): T;
   group(node: Group): T;
   relation(node: Relation): T;
   binary(node: Binary): T;
@@ -648,6 +664,10 @@ interface ExprVisitor<T> {
   nativeCall(node: NativeCall): T;
   assignment(node: Assignment): T;
 }
+const typeguard =
+  <T extends ASTNode>(kind: NodeKind) => (node: ASTNode): node is T => (
+    node.kind === kind
+  );
 
 class Program {
   statements: Stmt[];
@@ -673,77 +693,89 @@ abstract class ASTNode {
   abstract toString(): string;
 }
 
+// =====================================================================
+// § - Expression Nodes
+// =====================================================================
+/**
+ * An ADT corresponding to some expression.
+ * All expressions are either atoms:
+ *
+ * 1. integer,
+ * 2. float,
+ * 3. symbol,
+ * 4. constant,
+ * 5. bool,
+ * 6. string.
+ *
+ * Or they’re compound expressions:
+ *
+ * 1. Logic expressions of 'and', 'or', 'not', 'nor', 'xor', 'xnor',
+ *    and 'nand'.
+ * 2. Binary expressions of '+', '-', '^', '*', 'rem', 'mod',
+ *   'div', and '%'.
+ * 3. Unary expressions of '+', '-', or '!'.
+ * 3. Relational expressions of '==', '>', '<', '<=', '>=', and '!='.
+ * 4. Call expressions of the form `[symbol](...params)`
+ * 5. Set expressions of the form `{e_1,..., e_n}`, where `e` is an expression.
+ * 6. List expressions of the form `[e_1, ..., e_n]`, where `e` is an expression.
+ *
+ * Of these types, algebraic expressions are the following expressions:
+ *
+ * 1. integer
+ * 2. symbol
+ * 3. constant
+ * 4. binary expressions
+ * 5. unary expressions
+ * 6. call expressions
+ * 7. native call expressions
+ * 8. groups
+ */
 abstract class Expr extends ASTNode {
   kind: ExprKind;
-  abstract acceptExprOp<T>(visitor: ExprVisitor<T>): T;
+  abstract acceptExprOp<T>(visitor: ExprOp<T>): T;
   constructor(kind: ExprKind) {
     super(kind);
     this.kind = kind;
   }
-  abstract number_of_operands(): number;
 }
 
-interface AlgebraOp<T> {
-  nil(node: Nil): T;
-  symbol(node: Sym): T;
-  num(node: Num): T;
-  group(node: Group): T;
-  binary(node: Binary): T;
-  ratio(node: Ratio): T;
-  unary(node: Unary): T;
-  call(node: Call): T;
-  nativeCall(node: NativeCall): T;
-}
-
-abstract class AlgebraicExpr extends Expr {
-  abstract acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T;
-}
-
-/**
- * Returns true if the given node is an algebraic
- * expression.
- */
-const isAlgebraicExpr = (node: ASTNode): node is AlgebraicExpr => (
-  node instanceof AlgebraicExpr
-);
-
-class Nil extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.nil(this);
+abstract class Atom extends Expr {
+  kind: Numeric | NonNumeric;
+  constructor(kind: Numeric | NonNumeric) {
+    super(kind);
+    this.kind = kind;
   }
+}
+
+class Nil extends Atom {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.nil(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.nil(this);
   }
   value: null = null;
   constructor() {
     super("nil");
   }
-  number_of_operands(): number {
-    return 0;
-  }
   toString(): string {
     return "nil";
   }
 }
 const nil = () => (new Nil());
+const isNil = typeguard<Nil>("nil");
 
-class Bool extends Expr {
+class Bool extends Atom {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.bool(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.bool(this);
   }
   bool: boolean;
   constructor(value: boolean) {
     super("bool");
     this.bool = value;
-  }
-  number_of_operands(): number {
-    return 0;
   }
   toString(): string {
     return `${this.bool}`;
@@ -752,21 +784,19 @@ class Bool extends Expr {
 const bool = (value: boolean) => (
   new Bool(value)
 );
+const isBool = typeguard<Bool>("bool");
 
-class Str extends Expr {
+class Str extends Atom {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.string(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.string(this);
   }
   str: string;
   constructor(str: string) {
     super("string");
     this.str = str;
-  }
-  number_of_operands(): number {
-    return 0;
   }
   toString(): string {
     return this.str;
@@ -775,15 +805,13 @@ class Str extends Expr {
 const str = (value: string) => (
   new Str(value)
 );
+const isStr = typeguard<Str>("string");
 
-class Sym extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.symbol(this);
-  }
+class Sym extends Atom {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.symbol(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.symbol(this);
   }
   s: string;
@@ -791,13 +819,12 @@ class Sym extends AlgebraicExpr {
     super("sym");
     this.s = sym;
   }
-  number_of_operands(): number {
-    return 0;
-  }
   toString(): string {
     return this.s;
   }
 }
+
+const isSym = typeguard<Sym>("sym");
 
 const sym = (s: string) => (
   new Sym(s)
@@ -806,69 +833,117 @@ const isSymbol = (node: ASTNode): node is Sym => (
   node.kind === "sym"
 );
 
-/**
- * A number node hold either
- * an integer or a float, as set
- * by its type field.
- */
-class Num extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.num(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.num(this);
-  }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
-    return visitor.num(this);
-  }
+abstract class AtomicNumber extends Atom {
   n: number;
-  type: BasicNumber;
   constructor(n: number, type: BasicNumber) {
     super(type);
     this.n = n;
-    this.type = type;
-  }
-  number_of_operands(): number {
-    return 0;
   }
   toString(): string {
     return `${this.n}`;
   }
+  abstract pair(): [number, number];
 }
+
+const isNumval = (node: Expr): node is AtomicNumber => (
+  (node.kind === "int") || (node.kind === "float")
+);
+
+class Integer extends AtomicNumber {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.integer(this);
+  }
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
+    return visitor.integer(this);
+  }
+  type: "int" = "int";
+  constructor(value: number) {
+    super(floor(value), "int");
+  }
+  pair(): [number, number] {
+    return [this.n, 1];
+  }
+}
+const isInteger = typeguard<Integer>("int");
+
+class Float extends AtomicNumber {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.float(this);
+  }
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
+    return visitor.float(this);
+  }
+  type: "float" = "float";
+  constructor(value: number) {
+    super(value, "float");
+  }
+  pair(): [number, number] {
+    return simplify(toFrac(this.n));
+  }
+}
+/**
+ * Returns a new Num node
+ * of type `FLOAT`.
+ */
+const float = (n: string | number) => (
+  new Float((n as any) * 1)
+);
+
+const isFloat = typeguard<Float>("float");
 
 /**
  * Returns a new Num node
  * of type `INT`
  */
 const int = (n: string | number) => (
-  new Num(typeof n === "string" ? floor(+n) : floor(n), "int")
+  new Integer(typeof n === "string" ? floor(+n) : floor(n))
 );
 
-/**
- * Returns a new Num node
- * of type `FLOAT`.
- */
-const float = (n: string) => (
-  new Num(+n, "float")
-);
-
-class Group extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.group(this);
+class Ratio extends Atom {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.ratio(this);
   }
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
+    return visitor.ratio(this);
+  }
+  n: number;
+  d: number;
+  constructor(n: number, d: number) {
+    super("frac");
+    this.n = n;
+    this.d = d;
+  }
+  toString(): string {
+    return `${this.n}/${this.d}`;
+  }
+  pair(): [number, number] {
+    return [this.n, this.d];
+  }
+  static of(ns: [number, number]) {
+    const [a, b] = simplify(ns);
+    return new Ratio(a, b);
+  }
+}
+const ratio = (n: number, d: number) => (
+  new Ratio(n, d)
+);
+const isRatio = typeguard<Ratio>("frac");
+
+// =====================================================================
+// § - Compound Expression Nodes
+// =====================================================================
+
+class Group extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.group(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.group(this);
   }
   expression: Expr;
   constructor(expression: Expr) {
-    super(expression.kind);
+    super("group");
     this.expression = expression;
-  }
-  number_of_operands(): number {
-    return this.expression.number_of_operands();
   }
   toString(): string {
     return `(${this.expression.toString()})`;
@@ -877,12 +952,13 @@ class Group extends AlgebraicExpr {
 const group = (expression: Expr) => (
   new Group(expression)
 );
+const isGroup = typeguard<Group>("group");
 
 class Relation extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.relation(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.relation(this);
   }
   left: Expr;
@@ -894,84 +970,63 @@ class Relation extends Expr {
     this.op = op;
     this.right = rhs;
   }
-  number_of_operands(): number {
-    return 2;
-  }
+
   toString(): string {
     return `${this.left.toString()} ${this.op} ${this.right.toString()}`;
   }
 }
+const isRelation = (
+  node: ASTNode,
+): node is Relation => (node instanceof Relation);
 
 const relation = (lhs: Expr, op: RelationalOperator, rhs: Expr) => (
   new Relation(lhs, op, rhs)
 );
 
-class Binary extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.binary(this);
-  }
+type BinarySum = Binary<Expr, "+", Expr>;
+type BinaryProduct = Binary<Expr, "*", Expr>;
+
+class Binary<
+  A extends Expr = Expr,
+  OP extends ArithmeticOperator = ArithmeticOperator,
+  B extends Expr = Expr,
+> extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.binary(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.binary(this);
   }
-  left: Expr;
-  op: ArithmeticOperator;
-  right: Expr;
-  constructor(left: Expr, op: ArithmeticOperator, right: Expr) {
+  left: A;
+  op: OP;
+  right: B;
+  constructor(left: A, op: OP, right: B) {
     super(op);
     this.left = left;
     this.op = op;
     this.right = right;
   }
-  number_of_operands(): number {
-    return 2;
-  }
   toString(): string {
     return `${this.left.toString} ${this.op} ${this.right.toString}`;
   }
 }
+
 const binary = (left: Expr, op: ArithmeticOperator, right: Expr) => (
   new Binary(left, op, right)
 );
-
-class Ratio extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.ratio(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.ratio(this);
-  }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
-    return visitor.ratio(this);
-  }
-  n: number;
-  d: number;
-  constructor(n: number, d: number) {
-    super("frac");
-    this.n = n;
-    this.d = d;
-  }
-  number_of_operands(): number {
-    return 0;
-  }
-  toString(): string {
-    return `${this.n}/${this.d}`;
-  }
-}
-const ratio = (n: number, d: number) => (
-  new Ratio(n, d)
+const isBinary = (node: ASTNode): node is Binary => (node instanceof Binary);
+const isBinarySum = (node: ASTNode): node is BinarySum => (
+  isBinary(node) && node.op === "+"
+);
+const isBinaryProduct = (node: ASTNode): node is BinaryProduct => (
+  isBinary(node) && node.op === "*"
 );
 
-class Unary extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.unary(this);
-  }
+class Unary extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.unary(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.unary(this);
   }
   op: UnaryOperator;
@@ -983,31 +1038,25 @@ class Unary extends AlgebraicExpr {
     this.arg = arg;
     this.fix = fix;
   }
-  number_of_operands(): number {
-    return 1;
-  }
   toString(): string {
     return this.fix === 0
       ? `${this.op}(${this.arg.toString()})`
       : `${this.arg.toString()}${this.op}`;
   }
 }
-
 const unaryPrefix = (op: UnaryOperator, arg: Expr) => (
   new Unary(op, arg, 0)
 );
 const unaryPostfix = (op: UnaryOperator, arg: Expr) => (
   new Unary(op, arg, 1)
 );
+const isUnary = (node: ASTNode): node is Unary => (node instanceof Unary);
 
-class Call extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.call(this);
-  }
+class Call extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.call(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.call(this);
   }
   f: Expr;
@@ -1017,62 +1066,55 @@ class Call extends AlgebraicExpr {
     this.f = f;
     this.args = args;
   }
-  number_of_operands(): number {
-    return this.args.length;
-  }
   toString(): string {
     return `${this.f.toString()}(${
       this.args.map((v) => v.toString()).join(",")
     })`;
   }
 }
-
 const call = (f: Expr, args: Expr[]) => (
   new Call(f, args)
 );
+const isCall = (node: ASTNode): node is Call => (node instanceof Call);
 
-class NativeCall extends AlgebraicExpr {
-  acceptAlgebraOp<T>(visitor: AlgebraOp<T>): T {
-    return visitor.nativeCall(this);
-  }
+class NativeCall<F extends NativeFn = NativeFn> extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.nativeCall(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.nativeCall(this);
   }
-  name: NativeFn;
+  name: F;
   args: Expr[];
-  constructor(name: NativeFn, args: Expr[]) {
+  constructor(name: F, args: Expr[]) {
     super(name);
     this.name = name;
     this.args = args;
-  }
-  number_of_operands(): number {
-    return this.args.length;
   }
   toString(): string {
     return `${this.name}(${this.args.map((v) => v.toString()).join(",")})`;
   }
 }
+
 const nativeCall = (name: NativeFn, args: Expr[]) => (
   new NativeCall(name, args)
 );
+const isNativeCall = (
+  node: ASTNode,
+): node is NativeCall => (node instanceof NativeCall);
 
 class Assignment extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.assignment(this);
   }
-  acceptExprOp<T>(visitor: ExprVisitor<T>): T {
+  acceptExprOp<T>(visitor: ExprOp<T>): T {
     return visitor.assignment(this);
   }
-  number_of_operands(): number {
-    return 1;
-  }
+
   name: string;
   expr: Expr;
   constructor(name: string, expr: Expr) {
-    super(":=");
+    super("assign");
     this.name = name;
     this.expr = expr;
   }
@@ -1083,6 +1125,13 @@ class Assignment extends Expr {
 const assignment = (name: string, expr: Expr) => (
   new Assignment(name, expr)
 );
+const isAssignment = (
+  node: ASTNode,
+): node is Assignment => (node instanceof Assignment);
+
+// =====================================================================
+// § - Statement Nodes
+// =====================================================================
 
 abstract class Stmt extends ASTNode {
   kind: StmtKind;
@@ -1133,9 +1182,6 @@ class VarStmt extends Stmt {
     this.name = name;
     this.init = init;
   }
-  number_of_operands(): number {
-    return this.init.number_of_operands();
-  }
 }
 const varStmt = (name: string, init: Expr) => (
   new VarStmt(name, init)
@@ -1153,9 +1199,6 @@ class FnStmt extends Stmt {
     this.name = name;
     this.args = args;
     this.body = body;
-  }
-  number_of_operands(): number {
-    return this.args.length;
   }
 }
 const fnStmt = (name: string, args: string[], body: Stmt) => (
@@ -1180,6 +1223,9 @@ const ifStmt = (condition: Expr, thenBranch: Stmt, elseBranch: Stmt) => (
   new IfStmt(condition, thenBranch, elseBranch)
 );
 
+// =====================================================================
+// § - Parser State
+// =====================================================================
 /**
  * An object encapsulation of
  * all global state data during
@@ -1201,9 +1247,11 @@ class ParserState {
     "cos",
     "sin",
     "tan",
-    "sum",
-    "mul",
-    "pow",
+    "lg",
+    "ln",
+    "log",
+    "+",
+    "*",
   ]);
   isNative(t: string): t is NativeFn {
     return this.nativeFns.has(t as any);
@@ -1319,6 +1367,10 @@ type Parslet = (
 ) => Either<Err, Expr>;
 type PEntry = [Parslet, Parslet, number];
 type PSpec = Record<tt, PEntry>;
+
+// =====================================================================
+// § - Parse Function
+// =====================================================================
 
 const parse = (input: string) => {
   const expected = (exp: string, actual: string) => (
@@ -1683,55 +1735,6 @@ const parse = (input: string) => {
   };
 };
 
-class Operand implements ExprVisitor<Expr> {
-  i: number;
-  constructor(operandIndex: number) {
-    this.i = operandIndex;
-  }
-  evalnode(node: Expr) {
-    return node.acceptExprOp(this);
-  }
-  nil(node: Nil): Expr {
-    return node;
-  }
-  bool(node: Bool): Expr {
-    return node;
-  }
-  string(node: Str): Expr {
-    return node;
-  }
-  symbol(node: Sym): Expr {
-    return node;
-  }
-  num(node: Num): Expr {
-    return node;
-  }
-  group(node: Group): Expr {
-    return this.evalnode(node.expression);
-  }
-  relation(node: Relation): Expr {
-    return mod(2, this.i) === 0 ? node.right : node.left;
-  }
-  binary(node: Binary): Expr {
-    return mod(2, this.i) === 0 ? node.right : node.left;
-  }
-  ratio(node: Ratio): Expr {
-    return mod(2, this.i) === 0 ? int(node.n) : int(node.d);
-  }
-  unary(node: Unary): Expr {
-    return node.arg;
-  }
-  call(node: Call): Expr {
-    return node.args[mod(node.number_of_operands(), this.i)];
-  }
-  nativeCall(node: NativeCall): Expr {
-    return node.args[mod(node.number_of_operands(), this.i)];
-  }
-  assignment(node: Assignment): Expr {
-    return node.expr;
-  }
-}
-
 const parens = (s: string | number) => `(${s})`;
 const concat = (s: (string | number)[]) => s.join("");
 const commaSep = (s: (string | number)[]) => s.join(",");
@@ -1748,19 +1751,149 @@ const construct = (f: Operator, args: (string | number)[]) => {
   return parse(expr).parseExpression();
 };
 
-const freeOf = (
-  u: string,
-  t: string,
-) => (
-  stringUnion(u, t) === -1 ? true : false
+const arithmetic = (a: number, op: ArithmeticOperator, b: number) => {
+  // deno-fmt-ignore
+  switch (op) {
+    case "%": return percent(a, b);
+    case "*": return a * b;
+    case "+": return a + b;
+    case "-": return a - b;
+    case "/": return a / b;
+    case "^": return a ** b;
+    case "div": return quot(a, b);
+    case "mod": return mod(a, b);
+    case "rem": return a % b;
+  }
+};
+const castnum = (a: AtomicNumber, b: AtomicNumber) => (
+  (isFloat(a) || isFloat(b)) ? float : int
 );
 
-const operand = (u: Either<Err, Expr>, i: number) => (
-  u.map((u) => new Operand(i - 1).evalnode(u))
+const fracOp = (
+  a: [number, number],
+  op: ArithmeticOperator,
+  b: [number, number],
+) => {
+  // deno-fmt-ignore
+  switch (op) {
+    case "%": return ratio(NaN, NaN);
+    case "*": return Ratio.of(mulF(a, b));
+    case "+": return Ratio.of(addF(a, b));
+    case "-": return Ratio.of(subF(a, b));
+    case "/": return Ratio.of(divF(a, b));
+    
+  }
+};
+
+const sortnodes = (nodes: Expr[]) => {
+  const out = [...nodes].sort((a, b) => {
+    const A = a.toString();
+    const B = b.toString();
+    if (A < B) return -1;
+    return 1;
+  });
+  return out;
+};
+
+class Reducer implements ExprOp<Expr> {
+  reduce(node: Expr) {
+    const out = this.evalnode(node);
+    return out;
+  }
+  private evalnode(node: Expr) {
+    const out = node.acceptExprOp(this);
+    return out;
+  }
+  nil(node: Nil): Expr {
+    return node;
+  }
+  integer(node: Integer): Expr {
+    return node;
+  }
+  float(node: Float): Expr {
+    return node;
+  }
+  bool(node: Bool): Expr {
+    return node;
+  }
+  string(node: Str): Expr {
+    return node;
+  }
+  symbol(node: Sym): Expr {
+    return node;
+  }
+  group(node: Group): Expr {
+    return this.evalnode(node.expression);
+  }
+  relation(node: Relation): Expr {
+    return node;
+  }
+  binary(node: Binary): Expr {
+    const L = this.evalnode(node.left);
+    const R = this.evalnode(node.right);
+    const op = node.op;
+    if (isNumval(L) && isNumval(R)) {
+      if (op === "/") {
+        return this.evalnode(ratio(L.n, R.n));
+      }
+      const res = arithmetic(L.n, op, R.n);
+      const f = castnum(L, R);
+      return f(res);
+    }
+    if (op === "*") {
+      if (isBinaryProduct(L)) {
+        return this.evalnode(nativeCall(op, [L.left, L.right, R]));
+      }
+      if (isBinaryProduct(R)) {
+        return this.evalnode(nativeCall(op, [L, R.left, R.right]));
+      }
+    }
+    if (op === "+") {
+      if (isBinarySum(L)) {
+        return this.evalnode(nativeCall(op, [L.left, L.right, R]));
+      }
+      if (isBinarySum(R)) {
+        return this.evalnode(nativeCall(op, [L, R.left, R.right]));
+      }
+    }
+    return binary(L, op, R);
+  }
+  ratio(node: Ratio): Expr {
+    return node;
+  }
+  unary(node: Unary): Expr {
+    return node;
+  }
+  call(node: Call): Expr {
+    return node;
+  }
+  nativeCall(node: NativeCall): Expr {
+    const name = node.name;
+    const args: Expr[] = [];
+    const evaluatedArgs = node.args.map((a) => this.evalnode(a));
+    for (let i = 0; i < evaluatedArgs.length; i++) {
+      const arg = evaluatedArgs[i];
+      if (name === "*" && isBinaryProduct(arg)) {
+        args.push(arg.left, arg.right);
+      } else {
+        args.push(arg);
+      }
+    }
+    return nativeCall(name, sortnodes(args));
+  }
+  assignment(node: Assignment): Expr {
+    return node;
+  }
+}
+
+const reduce = (expr: Either<Err, Expr>) => (
+  expr.map((x) => new Reducer().reduce(x))
 );
+
 const src = `
-let apple_ = 5;
-let bananas_ = 10;
+1/2 + 5
 `;
-const k = parse(src).run();
-print(strTree(k));
+const p = parse(src).parseExpression();
+
+// print(strTree(reduce(p)));
+print(reduce(p));

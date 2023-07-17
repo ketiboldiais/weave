@@ -481,9 +481,9 @@ export const simplify = ([N, D]: [number, number]): [number, number] => {
  * of the subject (given that all strings contain the empty string).
  * If the subject does not contain the empty string, returns `-1`.
  * Otherwise, returns the starting index of the target.
- * 
+ *
  * @param subject - The string to look for target in.
- * @param target - The substring to search for. 
+ * @param target - The substring to search for.
  */
 export const stringUnion = (subject: string, target: string) => {
   const H = subject.length;
@@ -526,6 +526,47 @@ export const stringUnion = (subject: string, target: string) => {
   return -1;
 };
 
+const id = <T>(x: T) => x;
 
+// deno-fmt-ignore
+const binop = (op: (a: number, b: number) => number, and: (f: number) => number = id) => (
+  [a, b]: [number, number]) => (op(a, b)
+);
 
+// deno-fmt-ignore
+const pairOp2 = (binop:((x1:number, y1:number, x2:number, y2:number) => [number,number]), and: (f: [number,number]) => [number, number] = id) => (
+  [a,b]:[number, number],
+  [c,d]:[number,number],
+) => (
+  and(binop(a, b, c, d))
+)
 
+/**
+ * Returns the rational product of the given pair of numbers (interpreted
+ * as rationals).
+ */
+export const mulF = pairOp2((a, b, c, d) => [a * c, b * d], simplify);
+
+/**
+ * Returns the rational quotient of the given pair of numbers (interpreted
+ * as rationals; no checks for zero denominators).
+ */
+export const divF = pairOp2((a, b, c, d) => [a * d, b * c], simplify);
+
+/**
+ * Returns the rational sum of the given pair of numbers (interpreted
+ * as rationals).
+ */
+export const addF = pairOp2(
+  (n1, d1, n2, d2) => [(n1 * d2) + (n2 * d1), d1 * d2],
+  simplify,
+);
+
+/**
+ * Returns the rational difference of the given pair of numbers (interpreted
+ * as rationals).
+ */
+export const subF = pairOp2(
+  (n1, d1, n2, d2) => [(n1 * d2) - (n2 * d1), d1 * d2],
+  simplify,
+);
