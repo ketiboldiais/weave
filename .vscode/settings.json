@@ -2,5 +2,7 @@
 	"editor.wordWrapColumn": 100,
 	"svelte.plugin.svelte.format.config.printWidth": 100,
 	"editor.wordWrap": "wordWrapColumn",
-	"editor.fontLigatures": false
+	"editor.fontLigatures": true,
+	"javascript.preferences.quoteStyle": "single",
+	"typescript.preferences.quoteStyle": "single"
 }

@@ -34,7 +34,7 @@ export const mod = (n: number, d: number) => ((n % d) + d) % d;
  * where `N` is the numerator and `D` is the
  * denominator.
  */
-export function toFrac(numberValue: number) {
+export const toFrac = (numberValue: number): [number, number] => {
   let eps = 1.0E-15;
   let h, h1, h2, k, k1, k2, a, x;
   x = numberValue;
@@ -54,25 +54,25 @@ export function toFrac(numberValue: number) {
     k = k2 + a * k1;
   }
   return [h, k];
-}
+};
 
 /**
  * Given a numerator `N` and a denominator `D`,
  * returns a simplified fraction.
  */
-export function simplify([N, D]: [number, number]) {
+export const simplify = ([N, D]: [number, number]): [number, number] => {
   const sgn = Math.sign(N) * Math.sign(D);
   const n = Math.abs(N);
   const d = Math.abs(D);
   const f = gcd(n, d);
   return [(sgn * n) / f, (sgn * d) / f];
-}
+};
 
 /**
  * Returns the greatest common denominator
  * of the provided integers `a` and `b`.
  */
-export function gcd(a: number, b: number) {
+export const gcd = (a: number, b: number) => {
   a = Math.floor(a);
   b = Math.floor(b);
   let t = a;
@@ -82,7 +82,7 @@ export function gcd(a: number, b: number) {
     a = t;
   }
   return a;
-}
+};
 
 export const floor = Math.floor;
 export const cos = Math.cos;
