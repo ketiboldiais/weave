@@ -33,12 +33,12 @@ export class Plot extends PLOT_BASE {
     const f = this.fn;
     if (f === null) return out;
     const space = this.space();
-    const xmin = space.xmin();
-    const xmax = space.xmax();
-    const ymin = space.ymin();
-    const ymax = space.ymax();
-    const xs = space.scaleOf("x");
-    const ys = space.scaleOf("y");
+    const xmin = space.domainMin;
+    const xmax = space.domainMax;
+    const ymin = space.rangeMin;
+    const ymax = space.rangeMax;
+    const xs = space.dscale();
+    const ys = space.rscale();
     const samples = this.samples;
     const dataset: [number, number][] = [];
     for (let i = -samples; i < samples; i++) {

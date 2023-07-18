@@ -1,4 +1,4 @@
-import { axis, color, plane, quad } from "@weave/loom";
+import { axis, color, plane, quad, space } from "@weave/loom";
 import { Figure } from "../components/figure";
 
 const rects = plane([
@@ -11,6 +11,6 @@ const rects = plane([
     quad(1, 1).at(3, 1),
     quad(1, 2.5).at(4, 2.5),
   ].map((q) => q.fill(color("beige")).stroke(color("goldenrod"))),
-]).margin(50, 100).size(500, 300).x(0, 5).y(0, 5).figure();
+]).context(space(500,300).margin(50,100).dom(0,5).ran(0,5)).figure();
 
 export const Quad1 = () => <Figure of={rects} />;

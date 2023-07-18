@@ -31,13 +31,13 @@ export const Plane2D = ({ of }: Plane2DProps) => {
       </defs>
       {children.map((c, i) => (
         <Fragment key={`plane2d-${i}`}>
-          {isAxis(c) && <Axis2D of={c} />}
           {isPlot(c) && <Curve2D of={c} />}
           {isTextNode(c) && <Label of={c} />}
           {isCircle(c) && <C of={c} />}
           {isLine(c) && <L of={c} />}
           {isPath(c) && <Path2D of={c} />}
           {isQuad(c) && <Rect of={c} />}
+          {isAxis(c) && <Axis2D of={c} />}
         </Fragment>
       ))}
     </Fragment>

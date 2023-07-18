@@ -9,5 +9,6 @@ export const C = ({ of }: { of: Circle }) => (
     stroke={of.strokeColor || "currentColor"}
     strokeWidth={of.strokeWidth || 1}
     strokeDasharray={of.strokeDashArray || 0}
+    opacity={of.opacityValue||1}
   />
 );

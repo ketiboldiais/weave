@@ -1,4 +1,4 @@
-import { forceSpace, graph } from "@weave/loom";
+import { forceSpace, graph, space } from "@weave/loom";
 import { Figure } from "../components/figure.js";
 
 const d = forceSpace(graph({
@@ -9,7 +9,7 @@ const d = forceSpace(graph({
   e: ["k"],
   j: ["x"],
   n: ["g"],
-})).size(200,200).x(-5, 5).y(-5, 5).figure();
+})).context(space(200,200).dom(-5,5).ran(-5,5)).figure();
 
 export const ForceGraph1 = () => {
   return <Figure of={d} />;

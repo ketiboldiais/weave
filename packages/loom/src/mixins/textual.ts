@@ -1,9 +1,7 @@
-import { And, Axiom, Space2D } from "../index.js";
+import { And, Axiom } from "../index.js";
 
 export interface Textual {
   text: string|number;
-  space: () => Space2D;
-  scope(space: Space2D): this;
   FontColor?: string;
   FontFamily?: string;
   FontSize?: string;
@@ -27,11 +25,6 @@ export function textual<NodeClass extends Axiom>(
     text: string = "";
     write(text:string) {
       this.text=text;
-      return this;
-    }
-    space: () => Space2D = () => new Space2D();
-    scope(space: Space2D) {
-      this.space = () => space;
       return this;
     }
     FontColor?: string;

@@ -404,7 +404,7 @@ export function strTree<T extends Object>(
   return output;
 }
 
-export const { floor, ceil, abs, cos, sin, sign } = Math;
+export const { floor, ceil, abs, cos, sin, sign, pow, expm1 } = Math;
 
 export const mod = (a: number, b: number) => (
   ((a % b) + b) % b
@@ -420,12 +420,18 @@ export const percent = (a: number, b: number) => (
 
 export const print = console.log;
 
+const pm = (c: string) => (
+  Number.parseFloat(c + "1")
+);
+const exp10 = (n: number) => (10 ** n);
+
 /**
  * Converts the provided number into a pair of integers (N,D),
  * where `N` is the numerator and `D` is the
  * denominator.
  */
 export const toFrac = (numberValue: number): [number, number] => {
+  if (Number.isInteger(numberValue)) return [numberValue, 1];
   let eps = 1.0E-15;
   let h, h1, h2, k, k1, k2, a, x;
   x = numberValue;
@@ -472,7 +478,7 @@ export const simplify = ([N, D]: [number, number]): [number, number] => {
   const n = abs(N);
   const d = abs(D);
   const f = gcd(n, d);
-  return [(sgn * n) / f, (sgn * d) / f];
+  return [(sgn * n) / f, abs(d / f)];
 };
 
 /**
@@ -570,3 +576,37 @@ export const subF = pairOp2(
   (n1, d1, n2, d2) => [(n1 * d2) - (n2 * d1), d1 * d2],
   simplify,
 );
+
+const nthroot = (x: number, n: number): [number, number] => {
+  if (x === 1) return [1, 1];
+  if (x === 0) return [0, 1];
+  if (x < 0) return [1, 0];
+  const initEstimate = toFrac(pow(x, 1 / n));
+  const ITERATIONS = 3;
+  return [...new Array(ITERATIONS)].reduce((r) => {
+    return simplify([
+      ((n - 1) * pow(r[0], n)) + (x * pow(r[1], n)),
+      n * r[1] * pow(r[0], n - 1),
+    ]);
+  }, initEstimate);
+};
+
+const invertF = ([a, b]: [number, number]) => simplify([b, a]);
+const absF = ([a, b]: [number, number]) => simplify([abs(a), abs(b)]);
+
+export const powF = (
+  [n1, d1]: [number, number],
+  power: [number, number] | number,
+): [number, number] => {
+  const [n2, d2] = typeof power === "number" ? toFrac(power) : power;
+  const [nN, nD] = simplify([n2, d2]);
+  const [numer, denom] = simplify([n1, d1]);
+  if (nN < 0) return powF(invertF([numer, denom]), absF([nN, nD]));
+  if (nN === 0) return [1, 1];
+  if (nD === 1) return [numer ** nN, denom ** nN];
+  if (numer < 0 && nD !== 1) return [Infinity, Infinity];
+  const [newN, newD] = divF(nthroot(numer, nD), nthroot(denom, nD));
+  return simplify([pow(newN, nN), pow(newD, nN)]);
+};
+
+

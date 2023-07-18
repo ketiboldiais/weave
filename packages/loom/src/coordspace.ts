@@ -1,19 +1,45 @@
 import { interpolator } from "@weave/math";
-import { shift } from "./index.js";
+import { ScaleFn, shift } from "./index.js";
+import { Id } from "./aux.js";
 
-type CoordSystem = "polar" | "cartesian";
-class CoordSpace {
+export type CoordSystem = "polar" | "cartesian";
+export class CoordSpace {
   domain: [number, number] = [-10, 10];
   range: [number, number] = [-10, 10];
   width: number;
   height: number;
   system: CoordSystem = "cartesian";
+  private customDomFn: ScaleFn | null = null;
+  private customRanFn: ScaleFn | null = null;
+  dfn(f: ScaleFn) {
+    this.customDomFn = f;
+    return this;
+  }
+  rfn(f: ScaleFn) {
+    this.customRanFn = f;
+    return this;
+  }
   constructor(frameWidth: number, frameHeight: number) {
     this.width = frameWidth;
     this.height = frameHeight;
   }
+  ran(x: number, y: number) {
+    if (x < y) {
+      this.range = [x, y];
+    }
+    return this;
+  }
+  dom(x: number, y: number) {
+    if (x < y) {
+      this.domain = [x, y];
+    }
+    return this;
+  }
   private scalefn(of: "domain" | "range") {
     if (of === "domain") {
+      if (this.customDomFn !== null) {
+        return this.customDomFn;
+      }
       const width = this.vw;
       const xdomain: [number, number] = [0, width];
       return interpolator(
@@ -21,6 +47,9 @@ class CoordSpace {
         xdomain,
       );
     } else {
+      if (this.customRanFn !== null) {
+        return this.customRanFn;
+      }
       const height = this.vh;
       const ydomain: [number, number] = [height, 0];
       return interpolator(
@@ -28,6 +57,12 @@ class CoordSpace {
         ydomain,
       );
     }
+  }
+  get rangeWidth() {
+    return this.rangeMax - this.rangeMin;
+  }
+  get domainWidth() {
+    return this.domainMax - this.domainMin;
   }
   dscale() {
     return this.scalefn("domain");
@@ -171,3 +206,7 @@ class CoordSpace {
     return this.marginLeft + this.marginRight;
   }
 }
+
+export const space = (frameWidth: number = 500, frameHeight: number = 500) => (
+  new CoordSpace(frameWidth, frameHeight)
+);

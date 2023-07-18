@@ -217,8 +217,8 @@ export class Path extends PathBase {
   }
   d(noscale: boolean = false) {
     const space = this.space();
-    const x = noscale ? (x: number) => x : space.scaleOf("x");
-    const y = noscale ? (x: number) => x : space.scaleOf("y");
+    const x = noscale ? (x: number) => x : space.dscale();
+    const y = noscale ? (x: number) => x : space.rscale();
     const out = this.commands.map((p) => {
       if (typeof p === "string") return p;
       // deno-fmt-ignore

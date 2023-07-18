@@ -1,8 +1,11 @@
 export { Color, color, hsl, rgb } from "./color.js";
+export type ScaleFn = (x: number) => number;
+export { CoordSpace, space } from "./coordspace.js";
+export type { CoordSystem } from "./coordspace.js";
+export { definable, scopable } from "./mixins/scopable.js";
 export { BNode, bnode } from "./nodes/bnode.js";
 export { map, none, some } from "./nodes/box.js";
 export type { Option } from "./nodes/box.js";
-export { Space } from "./space.js";
 export {
   A,
   C,
@@ -24,9 +27,7 @@ import { Plot } from "./plot.js";
 import { TextNode } from "./text.js";
 import { TreeSpace } from "./tree.js";
 import { TreeChild } from "./treenode.js";
-export { Space2D } from "./space2d.js";
 export { bst } from "./tree/tree.binary.js";
-export type { ScaleFn } from "./space2d.js";
 export { isLine, line, ray } from "./geometries/line.js";
 export type { Line } from "./geometries/line.js";
 export { arrowDef, isArrow } from "./arrow.js";
@@ -50,6 +51,7 @@ export { isQuad, Quad, quad } from "./geometries/quad.js";
 export { Vertex, vtx } from "./graph/vertex.js";
 export { Edge, edge } from "./graph/edge.js";
 export { Graph, graph } from "./graph/graph.js";
+export { group, isGroup } from "./group.js";
 export {
   ForceSpace,
   forceSpace,
@@ -73,9 +75,8 @@ export type NodeType =
   | "branch"
   | "tree"
   | "subtree"
-  | "integral"
   | "path"
-  | "angle"
+  | "group"
   | "text"
   | "line"
   | "vector"
@@ -95,6 +96,7 @@ import { Axis } from "./axis.js";
 import { ForceSpace, Particle } from "./graph/graph.spring.js";
 import { Path } from "./geometries/path.js";
 import { Quad } from "./geometries/quad.js";
+import { Group } from "./group.js";
 
 export type FigNode =
   | Plot
@@ -106,10 +108,11 @@ export type FigNode =
   | Path
   | Line
   | TreeSpace
+  | Group
   | TreeChild
   | ArrowDefNode
   | Particle
-  | ForceSpace
+  | ForceSpace;
 
 /**
  * A referable is any FigNode that
@@ -127,6 +130,7 @@ export type Node2D =
   | TextNode
   | Path
   | Circle
+  | Group
   | Line;
 
 export type LayoutNode = Plane | TreeSpace | ForceSpace;

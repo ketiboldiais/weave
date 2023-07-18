@@ -1,8 +1,16 @@
 import { tuple, unsafe } from "./aux.js";
-import { arrowDef, FigNode, Line, line, ray, Space2D } from "./index.js";
+import {
+  arrowDef,
+  definable,
+  FigNode,
+  Line,
+  line,
+  ray,
+} from "./index.js";
 import { linkedList } from "./list.js";
 import { subtree, Tree, TreeChild } from "./treenode.js";
 import { typed } from "./mixins/typed.js";
+import { Base } from "./base.js";
 
 type TreeLayout =
   | "knuth"
@@ -20,7 +28,7 @@ type LinkFunction = (
   source: TreeChild,
   target: TreeChild,
 ) => Line;
-const TREEBASE = typed(Space2D);
+const TREEBASE = typed(definable(Base));
 
 export class TreeSpace extends TREEBASE {
   tree: Tree;
@@ -90,7 +98,7 @@ export class TreeSpace extends TREEBASE {
    * Appends the provided nodes to this tree.
    */
   nodes(nodes: TreeChild[]) {
-    nodes.forEach((n) => this.tree.child(n.scope(this)));
+    nodes.forEach((n) => this.tree.child(n.scope(this.space)));
     return this;
   }
   private hv() {
@@ -128,8 +136,8 @@ export class TreeSpace extends TREEBASE {
       }
       parent.children.forEach((c) => largerToRight(c));
     };
-    const xmin = this.xmin();
-    const ymax = this.ymax();
+    const xmin = this.space.domainMin;
+    const ymax = this.space.rangeMax;
     this.tree.x = xmin;
     this.tree.y = ymax;
     largerToRight(this.tree);
@@ -508,8 +516,8 @@ export class TreeSpace extends TREEBASE {
   }
   figure() {
     this.lay();
-    const xs = this.scaleOf("x");
-    const ys = this.scaleOf("y");
+    const xs = this.space.dscale();
+    const ys = this.space.rscale();
     this.tree.bfs((node) => {
       node.x = xs(node.x);
       node.y = ys(node.y);

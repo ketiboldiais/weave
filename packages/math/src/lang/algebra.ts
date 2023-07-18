@@ -1,5 +1,6 @@
 import { simplify } from "../index.js";
 import {
+  abs,
   addF,
   divF,
   dne,
@@ -13,6 +14,7 @@ import {
   mod,
   mulF,
   percent,
+  powF,
   print,
   quot,
   Right,
@@ -899,6 +901,10 @@ const int = (n: string | number) => (
   new Integer(typeof n === "string" ? floor(+n) : floor(n))
 );
 
+const isNumlike = (n: ASTNode): n is AtomicNumber | Ratio => (
+  isInteger(n) || isFloat(n) || isRatio(n)
+);
+
 class Ratio extends Atom {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.ratio(this);
@@ -911,7 +917,7 @@ class Ratio extends Atom {
   constructor(n: number, d: number) {
     super("frac");
     this.n = n;
-    this.d = d;
+    this.d = abs(d);
   }
   toString(): string {
     return `${this.n}/${this.d}`;
@@ -1007,7 +1013,7 @@ class Binary<
     this.right = right;
   }
   toString(): string {
-    return `${this.left.toString} ${this.op} ${this.right.toString}`;
+    return `${this.left.toString()} ${this.op} ${this.right.toString()}`;
   }
 }
 
@@ -1092,7 +1098,11 @@ class NativeCall<F extends NativeFn = NativeFn> extends Expr {
     this.args = args;
   }
   toString(): string {
-    return `${this.name}(${this.args.map((v) => v.toString()).join(",")})`;
+    const args = this.args.map((v) => v.toString());
+    if (this.name === "+" || this.name === "*") {
+      return "(" + args.join(` ${this.name} `) + ")";
+    }
+    return `${this.name}(${args.join(",")})`;
   }
 }
 
@@ -1777,11 +1787,14 @@ const fracOp = (
   // deno-fmt-ignore
   switch (op) {
     case "%": return ratio(NaN, NaN);
-    case "*": return Ratio.of(mulF(a, b));
-    case "+": return Ratio.of(addF(a, b));
-    case "-": return Ratio.of(subF(a, b));
-    case "/": return Ratio.of(divF(a, b));
-    
+    case "*": return Ratio.of(mulF(a,b));
+    case "+": return Ratio.of(addF(a,b));
+    case "-": return Ratio.of(subF(a,b));
+    case "/": return Ratio.of(divF(a,b));
+    case '^': return Ratio.of(powF(a,b));
+    case 'div': return ratio(NaN,NaN);
+    case 'mod': return ratio(NaN,NaN);
+    case 'rem': return ratio(NaN,NaN);
   }
 };
 
@@ -1832,6 +1845,7 @@ class Reducer implements ExprOp<Expr> {
     const L = this.evalnode(node.left);
     const R = this.evalnode(node.right);
     const op = node.op;
+
     if (isNumval(L) && isNumval(R)) {
       if (op === "/") {
         return this.evalnode(ratio(L.n, R.n));
@@ -1839,6 +1853,21 @@ class Reducer implements ExprOp<Expr> {
       const res = arithmetic(L.n, op, R.n);
       const f = castnum(L, R);
       return f(res);
+    }
+
+    if (op === "-") {
+      const out = binary(L, "+", group(binary(int(-1), "*", R)));
+      return this.evalnode(out);
+    }
+
+    if (isRatio(L) && isNumval(R)) {
+      return fracOp(L.pair(), op, R.pair());
+    }
+    if (isRatio(R) && isNumval(L)) {
+      return fracOp(R.pair(), op, L.pair());
+    }
+    if (isRatio(R) && isRatio(L)) {
+      return fracOp(R.pair(), op, L.pair());
     }
     if (op === "*") {
       if (isBinaryProduct(L)) {
@@ -1856,6 +1885,7 @@ class Reducer implements ExprOp<Expr> {
         return this.evalnode(nativeCall(op, [L, R.left, R.right]));
       }
     }
+
     return binary(L, op, R);
   }
   ratio(node: Ratio): Expr {
@@ -1871,29 +1901,56 @@ class Reducer implements ExprOp<Expr> {
     const name = node.name;
     const args: Expr[] = [];
     const evaluatedArgs = node.args.map((a) => this.evalnode(a));
-    for (let i = 0; i < evaluatedArgs.length; i++) {
-      const arg = evaluatedArgs[i];
+    const sortedArgs = sortnodes(evaluatedArgs);
+    for (let i = 0; i < sortedArgs.length; i++) {
+      const arg = sortedArgs[i];
+      const nxt: Expr = sortedArgs[i + 1] || nil();
       if (name === "*" && isBinaryProduct(arg)) {
         args.push(arg.left, arg.right);
+      }
+      if (name === "+" && isSym(arg) && isSym(nxt) && arg.s === nxt.s) {
+        args.push(binary(int(2), "*", arg));
+        i++;
+        continue;
+      }
+      if (isBinary(arg) && arg.op === name) {
+        args.push(this.evalnode(arg.left), this.evalnode(arg.right));
+        continue;
+      }
+      if ((isNumval(arg) && isNumval(nxt)) && (name === "+" || name === "*")) {
+        const d = castnum(arg, nxt)(arithmetic(arg.n, name, nxt.n));
+        args.push(d);
+        i++;
+        continue;
+      }
+      if ((isRatio(arg) && isRatio(nxt)) && (name === "+" || name === "*")) {
+        const d = fracOp(arg.pair(), name, nxt.pair());
+        args.push(d);
+        i++;
+        continue;
       } else {
         args.push(arg);
       }
     }
-    return nativeCall(name, sortnodes(args));
+    const out = nativeCall(name, sortnodes(args));
+    return out;
   }
   assignment(node: Assignment): Expr {
     return node;
   }
 }
+const strung = (expr:Either<Err,Expr>) => (
+  expr.isLeft() ? `${expr.unwrap().message}` : expr.unwrap().toString()
+)
 
 const reduce = (expr: Either<Err, Expr>) => (
   expr.map((x) => new Reducer().reduce(x))
 );
 
 const src = `
-1/2 + 5
+(1+x) + 2(1+x)
 `;
 const p = parse(src).parseExpression();
 
 // print(strTree(reduce(p)));
-print(reduce(p));
+print(strTree(reduce(p)));

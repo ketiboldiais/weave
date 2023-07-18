@@ -1,4 +1,4 @@
-import { axis, path, plane } from "@weave/loom";
+import { axis, path, plane, space } from "@weave/loom";
 import { Figure } from "../components/figure";
 import { matrix, sqrt, v3 } from "@weave/math";
 
@@ -36,24 +36,10 @@ const cube = () => {
 const path1 = plane([
   axis("x"),
   axis("y"),
-  // cube().rotateX("45deg").rotateY("20deg").rotateZ("5deg"),
   cube().rotateX("45deg").rotateY("20deg").rotateZ("5deg"),
-]).x(-5,5).y(-5,5).margin(5, 5).size(300, 300).figure();
+]).context(space(300,300).dom(-5,5).ran(-5,5).margin(5,5)).figure();
 
 export const Path1 = () => {
   return <Figure of={path1} />;
 };
 
-/**
- * M -1,-1
- * L 1,1
- * M 0.90000, 1
- * A 1,1,0,0,1, 1.1000,1
- * A 1,1,0,0,1, 0.90000,1
- * M 1,1
- * L 1,-1
- * M 0.90000, -1
- * A 1,1,0,0,1, 1.1000,-1
- * A 1,1,0,0,1, 0.90000,-1
- * M 1,-1
- * Z */

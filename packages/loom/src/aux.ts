@@ -51,3 +51,4 @@ export const shift = (
 ) => `translate(${x},${y})`;
 
 
+export const Id = <T>(x:T) => x

@@ -15,8 +15,8 @@ type FigureProps = {
 };
 
 export const Figure = ({ of: data, className }: FigureProps) => {
-  const width = data.width;
-  const height = data.height;
+  const width = data.space.width;
+  const height = data.space.height;
   const viewbox = `0 0 ${width} ${height}`;
   const paddingBottom = `${100 * (height / width)}%`;
   const boxcss: CSSProperties = {
@@ -37,8 +37,8 @@ export const Figure = ({ of: data, className }: FigureProps) => {
   };
   const par = "xMidYMid meet";
   const cname = "weave" + " " + className;
-  const gridlines = data.GridLines;
-  const shift = data.center();
+  const gridlines = data.gridlines;
+  const shift = data.space.center();
   return (
     <div style={boxcss} className={cname}>
       <svg

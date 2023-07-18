@@ -1,13 +1,4 @@
-import {
-  Circle,
-  circle,
-  FigNode,
-  label,
-  Line,
-  line,
-  shift,
-  TextNode,
-} from "./index.js";
+import { FigNode, label, Line, line, shift, TextNode } from "./index.js";
 import { tuple, unsafe } from "./aux.js";
 import { colorable } from "./mixins/colorable.js";
 import { typed } from "./mixins/typed.js";
@@ -77,8 +68,8 @@ export class Axis extends AXIS_BASE {
   domain() {
     const space = this.space();
     const domain = this.is("x")
-      ? tuple(space.xmin(), space.xmax())
-      : tuple(space.ymin(), space.ymax());
+      ? tuple(space.domainMin, space.domainMax)
+      : tuple(space.rangeMin, space.rangeMax);
     return domain;
   }
   range() {
@@ -96,8 +87,8 @@ export class Axis extends AXIS_BASE {
   }
   translationXY() {
     const space = this.space();
-    const xscale = space.scaleOf("x");
-    const yscale = space.scaleOf("y");
+    const xscale = space.dscale();
+    const yscale = space.rscale();
     if (this.is("y")) {
       return shift(xscale(0), 0);
     } else {
@@ -141,12 +132,12 @@ export class Axis extends AXIS_BASE {
 
   tickData() {
     const space = this.space();
-    const xmin = space.xmin();
-    const xmax = space.xmax();
-    const ymin = space.ymin();
-    const ymax = space.ymax();
-    const X = space.scaleOf("x");
-    const Y = space.scaleOf("y");
+    const xmin = space.domainMin;
+    const xmax = space.domainMax;
+    const ymin = space.rangeMin;
+    const ymax = space.rangeMax;
+    const X = space.dscale();
+    const Y = space.rscale();
     const ticks: TickData[] = [];
     const t = this.TickLength;
     const k = this.ticksep;

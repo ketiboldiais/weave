@@ -1,5 +1,5 @@
 import { v3, Vector } from "@weave/math";
-import { And, Axiom, Space2D } from "../index.js";
+import { And, Axiom } from "../index.js";
 
 export interface Movable {
   /** The movable’s origin. */

@@ -1,18 +1,9 @@
 import { unsafe } from "../aux.js";
 import { Base } from "../base.js";
-import { FigNode, Line, line, Node2D } from "../index.js";
-import { scopable } from "../mixins/scopable.js";
-import { Space2D } from "../space2d.js";
+import { FigNode, isGroup, Line, line, Node2D } from "../index.js";
+import { definable, scopable } from "../mixins/scopable.js";
 import { typed } from "../mixins/typed.js";
-import {
-  add2D,
-  clamp,
-  randInt,
-  sub2D,
-  v2,
-  Vector,
-  vector,
-} from "@weave/math";
+import { add2D, clamp, randInt, sub2D, v2, Vector, vector } from "@weave/math";
 import { Graph } from "./graph.js";
 
 const rsq = (v: Vector, u: Vector) => (
@@ -42,7 +33,7 @@ export const pt = (id: string | number, position: Vector) => (
   new Particle(id, position)
 );
 
-const FORCELAYOUT = typed(Space2D);
+const FORCELAYOUT = typed(definable(Base));
 export class ForceSpace extends FORCELAYOUT {
   private particles: Map<(string | number), Particle>;
   private graph: Graph;
@@ -122,12 +113,12 @@ export class ForceSpace extends FORCELAYOUT {
     return this;
   }
   private layout() {
-    const xs = this.scaleOf("x");
-    const ys = this.scaleOf("y");
-    const MIN_X = xs(this.xmin());
-    const MAX_X = xs(this.xmax());
-    const MIN_Y = ys(this.ymax());
-    const MAX_Y = ys(this.ymin());
+    const xs = this.space.dscale();
+    const ys = this.space.rscale();
+    const MIN_X = xs(this.space.domainMin);
+    const MAX_X = xs(this.space.domainMax);
+    const MIN_Y = ys(this.space.rangeMax);
+    const MAX_Y = ys(this.space.rangeMin);
     for (let i = 0; i < this.ITERATIONS; i++) {
       this.iterate(MIN_X, MAX_X, MIN_Y, MAX_Y);
       if (this.STABLE) break;
@@ -172,8 +163,8 @@ export class ForceSpace extends FORCELAYOUT {
   }
 
   private scatter() {
-    const xs = this.scaleOf("x");
-    const ys = this.scaleOf("y");
+    const xs = this.space.dscale();
+    const ys = this.space.rscale();
     this.graph.vertices.forEach((v) => {
       const x = randInt(xs(-2), xs(2));
       const y = randInt(ys(-2), ys(2));
@@ -204,7 +195,7 @@ export class ForceSpace extends FORCELAYOUT {
         const y1 = source.p.y;
         const x2 = target.p.x;
         const y2 = target.p.y;
-        const l = line([x1, y1], [x2, y2]).scope(this);
+        const l = line([x1, y1], [x2, y2]).scope(this.space);
         edges.push(l);
       }
       ids.add(e.id);
@@ -218,9 +209,15 @@ export class ForceSpace extends FORCELAYOUT {
    * to this graph’s plane.
    */
   and(nodes: Node2D[]) {
-    nodes.forEach((n) => {
-      n.scope(this);
-      this.children.push(n);
+    nodes.forEach((node) => {
+      if (isGroup(node)) {
+        node.nodes.forEach((n) => {
+          this.children.push(n);
+        });
+      } else {
+        node.scope(this.space);
+        this.children.push(node);
+      }
     });
     return this;
   }
