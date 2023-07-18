@@ -1855,26 +1855,30 @@ class Reducer implements ExprOp<Expr> {
       return f(res);
     }
 
-    if (op === "-") {
-      const out = binary(L, "+", group(binary(int(-1), "*", R)));
-      return this.evalnode(out);
-    }
-
-    if (isRatio(L) && isNumval(R)) {
-      return fracOp(L.pair(), op, R.pair());
-    }
-    if (isRatio(R) && isNumval(L)) {
-      return fracOp(R.pair(), op, L.pair());
-    }
-    if (isRatio(R) && isRatio(L)) {
-      return fracOp(R.pair(), op, L.pair());
-    }
+    if (isRatio(L) && isNumval(R)) return fracOp(L.pair(), op, R.pair());
+    if (isRatio(R) && isNumval(L)) return fracOp(R.pair(), op, L.pair());
+    if (isRatio(R) && isRatio(L)) return fracOp(R.pair(), op, L.pair());
     if (op === "*") {
       if (isBinaryProduct(L)) {
         return this.evalnode(nativeCall(op, [L.left, L.right, R]));
       }
       if (isBinaryProduct(R)) {
         return this.evalnode(nativeCall(op, [L, R.left, R.right]));
+      }
+    }
+
+    if (op === "*") {
+      if (isBinaryProduct(L)) {
+        return this.evalnode(nativeCall(op, [L.left, L.right, R]));
+      }
+      if (isBinaryProduct(R)) {
+        return this.evalnode(nativeCall(op, [L, R.left, R.right]));
+      }
+      if (isNativeCall(L) && L.name === "*") {
+        return this.evalnode(nativeCall("*", [...L.args, R]));
+      }
+      if (isNativeCall(R) && R.name === "*") {
+        return this.evalnode(nativeCall("*", [L, ...R.args]));
       }
     }
     if (op === "+") {
@@ -1884,8 +1888,19 @@ class Reducer implements ExprOp<Expr> {
       if (isBinarySum(R)) {
         return this.evalnode(nativeCall(op, [L, R.left, R.right]));
       }
+      if (isNativeCall(L) && L.name === "+") {
+        return this.evalnode(nativeCall("+", [...L.args, R]));
+      }
+      if (isNativeCall(R) && R.name === "+") {
+        return this.evalnode(nativeCall("+", [L, ...R.args]));
+      }
     }
 
+    if (op === "-") {
+      const out = binary(L, "+", binary(int(-1), "*", R));
+      console.log(out);
+      return this.evalnode(out);
+    }
     return binary(L, op, R);
   }
   ratio(node: Ratio): Expr {
@@ -1901,7 +1916,7 @@ class Reducer implements ExprOp<Expr> {
     const name = node.name;
     const args: Expr[] = [];
     const evaluatedArgs = node.args.map((a) => this.evalnode(a));
-    const sortedArgs = sortnodes(evaluatedArgs);
+    const sortedArgs = evaluatedArgs;
     for (let i = 0; i < sortedArgs.length; i++) {
       const arg = sortedArgs[i];
       const nxt: Expr = sortedArgs[i + 1] || nil();
@@ -1913,9 +1928,20 @@ class Reducer implements ExprOp<Expr> {
         i++;
         continue;
       }
-      if (isBinary(arg) && arg.op === name) {
-        args.push(this.evalnode(arg.left), this.evalnode(arg.right));
-        continue;
+      if (isBinary(arg)) {
+        if (arg.op === name) {
+          args.push(this.evalnode(arg.left), this.evalnode(arg.right));
+          continue;
+        }
+        if (isBinary(nxt) && nxt.op === arg.op) {
+          const argLeft = this.evalnode(arg.left);
+          const argRight = this.evalnode(arg.right);
+          const nxtLeft = this.evalnode(nxt.left);
+          const nxtRight = this.evalnode(nxt.right);
+          args.push(argLeft, argRight, nxtLeft, nxtRight);
+          i++;
+          continue;
+        }
       }
       if ((isNumval(arg) && isNumval(nxt)) && (name === "+" || name === "*")) {
         const d = castnum(arg, nxt)(arithmetic(arg.n, name, nxt.n));
@@ -1923,6 +1949,7 @@ class Reducer implements ExprOp<Expr> {
         i++;
         continue;
       }
+
       if ((isRatio(arg) && isRatio(nxt)) && (name === "+" || name === "*")) {
         const d = fracOp(arg.pair(), name, nxt.pair());
         args.push(d);
@@ -1932,25 +1959,62 @@ class Reducer implements ExprOp<Expr> {
         args.push(arg);
       }
     }
-    const out = nativeCall(name, sortnodes(args));
+    const operands = args;
+    const out = nativeCall(
+      name,
+      (name === "*" || name === "+") ? prodSum(name, operands) : operands,
+    );
     return out;
   }
   assignment(node: Assignment): Expr {
     return node;
   }
 }
-const strung = (expr:Either<Err,Expr>) => (
+const prodSum = (op: "+" | "*", terms: Expr[]) => {
+  terms = sortnodes(terms);
+  console.log(terms);
+  const out: Expr[] = [];
+  const nums: AtomicNumber[] = [];
+  const fracs: Ratio[] = [];
+  for (let i = 0; i < terms.length; i++) {
+    const current = terms[i];
+    if (isNumval(current)) {
+      nums.push(current);
+      continue;
+    }
+    if (isRatio(current)) {
+      fracs.push(current);
+      continue;
+    }
+    out.push(current);
+  }
+  if (nums.length) {
+    const f = op === "*"
+      ? (a: number, b: number) => a * b
+      : (a: number, b: number) => a + b;
+    const s = nums.map((r) => r.n).reduce(f);
+    if (Number.isInteger(s)) out.push(int(s));
+    else out.push(float(s));
+  }
+  if (fracs.length) {
+    const f = op === "*" ? mulF : addF;
+    const s = fracs.map((r) => r.pair()).reduce(f);
+    out.push(Ratio.of(s));
+  }
+  return out;
+};
+const strung = (expr: Either<Err, Expr>) => (
   expr.isLeft() ? `${expr.unwrap().message}` : expr.unwrap().toString()
-)
+);
 
 const reduce = (expr: Either<Err, Expr>) => (
   expr.map((x) => new Reducer().reduce(x))
 );
 
 const src = `
-(1+x) + 2(1+x)
+12x + 4x - 1
 `;
 const p = parse(src).parseExpression();
 
 // print(strTree(reduce(p)));
-print(strTree(reduce(p)));
+print(reduce(p));
