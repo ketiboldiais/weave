@@ -338,72 +338,6 @@ export function omap<T, S>(f: (a: T) => S, opt: Maybe<T>): Maybe<S> {
  */
 export const dne = (x: any): x is undefined => (x === undefined);
 
-/**
- * Utility function for printing the AST.
- */
-export function strTree<T extends Object>(
-  Obj: T,
-  cbfn?: (node: any) => void,
-) {
-  const prefix = (key: keyof T, last: boolean) => {
-    let str = last ? "└" : "├";
-    if (key) str += "─ ";
-    else str += "──┐";
-    return str;
-  };
-  const getKeys = (obj: T) => {
-    const keys: (keyof T)[] = [];
-    for (const branch in obj) {
-      if (!obj.hasOwnProperty(branch) || typeof obj[branch] === "function") {
-        continue;
-      }
-      keys.push(branch);
-    }
-    return keys;
-  };
-  const grow = (
-    key: keyof T,
-    root: any,
-    last: boolean,
-    prevstack: ([T, boolean])[],
-    cb: (str: string) => any,
-  ) => {
-    cbfn && cbfn(root);
-    let line = "";
-    let index = 0;
-    let lastKey = false;
-    let circ = false;
-    let stack = prevstack.slice(0);
-    if (stack.push([root, last]) && stack.length > 0) {
-      prevstack.forEach(function (lastState, idx) {
-        if (idx > 0) line += (lastState[1] ? " " : "│") + "  ";
-        if (!circ && lastState[0] === root) circ = true;
-      });
-      line += prefix(key, last) + key.toString();
-      if (typeof root !== "object") line += ": " + root;
-      circ && (line += " (circular ref.)");
-      cb(line);
-    }
-    if (!circ && typeof root === "object") {
-      const keys = getKeys(root);
-      keys.forEach((branch) => {
-        lastKey = ++index === keys.length;
-        grow(branch, root[branch], lastKey, stack, cb);
-      });
-    }
-  };
-  let output = "";
-  const obj = Object.assign({}, Obj);
-  grow(
-    "." as keyof T,
-    obj,
-    false,
-    [],
-    (line: string) => (output += line + "\n"),
-  );
-  return output;
-}
-
 export const { floor, ceil, abs, cos, sin, sign, pow, expm1 } = Math;
 
 export const mod = (a: number, b: number) => (
@@ -532,81 +466,33 @@ export const stringUnion = (subject: string, target: string) => {
   return -1;
 };
 
-const id = <T>(x: T) => x;
+export const id = <T>(x: T) => x;
+export const isINT = (x: number) => (Number.isInteger(x));
+export const is1 = (x: number) => (x === 1);
+export const is0 = (x: number) => (x === 0);
+export const pInt = (x: string) => (Number.parseInt(x));
+export const pFloat = (x: string) => (Number.parseFloat(x));
 
-// deno-fmt-ignore
-const binop = (op: (a: number, b: number) => number, and: (f: number) => number = id) => (
-  [a, b]: [number, number]) => (op(a, b)
+export class Complex {
+  real: number;
+  i: number;
+  constructor(real: number, i: number) {
+    this.real = real;
+    this.i = i;
+  }
+}
+export const complex = (real: number, i: number) => (
+  new Complex(real, i)
 );
 
-// deno-fmt-ignore
-const pairOp2 = (binop:((x1:number, y1:number, x2:number, y2:number) => [number,number]), and: (f: [number,number]) => [number, number] = id) => (
-  [a,b]:[number, number],
-  [c,d]:[number,number],
-) => (
-  and(binop(a, b, c, d))
-)
-
-/**
- * Returns the rational product of the given pair of numbers (interpreted
- * as rationals).
- */
-export const mulF = pairOp2((a, b, c, d) => [a * c, b * d], simplify);
-
-/**
- * Returns the rational quotient of the given pair of numbers (interpreted
- * as rationals; no checks for zero denominators).
- */
-export const divF = pairOp2((a, b, c, d) => [a * d, b * c], simplify);
-
-/**
- * Returns the rational sum of the given pair of numbers (interpreted
- * as rationals).
- */
-export const addF = pairOp2(
-  (n1, d1, n2, d2) => [(n1 * d2) + (n2 * d1), d1 * d2],
-  simplify,
+export class Fraction {
+  n: number;
+  d: number;
+  constructor(n: number, d: number) {
+    this.n = n;
+    this.d = d;
+  }
+}
+export const frac = (numerator: number, denominator: number) => (
+  new Fraction(numerator, denominator)
 );
-
-/**
- * Returns the rational difference of the given pair of numbers (interpreted
- * as rationals).
- */
-export const subF = pairOp2(
-  (n1, d1, n2, d2) => [(n1 * d2) - (n2 * d1), d1 * d2],
-  simplify,
-);
-
-const nthroot = (x: number, n: number): [number, number] => {
-  if (x === 1) return [1, 1];
-  if (x === 0) return [0, 1];
-  if (x < 0) return [1, 0];
-  const initEstimate = toFrac(pow(x, 1 / n));
-  const ITERATIONS = 3;
-  return [...new Array(ITERATIONS)].reduce((r) => {
-    return simplify([
-      ((n - 1) * pow(r[0], n)) + (x * pow(r[1], n)),
-      n * r[1] * pow(r[0], n - 1),
-    ]);
-  }, initEstimate);
-};
-
-const invertF = ([a, b]: [number, number]) => simplify([b, a]);
-const absF = ([a, b]: [number, number]) => simplify([abs(a), abs(b)]);
-
-export const powF = (
-  [n1, d1]: [number, number],
-  power: [number, number] | number,
-): [number, number] => {
-  const [n2, d2] = typeof power === "number" ? toFrac(power) : power;
-  const [nN, nD] = simplify([n2, d2]);
-  const [numer, denom] = simplify([n1, d1]);
-  if (nN < 0) return powF(invertF([numer, denom]), absF([nN, nD]));
-  if (nN === 0) return [1, 1];
-  if (nD === 1) return [numer ** nN, denom ** nN];
-  if (numer < 0 && nD !== 1) return [Infinity, Infinity];
-  const [newN, newD] = divF(nthroot(numer, nD), nthroot(denom, nD));
-  return simplify([pow(newN, nN), pow(newD, nN)]);
-};
-
-

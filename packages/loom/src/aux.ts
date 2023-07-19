@@ -50,5 +50,6 @@ export const shift = (
   y: number = 0,
 ) => `translate(${x},${y})`;
 
+export const Id = <T>(x: T) => x;
 
-export const Id = <T>(x:T) => x
+

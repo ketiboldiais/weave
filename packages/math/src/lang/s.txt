@@ -1,0 +1,657 @@
+// @ts-nocheck
+// =====================================================================
+// § - Parse Function
+// =====================================================================
+
+const parse = (input: string) => {
+  /**
+   * Parses a scientific number.
+   */
+  const scientific: Parslet = (prev) => {
+    const lex = prev.lex;
+    if (!prev.is("sci")) {
+      return state.err(expected("scientific number", lex), "SCI");
+    }
+    const [n, d] = lex.split("E");
+    const base = Number.isInteger(+n) ? int(n) : float(n);
+    const exp = binary(int("10"), "^", int(d));
+    return state.ok(binary(base, "*", exp));
+  };
+
+  const prefix: Parslet = (op) => {
+    if (!op.unary()) {
+      return state.err(`Expected unary operator`, "unary-prefix");
+    }
+    const p = precof(op.type);
+    return expr(p).chain((n) => state.ok(unaryPrefix(op.type, n)));
+  };
+
+  const postfix: Parslet = (op, node) => {
+    if (!op.unary()) {
+      return state.err(`Expected unary postfix`, "unary-postfix");
+    }
+    return state.ok(unaryPostfix(op.type, node));
+  };
+
+  /**
+   * Parses a rational number.
+   */
+  const rational: Parslet = (prev) => {
+    const lex = prev.lex;
+    if (!prev.is("frac")) {
+      return state.err(expected("RATIO", lex), "rational");
+    }
+    const [n, d] = lex.split("|");
+    return state.ok(ratio(+n, +d));
+  };
+
+  /**
+   * Parses a binary expression.
+   */
+  const infix: Parslet = (op, node) => {
+    if (!op.arithmetic()) {
+      return state.err(`Expected arithmetic operator.`, "infix");
+    }
+    const p = precof(op.type);
+    return expr(p).chain((n) => {
+      return state.ok(binary(node, op.type, n));
+    });
+  };
+
+  const assign: Parslet = (_, node) => {
+    if (!isSymbol(node)) {
+      return state.err(`Invalid assignment target`, "assign");
+    }
+    return expr().chain((n) => state.ok(assignment(node.value, n)));
+  };
+
+  /**
+   * Parses a relational expression.
+   */
+  const compare: Parslet = (op, node) => {
+    if (!op.relational()) {
+      return state.err(`Expected relational operator`, `compare`);
+    }
+    const p = precof(op.type);
+    return expr(p).chain((n) => {
+      return state.ok(relation(node, op.type, n));
+    });
+  };
+  const primary = () => {
+    const innerExpr = expr();
+    if (innerExpr.isLeft()) return innerExpr;
+    state.next();
+    const out = innerExpr.chain((n) => state.ok(group(n)));
+    return out;
+  };
+  const comlist = () => {
+    const elements: Expr[] = [];
+    do {
+      const e = expr();
+      if (e.isLeft()) return e;
+      elements.push(e.unwrap());
+    } while (state.nextIs(","));
+    return right(elements);
+  };
+  const native: Parslet = (op) => {
+    const lex = op.lex;
+    if (!state.isNative(lex)) {
+      return state.err(`Unexpected native call`, "native");
+    }
+    if (!state.nextIs("(")) {
+      return state.err(`Expected “(” to open arguments`, "native");
+    }
+    let args: Expr[] = [];
+    if (!state.check(")")) {
+      const arglist = comlist();
+      if (arglist.isLeft()) return arglist;
+      args = arglist.unwrap();
+    }
+    if (!state.nextIs(")")) {
+      return state.err(expected(")", state.peek.lex), "native");
+    }
+    return state.ok(nativeCall(lex, args));
+  };
+
+  const callExpr: Parslet = (_, lastnode) => {
+    const callee = lastnode;
+    let args: Expr[] = [];
+    if (!state.check(")")) {
+      const arglist = comlist();
+      if (arglist.isLeft()) return arglist;
+      args = arglist.unwrap();
+    }
+    if (!state.nextIs(")")) {
+      return state.err(`Expected “)” to close arguments`, "call");
+    }
+    return state.ok(call(callee, args));
+  };
+
+  const __o = -1;
+  const LOWEST = 0;
+  const ASSIGN = 10;
+  const ATOM = 20;
+  const RELATION = 40;
+  const SUM = 50;
+  const PRODUCT = 60;
+  const QUOTIENT = 70;
+  const POWER = 80;
+  const CALL = 90;
+  const rules: PSpec = {
+    "(": [primary, callExpr, CALL],
+    ")": [__, __, __o],
+    ":": [__, __, __o],
+    ";": [__, __, __o],
+    "{": [__, __, __o],
+    "}": [__, __, __o],
+    "[": [__, __, __o],
+    "]": [__, __, __o],
+    ",": [__, __, __o],
+    ".": [__, __, __o],
+    "=": [__, assign, ASSIGN],
+    call: [native, __, CALL],
+    "+": [prefix, infix, SUM],
+    "-": [prefix, infix, SUM],
+    "*": [__, infix, PRODUCT],
+    "^": [__, infix, POWER],
+    "/": [__, infix, PRODUCT],
+    "%": [__, infix, QUOTIENT],
+    rem: [__, infix, QUOTIENT],
+    div: [__, infix, QUOTIENT],
+    mod: [__, infix, QUOTIENT],
+    "<": [__, compare, RELATION],
+    ">": [__, compare, RELATION],
+    "!=": [__, compare, RELATION],
+    "==": [__, compare, RELATION],
+    "<=": [__, compare, RELATION],
+    ">=": [__, compare, RELATION],
+    "!": [__, postfix, CALL],
+    begin: [__, __, __o],
+    end: [__, __, __o],
+    int: [atom, __, ATOM],
+    float: [atom, __, ATOM],
+    bool: [atom, __, ATOM],
+    sym: [atom, __, ATOM],
+    string: [atom, __, ATOM],
+    nil: [atom, __, ATOM],
+    frac: [rational, __, ATOM],
+    sci: [scientific, __, ATOM],
+    complex: [__, __, __o],
+    EMPTY: [__, __, __o],
+    ERR: [__, __, __o],
+    EOF: [__, __, __o],
+    fn: [__, __, __o],
+    let: [__, __, __o],
+    while: [__, __, __o],
+    for: [__, __, __o],
+    if: [__, __, __o],
+    else: [__, __, __o],
+    return: [__, __, __o],
+  };
+
+  const BLOCK = () => {
+    const stmts: Stmt[] = [];
+    while (!state.check("end") && !state.atEnd()) {
+      const stmt = STMT();
+      if (stmt.isLeft()) return stmt;
+      stmts.push(stmt.unwrap());
+    }
+    if (!state.nextIs("end")) {
+      return state.err(`expected closing “end”`, "block");
+    }
+    return state.ok(block(stmts));
+  };
+
+  const FN = () => {
+    const name = state.next();
+    if (!name.is("sym")) {
+      return state.err(`Expected function name`, "fn");
+    }
+    if (!state.nextIs("(")) {
+      return state.err(`Expected “(” to open params`, "fn");
+    }
+    let params: string[] = [];
+    if (!state.peek.is(")")) {
+      const elems = comlist();
+      if (elems.isLeft()) return elems;
+      const ps = elems.unwrap();
+      for (let i = 0; i < ps.length; i++) {
+        const e = ps[i];
+        if (!isSymbol(e)) {
+          return state.err(`Expected parameter symbol`, "fn");
+        }
+        params.push(e.value);
+      }
+    }
+    if (!state.nextIs(")")) {
+      return state.err(`Expected “)” to close params`, "fn");
+    }
+    if (!state.nextIs("=")) {
+      return state.err(`Expected assign “=” after params`, "fn");
+    }
+    const body = STMT();
+    if (body.isLeft()) return body;
+    return state.ok(fnStmt(name.lex, params, body.unwrap()));
+  };
+
+  /**
+   * Parses a variable definition
+   * @example
+   * let y = 2;
+   */
+  const LET = () => {
+    // let eaten in statement
+    const name = state.next();
+    if (!name.is("sym")) {
+      return state.err(`Expected symbol`, "let");
+    }
+    if (!state.nextIs("=")) {
+      return state.err(`Expected assign “=”`, "let");
+    }
+    const init = EXPR();
+    if (init.isLeft()) return init;
+    const value = init.unwrap().expression;
+    return state.ok(varStmt(name.lex, value));
+  };
+  const EXPR = () => {
+    const out = expr();
+    if (out.isLeft()) return out;
+    if (state.nextIs(";") || state.implicitSemicolonOk()) {
+      return state.ok(exprStmt(out.unwrap()));
+    }
+    return state.err(`Expected “;” to end statement`, "expression");
+  };
+
+  const IF = () => {
+    // if eaten by STMT
+    const condition = expr();
+    if (condition.isLeft()) return condition;
+    if (!state.nextIs("begin")) {
+      return state.err(`Expected “begin” after condition`, "if");
+    }
+    const ifBranch = BLOCK();
+    if (ifBranch.isLeft()) return ifBranch;
+    let elseBranch: Stmt = exprStmt(nil());
+    if (state.nextIs("else")) {
+      const _else = STMT();
+      if (_else.isLeft()) return _else;
+      elseBranch = _else.unwrap();
+    }
+    return state.ok(ifStmt(condition.unwrap(), ifBranch.unwrap(), elseBranch));
+  };
+
+  const STMT = (): Left<Err> | Right<Stmt> => {
+    if (state.nextIs("begin")) return BLOCK();
+    if (state.nextIs("let")) return LET();
+    if (state.nextIs("fn")) return FN();
+    if (state.nextIs("if")) return IF();
+    return EXPR();
+  };
+  const program = () => {
+    const stmts: Stmt[] = [];
+    while (!state.atEnd()) {
+      const stmt = STMT();
+      if (stmt.isLeft()) {
+        return failure(stmt.unwrap());
+      } else {
+        stmts.push(stmt.unwrap());
+      }
+    }
+    return success(stmts);
+  };
+  const parseExpression = () => {
+    state.next();
+    return expr();
+  };
+  const run = () => {
+    state.next(); // prime the state
+    return program();
+  };
+  return {
+    run,
+    tokenize: () => state.tokens,
+    parseExpression,
+  };
+};
+
+const src = `
+cos(x) - 1
+`;
+const k = parse(src).run();
+
+print(treeof(k));
+
+type REC = Record<
+  AlgebraicAtom,
+  Record<ArithmeticOperator, Record<AlgebraicAtom, {}>>
+>;
+
+/*
+const algop2: REC = {
+  int: {
+    "+": {
+      int: (a: INT, b: INT) => int(a.value + b.value),
+      float: (a: INT, b: FLOAT) => float(a.value + b.value),
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "-": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "/": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "*": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "^": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "%": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "div": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "rem": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "mod": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+  },
+  float: {
+    "+": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "-": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "/": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "*": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "^": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "%": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "div": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "rem": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "mod": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+  },
+  frac: {
+    "+": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "-": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "/": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "*": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "^": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "%": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "div": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "rem": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "mod": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+  },
+  sym: {
+    "+": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "-": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "/": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "*": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "^": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "%": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "div": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "rem": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "mod": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+  },
+  complex: {
+    "+": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "-": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "/": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "*": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "^": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "%": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "div": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "rem": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+    "mod": {
+      int: {},
+      float: {},
+      frac: {},
+      sym: {},
+      complex: {},
+    },
+  },
+};
+*/
