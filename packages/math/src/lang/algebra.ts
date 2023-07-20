@@ -1,18 +1,73 @@
-import { Complex, floor, Fraction } from "./util.js";
 import {
-  dne,
   Either,
   isDigit,
   isGreekLetterName,
   isLatinGreek,
   Left,
   left,
+  Maybe,
+  none,
   print,
   Right,
   right,
+  some,
   zip,
 } from "./util.js";
-import { bp } from "./bp.js";
+import {
+  BinaryOperator,
+  BooleanOperator,
+  bp,
+  nk,
+  Numeric,
+  RelationalOperator,
+  tt,
+} from "./enums.js";
+import {
+  AssignExpr,
+  assignment,
+  ASTNode,
+  Binary,
+  binex,
+  block,
+  BlockStmt,
+  bool,
+  Expr,
+  ExprStmt,
+  exprStmt,
+  failure,
+  Float,
+  float,
+  FnCall,
+  fnCall,
+  fnStmt,
+  FunctionStmt,
+  Group,
+  group,
+  IfStmt,
+  ifStmt,
+  Integer,
+  integer,
+  isExpr,
+  isSymbol,
+  Literal,
+  logic,
+  LogicalExpr,
+  LoopStmt,
+  nil,
+  nomen,
+  relation,
+  RelationExpr,
+  Statement,
+  str,
+  success,
+  Variable,
+  VariableStmt,
+  varstmt,
+  Visitor,
+} from "./nodes.core.js";
+import { tkn, Token } from "./token.js";
+import { Err, lexicalError, parserError } from "./err.js";
+import { toInfix } from "./infixer.js";
 
 /**
  * Utility function for printing the AST.
@@ -91,240 +146,7 @@ export function treeof<T extends Object>(
   return output;
 }
 
-// deno-fmt-ignore
-export enum tt {
-  eof, error,empty,
-  lparen, rparen,
-  lbrace, rbrace,
-  comma, dot, minus,
-  plus, semicolon, slash,
-  star, bang, neq, eq,
-  deq, gt, lt, leq, geq,
-  caret,percent,
-  symbol, string,int,frac,complex,
-  float,scientific,
-  rem,mod,null,bool,
-  call,
-  colon,
-  lbracket,
-  rbracket,
-  // type operators
-  arrow,amp,vbar,tilde,
-  // logical operators
-  and,nor,xnor,nand,
-  not,or,xor,
-  // keywords
-  fn, let, begin, end, if, else,
-  constant,while,for,
-  // type annotations
-  typename,
-}
-type Numeric = tt.float | tt.int | tt.scientific | tt.frac | tt.complex;
-type UnaryOperator = tt.minus | tt.plus | tt.bang;
-type RelationalOperator = tt.lt | tt.gt | tt.deq | tt.neq | tt.leq | tt.geq;
-type BooleanOperator =
-  | tt.and
-  | tt.nor
-  | tt.xnor
-  | tt.nand
-  | tt.not
-  | tt.or
-  | tt.xor;
-type BinaryOperator =
-  | tt.star
-  | tt.plus
-  | tt.caret
-  | tt.minus
-  | tt.slash
-  | tt.rem
-  | tt.percent;
-type ArithmeticOperator =
-  | tt.minus
-  | tt.plus
-  | tt.slash
-  | tt.star
-  | tt.caret
-  | tt.percent
-  | tt.rem
-  | tt.mod;
-
-type ErrType = "lexical" | "syntax" | "binding" | "type";
-/**
- * Error messages are kept in `Err`
- * objects.
- */
-class Err {
-  message: string;
-  type: ErrType;
-  constructor(message: string, type: ErrType) {
-    this.message = message;
-    this.type = type;
-  }
-}
-
-/**
- * Returns a new parser error.
- */
-const parserError = (message: string) => (
-  new Err(message, "syntax")
-);
-/**
- * Returns a new lexical error.
- */
-const lexicalError = (message: string) => (
-  new Err(message, "lexical")
-);
-
-class Token<T extends tt = tt> {
-  /**
-   * The token’s given type.
-   * This is a broader classification
-   * of the token than the the lexeme.
-   */
-  type: T;
-
-  /** The token’s specific lexeme. */
-  lex: string;
-
-  /** The line where this token was encountered. */
-  line: number;
-
-  constructor(type: T, lex: string, line: number) {
-    this.type = type;
-    this.lex = lex;
-    this.line = line;
-  }
-  /**
-   * Returns a copy of this token.
-   * Optional type, lexeme, and line properties
-   * may be provided in place of the copy’s
-   * duplicated properties.
-   */
-  copy(type?: tt, lex?: string, line?: number) {
-    return new Token(
-      !dne(type) ? type : this.type,
-      !dne(lex) ? lex : this.lex,
-      !dne(line) ? line : this.line,
-    );
-  }
-
-  /**
-   * Returns true if this token is a numeric
-   * token. Numeric tokens are all tokens of type:
-   *
-   * - `RATIO` - a rational number (e.g., `1/2`)
-   * - `INT` - an integer (e.g., `67`).
-   * - `FLOAT` - a floating point number (e.g., `3.14`).
-   * - `SCI` - a scientific number (e.g., `9.81E+43`).
-   */
-  isnum() {
-    return (
-      this.type === tt.frac ||
-      this.type === tt.int ||
-      this.type === tt.float ||
-      this.type === tt.scientific
-    );
-  }
-
-  /**
-   * Returns true if this operator
-   * is a {@link UnaryOperator} token.
-   */
-  unary(): this is Token<UnaryOperator> {
-    return (
-      this.type === tt.minus ||
-      this.type === tt.plus ||
-      this.type === tt.bang
-    );
-  }
-
-  binary(): this is Token<BinaryOperator> {
-    return (
-      this.type === tt.star ||
-      this.type === tt.plus ||
-      this.type === tt.caret ||
-      this.type === tt.slash ||
-      this.type === tt.rem ||
-      this.type === tt.percent
-    );
-  }
-
-  /**
-   * Returns true if this
-   * token is a {@link RelationalOperator}
-   * token.
-   */
-  relational(): this is Token<RelationalOperator> {
-    return (
-      this.type === tt.lt ||
-      this.type === tt.gt ||
-      this.type === tt.deq ||
-      this.type === tt.neq ||
-      this.type === tt.leq ||
-      this.type === tt.geq
-    );
-  }
-
-  logic(): this is Token<BooleanOperator> {
-    return (
-      this.type === tt.and ||
-      this.type === tt.nor ||
-      this.type === tt.xnor ||
-      this.type === tt.nand ||
-      this.type === tt.nor ||
-      this.type === tt.or ||
-      this.type === tt.xor
-    );
-  }
-
-  /**
-   * Returns true if this token
-   * matches the provided type.
-   */
-  is(type: T) {
-    return this.type === type;
-  }
-  among(types: tt[]) {
-    for (let i = 0; i < types.length; i++) {
-      if (this.type === types[i]) return true;
-    }
-    return false;
-  }
-
-  /**
-   * Returns true if this token is an
-   * {@link ArithmeticOperator} token.
-   */
-  arithmetic(): this is Token<ArithmeticOperator> {
-    return (
-      this.type === tt.minus ||
-      this.type === tt.plus ||
-      this.type === tt.slash ||
-      this.type === tt.star ||
-      this.type === tt.caret ||
-      this.type === tt.percent ||
-      this.type === tt.rem ||
-      this.type === tt.mod
-    );
-  }
-
-  /**
-   * The token representation of the empty token,
-   * used primarily as a placeholder and base
-   * case.
-   */
-  static empty = new Token(tt.empty, "", -1);
-}
-
-/**
- * Returns a new token.
- */
-const tkn = <T extends tt>(type: T, lex: string, line: number) => (
-  new Token(type, lex, line)
-);
-
-type StringSet = Set<string>;
-const lex = (input: string, functions: StringSet = new Set()) => {
+const lexemes = (input: string): Token[] => {
   /**
    * Tracks the line number.
    */
@@ -577,10 +399,6 @@ const lex = (input: string, functions: StringSet = new Set()) => {
       case 'or': return token(tt.or);
       case 'xor': return token(tt.xor);
 		}
-
-    if (functions.has(s)) {
-      return token(tt.call);
-    }
     return token(tt.symbol);
   };
 
@@ -647,32 +465,11 @@ const lex = (input: string, functions: StringSet = new Set()) => {
     const out: Token[] = [];
     while (!atEnd()) {
       out.push(scan());
-      if (error !== null) return left(error);
     }
-    return right(out);
+    return out;
   };
 
-  const tokenlist = () => {
-    const out = tokenize();
-    if (out.isLeft()) {
-      return [`Error:${out.unwrap().message}`];
-    } else return out.unwrap().map((c) => `${tt[c.type]}: ${c.lex}`);
-  };
-
-  return {
-    /**
-     * Runs a scan exactly once (returning
-     * one token) on the provided string.
-     */
-    scan,
-
-    /**
-     * Returns an array of all the tokens
-     * of the provided string.
-     */
-    tokenize,
-    tokenlist,
-  };
+  return tokenize();
 };
 
 /**
@@ -730,675 +527,27 @@ const imul = (tkns: Token[]) => {
     } else if (now.isnum() && nxt.is(tt.lparen)) {
       out.push(nxt.copy(tt.star, "*"));
     } else if (now.is(tt.symbol) && nxt.is(tt.symbol)) {
-      out.push(nxt.copy(tt.symbol, "*"));
+      out.push(nxt.copy(tt.star, "*"));
     }
   }
   out.push(tkns[tkns.length - 1]);
   return out;
 };
 
-export interface Visitor<T> {
-  int(node: Integer): T;
-  symbol(node: Sym): T;
-  float(node: Float): T;
-  complex(node: ComplexNode): T;
-  rational(node: Rational): T;
-  constant(node: Atom): T;
-  binary(node: Binary): T;
-  unary(node: Unary): T;
-  tuple(node: TupleExpr): T;
-  set(node: SetExpr): T;
-  relation(node: RelationExpr): T;
-  logicExpr(node: LogicalExpr): T;
-  algebraicCall(node: AlgebraicCall): T;
-  algebraicGroup(node: AlgebraicGroup): T;
-  group(node: Group): T;
-  fnCall(node: FnCall): T;
-  assign(node: AssignExpr): T;
-  blockStmt(node: BlockStmt): T;
-  exprStmt(node: ExprStmt): T;
-  functionStmt(node: FunctionStmt): T;
-  ifStmt(node: IfStmt): T;
-  varStmt(node: VariableStmt): T;
-  loopStmt(node: LoopStmt): T;
-  typesymbol(node: TypeSymbol): T;
-  typeInfix(node: TypeInfix): T;
-  typeGroup(node: TypeGroup): T;
-  typeFn(node: TypeFn): T;
-  typeUnary(node: TypeUnary): T;
-  typeTuple(node: TypeTuple): T;
-}
-export interface Algebra<T> {
-  int(node: Integer): T;
-  symbol(node: Sym): T;
-  float(node: Float): T;
-  complex(node: ComplexNode): T;
-  rational(node: Rational): T;
-  binary(node: Binary): T;
-  unary(node: Unary): T;
-  algebraicCall(node: AlgebraicCall): T;
-  algebraicGroup(node: AlgebraicGroup): T;
-}
-export interface TypeVisitor<T> {
-  symbol(node: TypeSymbol): T;
-  infix(node: TypeInfix): T;
-  group(node: TypeGroup): T;
-  fn(node: TypeFn): T;
-  unary(node: TypeUnary): T;
-  tuple(node: TypeTuple): T;
-}
-
-export enum nk {
-  statement,
-  type_expression,
-  algebraic_expression,
-  nonalgebraic_expression,
-}
-
-export abstract class ASTNode {
-  abstract accept<T>(visitor: Visitor<T>): T;
-  kind: tt;
-  nodeclass: nk;
-  constructor(type: tt, kind: nk) {
-    this.kind = type;
-    this.nodeclass = kind;
-  }
-}
-
-const algebraic = (node: ASTNode): node is AlgebraicExpr => (
-  node.nodeclass === nk.algebraic_expression
-);
-
-export class Program {
-  code: Statement[];
-  error: Err | null;
-  constructor(code: Statement[], error: Err | null) {
-    this.code = code;
-    this.error = error;
-  }
-}
-const success = (code: Statement[]) => (
-  new Program(code, null)
-);
-const failure = (error: Err) => (
-  new Program([], error)
-);
-
-export abstract class Statement extends ASTNode {
-  constructor(type: tt) {
-    super(type, nk.statement);
-  }
-}
-
-export class LoopStmt extends Statement {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.loopStmt(this);
-  }
-  condition: Expr;
-  body: Statement;
-  constructor(condition: Expr, body: Statement) {
-    super(tt.while);
-    this.condition = condition;
-    this.body = body;
-  }
-}
-
-export class IfStmt extends Statement {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.ifStmt(this);
-  }
-  condition: Expr;
-  then: Statement;
-  alt: Statement;
-  constructor(condition: Expr, then: Statement, alt: Statement) {
-    super(tt.if);
-    this.condition = condition;
-    this.then = then;
-    this.alt = alt;
-  }
-}
-const ifStmt = (condition: Expr, then: Statement, alt: Statement) => (
-  new IfStmt(condition, then, alt)
-);
-
-export class VariableStmt extends Statement {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.varStmt(this);
-  }
-  name: Sym;
-  init: Expr;
-  constructor(name: Sym, init: Expr) {
-    super(tt.let);
-    this.name = name;
-    this.init = init;
-  }
-}
-const varstmt = (name: Sym, init: Expr) => (
-  new VariableStmt(name, init)
-);
-
-export class FunctionStmt extends Statement {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.functionStmt(this);
-  }
-  name: string;
-  params: Sym[];
-  body: Statement;
-  returns: TypeExpression;
-  constructor(
-    name: string,
-    params: Sym[],
-    body: Statement,
-    returns: TypeExpression,
-  ) {
-    super(tt.fn);
-    this.name = name;
-    this.params = params;
-    this.body = body;
-    this.returns = returns;
-  }
-}
-const fnStmt = (
-  name: string,
-  params: Sym[],
-  body: Statement,
-  returns: TypeExpression,
-) => (
-  new FunctionStmt(name, params, body, returns)
-);
-
-export class ExprStmt extends Statement {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.exprStmt(this);
-  }
-  expr: Expr;
-  constructor(expr: Expr) {
-    super(expr.kind);
-    this.expr = expr;
-  }
-}
-const exprStmt = (expr: Expr) => (
-  new ExprStmt(expr)
-);
-
-export class BlockStmt extends Statement {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.blockStmt(this);
-  }
-  stmts: Statement[];
-  constructor(stmts: Statement[]) {
-    super(tt.begin);
-    this.stmts = stmts;
-  }
-}
-const block = (statements: Statement[]) => (
-  new BlockStmt(statements)
-);
-
-export abstract class Expr extends ASTNode {
-  constructor(
-    type: tt,
-    nodeclass:
-      | nk.algebraic_expression
-      | nk.nonalgebraic_expression
-      | nk.type_expression,
-  ) {
-    super(type, nodeclass);
-  }
-}
-const isExpr = (node: ASTNode): node is Expr => (
-  node.nodeclass === nk.algebraic_expression ||
-  node.nodeclass === nk.nonalgebraic_expression
-);
-
-export abstract class NonalgebraicExpr extends Expr {
-  constructor(type: tt) {
-    super(type, nk.nonalgebraic_expression);
-  }
-}
-
-export abstract class TypeExpression extends Expr {
-  abstract acceptTyper<T>(typer: TypeVisitor<T>): T;
-  constructor(type: tt) {
-    super(type, nk.type_expression);
-  }
-}
-const isTypeExpr = (node: ASTNode): node is TypeExpression => (
-  node.nodeclass === nk.type_expression ||
-  node.kind === tt.symbol ||
-  node.kind === tt.typename
-);
-
-class TypeSymbol extends TypeExpression {
-  acceptTyper<T>(typer: TypeVisitor<T>): T {
-    return typer.symbol(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.typesymbol(this);
-  }
-  id: string;
-  constructor(type: string) {
-    super(tt.typename);
-    this.id = type;
-  }
-}
-const typeUnknown = new TypeSymbol("unknown");
-const typesymbol = (name: string) => {
-  let n = name;
-  switch (name) {
-    case "Q":
-      n = "rational";
-      break;
-    case "R":
-      n = "float";
-      break;
-    case "Z":
-      n = "int";
-      break;
-    case "C":
-      n = "complex";
-      break;
-  }
-  return new TypeSymbol(n);
-};
-type TypeOperator = tt.arrow | tt.amp | tt.vbar;
-
-class TypeUnary extends TypeExpression {
-  acceptTyper<T>(typer: TypeVisitor<T>): T {
-    return typer.unary(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.typeUnary(this);
-  }
-  op: tt.tilde = tt.tilde;
-  arg: TypeExpression;
-  constructor(arg: TypeExpression) {
-    super(tt.tilde);
-    this.arg = arg;
-  }
-}
-const typeUnary = (arg: TypeExpression) => (
-  new TypeUnary(arg)
-);
-
-class TypeTuple extends TypeExpression {
-  acceptTyper<T>(typer: TypeVisitor<T>): T {
-    return typer.tuple(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.typeTuple(this);
-  }
-}
-
-class TypeInfix extends TypeExpression {
-  acceptTyper<T>(typer: TypeVisitor<T>): T {
-    return typer.infix(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.typeInfix(this);
-  }
-  left: TypeExpression;
-  op: Token<TypeOperator>;
-  right: TypeExpression;
-  constructor(
-    left: TypeExpression,
-    op: Token<TypeOperator>,
-    right: TypeExpression,
-  ) {
-    super(op.type);
-    this.left = left;
-    this.op = op;
-    this.right = right;
-  }
-}
-const typeInfix = (
-  left: TypeExpression,
-  op: Token<TypeOperator>,
-  right: TypeExpression,
-) => (
-  new TypeInfix(left, op, right)
-);
-class TypeGroup extends TypeExpression {
-  acceptTyper<T>(typer: TypeVisitor<T>): T {
-    return typer.group(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.typeGroup(this);
-  }
-  typeExpr: TypeExpression;
-  constructor(typeExpr: TypeExpression) {
-    super(tt.lparen);
-    this.typeExpr = typeExpr;
-  }
-}
-const typeGroup = (expr: TypeExpression) => (
-  new TypeGroup(expr)
-);
-
-class TypeFn extends TypeExpression {
-  acceptTyper<T>(typer: TypeVisitor<T>): T {
-    return typer.fn(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.typeFn(this);
-  }
-  params: TypeExpression[];
-  returns: TypeExpression;
-  constructor(params: TypeExpression[], returns: TypeExpression) {
-    super(tt.arrow);
-    this.params = params;
-    this.returns = returns;
-  }
-}
-
-export class FnCall extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.fnCall(this);
-  }
-  callee: Expr;
-  args: Expr[];
-  constructor(callee: Expr, args: Expr[]) {
-    super(tt.rparen);
-    this.callee = callee;
-    this.args = args;
-  }
-}
-const fnCall = (callee: Expr, args: Expr[]) => (
-  new FnCall(callee, args)
-);
-
-export class Atom extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.constant(this);
-  }
-  s: string | null | boolean;
-  type: tt.string | tt.null | tt.bool;
-  constructor(s: string | null | boolean, type: tt.string | tt.null | tt.bool) {
-    super(type);
-    this.s = s;
-    this.type = type;
-  }
-}
-export const str = (value: string) => (
-  new Atom(value, tt.string)
-);
-export const nil = () => (
-  new Atom(null, tt.null)
-);
-
-export const bool = (value: boolean) => (
-  new Atom(value, tt.bool)
-);
-
-export class AssignExpr extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.assign(this);
-  }
-  name: Sym;
-  init: Expr;
-  constructor(name: Sym, init: Expr) {
-    super(tt.eq);
-    this.name = name;
-    this.init = init;
-  }
-}
-const assignment = (name: Sym, init: Expr) => (
-  new AssignExpr(name, init)
-);
-
-class LogicalExpr extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.logicExpr(this);
-  }
-  left: Expr;
-  op: Token<BooleanOperator>;
-  right: Expr;
-  constructor(left: Expr, op: Token<BooleanOperator>, right: Expr) {
-    super(op.type);
-    this.left = left;
-    this.op = op;
-    this.right = right;
-  }
-}
-const logic = (left: Expr, op: Token<BooleanOperator>, right: Expr) => (
-  new LogicalExpr(left, op, right)
-);
-
-export class RelationExpr extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.relation(this);
-  }
-  left: Expr;
-  op: Token<RelationalOperator>;
-  right: Expr;
-  constructor(left: Expr, op: Token<RelationalOperator>, right: Expr) {
-    super(op.type);
-    this.left = left;
-    this.op = op;
-    this.right = right;
-  }
-}
-
-export class SetExpr extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.set(this);
-  }
-  elements: Expr[];
-  constructor(elements: Expr[]) {
-    super(tt.lbrace);
-    this.elements = elements;
-  }
-}
-const setExpr = (elements: Expr[]) => (
-  new SetExpr(elements)
-);
-
-export class TupleExpr extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.tuple(this);
-  }
-  elements: Expr[];
-  constructor(elements: Expr[]) {
-    super(tt.lbracket);
-    this.elements = elements;
-  }
-}
-const tupleExpr = (elements: Expr[]) => (
-  new TupleExpr(elements)
-);
-
-export class Group extends NonalgebraicExpr {
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.group(this);
-  }
-  expression: NonalgebraicExpr;
-  constructor(expression: NonalgebraicExpr) {
-    super(tt.lparen);
-    this.expression = expression;
-  }
-}
-const group = (expr: NonalgebraicExpr) => (
-  new Group(expr)
-);
-
-export const relation = (
-  left: Expr,
-  op: Token<RelationalOperator>,
-  right: Expr,
-) => (
-  new RelationExpr(left, op, right)
-);
-
-export abstract class AlgebraicExpr extends Expr {
-  abstract map<T>(algebra: Algebra<T>): T;
-  constructor(type: tt) {
-    super(type, nk.algebraic_expression);
-  }
-}
-
-export class ComplexNode extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.complex(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.complex(this);
-  }
-  n: Complex;
-  constructor(n: Complex) {
-    super(tt.complex);
-    this.n = n;
-  }
-}
-
-export class Rational extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.rational(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.rational(this);
-  }
-  value: Fraction;
-  constructor(value: Fraction) {
-    super(tt.frac);
-    this.value = value;
-  }
-}
-
-export class AlgebraicGroup extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.algebraicGroup(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.algebraicGroup(this);
-  }
-  expression: AlgebraicExpr;
-  constructor(expression: AlgebraicExpr) {
-    super(tt.lparen);
-    this.expression = expression;
-  }
-}
-const algebraGroup = (expression: AlgebraicExpr) => (
-  new AlgebraicGroup(expression)
-);
-
-export class AlgebraicCall extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.algebraicCall(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.algebraicCall(this);
-  }
-  callee: string;
-  args: AlgebraicExpr[];
-  constructor(callee: string, args: AlgebraicExpr[]) {
-    super(tt.call);
-    this.callee = callee;
-    this.args = args;
-  }
-}
-const algebraCall = (callee: string, args: AlgebraicExpr[]) => (
-  new AlgebraicCall(callee, args)
-);
-
-export class Unary extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.unary(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.unary(this);
-  }
-}
-
-export class Binary extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.binary(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.binary(this);
-  }
-  left: AlgebraicExpr;
-  op: Token<BinaryOperator>;
-  right: AlgebraicExpr;
-  constructor(
-    left: AlgebraicExpr,
-    op: Token<BinaryOperator>,
-    right: AlgebraicExpr,
-  ) {
-    super(op.type);
-    this.left = left;
-    this.op = op;
-    this.right = right;
-  }
-}
-export const binex = (
-  left: AlgebraicExpr,
-  op: Token<BinaryOperator>,
-  right: AlgebraicExpr,
-) => (
-  new Binary(left, op, right)
-);
-
-export class Float extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.float(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.float(this);
-  }
-  n: number;
-  constructor(n: number) {
-    super(tt.float);
-    this.n = n;
-  }
-}
-export const float = (value: string | number) => (
-  new Float(+value)
-);
-
-export class Integer extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.int(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.int(this);
-  }
-  n: number;
-  constructor(value: number) {
-    super(tt.int);
-    this.n = value;
-  }
-}
-export const int = (value: number | string) => (
-  new Integer(floor(+value))
-);
-
-export class Sym extends AlgebraicExpr {
-  map<T>(algebra: Algebra<T>): T {
-    return algebra.symbol(this);
-  }
-  accept<T>(visitor: Visitor<T>): T {
-    return visitor.symbol(this);
-  }
-  s: string;
-  type: TypeExpression;
-  constructor(value: string, type: TypeExpression) {
-    super(tt.symbol);
-    this.s = value;
-    this.type = type;
-  }
-  entype(type: TypeExpression) {
-    return new Sym(
-      this.s,
-      type,
-    );
-  }
-}
-export const sym = (value: string, type: TypeExpression = typeUnknown) => (
-  new Sym(value, type)
-);
-const isSymbol = (node: ASTNode): node is Sym => (
-  node.kind === tt.symbol
-);
+const coreFnScanner =
+  <K extends string[]>(functions: K) => (tokens: Token[]) => {
+    const functionNames = new Set(functions);
+    const out = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (token.is(tt.symbol) && functionNames.has(token.lex)) {
+        out.push(token.copy(tt.call));
+      } else {
+        out.push(token);
+      }
+    }
+    return out;
+  };
 
 // =====================================================================
 // § - Parser State
@@ -1409,40 +558,19 @@ const isSymbol = (node: ASTNode): node is Sym => (
  * parsing.
  */
 class ParserState {
-  static of(source: string) {
+  static of(source: Token[]) {
     return new ParserState(source);
   }
   error: null | Err = null;
-  source: string;
   cursor: number = -1;
   /** The maximum cursor index. */
   max: number = 0;
   tokens: Token[];
   peek: Token = Token.empty;
   current: Token = Token.empty;
-  nativeFns = new Set<string>([
-    "cos",
-    "sin",
-    "tan",
-    "lg",
-    "ln",
-    "log",
-    "sum",
-    "prod",
-  ]);
-  isNative(name: string) {
-    return this.nativeFns.has(name);
-  }
-  constructor(source: string) {
-    this.source = source;
-    const tkns = lex(source, this.nativeFns).tokenize();
-    if (tkns.isLeft()) {
-      this.tokens = [];
-      this.error = tkns.unwrap();
-    } else {
-      this.tokens = imul(symsplit(tkns.unwrap()));
-      this.max = this.tokens.length - 1;
-    }
+  constructor(source: Token[]) {
+    this.tokens = source;
+    this.max = source.length - 1;
   }
   /**
    * If the given type matches
@@ -1555,7 +683,7 @@ type Parslet = (
 type PEntry = [Parslet, Parslet, bp];
 type PSpec = Record<tt, PEntry>;
 
-const parse = (input: string) => {
+const parse = (input: Token[]) => {
   const state = ParserState.of(input);
   const expected = (exp: string, actual: string) => (
     `Expected ${exp}, got “${actual}”`
@@ -1573,8 +701,8 @@ const parse = (input: string) => {
       return state.err(expected("scientific number", lex), "SCI");
     }
     const [n, d] = lex.split("E");
-    const base = Number.isInteger(+n) ? int(n) : float(n);
-    const exp = binex(int("10"), tkn(tt.caret, "^", prev.line), int(d));
+    const base = Number.isInteger(+n) ? integer(n) : float(n);
+    const exp = binex(integer("10"), tkn(tt.caret, "^", prev.line), integer(d));
     return state.ok(binex(base, tkn(tt.star, "*", prev.line), exp));
   };
 
@@ -1589,7 +717,12 @@ const parse = (input: string) => {
     if (!isSymbol(node)) {
       return state.err(`Invalid assignment target`, `assign`);
     }
-    return expr().chain((n) => state.ok(assignment(node, n)));
+    return expr().chain((n) => {
+      if (!isExpr(n)) {
+        return state.err(`Expected expression`, "assign");
+      }
+      return state.ok(assignment(node, n));
+    });
   };
 
   const compare: Parslet = (op, node) => {
@@ -1598,32 +731,16 @@ const parse = (input: string) => {
       return state.ok(relation(node, op as Token<RelationalOperator>, n));
     });
   };
-  const typeBinex: Parslet = (op, node) => {
-    const erm = `Operator ${op.lex} is only valid in type annotations.`;
-    const src = `typenote-infix`;
-    if (!isTypeExpr(node)) {
-      return state.err(erm, src);
-    }
+
+  const infix: Parslet = (op, node) => {
     const p = precof(op.type);
     return expr(p).chain((n) => {
-      if (!isTypeExpr(n)) {
-        return state.err(erm, src);
-      }
-      const lhs = isSymbol(node) ? typesymbol(node.s) : node;
-      const rhs = isSymbol(n) ? typesymbol(n.s) : n;
-      return state.ok(typeInfix(lhs, op as Token<TypeOperator>, rhs));
+      return state.ok(binex(node, op as Token<BinaryOperator>, n));
     });
   };
 
-  const infix: Parslet = (op, node) => {
-    const erm = `Operator ${tt[op.type]} may only be used on algebras.`;
-    const src = "infix";
-    if (!algebraic(node)) {
-      return state.err(erm, src);
-    }
-    const p = precof(op.type);
-    return expr(p).chain((n) => {
-      if (!algebraic(n)) return state.err(erm, src);
+  const rightInfix: Parslet = (op, node) => {
+    return expr().chain((n) => {
       return state.ok(binex(node, op as Token<BinaryOperator>, n));
     });
   };
@@ -1636,9 +753,9 @@ const parse = (input: string) => {
     const lex = prev.lex;
     // deno-fmt-ignore
     switch (type) {
-      case tt.int: return state.ok(int(lex));
+      case tt.int: return state.ok(integer(lex));
 			case tt.float: return state.ok(float(lex));
-      case tt.symbol: return state.ok(sym(lex));
+      case tt.symbol: return state.ok(nomen(lex));
 			case tt.bool: return state.ok(bool(lex==='true'))
       case tt.string: return state.ok(str(lex));
 			case tt.null: return state.ok(nil());
@@ -1649,58 +766,29 @@ const parse = (input: string) => {
   const native: Parslet = (op) => {
     const lex = op.lex;
     const src = `native`;
-    if (!state.isNative(lex)) {
-      return state.err(`Unexpected native call`, src);
-    }
     if (!state.nextIs(tt.lparen)) {
       return state.err(`Expeced “(” to open arguments`, src);
     }
-    let args: AlgebraicExpr[] = [];
+    let args: Expr[] = [];
     if (!state.check(tt.rparen)) {
       do {
         const e = expr();
         if (e.isLeft()) return e;
         const node = e.unwrap();
-        if (!algebraic(node)) {
-          return state.err(`Native functions only accept algebras`, src);
-        }
         args.push(node);
       } while (state.nextIs(tt.comma));
     }
     if (!state.nextIs(tt.rparen)) {
       return state.err(expected(")", state.peek.lex), src);
     }
-    return state.ok(algebraCall(lex, args));
-  };
-
-  const typeNot: Parslet = (op) => {
-    const src = `type-not`;
-    const p = precof(op.type);
-    return expr(p).chain((n) => {
-      if (!isTypeExpr(n)) {
-        return state.err(`Operator ${op.lex} is only valid on type notes`, src);
-      } else {
-        let k = n;
-        if (isSymbol(n)) {
-          k = typesymbol(n.s);
-        }
-        return state.ok(typeUnary(k));
-      }
-    });
+    return state.ok(fnCall(nomen(lex), args, true));
   };
 
   const prefix: Parslet = (op) => {
     const src = `unary-prefix`;
     const p = precof(op.type);
     return expr(p).chain((n) => {
-      if (!algebraic(n)) {
-        return state.err(
-          `Operator ${op.lex} may only be used on algebras`,
-          src,
-        );
-      } else {
-        return state.ok(algebraCall(op.lex, [n]));
-      }
+      return state.ok(fnCall(nomen(op.lex), [n], true));
     });
   };
   const postfix: Parslet = (op, node) => {
@@ -1708,10 +796,7 @@ const parse = (input: string) => {
     if (op.type !== tt.bang) {
       return state.err(`Operator ! may only be used on algebras`, src);
     }
-    if (!algebraic(node)) {
-      return state.err(`Operator ! may only be used on algebras`, src);
-    }
-    return state.ok(algebraCall("!", [node]));
+    return state.ok(fnCall(nomen("!"), [node], true));
   };
 
   const primary = () => {
@@ -1719,14 +804,9 @@ const parse = (input: string) => {
     if (innerExpr.isLeft()) return innerExpr;
     state.next();
     const node = innerExpr.unwrap();
-    if (algebraic(node)) {
-      return state.ok(algebraGroup(node));
-    } else if (isTypeExpr(node)) {
-      return state.ok(typeGroup(node));
-    } else {
-      return state.ok(group(node));
-    }
+    return state.ok(group(node));
   };
+
   const callExpr: Parslet = (_, node) => {
     const callee = node;
     let args: Expr[] = [];
@@ -1738,7 +818,7 @@ const parse = (input: string) => {
     if (!state.nextIs(tt.rparen)) {
       return state.err(`Expected “)” to close args`, "call");
     }
-    return state.ok(fnCall(callee, args));
+    return state.ok(fnCall(callee, args, false));
   };
 
   const __o = bp.nil;
@@ -1773,7 +853,7 @@ const parse = (input: string) => {
     [tt.percent]: [__, infix, bp.quot],
     [tt.rem]: [__, infix, bp.quot],
     [tt.mod]: [__, infix, bp.quot],
-    [tt.caret]: [__, infix, bp.pow],
+    [tt.caret]: [__, rightInfix, bp.pow],
     // logic operators
     [tt.or]: [__, logicInfix, bp.or],
     [tt.and]: [__, logicInfix, bp.and],
@@ -1800,10 +880,11 @@ const parse = (input: string) => {
     [tt.rbracket]: [__, __, __o],
 
     // type operators
-    [tt.arrow]: [__, typeBinex, bp.typeinfix],
-    [tt.amp]: [__, typeBinex, bp.typeinfix],
-    [tt.vbar]: [__, typeBinex, bp.typeinfix],
-    [tt.tilde]: [typeNot, __, bp.typeunary],
+    [tt.arrow]: [__, __, __o],
+    [tt.amp]: [__, __, __o],
+    [tt.vbar]: [__, __, __o],
+    [tt.tilde]: [__, __, __o],
+    [tt.typename]: [__, __, __o],
 
     // keywords
     [tt.fn]: [__, __, __o],
@@ -1815,7 +896,6 @@ const parse = (input: string) => {
     [tt.constant]: [__, __, __o],
     [tt.while]: [__, __, __o],
     [tt.for]: [__, __, __o],
-    [tt.typename]: [__, __, bp.atom],
   };
   const prefixRule = (t: tt) => (
     rules[t][0]
@@ -1849,7 +929,7 @@ const parse = (input: string) => {
     if (!f.is(tt.symbol)) {
       return state.err(`Expected function name`, src);
     }
-    let params: Sym[] = [];
+    let params: Variable[] = [];
     if (!state.nextIs(tt.lparen)) {
       return state.err(`Expected “(” to open params`, src);
     }
@@ -1861,57 +941,13 @@ const parse = (input: string) => {
     if (!state.nextIs(tt.rparen)) {
       return state.err(`Expected “)” to close params`, src);
     }
-    if (!state.nextIs(tt.colon)) {
-      return state.err(`Expected “:” to begin type signature`, src);
-    }
-    let paramtypes: TypeExpression[] = [];
-    if (state.nextIs(tt.lparen)) {
-      const ptlist = comlist(isTypeExpr, `Expected type expressions`, src);
-      if (ptlist.isLeft()) return ptlist;
-      paramtypes = ptlist.unwrap().map((s) => {
-        if (isSymbol(s)) {
-          return typesymbol(s.s);
-        } else return s;
-      });
-      if (!state.nextIs(tt.rparen)) {
-        return state.err(`Expected “)” to close parameter types`, src);
-      }
-    } else {
-      const pts = expr(100);
-      if (pts.isLeft()) return pts;
-      const t = pts.unwrap();
-      if (isSymbol(t)) {
-        paramtypes.push(typesymbol(t.s));
-      } else if (isTypeExpr(t)) {
-        paramtypes.push(t);
-      }
-    }
-    if (paramtypes.length !== params.length) {
-      return state.err(`Type signature parameters do not match`, src);
-    }
-    params.forEach((p, i) => {
-      p.type = paramtypes[i];
-    });
-
-    if (!state.nextIs(tt.arrow)) {
-      return state.err(`Expected “->” after param types`, src);
-    }
-    const returnType = expr(100);
-    if (returnType.isLeft()) return returnType;
     if (!state.nextIs(tt.eq)) {
-      return state.err(`Expected “=” to begin function definition`, src);
-    }
-    let rs = returnType.unwrap();
-    if (isSymbol(rs)) {
-      rs = typesymbol(rs.s);
-    }
-    if (!isTypeExpr(rs)) {
-      return state.err(`Expected return type on right hand of “->”`, src);
+      return state.err(`Expected “=”`, src);
     }
     const body = STMT();
     if (body.isLeft()) return body;
     return state.ok(
-      fnStmt(f.lex, params, body.unwrap(), rs),
+      fnStmt(f.lex, params, body.unwrap()),
     );
   };
   const LET = () => {
@@ -1920,13 +956,13 @@ const parse = (input: string) => {
     if (!name.is(tt.symbol)) {
       return state.err(`Expected symbol`, src);
     }
-    let type = typeUnknown;
+    let type = "";
     if (state.nextIs(tt.colon)) {
       const t = state.next();
       if (!t.is(tt.symbol)) {
         return state.err(`Bad type annotation`, src);
       }
-      type = typesymbol(t.lex);
+      type = t.lex;
     }
     if (!state.nextIs(tt.eq)) {
       return state.err(`Expected assign “=”`, src);
@@ -1934,7 +970,7 @@ const parse = (input: string) => {
     const init = EXPR();
     if (init.isLeft()) return init;
     const value = init.unwrap().expr;
-    return state.ok(varstmt(sym(name.lex, type), value));
+    return state.ok(varstmt(nomen(name.lex, type), value));
   };
   const IF = () => {
     // if eaten by stmt
@@ -1983,6 +1019,10 @@ const parse = (input: string) => {
   const EXPR = () => {
     const out = expr();
     if (out.isLeft()) return out;
+    const n = out.unwrap();
+    if (!isExpr(n)) {
+      return state.err(`Expected expression`, "expr");
+    }
     if (state.nextIs(tt.semicolon) || state.implicitSemicolonOk()) {
       return state.ok(exprStmt(out.unwrap()));
     }
@@ -2009,9 +1049,14 @@ const parse = (input: string) => {
     return success(stmts);
   };
 
-  const parseExpression = () => {
+  const parseExpression = (): Left<Err> | Right<Expr> => {
     state.next();
-    return expr();
+    const out = expr();
+    if (out.isLeft()) {
+      return out;
+    }
+    const res = out.unwrap();
+    return right(res);
   };
 
   const run = () => {
@@ -2021,13 +1066,18 @@ const parse = (input: string) => {
 
   return {
     run,
-    tokenize: () => state.tokens,
     parseExpression,
   };
 };
 
+export type ParsedExpr = Left<Err> | Right<Expr>;
+const syntax = (tokens: Token[]) => parse(tokens).run();
+const algebra = (tokens: Token[]) => parse(tokens).parseExpression();
+const coreFns = coreFnScanner(["sin", "cos", "tan", "arctan"]);
+
 const src = `
-fn f(x): R -> R = x^2 - x!;
+u/v
 `;
-const j = parse(src).run();
-print(treeof(j));
+const p = algebra(imul(symsplit(coreFns(lexemes(src)))));
+// print(treeof(p));
+print(toInfix(p));

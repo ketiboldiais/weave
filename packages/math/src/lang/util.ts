@@ -5,6 +5,11 @@
  */
 
 /**
+ * Prints to the console.
+ */
+export const print = console.log;
+
+/**
  * Utility function for zipping lists.
  */
 export const zip = <A extends any[], B extends any[]>(
@@ -340,24 +345,26 @@ export const dne = (x: any): x is undefined => (x === undefined);
 
 export const { floor, ceil, abs, cos, sin, sign, pow, expm1 } = Math;
 
+/**
+ * Returns the `a % b`.
+ */
 export const mod = (a: number, b: number) => (
   ((a % b) + b) % b
 );
 
+/**
+ * Returns the floor division of a and b.
+ */
 export const quot = (a: number, b: number) => (
   floor(a / b)
 );
 
+/**
+ * Returns the a% of b.
+ */
 export const percent = (a: number, b: number) => (
   (100 * a) / b
 );
-
-export const print = console.log;
-
-const pm = (c: string) => (
-  Number.parseFloat(c + "1")
-);
-const exp10 = (n: number) => (10 ** n);
 
 /**
  * Converts the provided number into a pair of integers (N,D),
@@ -384,7 +391,7 @@ export const toFrac = (numberValue: number): [number, number] => {
     h = h2 + a * h1;
     k = k2 + a * k1;
   }
-  return [h, k];
+  return [h, abs(k)];
 };
 
 /**
@@ -466,23 +473,170 @@ export const stringUnion = (subject: string, target: string) => {
   return -1;
 };
 
+/**
+ * An identity function. Takes whatever
+ * argument it’s given and returns it.
+ */
 export const id = <T>(x: T) => x;
-export const isINT = (x: number) => (Number.isInteger(x));
-export const is1 = (x: number) => (x === 1);
-export const is0 = (x: number) => (x === 0);
+
+/**
+ * Returns true if the given value is
+ * a number.
+ */
+export const isnum = (x: any): x is number => (
+  (typeof x === "number") &&
+  (Number.isFinite(x)) &&
+  (!Number.isNaN(x))
+);
+
+/**
+ * Returns true if the given number is an
+ * integer.
+ */
+export const isINT = (x: number) => (isnum(x)) && (Number.isInteger(x));
+
+/**
+ * Returns true if the given number is not
+ * an integer.
+ */
+export const isFLOAT = (x: number) => !(isINT(x));
+
+/**
+ * Returns true if the given number is 1.
+ */
+export const is1 = (x: number) => (isnum(x)) && (x === 1);
+/**
+ * Returns true if the given number is 0.
+ */
+export const is0 = (x: number) => (isnum(x)) && (x === 0);
+/**
+ * Parses an integer.
+ */
 export const pInt = (x: string) => (Number.parseInt(x));
+/**
+ * Parses a float.
+ */
 export const pFloat = (x: string) => (Number.parseFloat(x));
 
+/**
+ * Returns the sign of the given
+ * bigint.
+ */
+// deno-fmt-ignore
+export const signB = (x:bigint) => (
+  x === (0n) ? (0n) 
+    : x > (0n) ? (1n)
+    : (-1n)
+)
+
+/**
+ * Returns the absolute value of the given bigint.
+ */
+export const absB = (x: bigint) => (
+  x < 0n ? x * -1n : x
+);
+type n2 = [number, number];
+
+/**
+ * Returns true if the given pair
+ * of numbers (presumed to be fractions)
+ * are equal.
+ */
+export const eqF = (a: n2, b: n2) => {
+  const A = simplify(a);
+  const B = simplify(b);
+  return (A[0] === B[0] && A[1] === B[1]);
+};
+
+/**
+ * Returns the product of the given
+ * pair of numbers (presumed to be
+ * fractions).
+ */
+export const mulF = (fraction1: n2, fraction2: n2) => (
+  simplify([
+    fraction1[0] * fraction2[0],
+    fraction1[1] * fraction2[1],
+  ])
+);
+
+/**
+ * Returns the quotient of the given
+ * pair of numbers (presumed to be
+ * fractions.)
+ */
+export const divF = (fraction1: n2, fraction2: n2) => (
+  simplify([
+    fraction1[0] * fraction2[1],
+    fraction1[1] * fraction2[0],
+  ])
+);
+
+/**
+ * Returns the sum of the given
+ * pair of numbers (presumed to be
+ * fractions).
+ */
+export const addF = (fraction1: n2, fraction2: n2) => (
+  simplify([
+    fraction1[0] * fraction2[1] + fraction2[0] * fraction1[1],
+    fraction1[1] * fraction2[1],
+  ])
+);
+
+/**
+ * Returns the difference of the given
+ * pair of numbers (presumed to be fractions).
+ */
+export const subF = (fraction1: n2, fraction2: n2) => (
+  simplify([
+    fraction1[0] * fraction2[1] - fraction2[0] * fraction1[1],
+    fraction1[1] * fraction2[1],
+  ])
+);
+const iof = (n: n2) => n[1];
+const rof = (n: n2) => n[0];
+/**
+ * Returns the sum of the given pair
+ * of numbers (presumed to be complex numbers).
+ */
+export const addC = (
+  complex1: n2,
+  complex2: n2,
+): n2 => [rof(complex1) + rof(complex2), iof(complex1) + iof(complex2)];
+
 export class Complex {
-  real: number;
+  r: number;
   i: number;
-  constructor(real: number, i: number) {
-    this.real = real;
+  constructor(r: number, i: number) {
+    this.r = r;
     this.i = i;
   }
+  get is1() {
+    return this.i === 0 && this.r === 1;
+  }
+  get is0() {
+    return this.i === 0 && this.r === 0;
+  }
+  get pair(): [number, number] {
+    return [this.i, this.r];
+  }
+  static from([n, d]: [number, number]) {
+    return new Complex(n, d);
+  }
+  binop(other: Complex, op: (x: n2, y: n2) => n2) {
+    return Complex.from(op(this.pair, other.pair));
+  }
+  add(other: Complex) {
+    return this.binop(other, addC);
+  }
+  toString() {
+    return `${this.r} + (${this.i})`
+  }
 }
-export const complex = (real: number, i: number) => (
-  new Complex(real, i)
+
+export const complex = ([r, i]: [number, number]) => (
+  new Complex(r, i)
 );
 
 export class Fraction {
@@ -490,9 +644,44 @@ export class Fraction {
   d: number;
   constructor(n: number, d: number) {
     this.n = n;
-    this.d = d;
+    this.d = abs(d);
+  }
+  copy() {
+    return new Fraction(this.n, this.d);
+  }
+  get pair(): [number, number] {
+    return [this.n, this.d];
+  }
+  static from([n, d]: [number, number]) {
+    return new Fraction(n, d);
+  }
+  binop(other: Fraction, op: (x: n2, y: n2) => n2) {
+    return Fraction.from(op(this.pair, other.pair));
+  }
+  add(other: Fraction) {
+    return this.binop(other, addF);
+  }
+  sub(other: Fraction) {
+    return this.binop(other, subF);
+  }
+  mul(other: Fraction) {
+    return this.binop(other, mulF);
+  }
+  div(other: Fraction) {
+    return this.binop(other, divF);
+  }
+  get is1() {
+    return this.n === this.d;
+  }
+  get is0() {
+    return this.n === 0;
+  }
+  toString() {
+    return `${this.n}/${this.d}`;
   }
 }
-export const frac = (numerator: number, denominator: number) => (
-  new Fraction(numerator, denominator)
+
+export const frac = ([n, d]: [number, number]) => (
+  new Fraction(n, d)
 );
+export const isarray = Array.isArray;
