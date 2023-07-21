@@ -3,12 +3,14 @@ import navcss from "./styles/nav.module.scss";
 import MainDoc from "./demos/main.doc.mdx";
 import QuadDoc from "./demos/quad.doc.mdx";
 import AxesDoc from "./demos/axes.doc.mdx";
+import TwineDoc from './demos/twine.doc.mdx';
 import { ReactNode } from "react";
 
 export const docLinks = {
   Intro: "/",
   Quadrilaterals: "/quad",
   Axes: "/axes",
+  Twine: '/twine',
 };
 
 export const Pages = () => {
@@ -19,6 +21,7 @@ export const Pages = () => {
           <Route path={docLinks.Intro} element={<MainDoc />} />
           <Route path={docLinks.Quadrilaterals} element={<QuadDoc />} />
           <Route path={docLinks.Axes} element={<AxesDoc />} />
+          <Route path={docLinks.Twine} element={<TwineDoc />} />
         </Route>
       </Routes>
     </BrowserRouter>

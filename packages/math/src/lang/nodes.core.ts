@@ -7,12 +7,8 @@ import {
   tt,
 } from "./enums.js";
 import { Token } from "./token.js";
-import {
-  complex,
-  floor,
-  frac,
-  toFrac,
-} from "./util.js";
+import { complex, floor, frac, toFrac } from "./util.js";
+import { Value } from "./value.js";
 
 export interface Visitor<T> {
   int(node: Integer): T;
@@ -20,14 +16,19 @@ export interface Visitor<T> {
   float(node: Float): T;
   constant(node: Literal): T;
   binary(node: Binary): T;
+  vector(node: VectorExpr): T;
   fnCall(node: FnCall): T;
+  nativeCall(node: NativeCall): T;
   relation(node: RelationExpr): T;
+  notExpr(node: NotExpr): T;
   logicExpr(node: LogicalExpr): T;
   group(node: Group): T;
   assign(node: AssignExpr): T;
+  printStmt(node: PrintStmt): T;
   blockStmt(node: BlockStmt): T;
   exprStmt(node: ExprStmt): T;
   functionStmt(node: FunctionStmt): T;
+  returnStmt(node: ReturnStmt): T;
   ifStmt(node: IfStmt): T;
   varStmt(node: VariableStmt): T;
   loopStmt(node: LoopStmt): T;
@@ -49,6 +50,34 @@ export abstract class Statement extends ASTNode {
   }
 }
 
+export class PrintStmt extends Statement {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.printStmt(this);
+  }
+  expr: Expr;
+  constructor(expr: Expr) {
+    super(tt.print);
+    this.expr = expr;
+  }
+}
+export const printStmt = (expr: Expr) => (
+  new PrintStmt(expr)
+);
+
+export class ReturnStmt extends Statement {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.returnStmt(this);
+  }
+  value: Expr;
+  constructor(value: Expr) {
+    super(tt.return);
+    this.value = value;
+  }
+}
+export const returnStmt = (value: Expr) => (
+  new ReturnStmt(value)
+);
+
 export class LoopStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.loopStmt(this);
@@ -61,6 +90,9 @@ export class LoopStmt extends Statement {
     this.body = body;
   }
 }
+export const loopStmt = (condition: Expr, body: Statement) => (
+  new LoopStmt(condition, body)
+);
 
 export class IfStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
@@ -84,42 +116,52 @@ export class VariableStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.varStmt(this);
   }
-  name: Variable;
+  name: Token;
   init: Expr;
-  constructor(name: Variable, init: Expr) {
+  type: string;
+  constructor(name: Token, init: Expr, type: string) {
     super(tt.let);
     this.name = name;
     this.init = init;
+    this.type = type;
   }
 }
-export const varstmt = (name: Variable, init: Expr) => (
-  new VariableStmt(name, init)
+export const varstmt = (name: Token, init: Expr, type: string) => (
+  new VariableStmt(name, init, type)
 );
 
 export class FunctionStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.functionStmt(this);
   }
-  name: string;
-  params: Variable[];
+  name: Token;
+  params: Token[];
   body: Statement;
+  paramTypes: string;
+  returnType: string;
   constructor(
-    name: string,
-    params: Variable[],
+    name: Token,
+    params: Token[],
     body: Statement,
+    paramTypes: string,
+    returnType: string,
   ) {
     super(tt.fn);
     this.name = name;
     this.params = params;
     this.body = body;
+    this.paramTypes = paramTypes;
+    this.returnType = returnType;
   }
 }
 export const fnStmt = (
-  name: string,
-  params: Variable[],
+  name: Token,
+  params: Token[],
   body: Statement,
+  paramTypes: string,
+  returnType: string,
 ) => (
-  new FunctionStmt(name, params, body)
+  new FunctionStmt(name, params, body, paramTypes, returnType)
 );
 
 export class ExprStmt extends Statement {
@@ -158,6 +200,25 @@ export abstract class Expr extends ASTNode {
 export const isExpr = (node: ASTNode): node is Expr => (
   node.nodeclass === nk.expression
 );
+export type NativeFn = "sin" | "cos" | "tan" | "-" | "+" | "!";
+export class NativeCall extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.nativeCall(this);
+  }
+  callee: NativeFn;
+  args: Expr[];
+  constructor(callee: NativeFn, args: Expr[]) {
+    super(tt.call);
+    this.callee = callee;
+    this.args = args;
+  }
+  get arity() {
+    return this.args.length;
+  }
+}
+export const nativeCall = (callee: NativeFn, args: Expr[]) => (
+  new NativeCall(callee, args)
+);
 
 export class FnCall extends Expr {
   accept<T>(visitor: Visitor<T>): T {
@@ -165,16 +226,16 @@ export class FnCall extends Expr {
   }
   callee: Expr;
   args: Expr[];
-  native: boolean;
-  constructor(callee: Expr, args: Expr[], native: boolean) {
+  line: number;
+  constructor(callee: Expr, args: Expr[], line: number) {
     super(tt.rparen);
     this.callee = callee;
     this.args = args;
-    this.native = native;
+    this.line = line;
   }
 }
-export const fnCall = (callee: Expr, args: Expr[], native: boolean) => (
-  new FnCall(callee, args, native)
+export const fnCall = (callee: Expr, args: Expr[], line: number) => (
+  new FnCall(callee, args, line)
 );
 
 export class Literal extends Expr {
@@ -203,6 +264,25 @@ export const bool = (value: boolean) => (
   new Literal(value, tt.bool)
 );
 
+export class VectorExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.vector(this);
+  }
+  elements: Expr[];
+  loc: Token;
+  constructor(elements: Expr[], loc: Token) {
+    super(tt.lbracket);
+    this.loc = loc;
+    this.elements = elements;
+  }
+}
+export const isVectorExpr = (node: ASTNode): node is VectorExpr => (
+  node.kind === tt.lbracket
+);
+export const vectorExpr = (elements: Expr[], loc: Token) => (
+  new VectorExpr(elements, loc)
+);
+
 export class AssignExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.assign(this);
@@ -217,6 +297,20 @@ export class AssignExpr extends Expr {
 }
 export const assignment = (name: Variable, init: Expr) => (
   new AssignExpr(name, init)
+);
+
+export class NotExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.notExpr(this);
+  }
+  expr: Expr;
+  constructor(expr: Expr) {
+    super(tt.not);
+    this.expr = expr;
+  }
+}
+export const notExpr = (expr: Expr) => (
+  new NotExpr(expr)
 );
 
 export class LogicalExpr extends Expr {
@@ -343,27 +437,22 @@ export class Variable extends Expr {
     return visitor.symbol(this);
   }
   toString(): string {
-    return this.s;
+    return this.name.lex;
   }
-  s: string;
+  name: Token;
   type: string;
-  constructor(value: string, type: string) {
+  constructor(name: Token, type: string) {
     super(tt.symbol);
-    this.s = value;
+    this.name = name;
     this.type = type;
   }
   equals(other: Variable) {
-    return this.s === other.s;
-  }
-  entype(type: string) {
-    return new Variable(
-      this.s,
-      type,
-    );
+    return (this.name.lex === other.name.lex &&
+      this.type === other.type);
   }
 }
-export const nomen = (value: string, type: string = "") => (
-  new Variable(value, type)
+export const nomen = (name: Token, type: string) => (
+  new Variable(name, type)
 );
 export const isSymbol = (node: ASTNode): node is Variable => (
   node.kind === tt.symbol

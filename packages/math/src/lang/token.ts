@@ -1,10 +1,10 @@
-import { dne } from './util.js';
-import { tt } from './enums.js';
-import { UnaryOperator } from './enums.js';
-import { BinaryOperator } from './enums.js';
-import { RelationalOperator } from './enums.js';
-import { BooleanOperator } from './enums.js';
-import { ArithmeticOperator } from './enums.js';
+import { dne } from "./util.js";
+import { tt } from "./enums.js";
+import { UnaryOperator } from "./enums.js";
+import { BinaryOperator } from "./enums.js";
+import { RelationalOperator } from "./enums.js";
+import { BooleanOperator } from "./enums.js";
+import { ArithmeticOperator } from "./enums.js";
 
 export class Token<T extends tt = tt> {
   /**
@@ -55,6 +55,10 @@ export class Token<T extends tt = tt> {
       this.type === tt.float ||
       this.type === tt.scientific
     );
+  }
+  onLine(n: number) {
+    this.line = n;
+    return this;
   }
 
   /**
@@ -122,9 +126,7 @@ export class Token<T extends tt = tt> {
     return false;
   }
   toString() {
-    return `[${this.line}] -- (${this.type}) -- <${
-      tt[this.type]
-    }> -- ${this.lex}`;
+    return this.lex;
   }
 
   /**

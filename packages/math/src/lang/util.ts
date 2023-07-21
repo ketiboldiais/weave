@@ -4,6 +4,12 @@
  * functions used by the engine.
  */
 
+// ========================================================
+// Math Object Exports
+// ========================================================
+
+export const { floor, ceil, abs, cos, sin, sign, pow, expm1 } = Math;
+
 /**
  * Prints to the console.
  */
@@ -343,7 +349,7 @@ export function omap<T, S>(f: (a: T) => S, opt: Maybe<T>): Maybe<S> {
  */
 export const dne = (x: any): x is undefined => (x === undefined);
 
-export const { floor, ceil, abs, cos, sin, sign, pow, expm1 } = Math;
+
 
 /**
  * Returns the `a % b`.
@@ -631,7 +637,7 @@ export class Complex {
     return this.binop(other, addC);
   }
   toString() {
-    return `${this.r} + (${this.i})`
+    return `${this.r} + (${this.i})`;
   }
 }
 
@@ -685,3 +691,7 @@ export const frac = ([n, d]: [number, number]) => (
   new Fraction(n, d)
 );
 export const isarray = Array.isArray;
+export const isstring = (x: any): x is string => (typeof x === "string");
+export const isnumber = (x: any): x is number => (typeof x === "number");
+export const isboolean = (x: any): x is boolean => (typeof x === "boolean");
+export const isset = (x: any): x is Set<any> => (x instanceof Set);

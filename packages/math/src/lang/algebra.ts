@@ -5,25 +5,22 @@ import {
   isLatinGreek,
   Left,
   left,
-  Maybe,
-  none,
   print,
   Right,
   right,
-  some,
   zip,
 } from "./util.js";
 import {
   BinaryOperator,
   BooleanOperator,
   bp,
+  islit,
   nk,
   Numeric,
   RelationalOperator,
   tt,
 } from "./enums.js";
 import {
-  AssignExpr,
   assignment,
   ASTNode,
   Binary,
@@ -32,42 +29,38 @@ import {
   BlockStmt,
   bool,
   Expr,
-  ExprStmt,
   exprStmt,
   failure,
-  Float,
   float,
-  FnCall,
   fnCall,
   fnStmt,
-  FunctionStmt,
-  Group,
   group,
-  IfStmt,
   ifStmt,
-  Integer,
   integer,
   isExpr,
   isSymbol,
-  Literal,
   logic,
   LogicalExpr,
-  LoopStmt,
+  loopStmt,
+  nativeCall,
+  NativeFn,
   nil,
   nomen,
+  notExpr,
+  printStmt,
   relation,
   RelationExpr,
+  returnStmt,
   Statement,
   str,
   success,
   Variable,
-  VariableStmt,
   varstmt,
-  Visitor,
+  vectorExpr,
 } from "./nodes.core.js";
 import { tkn, Token } from "./token.js";
 import { Err, lexicalError, parserError } from "./err.js";
-import { toInfix } from "./infixer.js";
+import { interpret } from "./visitor.interpreter.js";
 
 /**
  * Utility function for printing the AST.
@@ -120,6 +113,9 @@ export function treeof<T extends Object>(
         root instanceof LogicalExpr
       ) {
         root.op = root.op.lex as any;
+      }
+      if (root instanceof Token) {
+        root.type = tt[root.type];
       }
       line += prefix(key, last) + key.toString();
       if (typeof root !== "object") line += ": " + root;
@@ -306,18 +302,20 @@ const lexemes = (input: string): Token[] => {
     /**
      * Rational numbers take the form:
      * ~~~ts
-     * [int] '|' [int]
+     * [int] '//' [int]
      * ~~~
      * Both sides must be integers.
      */
-    if (match("|")) {
+    if (peekIs("/") && peekNext() === "/") {
       if (type === tt.int) {
         type = tt.frac;
+        tick(); // eat the first '/'
+        tick(); // eat the second '/'
         while (isDigit(peek()) && !atEnd()) {
           tick();
         }
-      } else { // The `~` should always be followed by an integer
-        return errorToken(`Expected integer after “|”`);
+      } else { // The `//` should always be followed by an integer
+        return errorToken(`Expected integer after “//”`);
       }
     }
 
@@ -352,6 +350,14 @@ const lexemes = (input: string): Token[] => {
     return token(type);
   };
 
+  const nativeFns: Record<NativeFn, boolean> = {
+    sin: true,
+    cos: true,
+    tan: true,
+    "-": true,
+    "+": true,
+    "!": true,
+  };
   /**
    * Scans a word. Word is defined as
    * either a user-defined symbol (the token `SYM`)
@@ -362,23 +368,16 @@ const lexemes = (input: string): Token[] => {
       tick();
     }
     const s = slice();
-    if (match("[")) {
-      const t = tick();
-      if (t !== "]") {
-        return errorToken(`Malformed array signature.`);
-      }
-      return token(tt.typename);
+    // @ts-ignore
+    if (nativeFns[s]) {
+      return token(tt.call);
     }
     // deno-fmt-ignore
     switch (s) {
-      case 'rational':
-      case 'bool':
-      case 'string':
-      case 'complex':
-      case 'float':
-      case 'int': return token(tt.typename);
 			case 'false':
 			case 'true': return token(tt.bool);
+      case 'then': return token(tt.then);
+      case 'return': return token(tt.return);
       case 'while': return token(tt.while);
       case 'for': return token(tt.for);
       case 'fn': return token(tt.fn);
@@ -387,11 +386,12 @@ const lexemes = (input: string): Token[] => {
       case 'end': return token(tt.end);
       case 'if': return token(tt.if);
       case 'else': return token(tt.else);
+      case 'print': return token(tt.print);
 			case 'rem': return token(tt.rem);
 			case 'mod': return token(tt.mod);
-			case 'nan': return token(tt.constant);
-			case 'inf': return token(tt.constant);
-			case 'nil': return token(tt.null);
+			case 'nan': return token(tt.nan);
+			case 'inf': return token(tt.inf);
+			case 'null': return token(tt.null);
       case 'and': return token(tt.and);
       case 'nor': return token(tt.nor);
       case 'nand': return token(tt.nand);
@@ -568,6 +568,7 @@ class ParserState {
   tokens: Token[];
   peek: Token = Token.empty;
   current: Token = Token.empty;
+  line: number = 1;
   constructor(source: Token[]) {
     this.tokens = source;
     this.max = source.length - 1;
@@ -622,6 +623,7 @@ class ParserState {
   next() {
     this.cursor++;
     this.current = this.peek;
+    this.line = this.current.line;
     const nextToken = this.tokens[this.cursor]
       ? this.tokens[this.cursor]
       : tkn(tt.eof, "eof", 1);
@@ -639,7 +641,7 @@ class ParserState {
    * error message.
    */
   err(message: string, source: string) {
-    const msg = `[${source}]: ${message}`;
+    const msg = `On line ${this.line}, while parsing ${source}: ${message}`;
     const e = parserError(msg);
     this.error = e;
     return left(e);
@@ -713,6 +715,23 @@ const parse = (input: Token[]) => {
     });
   };
 
+  const vector: Parslet = (prev) => {
+    const elements: Expr[] = [];
+    const src = `a vector`;
+    if (!state.peek.is(tt.rbracket)) {
+      do {
+        const e = expr();
+        if (e.isLeft()) return e;
+        const element = e.unwrap();
+        elements.push(element);
+      } while (state.nextIs(tt.comma) && !state.atEnd());
+    }
+    if (!state.nextIs(tt.rbracket)) {
+      return state.err(`Expected a right bracket “]” to close the vector`, src);
+    }
+    return state.ok(vectorExpr(elements, prev));
+  };
+
   const assign: Parslet = (_, node) => {
     if (!isSymbol(node)) {
       return state.err(`Invalid assignment target`, `assign`);
@@ -755,7 +774,9 @@ const parse = (input: Token[]) => {
     switch (type) {
       case tt.int: return state.ok(integer(lex));
 			case tt.float: return state.ok(float(lex));
-      case tt.symbol: return state.ok(nomen(lex));
+      case tt.nan: return state.ok(float(NaN))
+      case tt.inf: return state.ok(integer(Infinity))
+      case tt.symbol: return state.ok(nomen(prev, 'unknown'));
 			case tt.bool: return state.ok(bool(lex==='true'))
       case tt.string: return state.ok(str(lex));
 			case tt.null: return state.ok(nil());
@@ -781,22 +802,31 @@ const parse = (input: Token[]) => {
     if (!state.nextIs(tt.rparen)) {
       return state.err(expected(")", state.peek.lex), src);
     }
-    return state.ok(fnCall(nomen(lex), args, true));
+    return state.ok(nativeCall(lex as NativeFn, args));
+  };
+
+  const logicalNot: Parslet = (op) => {
+    const p = precof(op.type);
+    return expr(p).chain((n) => {
+      return state.ok(notExpr(n));
+    });
   };
 
   const prefix: Parslet = (op) => {
-    const src = `unary-prefix`;
     const p = precof(op.type);
     return expr(p).chain((n) => {
-      return state.ok(fnCall(nomen(op.lex), [n], true));
+      if (op.lex === "-") {
+        return state.ok(nativeCall("-", [n]));
+      } else if (op.lex === "+") {
+        return state.ok(nativeCall("+", [n]));
+      } else {
+        return state.err(`unknown prefix operator`, `prefix`);
+      }
     });
   };
+
   const postfix: Parslet = (op, node) => {
-    const src = `unary-postfix`;
-    if (op.type !== tt.bang) {
-      return state.err(`Operator ! may only be used on algebras`, src);
-    }
-    return state.ok(fnCall(nomen("!"), [node], true));
+    return state.ok(nativeCall("!", [node]));
   };
 
   const primary = () => {
@@ -807,7 +837,7 @@ const parse = (input: Token[]) => {
     return state.ok(group(node));
   };
 
-  const callExpr: Parslet = (_, node) => {
+  const callExpr: Parslet = (prev, node) => {
     const callee = node;
     let args: Expr[] = [];
     if (!state.check(tt.rparen)) {
@@ -818,7 +848,7 @@ const parse = (input: Token[]) => {
     if (!state.nextIs(tt.rparen)) {
       return state.err(`Expected “)” to close args`, "call");
     }
-    return state.ok(fnCall(callee, args, false));
+    return state.ok(fnCall(callee, args, prev.line));
   };
 
   const __o = bp.nil;
@@ -829,12 +859,14 @@ const parse = (input: Token[]) => {
     [tt.empty]: [__, __, __o],
     [tt.lparen]: [primary, callExpr, bp.call],
     [tt.rparen]: [__, __, __o],
+    [tt.lbracket]: [vector, __, __o],
+    [tt.rbracket]: [__, __, __o],
     [tt.lbrace]: [__, __, __o],
     [tt.rbrace]: [__, __, __o],
     [tt.comma]: [__, __, __o],
     [tt.dot]: [__, __, __o],
-
     [tt.semicolon]: [__, __, __o],
+
     [tt.bang]: [__, postfix, bp.call],
     // assignment
     [tt.eq]: [__, assign, bp.assign],
@@ -861,30 +893,31 @@ const parse = (input: Token[]) => {
     [tt.xnor]: [__, logicInfix, bp.xnor],
     [tt.nand]: [__, logicInfix, bp.nand],
     [tt.xor]: [__, logicInfix, bp.xor],
-    [tt.not]: [__, __, __o],
+    [tt.not]: [logicalNot, __, bp.not],
 
     // atoms
     [tt.symbol]: [atom, __, bp.atom],
     [tt.string]: [atom, __, bp.atom],
     [tt.int]: [atom, __, bp.atom],
+    [tt.float]: [atom, __, bp.atom],
+    [tt.null]: [atom, __, bp.atom],
+    [tt.bool]: [atom, __, bp.atom],
+    [tt.nan]: [atom, __, bp.atom],
+    [tt.inf]: [atom, __, bp.atom],
     [tt.frac]: [__, __, __o],
     [tt.complex]: [__, __, __o],
-    [tt.float]: [__, __, __o],
     [tt.scientific]: [scientific, __, bp.atom],
 
-    [tt.null]: [__, __, __o],
-    [tt.bool]: [__, __, __o],
-    [tt.call]: [native, __, bp.call],
     [tt.colon]: [__, __, __o],
-    [tt.lbracket]: [__, __, __o],
-    [tt.rbracket]: [__, __, __o],
+    
+    // native core functions
+    [tt.call]: [native, __, bp.call],
 
     // type operators
     [tt.arrow]: [__, __, __o],
     [tt.amp]: [__, __, __o],
     [tt.vbar]: [__, __, __o],
     [tt.tilde]: [__, __, __o],
-    [tt.typename]: [__, __, __o],
 
     // keywords
     [tt.fn]: [__, __, __o],
@@ -893,16 +926,20 @@ const parse = (input: Token[]) => {
     [tt.end]: [__, __, __o],
     [tt.if]: [__, __, __o],
     [tt.else]: [__, __, __o],
-    [tt.constant]: [__, __, __o],
+    [tt.then]: [__, __, __o],
     [tt.while]: [__, __, __o],
     [tt.for]: [__, __, __o],
+    [tt.return]: [__, __, __o],
+    [tt.print]: [__, __, __o],
   };
   const prefixRule = (t: tt) => (
     rules[t][0]
   );
+
   const infixRule = (t: tt) => (
     rules[t][1]
   );
+
   const precof = (t: tt) => (
     rules[t][2]
   );
@@ -922,64 +959,120 @@ const parse = (input: Token[]) => {
     }
     return lhs;
   };
+
   const FN = () => {
     // fn eaten in STMT
     const f = state.next();
-    const src = `function-statement`;
+    const src = `a function declaration`;
     if (!f.is(tt.symbol)) {
-      return state.err(`Expected function name`, src);
+      return state.err(`Expected a symbol for the function’s name`, src);
     }
-    let params: Variable[] = [];
+    let params: Token[] = [];
     if (!state.nextIs(tt.lparen)) {
-      return state.err(`Expected “(” to open params`, src);
+      return state.err(
+        `Expected the lexeme “(” to begin the parameter list`,
+        src,
+      );
     }
     if (!state.peek.is(tt.rparen)) {
-      const elems = comlist(isSymbol, `Expected symbol list`, src);
-      if (elems.isLeft()) return elems;
-      params = elems.unwrap();
+      do {
+        const e = state.next();
+        if (!e.is(tt.symbol)) {
+          return state.err(`Expected a symbol as a parameter`, src);
+        }
+        params.push(e);
+      } while (state.nextIs(tt.comma));
     }
     if (!state.nextIs(tt.rparen)) {
-      return state.err(`Expected “)” to close params`, src);
+      return state.err(
+        `Expected the lexeme “)” to close the parameter list`,
+        src,
+      );
+    }
+    if (!state.nextIs(tt.colon)) {
+      return state.err(
+        `Expected the lexeme “:” to begin the type signature`,
+        src,
+      );
+    }
+    const paramTypes = [];
+    while (!state.peek.is(tt.arrow) && !state.atEnd()) {
+      const paramType = state.next();
+      paramTypes.push(paramType);
+    }
+    if (!state.nextIs(tt.arrow)) {
+      return state.err(
+        `Expected the lexeme “->” to separate the return type`,
+        src,
+      );
+    }
+    const returnType = [];
+    while (!state.peek.is(tt.eq) && !state.atEnd()) {
+      const r = state.next();
+      returnType.push(r);
     }
     if (!state.nextIs(tt.eq)) {
-      return state.err(`Expected “=”`, src);
+      return state.err(
+        `Expected the lexeme “=” to separate the function’s body`,
+        src,
+      );
     }
     const body = STMT();
     if (body.isLeft()) return body;
     return state.ok(
-      fnStmt(f.lex, params, body.unwrap()),
+      fnStmt(
+        f,
+        params,
+        body.unwrap(),
+        paramTypes.map((t) => t.lex).join(" "),
+        returnType.map((t) => t.lex).join(" "),
+      ),
     );
   };
+
   const LET = () => {
     const name = state.next();
-    const src = `let`;
+    const src = `a variable declaration`;
     if (!name.is(tt.symbol)) {
       return state.err(`Expected symbol`, src);
     }
-    let type = "";
+    let type: string = "unknown";
     if (state.nextIs(tt.colon)) {
-      const t = state.next();
-      if (!t.is(tt.symbol)) {
-        return state.err(`Bad type annotation`, src);
+      const typename = [];
+      while (!state.peek.is(tt.eq) && !state.atEnd()) {
+        const r = state.next();
+        typename.push(r);
       }
-      type = t.lex;
+      type = typename.map((c) => c.lex).join(" ");
     }
     if (!state.nextIs(tt.eq)) {
-      return state.err(`Expected assign “=”`, src);
+      return state.err(`Expected assignment operator “=”`, src);
     }
     const init = EXPR();
     if (init.isLeft()) return init;
     const value = init.unwrap().expr;
-    return state.ok(varstmt(nomen(name.lex, type), value));
+    if (islit(value.kind)) {
+      const inferredType = tt[value.kind];
+      if (type !== "unknown" && inferredType !== type) {
+        return state.err(
+          `Variable annotated as “${type}” but a value of type ${inferredType} was assigned.`,
+          src,
+        );
+      }
+      type = tt[value.kind];
+    }
+    return state.ok(varstmt(name, value, type));
   };
+
   const IF = () => {
     // if eaten by stmt
     const condition = expr();
+    const src = `an if-statement`;
     if (condition.isLeft()) return condition;
-    if (!state.nextIs(tt.begin)) {
-      return state.err(`Expected block after if`, "if");
+    if (!state.nextIs(tt.then)) {
+      return state.err(`Expected “then” after the if condition`, src);
     }
-    const ifbranch = BLOCK();
+    const ifbranch = STMT();
     if (ifbranch.isLeft()) return ifbranch;
     let elsebranch: Statement = exprStmt(nil());
     if (state.nextIs(tt.else)) {
@@ -989,6 +1082,7 @@ const parse = (input: Token[]) => {
     }
     return state.ok(ifStmt(condition.unwrap(), ifbranch.unwrap(), elsebranch));
   };
+
   const comlist = <K extends Expr>(
     filter: (e: Expr) => e is K,
     errorMessage: string,
@@ -1004,6 +1098,7 @@ const parse = (input: Token[]) => {
     } while (state.nextIs(tt.comma));
     return right(elements);
   };
+
   const BLOCK = () => {
     const stmts: Statement[] = [];
     while (!state.check(tt.end) && !state.atEnd()) {
@@ -1016,6 +1111,7 @@ const parse = (input: Token[]) => {
     }
     return state.ok(block(stmts));
   };
+
   const EXPR = () => {
     const out = expr();
     if (out.isLeft()) return out;
@@ -1028,11 +1124,91 @@ const parse = (input: Token[]) => {
     }
     return state.err(`Expected “;” to end statement`, "expression");
   };
+
+  const WHILE = () => {
+    const src = `a while loop`;
+    // while keyword eaten in STMT
+    const condition = expr();
+    if (condition.isLeft()) return condition;
+    if (!state.nextIs(tt.begin)) {
+      return state.err(`Expected a block after the condition`, src);
+    }
+    const stmts = BLOCK();
+    if (stmts.isLeft()) return stmts;
+    return state.ok(loopStmt(condition.unwrap(), stmts.unwrap()));
+  };
+
+  const FOR = () => {
+    const src = `a for loop`;
+    if (!state.nextIs(tt.lparen)) {
+      return state.err(`Expected the lexeme “(” after the keyword “for”`, src);
+    }
+    let init: Statement | null = null;
+    if (state.nextIs(tt.semicolon)) {
+      init = init;
+    } else if (state.nextIs(tt.let)) {
+      const l = LET();
+      if (l.isLeft()) return l;
+      init = l.unwrap();
+    } else {
+      const e = EXPR();
+      if (e.isLeft()) return e;
+      init = e.unwrap();
+    }
+    let condition: Expr | null = null;
+    if (!state.peek.is(tt.semicolon)) {
+      const c = expr();
+      if (c.isLeft()) return c;
+      condition = c.unwrap();
+    }
+    if (!state.nextIs(tt.semicolon)) {
+      return state.err(`Expected a “;” after the loop condition`, src);
+    }
+    let increment: Expr | null = null;
+    if (!state.peek.is(tt.semicolon)) {
+      const i = expr();
+      if (i.isLeft()) return i;
+      increment = i.unwrap();
+    }
+    if (!state.nextIs(tt.rparen)) {
+      return state.err(`Expected a lexeme “)” after the loop’s clauses`, src);
+    }
+    if (!state.nextIs(tt.begin)) {
+      return state.err(`Expected a block after the loop’s clauses`, src);
+    }
+    const b = BLOCK();
+    if (b.isLeft()) return b;
+    let body: Statement = b.unwrap();
+    if (increment !== null) {
+      (body as BlockStmt).stmts.push(exprStmt(increment));
+    }
+    const c = (condition === null) ? bool(true) : condition;
+    body = loopStmt(c, body);
+    if (init !== null) {
+      body = block([init, body]);
+    }
+    return state.ok(body);
+  };
+
+  const RETURN = () => {
+    const out = EXPR();
+    return out.chain((e) => state.ok(returnStmt(e)));
+  };
+
+  const PRINT = () => {
+    const out = EXPR();
+    return out.chain((e) => state.ok(printStmt(e)));
+  };
+
   const STMT = (): Left<Err> | Right<Statement> => {
-    if (state.nextIs(tt.begin)) return BLOCK();
     if (state.nextIs(tt.let)) return LET();
-    if (state.nextIs(tt.if)) return IF();
     if (state.nextIs(tt.fn)) return FN();
+    if (state.nextIs(tt.if)) return IF();
+    if (state.nextIs(tt.begin)) return BLOCK();
+    if (state.nextIs(tt.while)) return WHILE();
+    if (state.nextIs(tt.for)) return FOR();
+    if (state.nextIs(tt.return)) return RETURN();
+    if (state.nextIs(tt.print)) return PRINT();
     return EXPR();
   };
 
@@ -1070,14 +1246,43 @@ const parse = (input: Token[]) => {
   };
 };
 
-export type ParsedExpr = Left<Err> | Right<Expr>;
-const syntax = (tokens: Token[]) => parse(tokens).run();
-const algebra = (tokens: Token[]) => parse(tokens).parseExpression();
-const coreFns = coreFnScanner(["sin", "cos", "tan", "arctan"]);
+/**
+ * Returns a full program parsing.
+ */
+export const syntax = (tokens: Token[]) => parse(tokens).run();
+
+/**
+ * Returns a parsing of only an expression.
+ */
+export const algebra = (tokens: Token[]) => parse(tokens).parseExpression();
+
+/**
+ * Array of supported core functions. This
+ */
+// const CoreFunctions: NativeFn[] = ["sin", "cos", "tan"];
+
+/**
+ * Tags all the provided strings as core function tokens.
+ */
+// const coreFns = coreFnScanner(CoreFunctions);
+// const p = algebra(imul(symsplit(coreFns(lexemes(src)))));
+
+/**
+ * Performs a full syntax parse with all defaults.
+ */
+export const read = (src: string) => (
+  syntax(imul(lexemes(src)))
+);
+const tf = (src: string) => imul(lexemes(src));
 
 const src = `
-u/v
+let a = [
+  [1,2,3],
+  [3,4,5],
+  [6,7,8],
+];
 `;
-const p = algebra(imul(symsplit(coreFns(lexemes(src)))));
+// const p = read(src);
+print(tf(src));
 // print(treeof(p));
-print(toInfix(p));
+// print(interpret(p));

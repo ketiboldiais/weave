@@ -1,0 +1,152 @@
+# Twine
+Weave uses a custom scripting language called Twine to evaluate and parse
+user-defined functions.
+
+## Core Data Types
+Twine has the following core data types:
+
+| Data Type  | Example           |
+| ---------- | ----------------- |
+| `int`      | `122`             |
+| `float`    | `12.34`           |
+| `wide`     | `7.38E+10`        |
+|            | `1.2855E-10`      |
+|            | `1_246_121`       |
+|            | `21_886_121.5831` |
+| `rational` | `1//3`            |
+| `complex`  | `3 + 5i`          |
+|            | `4 - 8i`          |
+| `bool`     | `true`            |
+|            | `false`           |
+| `string`   | `"Oconomowoc"`    |
+|            | `""`              |
+| `nil`      | `nil`             |
+| `nan`      | `nan`             |
+| `inf`      | `inf`             |
+
+## Variable Declarations
+A variable is declared with the `let` keyword:
+
+```ts
+let x = 12;
+```
+
+An optional type annotation may be provided:
+
+```ts
+let x: int = 12;
+```
+
+The annotation above isn’t necessary, as Twine’s typechecker can infer the
+variable `x` is of type `int`. If a type annotation is provided, however, and
+the initialized value isn’t the annotated type, an error is returned:
+
+```ts
+let x: int = 3.14; // Fails because 3.14 isn’t an int.
+```
+
+Twine requires all variables to be declared _and_ initialized before usage.
+
+## Identifiers
+An identifier in Twine is defined as any lexeme that passes all three prongs of the following test:
+
+1. The lexeme starts a Latin or Greek character, an underscore (`_`), or a dollar sign (`$`),
+2. The lexeme ends with a Latin or Greek character, an underscore (`_`), a dollar sign (`$`), or a digit, and
+3. The lexeme is not a [reserved word](#reserved-words).
+
+## Reserved Words
+| Word     | Semantic                             |
+| -------- | ------------------------------------ |
+| `if`     | introduces a condition for branching |
+| `else`   | introduces a branching alternative   |
+| `while`  | introduces an iterative statement    |
+| `for`    | marks syntactic sugar for `while`    |
+| `let`    | introduces a variable declaration    |
+| `fn`     | introduces a function declaration    |
+| `begin`  | the beginning of a block             |
+| `end`    | the end of a block                   |
+| `pi`     | global constant                      |
+| `e`      |                                      |
+| `subex`  | core algebra function                |
+| `poly`   |                                      |
+| `solve`  |                                      |
+| `solve`  |                                      |
+| `freeof` |                                      |
+| `derof`  |                                      |
+| `intof`  |                                      |
+| `degof`  |                                      |
+| `cos`    | native math function                 |
+| `tan`    |                                      |
+| `sin`    |                                      |
+| `sqrt`   |                                      |
+
+## Blocks
+Blocks are marked with the `begin` and `end` keywords: 
+
+```ts
+let j = 10;
+begin
+  let j = 12;
+end
+```
+Variables in Twine are lexically scoped. Thus, in the example above, the variable `j` within the block _shadows_ the variable `j` outside the block.
+
+## Conditionals
+Conditional statements may be written with the `if` and `else` keywords:
+
+```ts
+let x = 10;
+if x < 5 begin
+  x = 12;
+end else begin
+  x = 15;
+end
+```
+
+The `if` keyword’s condition must be followed by a block. Likewise, the `else`
+keyword must be followed by a [block](#blocks).
+
+## Loops
+```ts
+let n = 0;
+
+while n < 5 begin
+	n = n + 1;
+end
+
+for (let i = 0; i < 10; i = i + 1) begin
+  n = n + 1;
+end
+```
+
+All loops require a `begin` and `end` keyword to mark their executable blocks.
+While-loops do not require a parenthesized condition, but for-loops must always
+have their clauses parenthesized.
+
+## Function Declarations
+```ts
+fn f(x): R -> R = x^2;
+```
+
+All function declarations must begin with the keyword `fn`, followed by the
+function’s name (above, `f`). Parameters must be enclosed in parentheses,
+followed by a type signature. Function type signatures always take the form:
+
+```
+<typename> -> <typename>
+```
+
+Everything to the left of the arrow corresponds to the function’s parameter
+types, and everything to the right of the arrow corresponds to the function’s
+return type. Functions with multiple parameters require an asterisk-separated
+parameter type signature:
+
+```ts
+fn g(x,y,z): (R * R * R) -> R = x^2 + y^2 + z^2;
+```
+
+The type signature must then be followed by an equal sign to mark the beginning
+of the function’s body.
+
+
+ 

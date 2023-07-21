@@ -8,10 +8,16 @@ export enum tt {
   star, bang, neq, eq,
   deq, gt, lt, leq, geq,
   caret,percent,
-  symbol, string,int,frac,complex,
+
+  // literal values
+  string,int,frac,complex,
   float,scientific,
-  rem,mod,null,bool,
-  call,
+  null,bool,
+
+  // variables
+  symbol,
+
+  rem,mod,
   colon,
   lbracket,
   rbracket,
@@ -22,10 +28,23 @@ export enum tt {
   not,or,xor,
   // keywords
   fn, let, begin, end, if, else,
-  constant,while,for,
-  // type annotations
-  typename,
+  nan,inf,while,for,return,
+  then,print,
+  // native core functions are given
+  // the token call
+  call,
 }
+export const islit = (type: tt) => (
+  type === tt.string ||
+  type === tt.int ||
+  type === tt.frac ||
+  type === tt.complex ||
+  type === tt.float ||
+  type === tt.scientific ||
+  type === tt.null ||
+  type === tt.bool
+);
+
 export type Numeric = tt.float | tt.int | tt.scientific | tt.frac | tt.complex;
 export type UnaryOperator = tt.minus | tt.plus | tt.bang;
 export type RelationalOperator =
@@ -40,14 +59,13 @@ export type BooleanOperator =
   | tt.nor
   | tt.xnor
   | tt.nand
-  | tt.not
   | tt.or
   | tt.xor;
 export type BinaryOperator =
   | tt.star
   | tt.plus
-  | tt.caret
   | tt.minus
+  | tt.caret
   | tt.slash
   | tt.rem
   | tt.mod
@@ -65,15 +83,16 @@ export type ArithmeticOperator =
 export enum nk {
   statement,
   expression,
+  callable,
 }
 
 export enum bp {
   nil,
   lowest,
-	typesymbol,
-	typeinfix,
-	typeunary,
-	typefn,
+  typesymbol,
+  typeinfix,
+  typeunary,
+  typefn,
   assign,
   atom,
   or,

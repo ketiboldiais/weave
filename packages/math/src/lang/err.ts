@@ -1,4 +1,12 @@
-export type ErrType = "lexical" | "syntax" | "binding" | "type" | "algebra-runtime";
+export type ErrType =
+  | "lexical"
+  | "syntax"
+  | "binding"
+  | "type-error"
+  | "algebra-runtime"
+  | "runtime-error"
+  | "resolver-error";
+
 /**
  * Error messages are kept in `Err`
  * objects.
@@ -26,5 +34,13 @@ export const lexicalError = (message: string) => (
 );
 
 export const algebraError = (message: string) => (
-  new Err(message, 'algebra-runtime')
+  new Err(message, "algebra-runtime")
+);
+
+export const resolverError = (message: string) => (
+  new Err(message, "resolver-error")
+);
+
+export const runtimeError = (message: string) => (
+  new Err(message, "runtime-error")
 );
