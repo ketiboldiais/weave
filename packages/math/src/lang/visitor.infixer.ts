@@ -15,6 +15,7 @@ import {
   Literal,
   LogicalExpr,
   LoopStmt,
+  MatrixExpr,
   NativeCall,
   NotExpr,
   PrintStmt,
@@ -43,8 +44,8 @@ class Infixer implements Visitor<string> {
   float(node: Float): string {
     return `${node.n}`;
   }
-  constant(node: Literal): string {
-    return `${node.s}`;
+  literal(node: Literal): string {
+    return `${node.value}`;
   }
   binary(node: Binary): string {
     const l = this.ap(node.left);
@@ -53,8 +54,14 @@ class Infixer implements Visitor<string> {
     return `(${op} ${l} ${r})`;
   }
   vector(node: VectorExpr): string {
-    const elements = node.elements.map(c => this.ap(c)).join(',')
-    return `(vector [${elements}])`
+    const elements = node.elements.map((c) => this.ap(c)).join(",");
+    return `(vector [${elements}])`;
+  }
+  matrix(node: MatrixExpr): string {
+    const vectors = node.vectors.map((v) =>
+      '['+v.elements.map((e) => this.ap(e)).join(",")+']'
+    ).join('\n');
+    return `(matrix [${vectors}])`
   }
   fnCall(node: FnCall): string {
     const n = this.ap(node.callee);
@@ -114,10 +121,10 @@ class Infixer implements Visitor<string> {
     return `(while ${cond} ${body})`;
   }
   returnStmt(node: ReturnStmt): string {
-    return `(return ${this.ap(node.value)})`
+    return `(return ${this.ap(node.value)})`;
   }
   printStmt(node: PrintStmt): string {
-    return `(print ${this.ap(node.expr)})`
+    return `(print ${this.ap(node.expr)})`;
   }
   map(result: ASTNode) {
     return (this.ap(result));

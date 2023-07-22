@@ -8,7 +8,7 @@
 // Math Object Exports
 // ========================================================
 
-export const { floor, ceil, abs, cos, sin, sign, pow, expm1 } = Math;
+export const { floor, ceil, abs, cos, tan, sin, sign, pow, expm1 } = Math;
 
 /**
  * Prints to the console.
@@ -349,8 +349,6 @@ export function omap<T, S>(f: (a: T) => S, opt: Maybe<T>): Maybe<S> {
  */
 export const dne = (x: any): x is undefined => (x === undefined);
 
-
-
 /**
  * Returns the `a % b`.
  */
@@ -652,14 +650,42 @@ export class Fraction {
     this.n = n;
     this.d = abs(d);
   }
+  gte(other: Fraction) {
+    return this.gt(other) || this.equals(other);
+  }
+  gt(other: Fraction) {
+    return !this.lte(other);
+  }
+  lt(other: Fraction) {
+    return this.lte(other) && !this.equals(other);
+  }
+  lte(other: Fraction) {
+    const [thisN, thisD] = simplify([
+      this.n,
+      this.d,
+    ]);
+    const [otherN, otherD] = simplify([
+      other.n,
+      other.d,
+    ]);
+    return thisN * otherD <= otherN * thisD;
+  }
+  equals(other: Fraction) {
+    const [n1, d1] = simplify([this.n, this.d]);
+    const [n2, d2] = simplify([other.n, other.d]);
+    return (
+      (n1 === d1) && (n2 === d2)
+    );
+  }
   copy() {
     return new Fraction(this.n, this.d);
   }
   get pair(): [number, number] {
     return [this.n, this.d];
   }
-  static from([n, d]: [number, number]) {
-    return new Fraction(n, d);
+  static from(xs: [number, number] | number) {
+    if (typeof xs === "number") return new Fraction(xs, 1);
+    return new Fraction(xs[0], xs[1]);
   }
   binop(other: Fraction, op: (x: n2, y: n2) => n2) {
     return Fraction.from(op(this.pair, other.pair));
@@ -695,3 +721,7 @@ export const isstring = (x: any): x is string => (typeof x === "string");
 export const isnumber = (x: any): x is number => (typeof x === "number");
 export const isboolean = (x: any): x is boolean => (typeof x === "boolean");
 export const isset = (x: any): x is Set<any> => (x instanceof Set);
+
+export function tpl<T extends any[]>(...data: T) {
+  return data;
+}

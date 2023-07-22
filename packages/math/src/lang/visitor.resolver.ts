@@ -14,6 +14,7 @@ import {
   Literal,
   LogicalExpr,
   LoopStmt,
+  MatrixExpr,
   NativeCall,
   NotExpr,
   PrintStmt,
@@ -71,7 +72,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
   float(node: Float): void {
     return;
   }
-  constant(node: Literal): void {
+  literal(node: Literal): void {
     return;
   }
   binary(node: Binary): void {
@@ -82,6 +83,15 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
   vector(node: VectorExpr): void {
     for (let i = 0; i < node.elements.length; i++) {
       this.resolve(node.elements[i]);
+    }
+    return;
+  }
+  matrix(node: MatrixExpr): void {
+    for (let i = 0; i < node.rows; i++) {
+      for (let j = 0; j < node.cols; j++) {
+        const elem = node.vectors[i].elements[j];
+        this.resolve(elem);
+      }
     }
     return;
   }
@@ -118,7 +128,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
   }
   assign(node: AssignExpr): void {
     this.resolve(node.init);
-    this.resolveLocal(node, node.name.name);
+    this.resolveLocal(node, node.name);
     return;
   }
   resolve(stmt: ASTNode) {
@@ -192,10 +202,10 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
     this.resolve(node.body);
     return;
   }
-	printStmt(node: PrintStmt): void {
-		this.resolve(node.expr);
-		return;
-	}
+  printStmt(node: PrintStmt): void {
+    this.resolve(node.expr);
+    return;
+  }
   resolved(program: Program) {
     if (program.error !== null) {
       return left(program.error.message);

@@ -2,6 +2,7 @@ import { Err } from "./err.js";
 import {
   BinaryOperator,
   BooleanOperator,
+  nc,
   nk,
   RelationalOperator,
   tt,
@@ -11,42 +12,175 @@ import { complex, floor, frac, toFrac } from "./util.js";
 import { Value } from "./value.js";
 
 export interface Visitor<T> {
+  /**
+   * Visits an integer node.
+   * Integer nodes have no `entype` method
+   * since they are always of type `int`.
+   */
   int(node: Integer): T;
-  symbol(node: Variable): T;
+  /**
+   * Visits a float node.
+   * Float nodes have no `entype` method
+   * since they are always of type `float`.
+   */
   float(node: Float): T;
-  constant(node: Literal): T;
+  /**
+   * Visits a symbol node.
+   * Symbol nodes have an `entype` method
+   * since they may bind to any node.
+   */
+  symbol(node: Variable): T;
+  /**
+   * Visits a constant node (a node
+   * of type `string`, `null`, or `bool`).
+   * Constant nodes have no entype method
+   * since they are always one of the aforementioned
+   * types.
+   */
+  literal(node: Literal): T;
+  /**
+   * Visits a binary expression node.
+   * Binary expressions have an entype
+   * method, since the left and right
+   * operands may be arbitrary types.
+   */
   binary(node: Binary): T;
+  /**
+   * Visits a vector node.
+   * Vector nodes have no entype
+   * method since they are always
+   * of type `number[]`.
+   */
   vector(node: VectorExpr): T;
+  /**
+   * Visits a matrix node.
+   * Matrix nodes have no entype
+   * method since they are always
+   * of type `number[][]`.
+   */
+  matrix(node: MatrixExpr): T;
+  /**
+   * Visits a user function call.
+   * User function calls always have
+   * an entype method.
+   */
   fnCall(node: FnCall): T;
+  /**
+   * Visits a native call expression.
+   * Native calls never have an entype
+   * method because they’re internal.
+   */
   nativeCall(node: NativeCall): T;
+  /**
+   * Visits a relation node.
+   * Relation nodes always have an entype
+   * method because the left and right
+   * operands may be arbitrary nodes.
+   */
   relation(node: RelationExpr): T;
+  /**
+   * Visits a logical not expression.
+   * The not expression has an entype
+   * method since its argument may be
+   * an arbitrary node.
+   */
   notExpr(node: NotExpr): T;
+  /**
+   * Visits a logic expression.
+   * Logic expressions always have an entype
+   * method because the left and right operands
+   * may be arbitrary nodes.
+   */
   logicExpr(node: LogicalExpr): T;
+  /**
+   * Visits a group expression.
+   * Group expressions always have an
+   * entype method because the inner
+   * expression may be an arbitrary
+   * node.
+   */
   group(node: Group): T;
+  /**
+   * Visits an assignment expression.
+   * Assignment expressions always have
+   * an entype method because the
+   * the variables may be assigned arbitrary
+   * values.
+   */
   assign(node: AssignExpr): T;
+  /**
+   * Visits a print statement.
+   * Print statements never have an entype
+   * method because they always have the type:
+   * ~~~
+   * _ -> null
+   * ~~~
+   */
   printStmt(node: PrintStmt): T;
+  /**
+   * Visits a block statement.
+   * Block statements have an
+   * entype method since they
+   * may return some arbitrary
+   * type.
+   */
   blockStmt(node: BlockStmt): T;
+  /**
+   * Visits an expression statement.
+   * Expression statements have an entype
+   * method since they may map to some
+   * arbitrary expression.
+   */
   exprStmt(node: ExprStmt): T;
+  /**
+   * Visits a function statement.
+   * Function statements have an entype
+   * method, taking an argument that will
+   * construct the type signature:
+   *
+   * ~~~
+   * fn symbol := type
+   * ~~~
+   */
   functionStmt(node: FunctionStmt): T;
   returnStmt(node: ReturnStmt): T;
   ifStmt(node: IfStmt): T;
+  /**
+   * Visits a variable statement.
+   * Variable statements have an entype
+   * method, corresponding to a type
+   * signature:
+   *
+   * ~~~
+   * symbol := type
+   * ~~~
+   */
   varStmt(node: VariableStmt): T;
   loopStmt(node: LoopStmt): T;
 }
 
 export abstract class ASTNode {
   abstract accept<T>(visitor: Visitor<T>): T;
-  kind: tt;
-  nodeclass: nk;
-  constructor(type: tt, kind: nk) {
-    this.kind = type;
-    this.nodeclass = kind;
+  kind: nk;
+  nodeclass: nc;
+  type: string = "_";
+  constructor(nodeclass: nc, kind: nk) {
+    this.kind = kind;
+    this.nodeclass = nodeclass;
+  }
+  /**
+   * Returns true if this
+   * node is typed (i.e., not
+   * the empty string).
+   */
+  isTyped() {
+    return this.type !== "_";
   }
 }
 
 export abstract class Statement extends ASTNode {
-  constructor(type: tt) {
-    super(type, nk.statement);
+  constructor(kind: nk) {
+    super(nc.statement, kind);
   }
 }
 
@@ -54,12 +188,14 @@ export class PrintStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.printStmt(this);
   }
+  type: "_ -> null" = "_ -> null";
   expr: Expr;
   constructor(expr: Expr) {
-    super(tt.print);
+    super(nk.print);
     this.expr = expr;
   }
 }
+
 export const printStmt = (expr: Expr) => (
   new PrintStmt(expr)
 );
@@ -70,7 +206,7 @@ export class ReturnStmt extends Statement {
   }
   value: Expr;
   constructor(value: Expr) {
-    super(tt.return);
+    super(nk.return);
     this.value = value;
   }
 }
@@ -85,7 +221,7 @@ export class LoopStmt extends Statement {
   condition: Expr;
   body: Statement;
   constructor(condition: Expr, body: Statement) {
-    super(tt.while);
+    super(nk.loop);
     this.condition = condition;
     this.body = body;
   }
@@ -102,7 +238,7 @@ export class IfStmt extends Statement {
   then: Statement;
   alt: Statement;
   constructor(condition: Expr, then: Statement, alt: Statement) {
-    super(tt.if);
+    super(nk.conditional);
     this.condition = condition;
     this.then = then;
     this.alt = alt;
@@ -118,15 +254,18 @@ export class VariableStmt extends Statement {
   }
   name: Token;
   init: Expr;
-  type: string;
+  type: `${string} := ${string}`;
   constructor(name: Token, init: Expr, type: string) {
-    super(tt.let);
+    super(nk.variable_statement);
     this.name = name;
     this.init = init;
-    this.type = type;
+    this.type = `${name.lex} := ${type}`;
+  }
+  entype(initType: string) {
+    this.type = `${this.name.lex} := ${initType}`;
   }
 }
-export const varstmt = (name: Token, init: Expr, type: string) => (
+export const varstmt = (name: Token, init: Expr, type: string = "_") => (
   new VariableStmt(name, init, type)
 );
 
@@ -137,8 +276,7 @@ export class FunctionStmt extends Statement {
   name: Token;
   params: Token[];
   body: Statement;
-  paramTypes: string;
-  returnType: string;
+  type: `${string} := ${string} -> ${string}`;
   constructor(
     name: Token,
     params: Token[],
@@ -146,12 +284,15 @@ export class FunctionStmt extends Statement {
     paramTypes: string,
     returnType: string,
   ) {
-    super(tt.fn);
+    super(nk.function_statement);
     this.name = name;
     this.params = params;
     this.body = body;
-    this.paramTypes = paramTypes;
-    this.returnType = returnType;
+    this.type = `${name.lex} := ${paramTypes} -> ${returnType}`;
+  }
+  entype(paramTypes: string[], returnType: string) {
+    this.type = `${this.name.lex} := ${paramTypes.join("")} -> ${returnType}`;
+    return this;
   }
 }
 export const fnStmt = (
@@ -173,6 +314,10 @@ export class ExprStmt extends Statement {
     super(expr.kind);
     this.expr = expr;
   }
+  entype(value: string) {
+    this.type = value;
+    return this;
+  }
 }
 export const exprStmt = (expr: Expr) => (
   new ExprStmt(expr)
@@ -184,31 +329,56 @@ export class BlockStmt extends Statement {
   }
   stmts: Statement[];
   constructor(stmts: Statement[]) {
-    super(tt.begin);
+    super(nk.block_statement);
     this.stmts = stmts;
+  }
+  entype(value: string) {
+    this.type = value;
+    return this;
   }
 }
 export const block = (statements: Statement[]) => (
   new BlockStmt(statements)
 );
 
+export interface AlgebraicVisitor<T> {
+  int(node: Integer): T;
+  float(node: Float): T;
+  symbol(node: Variable): T;
+  literal(node: Literal): T;
+  binary(node: Binary): T;
+  vector(node: VectorExpr): T;
+  matrix(node: MatrixExpr): T;
+  fnCall(node: FnCall): T;
+  nativeCall(node: NativeCall): T;
+  relation(node: RelationExpr): T;
+  notExpr(node: NotExpr): T;
+  logicExpr(node: LogicalExpr): T;
+  group(node: Group): T;
+  assign(node: AssignExpr): T;
+}
+
 export abstract class Expr extends ASTNode {
-  constructor(type: tt) {
-    super(type, nk.expression);
+  abstract map<T>(visitor: AlgebraicVisitor<T>): T;
+  constructor(kind: nk) {
+    super(nc.expression, kind);
   }
 }
 export const isExpr = (node: ASTNode): node is Expr => (
-  node.nodeclass === nk.expression
+  node.nodeclass === nc.expression
 );
 export type NativeFn = "sin" | "cos" | "tan" | "-" | "+" | "!";
 export class NativeCall extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.nativeCall(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.nativeCall(this);
+  }
   callee: NativeFn;
   args: Expr[];
   constructor(callee: NativeFn, args: Expr[]) {
-    super(tt.call);
+    super(nk.native_call);
     this.callee = callee;
     this.args = args;
   }
@@ -224,14 +394,21 @@ export class FnCall extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.fnCall(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.fnCall(this);
+  }
   callee: Expr;
   args: Expr[];
   line: number;
   constructor(callee: Expr, args: Expr[], line: number) {
-    super(tt.rparen);
+    super(nk.user_fn_call);
     this.callee = callee;
     this.args = args;
     this.line = line;
+  }
+  entype(value: string) {
+    this.type = value;
+    return this;
   }
 }
 export const fnCall = (callee: Expr, args: Expr[], line: number) => (
@@ -240,62 +417,104 @@ export const fnCall = (callee: Expr, args: Expr[], line: number) => (
 
 export class Literal extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.constant(this);
+    return visitor.literal(this);
   }
-  s: string | null | boolean;
-  type: tt.string | tt.null | tt.bool;
-  constructor(s: string | null | boolean, type: tt.string | tt.null | tt.bool) {
-    super(type);
-    this.s = s;
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.literal(this);
+  }
+  value: string | null | boolean;
+  type: "string" | "null" | "bool";
+  constructor(
+    value: string | null | boolean,
+    nodeclass: nk.string | nk.null | nk.bool,
+    type: "string" | "null" | "bool",
+  ) {
+    super(nodeclass);
+    this.value = value;
     this.type = type;
   }
-  typeof() {
-    return tt[this.type];
-  }
 }
+
 export const str = (value: string) => (
-  new Literal(value, tt.string)
+  new Literal(value, nk.string, "string")
 );
 export const nil = () => (
-  new Literal(null, tt.null)
+  new Literal(null, nk.null, "null")
 );
 
 export const bool = (value: boolean) => (
-  new Literal(value, tt.bool)
+  new Literal(value, nk.bool, "bool")
 );
 
 export class VectorExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.vector(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.vector(this);
+  }
   elements: Expr[];
-  loc: Token;
-  constructor(elements: Expr[], loc: Token) {
-    super(tt.lbracket);
+  loc: number;
+  type: "vector" = "vector";
+  constructor(elements: Expr[], loc: number) {
+    super(nk.vector);
     this.loc = loc;
     this.elements = elements;
   }
 }
 export const isVectorExpr = (node: ASTNode): node is VectorExpr => (
-  node.kind === tt.lbracket
+  node.kind === nk.vector
 );
-export const vectorExpr = (elements: Expr[], loc: Token) => (
+export const vectorExpr = (elements: Expr[], loc: number) => (
   new VectorExpr(elements, loc)
+);
+
+export class MatrixExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.matrix(this);
+  }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.matrix(this);
+  }
+  vectors: VectorExpr[];
+  rows: number;
+  cols: number;
+  type: "matrix" = "matrix";
+  constructor(vectors: VectorExpr[], rows: number, cols: number) {
+    super(nk.matrix);
+    this.vectors = vectors;
+    this.rows = rows;
+    this.cols = cols;
+  }
+}
+export const matrixExpr = (
+  vectors: VectorExpr[],
+  rows: number,
+  cols: number,
+) => (
+  new MatrixExpr(vectors, rows, cols)
 );
 
 export class AssignExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.assign(this);
   }
-  name: Variable;
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.assign(this);
+  }
+  name: Token;
   init: Expr;
-  constructor(name: Variable, init: Expr) {
-    super(tt.eq);
+  constructor(name: Token, init: Expr) {
+    super(nk.assign);
     this.name = name;
     this.init = init;
   }
+  entype(value: string) {
+    this.type = value;
+    return this;
+  }
 }
-export const assignment = (name: Variable, init: Expr) => (
+export const assignment = (name: Token, init: Expr) => (
   new AssignExpr(name, init)
 );
 
@@ -303,12 +522,20 @@ export class NotExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.notExpr(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.notExpr(this);
+  }
   expr: Expr;
   constructor(expr: Expr) {
-    super(tt.not);
+    super(nk.not);
     this.expr = expr;
   }
+  entype(value: string) {
+    this.type = value;
+    return this;
+  }
 }
+
 export const notExpr = (expr: Expr) => (
   new NotExpr(expr)
 );
@@ -317,14 +544,21 @@ export class LogicalExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.logicExpr(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.logicExpr(this);
+  }
   left: Expr;
   op: Token<BooleanOperator>;
   right: Expr;
   constructor(left: Expr, op: Token<BooleanOperator>, right: Expr) {
-    super(op.type);
+    super(nk.logic);
     this.left = left;
     this.op = op;
     this.right = right;
+  }
+  entype(value: string) {
+    this.type = value;
+    return this;
   }
 }
 export const logic = (left: Expr, op: Token<BooleanOperator>, right: Expr) => (
@@ -335,14 +569,21 @@ export class RelationExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.relation(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.relation(this);
+  }
   left: Expr;
   op: Token<RelationalOperator>;
   right: Expr;
   constructor(left: Expr, op: Token<RelationalOperator>, right: Expr) {
-    super(op.type);
+    super(nk.relation);
     this.left = left;
     this.op = op;
     this.right = right;
+  }
+  entype(value: string) {
+    this.type = value;
+    return this;
   }
 }
 
@@ -350,10 +591,17 @@ export class Group extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.group(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.group(this);
+  }
   expression: Expr;
   constructor(expression: Expr) {
-    super(tt.lparen);
+    super(nk.group);
     this.expression = expression;
+  }
+  entype(value: string) {
+    this.type = value;
+    return this;
   }
 }
 export const group = (expr: Expr) => (
@@ -372,9 +620,13 @@ export class Float extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.float(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.float(this);
+  }
   n: number;
+  type: "float" = "float";
   constructor(n: number) {
-    super(tt.float);
+    super(nk.float);
     this.n = n;
   }
   toString(): string {
@@ -394,7 +646,7 @@ export class Float extends Expr {
   }
 }
 export const isFloat = (node: ASTNode): node is Float => (
-  node.kind === tt.float
+  node.kind === nk.float
 );
 export const float = (value: string | number) => (
   new Float(+value)
@@ -407,9 +659,13 @@ export class Integer extends Expr {
   toString(): string {
     return `${this.n}`;
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.int(this);
+  }
   n: number;
+  type: "int" = "int";
   constructor(value: number) {
-    super(tt.int);
+    super(nk.int);
     this.n = value;
   }
   get complex() {
@@ -426,7 +682,7 @@ export class Integer extends Expr {
   }
 }
 export const isInteger = (node: ASTNode): node is Integer => (
-  node.kind === tt.int
+  node.kind === nk.int
 );
 export const integer = (value: number | string) => (
   new Integer(floor(+value))
@@ -439,10 +695,12 @@ export class Variable extends Expr {
   toString(): string {
     return this.name.lex;
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.symbol(this);
+  }
   name: Token;
-  type: string;
   constructor(name: Token, type: string) {
-    super(tt.symbol);
+    super(nk.symbol);
     this.name = name;
     this.type = type;
   }
@@ -450,12 +708,16 @@ export class Variable extends Expr {
     return (this.name.lex === other.name.lex &&
       this.type === other.type);
   }
+  entype(typename: string) {
+    this.type = typename;
+    return this;
+  }
 }
 export const nomen = (name: Token, type: string) => (
   new Variable(name, type)
 );
 export const isSymbol = (node: ASTNode): node is Variable => (
-  node.kind === tt.symbol
+  node.kind === nk.symbol
 );
 
 export type CoreFns =
@@ -477,27 +739,28 @@ export class Binary extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.binary(this);
   }
+  map<T>(visitor: AlgebraicVisitor<T>): T {
+    return visitor.binary(this);
+  }
   left: Expr;
   op: Token<BinaryOperator>;
   right: Expr;
   constructor(left: Expr, op: Token<BinaryOperator>, right: Expr) {
-    super(op.type);
+    super(nk.binary);
     this.left = left;
     this.op = op;
     this.right = right;
   }
+  entype(value: string) {
+    this.type = value;
+    return this;
+  }
 }
 
 export const isBinary = (node: ASTNode): node is Binary => (
-  node.nodeclass === nk.expression && (
-    node.kind === tt.star ||
-    node.kind === tt.plus ||
-    node.kind === tt.caret ||
-    node.kind === tt.slash ||
-    node.kind === tt.mod ||
-    node.kind === tt.percent
-  )
+  node.kind === nk.binary
 );
+
 export const binex = (
   left: Expr,
   op: Token<BinaryOperator>,

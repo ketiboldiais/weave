@@ -1,5 +1,6 @@
-import { cos, sin, tan } from "../index.js";
-import { BinaryOperator, nk, tt } from "./enums.js";
+import { cos, sin, tan } from "./util.js";
+import { Vector } from "../vector.js";
+import { nk, tt } from "./enums.js";
 import { env, Environment } from "./environment.js";
 import {
   AssignExpr,
@@ -17,6 +18,7 @@ import {
   Literal,
   LogicalExpr,
   LoopStmt,
+  MatrixExpr,
   NativeCall,
   NotExpr,
   PrintStmt,
@@ -32,18 +34,17 @@ import {
 import { Token } from "./token.js";
 import {
   isarray,
-  isboolean,
   isnumber,
   isset,
   isstring,
   left,
   mod,
   percent,
-  print,
   right,
 } from "./util.js";
 import { Value } from "./value.js";
 import { resolvable } from "./visitor.resolver.js";
+import { Matrix } from "../matrix.js";
 
 export class Fn {
   private fnStmt: FunctionStmt;
@@ -143,15 +144,15 @@ export class Interpreter implements Visitor<Value> {
   float(node: Float): Value {
     return node.n;
   }
-  constant(node: Literal): Value {
-    return node.s;
+  literal(node: Literal): Value {
+    return node.value;
   }
   binary(node: Binary): Value {
     const L = this.ap(node.left) as number;
     const R = this.ap(node.right) as number;
     const op = node.op;
     // deno-fmt-ignore
-    switch (op.type) {
+    switch (op.tokenType) {
       case tt.star: return L * R;
       case tt.plus: return L + R;
       case tt.minus: return L - R;
@@ -162,9 +163,20 @@ export class Interpreter implements Visitor<Value> {
       case tt.percent: return percent(L, R);
     }
   }
-  vector(node: VectorExpr): Value {
-    const elements = node.elements.map((e) => this.ap(e));
-    return elements;
+  vector(node: VectorExpr): Vector {
+    const elements: number[] = [];
+    for (let i = 0; i < node.elements.length; i++) {
+      const e = this.ap(node.elements[i]);
+      elements.push(e as number);
+    }
+    return new Vector(elements);
+  }
+  matrix(node: MatrixExpr): Value {
+    const elems: (Vector)[] = [];
+    for (let i = 0; i < node.rows; i++) {
+      elems.push(this.vector(node.vectors[i]));
+    }
+    return new Matrix(node.rows, node.cols);
   }
   fnCall(node: FnCall): Value {
     const n = this.ap(node.callee);
@@ -184,7 +196,7 @@ export class Interpreter implements Visitor<Value> {
     const R = this.ap(node.right) as number;
     const op = node.op;
     // deno-fmt-ignore
-    switch (op.type) {
+    switch (op.tokenType) {
 			case tt.lt: return L < R;
 			case tt.gt: return L > R;
 			case tt.deq: return L === R;
@@ -198,7 +210,7 @@ export class Interpreter implements Visitor<Value> {
     const R = isTruthy(this.ap(node.right));
     const op = node.op;
     // deno-fmt-ignore
-    switch (op.type) {
+    switch (op.tokenType) {
       case tt.and: return L && R;
       case tt.nor: return !(L || R);
       case tt.xnor: return L === R;
@@ -232,7 +244,7 @@ export class Interpreter implements Visitor<Value> {
   }
   assign(node: AssignExpr): Value {
     const value = this.ap(node.init);
-    const name = node.name.name;
+    const name = node.name;
     const distance = this.locals.get(node);
     if (distance !== undefined) {
       this.env.assignAt(distance, name, value);

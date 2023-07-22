@@ -14,7 +14,7 @@ import {
   BinaryOperator,
   BooleanOperator,
   bp,
-  islit,
+  nc,
   nk,
   Numeric,
   RelationalOperator,
@@ -39,9 +39,11 @@ import {
   integer,
   isExpr,
   isSymbol,
+  isVectorExpr,
   logic,
   LogicalExpr,
   loopStmt,
+  matrixExpr,
   nativeCall,
   NativeFn,
   nil,
@@ -56,11 +58,15 @@ import {
   success,
   Variable,
   varstmt,
+  VectorExpr,
   vectorExpr,
 } from "./nodes.core.js";
 import { tkn, Token } from "./token.js";
 import { Err, lexicalError, parserError } from "./err.js";
 import { interpret } from "./visitor.interpreter.js";
+import { Vector } from "../vector.js";
+import {isint} from './nodes.algebra.js';
+import {reduce} from './visitor.reducer.js';
 
 /**
  * Utility function for printing the AST.
@@ -105,8 +111,8 @@ export function treeof<T extends Object>(
       });
       let k = "";
       if (root instanceof ASTNode) {
-        root.kind = tt[root.kind] as any;
-        root.nodeclass = nk[root.nodeclass] as any;
+        root.kind = nk[root.kind] as any;
+        root.nodeclass = nc[root.nodeclass] as any;
       }
       if (
         root instanceof Binary || root instanceof RelationExpr ||
@@ -115,7 +121,7 @@ export function treeof<T extends Object>(
         root.op = root.op.lex as any;
       }
       if (root instanceof Token) {
-        root.type = tt[root.type];
+        root.tokenType = tt[root.tokenType];
       }
       line += prefix(key, last) + key.toString();
       if (typeof root !== "object") line += ": " + root;
@@ -425,7 +431,7 @@ const lexemes = (input: string): Token[] => {
   const scan = () => {
     skipws();
     start = current;
-    if (atEnd()) return token(tt.eof);
+    if (atEnd()) return token(tt.eof, "EOF");
     const c = tick();
     if (isLatinGreek(c)) return word();
     if (isDigit(c)) return number(tt.int);
@@ -463,9 +469,20 @@ const lexemes = (input: string): Token[] => {
   /** Cross-reference the final return. */
   const tokenize = () => {
     const out: Token[] = [];
+    let prev = Token.empty;
+    let now = scan();
+    out.push(now);
+    let peek = scan();
     while (!atEnd()) {
-      out.push(scan());
+      prev = now;
+      now = peek;
+      peek = scan();
+      if (prev.isRPD() && now.is(tt.comma) && peek.isRPD()) {
+        continue;
+      }
+      out.push(now);
     }
+    out.push(peek);
     return out;
   };
 
@@ -709,7 +726,7 @@ const parse = (input: Token[]) => {
   };
 
   const logicInfix: Parslet = (op, node) => {
-    const p = precof(op.type);
+    const p = precof(op.tokenType);
     return expr(p).chain((n) => {
       return state.ok(logic(node, op as Token<BooleanOperator>, n));
     });
@@ -717,19 +734,37 @@ const parse = (input: Token[]) => {
 
   const vector: Parslet = (prev) => {
     const elements: Expr[] = [];
+    const vectors: VectorExpr[] = [];
     const src = `a vector`;
+    let rows = 0;
+    let cols = 0;
     if (!state.peek.is(tt.rbracket)) {
       do {
         const e = expr();
         if (e.isLeft()) return e;
         const element = e.unwrap();
-        elements.push(element);
+        if (isVectorExpr(element)) {
+          rows++;
+          cols = element.elements.length;
+          vectors.push(element);
+        } else {
+          elements.push(element);
+        }
       } while (state.nextIs(tt.comma) && !state.atEnd());
     }
     if (!state.nextIs(tt.rbracket)) {
       return state.err(`Expected a right bracket “]” to close the vector`, src);
     }
-    return state.ok(vectorExpr(elements, prev));
+    if (vectors.length !== 0) { // we parsed a matrix
+      if (vectors.length !== cols) {
+        return state.err(
+          `Encountered a jagged matrix, which is prohibited`,
+          src,
+        );
+      }
+      return state.ok(matrixExpr(vectors, rows, cols));
+    }
+    return state.ok(vectorExpr(elements, prev.line));
   };
 
   const assign: Parslet = (_, node) => {
@@ -740,21 +775,25 @@ const parse = (input: Token[]) => {
       if (!isExpr(n)) {
         return state.err(`Expected expression`, "assign");
       }
-      return state.ok(assignment(node, n));
+      return state.ok(assignment(node.name, n));
     });
   };
 
   const compare: Parslet = (op, node) => {
-    const p = precof(op.type);
+    const p = precof(op.tokenType);
     return expr(p).chain((n) => {
       return state.ok(relation(node, op as Token<RelationalOperator>, n));
     });
   };
 
   const infix: Parslet = (op, node) => {
-    const p = precof(op.type);
+    const p = precof(op.tokenType);
     return expr(p).chain((n) => {
-      return state.ok(binex(node, op as Token<BinaryOperator>, n));
+      const out = binex(node, op as Token<BinaryOperator>, n);
+      if (node.type==='int' && n.type==='int') {
+        out.entype('int');
+      }
+      return state.ok(out);
     });
   };
 
@@ -768,7 +807,7 @@ const parse = (input: Token[]) => {
    * Parses an atom.
    */
   const atom: Parslet = (prev) => {
-    const type = prev.type;
+    const type = prev.tokenType;
     const lex = prev.lex;
     // deno-fmt-ignore
     switch (type) {
@@ -806,14 +845,14 @@ const parse = (input: Token[]) => {
   };
 
   const logicalNot: Parslet = (op) => {
-    const p = precof(op.type);
+    const p = precof(op.tokenType);
     return expr(p).chain((n) => {
       return state.ok(notExpr(n));
     });
   };
 
   const prefix: Parslet = (op) => {
-    const p = precof(op.type);
+    const p = precof(op.tokenType);
     return expr(p).chain((n) => {
       if (op.lex === "-") {
         return state.ok(nativeCall("-", [n]));
@@ -909,7 +948,7 @@ const parse = (input: Token[]) => {
     [tt.scientific]: [scientific, __, bp.atom],
 
     [tt.colon]: [__, __, __o],
-    
+
     // native core functions
     [tt.call]: [native, __, bp.call],
 
@@ -946,13 +985,13 @@ const parse = (input: Token[]) => {
 
   const expr = (minbp: number = bp.lowest) => {
     let token = state.next();
-    const pre = prefixRule(token.type);
+    const pre = prefixRule(token.tokenType);
     let lhs = pre(token, nil());
     if (lhs.isLeft()) return lhs;
-    while (minbp < precof(state.peek.type)) {
+    while (minbp < precof(state.peek.tokenType)) {
       if (state.atEnd()) break;
       token = state.next();
-      const r = infixRule(token.type);
+      const r = infixRule(token.tokenType);
       const rhs = r(token, lhs.unwrap());
       if (rhs.isLeft()) return rhs;
       lhs = rhs;
@@ -1036,7 +1075,7 @@ const parse = (input: Token[]) => {
     if (!name.is(tt.symbol)) {
       return state.err(`Expected symbol`, src);
     }
-    let type: string = "unknown";
+    let type: string = "_";
     if (state.nextIs(tt.colon)) {
       const typename = [];
       while (!state.peek.is(tt.eq) && !state.atEnd()) {
@@ -1051,15 +1090,15 @@ const parse = (input: Token[]) => {
     const init = EXPR();
     if (init.isLeft()) return init;
     const value = init.unwrap().expr;
-    if (islit(value.kind)) {
-      const inferredType = tt[value.kind];
-      if (type !== "unknown" && inferredType !== type) {
+    if (value.isTyped()) {
+      const inferredType = value.type;
+      if (type !== "_" && inferredType !== type) {
         return state.err(
           `Variable annotated as “${type}” but a value of type ${inferredType} was assigned.`,
           src,
         );
       }
-      type = tt[value.kind];
+      type = inferredType;
     }
     return state.ok(varstmt(name, value, type));
   };
@@ -1192,12 +1231,12 @@ const parse = (input: Token[]) => {
 
   const RETURN = () => {
     const out = EXPR();
-    return out.chain((e) => state.ok(returnStmt(e)));
+    return out.chain((e) => state.ok(returnStmt(e.expr)));
   };
 
   const PRINT = () => {
     const out = EXPR();
-    return out.chain((e) => state.ok(printStmt(e)));
+    return out.chain((e) => state.ok(printStmt(e.expr)));
   };
 
   const STMT = (): Left<Err> | Right<Statement> => {
@@ -1257,17 +1296,6 @@ export const syntax = (tokens: Token[]) => parse(tokens).run();
 export const algebra = (tokens: Token[]) => parse(tokens).parseExpression();
 
 /**
- * Array of supported core functions. This
- */
-// const CoreFunctions: NativeFn[] = ["sin", "cos", "tan"];
-
-/**
- * Tags all the provided strings as core function tokens.
- */
-// const coreFns = coreFnScanner(CoreFunctions);
-// const p = algebra(imul(symsplit(coreFns(lexemes(src)))));
-
-/**
  * Performs a full syntax parse with all defaults.
  */
 export const read = (src: string) => (
@@ -1276,13 +1304,13 @@ export const read = (src: string) => (
 const tf = (src: string) => imul(lexemes(src));
 
 const src = `
-let a = [
-  [1,2,3],
-  [3,4,5],
-  [6,7,8],
-];
+((w * x) * y) * z
 `;
-// const p = read(src);
-print(tf(src));
+const p = algebra(imul(symsplit(lexemes(src))));
+// print(tf(src));
 // print(treeof(p));
 // print(interpret(p));
+const k = reduce(p);
+print(treeof(k));
+
+

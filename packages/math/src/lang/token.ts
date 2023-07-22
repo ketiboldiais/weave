@@ -12,7 +12,7 @@ export class Token<T extends tt = tt> {
    * This is a broader classification
    * of the token than the the lexeme.
    */
-  type: T;
+  tokenType: T;
 
   /** The token’s specific lexeme. */
   lex: string;
@@ -21,7 +21,7 @@ export class Token<T extends tt = tt> {
   line: number;
 
   constructor(type: T, lex: string, line: number) {
-    this.type = type;
+    this.tokenType = type;
     this.lex = lex;
     this.line = line;
   }
@@ -33,9 +33,22 @@ export class Token<T extends tt = tt> {
    */
   copy(type?: tt, lex?: string, line?: number) {
     return new Token(
-      !dne(type) ? type : this.type,
+      !dne(type) ? type : this.tokenType,
       !dne(lex) ? lex : this.lex,
       !dne(line) ? line : this.line,
+    );
+  }
+
+  /**
+   * Returns true if the next token is a right paired-delimiter.
+   * I.e., the tokens `)`, `}`, and `]`. Currently used by the scanner
+   * to get rid of trailing commas.
+   */
+  isRPD() {
+    return (
+      this.tokenType === tt.rparen ||
+      this.tokenType === tt.rbrace ||
+      this.tokenType === tt.rbracket
     );
   }
 
@@ -50,10 +63,10 @@ export class Token<T extends tt = tt> {
    */
   isnum() {
     return (
-      this.type === tt.frac ||
-      this.type === tt.int ||
-      this.type === tt.float ||
-      this.type === tt.scientific
+      this.tokenType === tt.frac ||
+      this.tokenType === tt.int ||
+      this.tokenType === tt.float ||
+      this.tokenType === tt.scientific
     );
   }
   onLine(n: number) {
@@ -67,20 +80,20 @@ export class Token<T extends tt = tt> {
    */
   unary(): this is Token<UnaryOperator> {
     return (
-      this.type === tt.minus ||
-      this.type === tt.plus ||
-      this.type === tt.bang
+      this.tokenType === tt.minus ||
+      this.tokenType === tt.plus ||
+      this.tokenType === tt.bang
     );
   }
 
   binary(): this is Token<BinaryOperator> {
     return (
-      this.type === tt.star ||
-      this.type === tt.plus ||
-      this.type === tt.caret ||
-      this.type === tt.slash ||
-      this.type === tt.rem ||
-      this.type === tt.percent
+      this.tokenType === tt.star ||
+      this.tokenType === tt.plus ||
+      this.tokenType === tt.caret ||
+      this.tokenType === tt.slash ||
+      this.tokenType === tt.rem ||
+      this.tokenType === tt.percent
     );
   }
 
@@ -91,24 +104,24 @@ export class Token<T extends tt = tt> {
    */
   relational(): this is Token<RelationalOperator> {
     return (
-      this.type === tt.lt ||
-      this.type === tt.gt ||
-      this.type === tt.deq ||
-      this.type === tt.neq ||
-      this.type === tt.leq ||
-      this.type === tt.geq
+      this.tokenType === tt.lt ||
+      this.tokenType === tt.gt ||
+      this.tokenType === tt.deq ||
+      this.tokenType === tt.neq ||
+      this.tokenType === tt.leq ||
+      this.tokenType === tt.geq
     );
   }
 
   logic(): this is Token<BooleanOperator> {
     return (
-      this.type === tt.and ||
-      this.type === tt.nor ||
-      this.type === tt.xnor ||
-      this.type === tt.nand ||
-      this.type === tt.nor ||
-      this.type === tt.or ||
-      this.type === tt.xor
+      this.tokenType === tt.and ||
+      this.tokenType === tt.nor ||
+      this.tokenType === tt.xnor ||
+      this.tokenType === tt.nand ||
+      this.tokenType === tt.nor ||
+      this.tokenType === tt.or ||
+      this.tokenType === tt.xor
     );
   }
 
@@ -117,11 +130,11 @@ export class Token<T extends tt = tt> {
    * matches the provided type.
    */
   is(type: T) {
-    return this.type === type;
+    return this.tokenType === type;
   }
   among(types: tt[]) {
     for (let i = 0; i < types.length; i++) {
-      if (this.type === types[i]) return true;
+      if (this.tokenType === types[i]) return true;
     }
     return false;
   }
@@ -135,14 +148,14 @@ export class Token<T extends tt = tt> {
    */
   arithmetic(): this is Token<ArithmeticOperator> {
     return (
-      this.type === tt.minus ||
-      this.type === tt.plus ||
-      this.type === tt.slash ||
-      this.type === tt.star ||
-      this.type === tt.caret ||
-      this.type === tt.percent ||
-      this.type === tt.rem ||
-      this.type === tt.mod
+      this.tokenType === tt.minus ||
+      this.tokenType === tt.plus ||
+      this.tokenType === tt.slash ||
+      this.tokenType === tt.star ||
+      this.tokenType === tt.caret ||
+      this.tokenType === tt.percent ||
+      this.tokenType === tt.rem ||
+      this.tokenType === tt.mod
     );
   }
 
@@ -151,7 +164,7 @@ export class Token<T extends tt = tt> {
    * used primarily as a placeholder and base
    * case.
    */
-  static empty = new Token(tt.empty, "", -1);
+  static empty: Token = new Token(tt.empty, "", -1);
 }
 
 /**

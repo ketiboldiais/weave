@@ -1,13 +1,26 @@
 // deno-fmt-ignore
 export enum tt {
-  eof, error,empty,
+  // utility tokens
+  eof, error, empty,
+
+  // paired delimiters
   lparen, rparen,
   lbrace, rbrace,
-  comma, dot, minus,
-  plus, semicolon, slash,
-  star, bang, neq, eq,
-  deq, gt, lt, leq, geq,
-  caret,percent,
+  lbracket, rbracket,
+  
+  // single delimiters
+  comma, dot, 
+  semicolon, 
+  colon,
+
+  // delimiters with operative semantics
+  minus, plus, slash,
+  star, bang, eq,
+  gt, lt, caret, percent,
+
+  // dipthongs with operative semantics
+  deq, leq, geq,
+  neq, 
 
   // literal values
   string,int,frac,complex,
@@ -17,33 +30,24 @@ export enum tt {
   // variables
   symbol,
 
+  // named operators-arithmetic
   rem,mod,
-  colon,
-  lbracket,
-  rbracket,
-  // type operators
-  arrow,amp,vbar,tilde,
-  // logical operators
+
+  // named operators-logical
   and,nor,xnor,nand,
   not,or,xor,
+
+  // type operators
+  arrow,amp,vbar,tilde,
+
   // keywords
   fn, let, begin, end, if, else,
   nan,inf,while,for,return,
   then,print,
-  // native core functions are given
-  // the token call
+
+  // core function token
   call,
 }
-export const islit = (type: tt) => (
-  type === tt.string ||
-  type === tt.int ||
-  type === tt.frac ||
-  type === tt.complex ||
-  type === tt.float ||
-  type === tt.scientific ||
-  type === tt.null ||
-  type === tt.bool
-);
 
 export type Numeric = tt.float | tt.int | tt.scientific | tt.frac | tt.complex;
 export type UnaryOperator = tt.minus | tt.plus | tt.bang;
@@ -80,10 +84,37 @@ export type ArithmeticOperator =
   | tt.rem
   | tt.mod;
 
+// deno-fmt-ignore
 export enum nk {
+  print, return, loop,
+  conditional, native_call,
+  user_fn_call, bool,
+  callable,
+  string, null, float, int,
+  symbol, frac,
+  complex, scientific,
+  vector, not,
+  logic, binary, matrix,
+  relation, group,
+  variable_statement,
+  function_statement,
+  block_statement,
+  assign,
+}
+
+export const islit = (type: nk) => (
+  type === nk.string ||
+  type === nk.int ||
+  type === nk.frac ||
+  type === nk.complex ||
+  type === nk.float ||
+  type === nk.scientific ||
+  type === nk.null ||
+  type === nk.bool
+);
+export enum nc {
   statement,
   expression,
-  callable,
 }
 
 export enum bp {
