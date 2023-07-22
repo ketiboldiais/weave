@@ -683,7 +683,8 @@ export class Fraction {
   get pair(): [number, number] {
     return [this.n, this.d];
   }
-  static from(xs: [number, number] | number) {
+  static from(xs: [number, number] | number | Fraction) {
+    if (xs instanceof Fraction) return xs;
     if (typeof xs === "number") return new Fraction(xs, 1);
     return new Fraction(xs[0], xs[1]);
   }

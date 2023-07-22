@@ -15,6 +15,15 @@
   text-rendering: optimizeLegibility;
   width: 100%;
   height: 100%;
+  ol, ul {
+    margin: 5px;
+  }
+  ol ol {
+    list-style: lower-alpha;
+  }
+  ol li, ul li {
+    padding: 0.5em;
+  }
 
   table, td, th {
     border-collapse: collapse;

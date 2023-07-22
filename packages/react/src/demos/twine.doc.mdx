@@ -50,7 +50,7 @@ Twine requires all variables to be declared _and_ initialized before usage.
 ## Identifiers
 An identifier in Twine is defined as any lexeme that passes all three prongs of the following test:
 
-1. The lexeme starts a Latin or Greek character, an underscore (`_`), or a dollar sign (`$`),
+1. The lexeme starts with a Latin or Greek character, an underscore (`_`), or a dollar sign (`$`),
 2. The lexeme ends with a Latin or Greek character, an underscore (`_`), a dollar sign (`$`), or a digit, and
 3. The lexeme is not a [reserved word](#reserved-words).
 
@@ -124,29 +124,74 @@ While-loops do not require a parenthesized condition, but for-loops must always
 have their clauses parenthesized.
 
 ## Function Declarations
-```ts
+Below is a function that maps a real number to a real number.
+
+```rust
+fn f(x): real -> real = x^2;
+```
+
+The function may also be written with Weave’s built-in type aliases, provided the user hasn’t already claimed the alias as a type definition:
+
+```rust
 fn f(x): R -> R = x^2;
 ```
 
 All function declarations must begin with the keyword `fn`, followed by the
 function’s name (above, `f`). Parameters must be enclosed in parentheses,
-followed by a type signature. Function type signatures always take the form:
+followed by a type signature. Function type signatures are defined by the syntax:
 
-```
-<typename> -> <typename>
-```
+$$
+  t_1, t_2, \ldots, t_n \texttt{ -> } \textit{r}
+$$
 
-Everything to the left of the arrow corresponds to the function’s parameter
+where each ${t_{i \leq n}}$ is a parameter type and ${r}$ is a return type. I.e., everything to the left of the arrow corresponds to the function’s parameter
 types, and everything to the right of the arrow corresponds to the function’s
 return type. Functions with multiple parameters require an asterisk-separated
 parameter type signature:
 
-```ts
+```rust
 fn g(x,y,z): (R * R * R) -> R = x^2 + y^2 + z^2;
 ```
 
-The type signature must then be followed by an equal sign to mark the beginning
-of the function’s body.
+The type signature must then be followed by an equal sign to mark the beginning of the function’s body. Type signatures are required for two reasons: (1) to reduce the typechecker’s workload, and (2) to ensure _non-algebraic functions_ (functions that do not return either integers, fractions, binary expressions or purely numeric functions) are completely isolated from Twine’s algebra environment.
 
 
- 
+## Algebraic Functions 
+Twine has several native algebraic functions, used primarily for symbolic manipulation. Because the algebraic functions are automatically recognized as native calls during lexical analysis, user-defined functions should never use the native function names.
+
+### `freeof` __(expression, symbol)__
+| Parameters             | Returns |
+| ---------------------- | ------- |
+| _expression_, _symbol_ | `bool`  |
+
+Returns `true` if the given expression does not contain the given symbol, otherwise `false`.
+
+The code below reduces to false because the variable `x` is contained in the expression `2x + 1`.
+
+~~~julia
+freeof(2x + 1, x)
+~~~
+
+And this reduces to true because `z` is not contained in the expression `2x^3 - xy + y`:
+
+~~~julia
+freeof(2x^3 - xy + y, z)
+~~~
+
+### `prec` __(expression, expression)__
+
+| Parameters                 | Returns |
+| -------------------------- | ------- |
+| _expression_, _expression_ | `bool`  |
+
+Given a pair of expressions, returns true if the first expression precedes the second expression, following Twine’s defined order relation. The order relation (denoted ${\prec}$) is defined as follows:
+
+1. If ${u}$ and ${v}$ are constants (integers or fractions), then ${u \prec v \implies u \lt v.}$
+2. If ${u}$ and ${v}$ are symbols, then ${u \prec v \implies \text{char}(u) \lt \text{char}(v),}$ where ${\text{char}}$ is a function that returns the character code of its argument (currently, only ASCII characters are recognized under this rule).
+3. If ${u}$ and ${v}$ are both products, or if ${u}$ and ${v}$ are both sums, with the operands ${u_1, u_2, \ldots, u_m}$ and ${v_1, v_2, \ldots, v_m,}$ then the following rules apply:
+    1. If ${u_m \neq v_n,}$ then ${u \prec v \implies u_m \prec v_n.}$
+    2. Where ${k = \min(m,n) - 1,}$ if ${u_{m-j} = v_{n-j}}$ for ${j = 0,1,\ldots,k-1,}$ then ${u \prec v \implies u_{m-k} \prec v_{n-k}.}$
+    3. If neither (a) nor (b) holds, then ${u \prec v \implies m \lt n.}$ 
+4. Where ${\text{b}}$ is a function that returns the base of an expression and ${\text{e}}$ is a function that returns the corresponding exponent, if ${u}$ and ${v}$ are powers, then:
+    1. If ${\text{b}(u) \neq \text{b}(v),}$ then ${u \prec v \implies \text{b}(u) \prec \text{b}(v).}$
+    2. Else, ${u \prec v \implies \text{e}(u) \prec \text{e}(v).}$
