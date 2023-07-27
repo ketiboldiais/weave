@@ -1,19 +1,17 @@
 import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router-dom";
-import navcss from "./styles/nav.module.scss";
 import MainDoc from "./demos/main.doc.mdx";
 import QuadDoc from "./demos/quad.doc.mdx";
 import AxesDoc from "./demos/axes.doc.mdx";
-import TwineDoc from './demos/twine.doc.mdx';
-import { ReactNode } from "react";
+import TwineDoc from "./demos/twine.doc.mdx";
 
 export const docLinks = {
   Intro: "/",
   Quadrilaterals: "/quad",
   Axes: "/axes",
-  Twine: '/twine',
+  Twine: "/twine",
 };
 
-export const Pages = () => {
+export const Main = () => {
   return (
     <BrowserRouter>
       <Routes>
@@ -28,10 +26,13 @@ export const Pages = () => {
   );
 };
 
-function Nav({ children }: { children: ReactNode }) {
+import { BaseComponents } from "./MDXSchema.js";
+import app from "./styles/app.module.scss";
+
+function Page() {
   return (
-    <>
-      <nav className={navcss.nav}>
+    <div className={app.app}>
+      <nav>
         <ul>
           {Object.entries(docLinks).map(([name, path]) => (
             <li key={name + path}>
@@ -40,21 +41,13 @@ function Nav({ children }: { children: ReactNode }) {
           ))}
         </ul>
       </nav>
-      {children}
-    </>
-  );
-}
-
-import pagecss from "./styles/page.module.scss";
-
-function Page() {
-  return (
-    <Nav>
       <main>
-        <article className={pagecss.page}>
-          <Outlet />
-        </article>
+        <BaseComponents>
+          <article className={app.page}>
+            <Outlet />
+          </article>
+        </BaseComponents>
       </main>
-    </Nav>
+    </div>
   );
 }

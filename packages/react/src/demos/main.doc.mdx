@@ -1,248 +1,55 @@
 import { ForceGraph1 } from './graph.demo.tsx';
 import { Tree1, Tree2, Tree3 } from './tree.demo.tsx';
-import { Tile } from '../components/tile.tsx';
 import { Plot1 } from './plot.demo.tsx';
 import { Path1 } from './path.demo.tsx';
-import { Codeblock } from '../components/codeblock.tsx';
 
 # Loom
 
-This is the documentation page for Loom, a zero-dependency module of various graphics algorithms. Some examples:
+This is the documentation page for Loom, a zero-dependency module of various graphics algorithms.
 
-<Tile rows={1} cols={2}>
-<figure>
+
+
+::::figure
 <ForceGraph1 />
-<figcaption>Graph drawn with a variation of the Eades algorithm.</figcaption>
-<Codeblock>
-~~~js
-import {
-  forceSpace,
-  graph
-} from "@weave/loom";
-import { Figure } from "./figure.tsx";
+:::figcap
+Graph drawn with a variation of the Eades algorithm.
+:::
+::::
 
-const d = forceSpace(graph({
-  a: ["b", "x", "n"],
-  b: ["c", "d", "g"],
-  c: ["e", "g"],
-  d: ["j", "k"],
-  e: ["k"],
-  j: ["x"],
-  n: ["g"],
-})).size(200,200)
-   .x(-5,5)
-   .y(-5,5)
-   .figure();
-
-const ForceGraph1 = () => <Figure of={d} />;
-~~~
-</Codeblock>
-</figure>
-
-<figure>
+::::figure
 <Tree1 />
-<figcaption>M-way tree drawn with the Buccheim-Unger-Leipert algorithm.</figcaption>
-<Codeblock>
-~~~js
-import {
-  leaf,
-  subtree,
-  tree
-} from "@weave/loom";
-import { Figure } from "./figure.tsx";
+:::figcap
+M-way tree drawn with the Buccheim-Unger-Leipert algorithm.
+:::
+::::
 
-const tree1 = tree("a").nodes([
-  subtree("d").nodes([
-    leaf("g"), 
-    leaf("j"), 
-    leaf("l"), 
-    leaf("m")
-  ]),
-  subtree("c").nodes([
-    leaf("f"), 
-    leaf("i")
-  ]),
-  subtree("b").nodes([
-    leaf("e"), 
-    leaf("h"), 
-    leaf("k")
-  ]),
-]).x(-6, 6)
-  .y(-2, 0)
-  .w(300)
-  .h(200)
-  .ala("buccheim-unger-leipert")
-  .figure();
 
-export const Tree1 = () => {
-  return <Figure of={tree1} />;
-};
-~~~
-</Codeblock>
-</figure>
-
-<figure>
+::::figure
 <Plot1 />
-<figcaption>Plot of $f(x) = \dfrac{1}{x}$.</figcaption>
-<Codeblock>
-~~~js
-import {
-  axis,
-  plot,
-  plane
-} from "@weave/loom";
-import { Figure } from "./figure.tsx";
+:::figcap
+Plot of $f(x) = \dfrac{1}{x}$.
+:::
+::::
 
-const plot1 = plane([
-  axis("x").ticks(11),
-  axis("y").ticks(11).hide("zero"),
-  plot('f(x) = 1/x'),
-]).margin(10,10)
-  .w(300)
-  .h(300)
-  .figure();
-
-export const Plot1 = () => {
-  return <Figure of={plot1} />
-};
-~~~
-</Codeblock>
-</figure>
-
-<figure>
+::::figure
 <Path1 />
-<figcaption>3D figures with matrix transformations.</figcaption>
-<Codeblock>
-~~~js
-import {
-  axis,
-  path,
-  plane
-} from "@weave/loom";
-import { Figure } from "./figure.tsx";
-import { v3 } from "@weave/math";
+:::figcap
+3D figures with matrix transformations.
+:::
+::::
 
-const cube = () => {
-  const out = path();
-  const cs = [
-    v3(-1,-1,-1),
-    v3(1,-1,-1),
-    v3(1,1,-1),
-    v3(-1,1,-1),
-    v3(-1,-1,1),
-    v3(1,-1,1),
-    v3(1,1,1),
-    v3(-1,1,1),
-  ];
-  for (let i = 0; i < 4; i++) {
-    const A = cs[i];
-    out.M(A.x, A.y, A.z);
-    const B = cs[(i + 1) % 4];
-    out.L(B.x, B.y, B.z);
-    const C = cs[i + 4];
-    out.M(C.x, C.y, C.z);
-    const D = cs[((i + 1) % 4) + 4];
-    out.L(D.x, D.y, D.z);
-    const E = cs[i];
-    out.M(E.x, E.y, E.z);
-    const F = cs[i + 4];
-    out.L(F.x, F.y, F.z);
-  }
-  return out;
-};
-
-const path1 = plane([
-  axis("y"),
-  axis("x"),
-  cube()
-    .rotateX("45deg")
-    .rotateY("20deg")
-    .rotateZ("5deg"),
-]).x(-5,5)
-  .y(-5,5)
-  .margin(5,5)
-  .size(300,300)
-  .figure();
-
-const Path1 = () => (
-  <Figure of={path1} />
-)
-~~~
-</Codeblock>
-</figure>
-
-
-<figure>
+::::figure
 <Tree2 />
-<figcaption>Binary search tree drawn with the Reingold-Tilford algorithm, its breadth-first traversal annotated in green.</figcaption>
-<Codeblock>
-~~~js
-import {
-  bst,
-  leaf,
-  subtree,
-  tree
-} from "@weave/loom";
-import { Figure } from "./figure.tsx";
-
-const greenline = (
-  line: Line
-) => line
-  .stroke('seagreen')
-  .weight(1.2);
-
-const bst1 = bst([10, 6, 15, 3, 8, 20])
-  .id((d) => d)
-  .draw()
-  .edges("bfs", greenline)
-  .x(-2, 2)
-  .y(-2, 0)
-  .w(250).h(200)
-  .ala("reingold-tilford")
-  .figure();
-
-export const Tree2 = () => {
-  return <Figure of={bst1} />;
-};
-~~~
-</Codeblock>
-</figure>
+:::figcap
+Binary search tree drawn with the Reingold-Tilford algorithm, its breadth-first traversal annotated in green.
+:::
+::::
 
 
-
-<figure>
+::::figure
 <Tree3 />
-<figcaption>Binary search tree drawn with an HV algorithm.</figcaption>
-<Codeblock>
-~~~js
-import {
-  bst,
-  leaf,
-  subtree,
-  tree
-} from "@weave/loom";
-import {Figure} from "./figure";
+:::figcap
+Binary search tree drawn with an HV algorithm.
+:::
+::::
 
-const bst2 = bst([
-  25, 20, 
-  10, 22, 
-  5, 12, 
-  28, 36, 
-  30, 40, 
-  38, 48
-]).id((d) => d)
-  .draw()
-  .x(-8, 4)
-  .y(-2, 3)
-  .w(450).h(250)
-  .ala("hv")
-  .figure();
-
-
-export const Tree3 = () => {
-  return <Figure of={hv1} />;
-};
-~~~
-</Codeblock>
-</figure>
-</Tile>

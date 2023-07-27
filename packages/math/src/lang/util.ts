@@ -726,3 +726,20 @@ export const isset = (x: any): x is Set<any> => (x instanceof Set);
 export function tpl<T extends any[]>(...data: T) {
   return data;
 }
+export const rem = (a: number, b: number) => (a % b);
+
+export const parenthesize = (s:string|number) => (
+  `(${strung(s)})`
+)
+
+export const braced = (s:string|number) => (
+  `{${strung(s)}}`
+)
+
+export const bracketed = (s:string|number) => (
+  `[${strung(s)}]`
+)
+
+export const strung = (s:string|number) => (
+  typeof s === 'string' ? s : `${s}`
+)

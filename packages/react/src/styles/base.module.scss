@@ -1,0 +1,25 @@
+.hstack {
+	display: flex;
+	justify-content: space-evenly;
+	gap: 5px;
+}
+.floatLeft {
+	float: left;
+	margin: 0;
+}
+.floatRight {
+	float: right;
+	margin: 0;
+	margin-left: 2em;
+}
+.figcap {
+	font-family: Georgia, 'Times New Roman', Times, serif;
+	font-style: italic;
+	font-size: 0.85rem;
+	text-align: center;
+	margin: 0.2rem 0;
+	padding: 0;
+	p {
+		margin: 0;
+	}
+}

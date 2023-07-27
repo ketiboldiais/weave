@@ -367,7 +367,7 @@ export abstract class Expr extends ASTNode {
 export const isExpr = (node: ASTNode): node is Expr => (
   node.nodeclass === nc.expression
 );
-export type NativeFn = "sin" | "cos" | "tan" | "-" | "+" | "!";
+export type NativeFn = "sin" | "cos" | "tan" | "log" | "ln" | "-" | "+" | "!";
 export class NativeCall extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.nativeCall(this);

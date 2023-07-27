@@ -5,11 +5,14 @@ import path from "path";
 import dts from "vite-plugin-dts";
 import { defineConfig } from "vite";
 import mdx from "@mdx-js/rollup";
+import remarkSectionize from 'remark-sectionize';
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import rehypeSlug from "rehype-slug";
 import rehypePrism from "@mapbox/rehype-prism";
+import remarkDirective from "remark-directive";
+import remarkDirectiveRehype from "remark-directive-rehype";
 
 export default defineConfig({
   plugins: [
@@ -19,7 +22,13 @@ export default defineConfig({
     }),
     mdx({
       providerImportSource: "@mdx-js/react",
-      remarkPlugins: [remarkMath, remarkGfm],
+      remarkPlugins: [
+        remarkSectionize,
+        remarkMath,
+        remarkGfm,
+        remarkDirective,
+        remarkDirectiveRehype,
+      ],
       rehypePlugins: [rehypeKatex, rehypeSlug, rehypePrism],
     }),
   ],

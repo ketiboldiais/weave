@@ -1,37 +1,9 @@
 import { Quad1 } from './quad.demo.tsx';
-import { Codeblock } from '../components/codeblock.tsx';
 
 # Quadrilaterals
 Quadrilaterals are represented by `Quad` nodes.
 
-<figure>
 <Quad1 />
-<Codeblock>
-~~~tsx
-import {
-  axis,
-  color,
-  plane,
-  quad
-} from "@weave/loom";
-import { Figure } from "./figure.tsx";
-
-const rects = plane([
-  axis("x"),
-  axis("y"),
-  [
-    quad(1, 1).at(0, 1),
-    quad(1, 2).at(1, 2),
-    quad(1, 4).at(2, 4),
-    quad(1, 1).at(3, 1),
-    quad(1, 2.5).at(4, 2.5),
-  ].map((q) => q.fill(color("beige")).stroke(color("goldenrod"))),
-]).margin(50, 100).size(500, 300).x(0, 5).y(0, 5).figure();
-
-const Quad1 = () => <Figure of={rects} />;
-~~~
-</Codeblock>
-</figure>
 
 
 ## Properties

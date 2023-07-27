@@ -1,141 +1,167 @@
-@import './variables.scss';
-
-@mixin dark-mode {
-  background-color: color(black2);
-  color: white;
-}
-@mixin light-mode {
-  background-color: color(white1);
-  color: color(black2);
-}
+@import './colors.scss';
 
 .app {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-    Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  text-rendering: optimizeLegibility;
-  width: 100%;
-  height: 100%;
-  ol, ul {
-    margin: 5px;
-  }
-  ol ol {
-    list-style: lower-alpha;
-  }
-  ol li, ul li {
-    padding: 0.5em;
-  }
+	dfn {
+		display: block;
+		width: 70%;
+		font-style: normal;
+		margin: 0 auto;
+		h1,h2,h3,h4,h5,h6 {
+			font-size: 1rem;
+		}
+		padding: 0 0.9em;
+		section {
+			margin: 0;
+		}
+	}
+	:global .katex {
+		font-size: 1.1rem;
+	}
+	:global .texttt {
+		font-family: 'Fira Code', 'KaTeX_Typewriter';
+		font-size: 0.95rem;
+	}
+	pre {
+		border-left: solid 3px $bluegrey;
+		padding: 0.2rem 0.5rem;
+	}
+	:not(pre)>code {
+		font-size: 0.85rem;
+	}
+	:not(pre)>em>code {
+		color: $red1;
+		font-style: normal;
+	}
 
-  table, td, th {
-    border-collapse: collapse;
-    border: solid thin lightgrey;
-  }
-  
-  table {
-    th {
-      color: rgb(50, 65, 80);
-    }
-    td, th {
-      padding: 5px;
-    }
-    td {
-      text-align: left;
-    }
-  }
-  h2,h3,h4,h5,h6 {
-    color: rgb(83, 97, 111);
-  }
-  h3 strong {
-    color: slategrey;
-    padding: 1px 5px;
-    font-weight: normal;
-    font-style: italic;
-  }
-  figure {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 1em 5px;
-  }
-  figcaption {
-    font-style: italic;
-    font-size: 0.8rem;
-    margin: 5px auto;
-    text-align: center;
-  }
-  main {
-    margin-top: 50px;
-  }
-  blockquote {
-    p:last-child {
-      margin-bottom: 0;
-    }
-    p:first-child {
-      margin-top: 0;
-    }
-  }
-  p {
-    line-height: 1.5;
-  }
-  h1 + p,
-  h1 + blockquote,
-  h2 + p,
-  h2 + blockquote,
-  h3 + p,
-  h3 + blockquote,
-  h4 + p,
-  h4 + blockquote,
-  h5 + p,
-  h5 + blockquote h6 + p,
-  h6 + blockquote {
-    margin-top: -1.2rem;
-  }
-  h1 {
-    font-size: 2rem;
-  }
-  h2 {
-    font-size: 1.8rem;
-  }
-  h3 {
-    font-size: 1.5rem;
-  }
-  h4 {
-    font-size: 1.3rem;
-  }
-  h5 {
-    font-size: 1.2rem;
-  }
-  h6 {
-    font-size: 1.1rem;
-  }
-  a {
-    text-decoration: none;
-  }
-}
+	code {
+		font-family: 'Fira Code';
+		font-size: 0.9rem;
+	}
 
-.underline {
-  display: inline-block;
-  position: relative;
-  color: #0087ca;
-}
+	table {
+		border-collapse: collapse;
+		margin: 2em auto;
+		width: fit-content;
+		td,
+		th {
+			border: solid thin $bluegrey;
+		}
 
-.underline::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  transform: scaleX(0);
-  height: 1px;
-  bottom: 0;
-  left: 0;
-  background-color: #0087ca;
-  transform-origin: bottom right;
-  transition: transform 0.25s ease-out;
-}
+		td {
+			padding: 0.2em 0.5em;
+		}
 
-.underline:hover::after {
-  transform: scaleX(1);
-  transform-origin: bottom left;
-}
+		th {
+			padding: 0.2em 0.8em;
+			font-weight: 600;
+		}
+	}
 
-.tile {
-  margin-bottom: 10vh;
+	a {
+		color: #367ccd;
+		text-decoration: none;
+	}
+
+	color: $black;
+	
+	section {
+		margin: 3rem 0;
+	}
+
+	section p:first-of-type {
+		margin-top: 0.3em;
+	}
+
+	h1 {
+		font-size: 1.8rem;
+	}
+
+	h2 {
+		font-size: 1.6rem;
+	}
+
+	h3 {
+		font-size: 1.4rem;
+	}
+
+	h4 {
+		font-size: 1.2rem;
+	}
+
+	h5 {
+		font-size: 1.1rem;
+	}
+
+	h6 {
+		font-size: 1rem;
+	}
+	
+	nav {
+		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+	}
+	
+	
+	h1, h2, h3,
+	h4, h5, h6,
+	nav, th {
+		margin-bottom: 0;
+		code {
+			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		}
+
+		em strong {
+			color: inherit;
+			font-weight: normal;
+		}
+
+		strong {
+			font-style: italic;
+			font-weight: 500;
+			color: $grey;
+		}
+	}
+
+	nav {
+		position: absolute;
+		z-index: 10;
+		height: 20px;
+		width: 100vw;
+		a {
+			color: $black;
+		}
+		ul {
+			background-color: $blue0;
+			border-bottom: solid thin $blue1;
+			list-style: none;
+			padding: 0;
+			margin: 0;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			padding: 0.5em 1em;
+
+			button {
+				color: inherit;
+				background-color: inherit;
+				border: none;
+			}
+		}
+	}
+
+	main {
+		font-size: 1.1rem;
+		position: absolute;
+		font-family: 'KaTeX_Main';
+		top: 30px;
+		overflow: auto;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		width: 100vw;
+	}
+
+	.page {
+		padding: 1em 5em;
+		padding-bottom: 10em;
+	}
 }

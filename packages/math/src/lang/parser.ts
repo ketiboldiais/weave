@@ -355,6 +355,8 @@ export const lexemes = (input: string): Token[] => {
     sin: true,
     cos: true,
     tan: true,
+    log: true,
+    ln: true,
     "-": true,
     "+": true,
     "!": true,

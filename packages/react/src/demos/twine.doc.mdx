@@ -1,197 +1,238 @@
 # Twine
-Weave uses a custom scripting language called Twine to evaluate and parse
-user-defined functions.
+Weave uses a language called Twine to parse and evaluate user-defined functions. Initially designed for unit conversions in Twine’s matrix operations, the language gradually evolved into its current form, a scripting language that transpiles to JavaScript.
 
-## Core Data Types
-Twine has the following core data types:
+## Mathematical Expressions
+All Twine math expressions are subtypes of `Expression`. An `Expression`, by definition, has the following properties and methods:
 
-| Data Type  | Example           |
-| ---------- | ----------------- |
-| `int`      | `122`             |
-| `float`    | `12.34`           |
-| `wide`     | `7.38E+10`        |
-|            | `1.2855E-10`      |
-|            | `1_246_121`       |
-|            | `21_886_121.5831` |
-| `rational` | `1//3`            |
-| `complex`  | `3 + 5i`          |
-|            | `4 - 8i`          |
-| `bool`     | `true`            |
-|            | `false`           |
-| `string`   | `"Oconomowoc"`    |
-|            | `""`              |
-| `nil`      | `nil`             |
-| `nan`      | `nan`             |
-| `inf`      | `inf`             |
-
-## Variable Declarations
-A variable is declared with the `let` keyword:
-
-```ts
-let x = 12;
-```
-
-An optional type annotation may be provided:
-
-```ts
-let x: int = 12;
-```
-
-The annotation above isn’t necessary, as Twine’s typechecker can infer the
-variable `x` is of type `int`. If a type annotation is provided, however, and
-the initialized value isn’t the annotated type, an error is returned:
-
-```ts
-let x: int = 3.14; // Fails because 3.14 isn’t an int.
-```
-
-Twine requires all variables to be declared _and_ initialized before usage.
-
-## Identifiers
-An identifier in Twine is defined as any lexeme that passes all three prongs of the following test:
-
-1. The lexeme starts with a Latin or Greek character, an underscore (`_`), or a dollar sign (`$`),
-2. The lexeme ends with a Latin or Greek character, an underscore (`_`), a dollar sign (`$`), or a digit, and
-3. The lexeme is not a [reserved word](#reserved-words).
-
-## Reserved Words
-| Word     | Semantic                             |
-| -------- | ------------------------------------ |
-| `if`     | introduces a condition for branching |
-| `else`   | introduces a branching alternative   |
-| `while`  | introduces an iterative statement    |
-| `for`    | marks syntactic sugar for `while`    |
-| `let`    | introduces a variable declaration    |
-| `fn`     | introduces a function declaration    |
-| `begin`  | the beginning of a block             |
-| `end`    | the end of a block                   |
-| `pi`     | global constant                      |
-| `e`      |                                      |
-| `subex`  | core algebra function                |
-| `poly`   |                                      |
-| `solve`  |                                      |
-| `solve`  |                                      |
-| `freeof` |                                      |
-| `derof`  |                                      |
-| `intof`  |                                      |
-| `degof`  |                                      |
-| `cos`    | native math function                 |
-| `tan`    |                                      |
-| `sin`    |                                      |
-| `sqrt`   |                                      |
-
-## Blocks
-Blocks are marked with the `begin` and `end` keywords: 
-
-```ts
-let j = 10;
-begin
-  let j = 12;
-end
-```
-Variables in Twine are lexically scoped. Thus, in the example above, the variable `j` within the block _shadows_ the variable `j` outside the block.
-
-## Conditionals
-Conditional statements may be written with the `if` and `else` keywords:
-
-```ts
-let x = 10;
-if x < 5 begin
-  x = 12;
-end else begin
-  x = 15;
-end
-```
-
-The `if` keyword’s condition must be followed by a block. Likewise, the `else`
-keyword must be followed by a [block](#blocks).
-
-## Loops
-```ts
-let n = 0;
-
-while n < 5 begin
-	n = n + 1;
-end
-
-for (let i = 0; i < 10; i = i + 1) begin
-  n = n + 1;
-end
-```
-
-All loops require a `begin` and `end` keyword to mark their executable blocks.
-While-loops do not require a parenthesized condition, but for-loops must always
-have their clauses parenthesized.
-
-## Function Declarations
-Below is a function that maps a real number to a real number.
-
-```rust
-fn f(x): real -> real = x^2;
-```
-
-The function may also be written with Weave’s built-in type aliases, provided the user hasn’t already claimed the alias as a type definition:
-
-```rust
-fn f(x): R -> R = x^2;
-```
-
-All function declarations must begin with the keyword `fn`, followed by the
-function’s name (above, `f`). Parameters must be enclosed in parentheses,
-followed by a type signature. Function type signatures are defined by the syntax:
+:::definition
+### Property: parenLevel
+For every expression ${E,}$ there exists a property
 
 $$
-  t_1, t_2, \ldots, t_n \texttt{ -> } \textit{r}
+	E.\texttt{parenLevel}
 $$
 
-where each ${t_{i \leq n}}$ is a parameter type and ${r}$ is a return type. I.e., everything to the left of the arrow corresponds to the function’s parameter
-types, and everything to the right of the arrow corresponds to the function’s
-return type. Functions with multiple parameters require an asterisk-separated
-parameter type signature:
+corresponding to the parenthesis level of ${E.}$
+:::
 
-```rust
-fn g(x,y,z): (R * R * R) -> R = x^2 + y^2 + z^2;
-```
+__Example.__ The expression `2x^2 - 1` has a `parenLevel` of 0.
 
-The type signature must then be followed by an equal sign to mark the beginning of the function’s body. Type signatures are required for two reasons: (1) to reduce the typechecker’s workload, and (2) to ensure _non-algebraic functions_ (functions that do not return either integers, fractions, binary expressions or purely numeric functions) are completely isolated from Twine’s algebra environment.
+__Example.__ The expression `(ab + c)` has a `parenLevel` of 1.
+
+__Example.__ In the example below, notice that `b` has a parenLevel of ${0.}$ The expression `(2x-2)(3x + 1)` is syntactic sugar for the single, complete expression of variable `a`: `6x^2 - 4x - 2`, which contains no parentheses.
 
 
-## Algebraic Functions 
-Twine has several native algebraic functions, used primarily for symbolic manipulation. Because the algebraic functions are automatically recognized as native calls during lexical analysis, user-defined functions should never use the native function names.
+| Property                            | Type       | Definition                                                           |
+| ----------------------------------- | ---------- | -------------------------------------------------------------------- |
+| :ref[`parenLevel`]{id="parenLevel"} | _`number`_ | A natural number corresponding to the expressions parentheses level. |
 
-### `freeof` __(expression, symbol)__
-| Parameters             | Returns |
-| ---------------------- | ------- |
-| _expression_, _symbol_ | `bool`  |
+| Method        | Parameters | Returns     | Definition                                                                                           |
+| ------------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------- |
+| `tickParen`   |            | `this`      | Increments the expression’s [`parenLevel`](#parenLevel)                                              |
+| `isAlgebraic` |            | _`boolean`_ | Returns true if the expression is an [AlgebraicExpression](#algebraic-expressions), false otherwise. |
+| `isUndefined` |            | _`boolean`_ | Returns true if the expression is the [Undefined](#undefined), false otherwise.                      |
+| `isInt`       |            | _`boolean`_ | Returns true if the expression is an [integer](#int), false otherwise.                               |
+| `isSym` | | _`boolean`_ | Returns true if the expession is a `Sym`, false otherwise |
 
-Returns `true` if the given expression does not contain the given symbol, otherwise `false`.
 
-The code below reduces to false because the variable `x` is contained in the expression `2x + 1`.
+The expression class is partitioned in two: `Atom` and `Compound`:
 
-~~~julia
-freeof(2x + 1, x)
+:::hstack
+
+| Subclass | Type   |
+| -------- | ------ |
+| `Atom`   | `Int`  |
+|          | `Real` |
+|          | `Sym`  |
+
+| Subclass   | Type           | Operators                                          |
+| ---------- | -------------- | -------------------------------------------------- |
+| `Compound` | `AlgebraicOp`  | `+` `-` `*` `^` `/` `!`                            |
+|            | `LogicalOp`    | `not` `and` `nand` `or` `nor` `xor` `xnor`         |
+|            | `RelationalOp` | `<` `>` `<=` `>=` `==` `!=`                        |
+|            | `SetOp`        | `{}` `\|` `&` `~`                                  |
+|            | `ListOp`       | `()` `++` `--`                                     |
+|            | `AlgebraicFn`  | `cos` `frac` `sin` `tan` `ln` `lg` `log` `call-ax` |
+|            | `PlainFn`      | `call-nx`                                          |
+:::
+
+## Int 
+
+
+Atomic expressions are the building blocks of all other expressions. Compound expressions are expressions with an `op` field, corresponding to an operator, and an `operands` field, corresponding to the operands of that operation.
+
+## Algebraic Expressions
+Twine recognizes a special union of expressions called the _algebraic expression_:
+
+:::hstack
+| Algebraic Expression |
+| -------------------- |
+| `Int`                |
+| `Sym`                |
+| `Sum`                |
+| `Product`            |
+| `Difference`         |
+| `Power`              |
+| `Quotient`           |
+| `Factorial`          |
+| `AlgebraicFun`       |
+:::
+
+Algebraic expressions are particularly important in Twine: They are the only types that may be used in Twine’s core algebraic functions.
+
+## DNE
+
+
+## AlgebraicOp
+An `AlgebraicOp` corresponds an expression whose operand is from the `core` enum. This enum comprises the following operators:
+
+:::hstack
+| Type              | Literal |
+| ----------------- | ------- |
+| `core.sum`        | `"+"`   |
+| `core.product`    | `"*"`   |
+| `core.power`      | `"^"`   |
+| `core.difference` | `"-"`   |
+| `core.quotient`   | `"/"`   |
+| `core.factorial`  | `"!"`   |
+| `core.fraction`   | `"//"`  |
+:::
+
+### Properties of AlgebraicOperations
+
+Below are properties common to all AlgebraicOperations:
+
+| Property   | Type                    | Definition                                                                                                       |
+| ---------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `op`       | `CoreOp`                | A constant string mapped to by the enum `CoreOp`.                                                                |
+| `operands` | `AlgebraicExpression[]` | An array of [algebraic expressions](#algebraic-expressions), corresponding to the algebraic operator’s operands. |
+
+## Sum
+::::right
+~~~ts
+let x = a + b;
+let y = 2pi + pi;
+let z = sum(1,2,3,4);
 ~~~
+:::figcap
+Various sum expressions.
+:::
+::::
+An expression corresponding to an ${n}$-ary sum. That is, an expression of syntax:
 
-And this reduces to true because `z` is not contained in the expression `2x^3 - xy + y`:
+$$
+	a + b
+$$
 
-~~~julia
-freeof(2x^3 - xy + y, z)
+where ${a}$ and ${b}$ are algebraic expressions. 
+
+:::definition
+### Constructor: sum
+Let ${operands}$ be an array with elements of type [`algebraicExpression`](#algebraic-expressions). Then the function:
+
+$$
+	\texttt{sum}(operands)
+$$
+
+returns a new `Sum`.
+:::
+
+#### Commutativity of Addition
+Recall the algebraic property of commutativity:
+
+:::definition
+__Commutativity of Addition.__ Let ${S}$ be an algebra of elements ${a}$ and ${b,}$ and an operation ${\star.}$ We say that ${\star}$ is _commutative_ if, and only if:
+$$
+	a \star b = b \star a
+$$ 
+:::
+
+Because sums are associative, they may be _concatenated_ and flattened into ${n}$-ary sums:
+
+$$
+	d + (c + b + (e + a)) = (d + c + b + e + a)
+$$
+
+And because of commutative, they may _ordered_ following a well-defined order relation (below, a lexicographical ordering):
+
+$$
+	(d + c + b + e + a) = (a + b + c + d + e)
+$$
+
+Like the [product expression](#product), Twine interprets addition as an ${n}$-ary operation, given the commutative property of addition.
+
+
+### Properties of Sums
+Sums have the following properties:
+
+| Property   | Type                    | Remark                                                       |
+| ---------- | ----------------------- | ------------------------------------------------------------ |
+| `op`       | `CoreOp.sum`            | The constant string `“+”`.                                   |
+| `operands` | `AlgebraicExpression[]` | An array of [algebraic expressions](#algebraic-expressions). |
+
+
+## Product
+::::right
+~~~ts
+let x = a * b;
+let z = (3x - 1)(2x + 1);
 ~~~
+:::figcap
+Product expressions.
+:::
+::::
 
-### `prec` __(expression, expression)__
+An expression corresponding to an ${n}$-ary product. In mathematical notation, an expression of syntax:
 
-| Parameters                 | Returns |
-| -------------------------- | ------- |
-| _expression_, _expression_ | `bool`  |
+$$
+	ab
+$$
 
-Given a pair of expressions, returns true if the first expression precedes the second expression, following Twine’s defined order relation. The order relation (denoted ${\prec}$) is defined as follows:
+where ${a}$ is an algebraic expression and ${b}$ is an algebraic expression.
 
-1. If ${u}$ and ${v}$ are constants (integers or fractions), then ${u \prec v \implies u \lt v.}$
-2. If ${u}$ and ${v}$ are symbols, then ${u \prec v \implies \text{char}(u) \lt \text{char}(v),}$ where ${\text{char}}$ is a function that returns the character code of its argument (currently, only ASCII characters are recognized under this rule).
-3. If ${u}$ and ${v}$ are both products, or if ${u}$ and ${v}$ are both sums, with the operands ${u_1, u_2, \ldots, u_m}$ and ${v_1, v_2, \ldots, v_m,}$ then the following rules apply:
-    1. If ${u_m \neq v_n,}$ then ${u \prec v \implies u_m \prec v_n.}$
-    2. Where ${k = \min(m,n) - 1,}$ if ${u_{m-j} = v_{n-j}}$ for ${j = 0,1,\ldots,k-1,}$ then ${u \prec v \implies u_{m-k} \prec v_{n-k}.}$
-    3. If neither (a) nor (b) holds, then ${u \prec v \implies m \lt n.}$ 
-4. Where ${\text{b}}$ is a function that returns the base of an expression and ${\text{e}}$ is a function that returns the corresponding exponent, if ${u}$ and ${v}$ are powers, then:
-    1. If ${\text{b}(u) \neq \text{b}(v),}$ then ${u \prec v \implies \text{b}(u) \prec \text{b}(v).}$
-    2. Else, ${u \prec v \implies \text{e}(u) \prec \text{e}(v).}$
+
+:::definition
+### Constructor: product
+Let ${operands}$ be an array with elements of type [`algebraicExpression`](#algebraic-expressions). Then the function:
+
+$$
+	\texttt{product}(operands)
+$$
+
+returns a new `Product`.
+:::
+
+### Properties of Product Expressions
+Product expressions have the following properties:
+
+
+| Property   | Type                    | Remark                                                       |
+| ---------- | ----------------------- | ------------------------------------------------------------ |
+| `op`       | `CoreOp.product`        | The constant string `“*”`.                                   |
+| `operands` | `AlgebraicExpression[]` | An array of [algebraic expressions](#algebraic-expressions). |
+
+## Power
+
+::::right
+~~~ts
+let x = y^2;
+let n = cos(x)^2;
+let b = y^-1;
+~~~
+:::figcap
+Power expressions.
+:::
+::::
+
+An expression corresponding to a power. That is, an expression of syntax:
+
+$$
+	a^b
+$$
+
+where ${a}$ is an algebraic expression and ${b}$ is an algebraic expression.
+
+
+
+
+

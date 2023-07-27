@@ -25,7 +25,6 @@ export const Figure = ({ of: data, className }: FigureProps) => {
     width: "100%",
     paddingBottom,
     overflow: "hidden",
-    border: "solid thin lightgrey",
   };
   const svgcss: CSSProperties = {
     display: "inline-block",

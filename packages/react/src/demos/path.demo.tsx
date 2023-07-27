@@ -31,15 +31,23 @@ const cube = () => {
   return out;
 };
 
-
-
 const path1 = plane([
-  axis("x"),
-  axis("y"),
-  cube().rotateX("45deg").rotateY("20deg").rotateZ("5deg"),
-]).context(space(300,300).dom(-5,5).ran(-5,5).margin(5,5)).figure();
+  // axis("x"),
+  // axis("y"),
+  cube()
+    .rotateX("10deg")
+    .rotateY("10deg")
+    .rotateZ("30deg")
+    .stroke( "teal",),
+  cube()
+    .scale(1,4)
+    .rotateX("10deg")
+    .rotateY("10deg")
+    .rotateZ("30deg")
+    .stroke('lightgrey')
+    .dash(2),
+]).context(space(300, 300).dom(-5, 5).ran(-5, 5).margin(5, 5)).figure();
 
 export const Path1 = () => {
   return <Figure of={path1} />;
 };
-
