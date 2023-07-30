@@ -1,0 +1,64 @@
+# Tangle
+This is the documentation page for _Tangle_, _Twine_’s compiler. Because _Twine_ is geared towards symbolic manipulation, Part I of this documentation covers the mathematical background necessary for understanding _Tangle_’s architecture and implementation details. Part II provides an overview of the compiler’s API and implementation details. Part IV – _finale_ – presents current limitations and plans for future improvements.
+
+:::p1
+part i
+:::
+This part introduces the basic mathematical background necessary to understanding this documentation’s exposition. Readers familiar with the outlined topics should skip to the Part II.
+
+## Logic
+The following symbols are used extensively throughout the documentation.
+
+| Symbol      | Semantic                 | Example Usage                          |
+| ----------- | ------------------------ | -------------------------------------- |
+| ${\land}$   | Logical _and_            | ${a \land b}$ (“${a}$ and ${b}$”)      |
+| ${\lor}$    | Logical _or_             | ${a \lor b}$ (“${a}$ or ${b}$”)        |
+| ${\neg}$    | Logical _not_            | ${\neg x}$ (“not ${x}$”)               |
+| ${\exist}$  | _Existence_ predicate    | ${\exist x}$ (“there exists an ${x}$”) |
+| ${\forall}$ | _Universality_ predicate | ${\forall x}$ (“for all ${x}$”)        |
+
+## Set Theory
+In Twine, the word _object_ refers to any entity that may be persisted in computer memory. We refer to an unordered collection of such entities with the word _set_.
+
+:::definition
+### Set
+A _set_ is a collection of objects. By convention, we denote sets with upper-case Latin characters, and objects with lower-case Latin characters. Should a set comprise many elements, we use _ellipses_ (${\ldots}$) to denote the fact.
+:::
+
+__Example.__ The set ${S = \set{1, 10}}$ is a set comprising two objects, 1 and 10.
+
+__Example.__ The set ${A = \set{1, 2, \ldots, 9, 10}}$ comprises 10 objects, the numbers ${1}$ through ${10.}$
+
+:::definition
+### Common Sets
+We reserve the following symbols to denote particular sets:
+
+| Symbol         | Set                        |
+| -------------- | -------------------------- |
+| ${\natnums}$   | The set of natural numbers |
+| ${\Z}$         | The set of integers        |
+| ${\mathbb{Q}}$ | The set of rationals       |
+| ${\R}$         | The set of reals           |
+| ${\Complex}$         | The set of complex numbers |
+:::
+
+
+
+:::definition
+### Member
+Given a set ${S,}$ if ${S}$ contains an object ${x,}$ we say that ${x}$ is a _member of_ ${S,}$ and write ${x \in S.}$ If ${x}$ is _not_ a member of ${S,}$ we write ${x \notin S.}$
+:::
+
+:::definition
+### Empty Set
+The _set_ containining no objects is called _the empty set_, denoted ${\varnothing.}$
+:::
+
+:::definition
+### Strict Subset
+Given sets ${A}$ and ${B,}$ if every element of ${A}$ is an element of ${B,}$ we say that ${A}$ is a _strict subset_ of ${B,}$ and write ${A \subset B.}$ 
+:::
+
+
+
+

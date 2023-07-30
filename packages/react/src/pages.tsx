@@ -2,13 +2,13 @@ import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router-dom";
 import MainDoc from "./demos/main.doc.mdx";
 import QuadDoc from "./demos/quad.doc.mdx";
 import AxesDoc from "./demos/axes.doc.mdx";
-import TwineDoc from "./demos/twine.doc.mdx";
+import TangleDoc from "./demos/tangle.doc.mdx";
 
 export const docLinks = {
   Intro: "/",
   Quadrilaterals: "/quad",
   Axes: "/axes",
-  Twine: "/twine",
+  Tangle: "/tangle",
 };
 
 export const Main = () => {
@@ -19,7 +19,7 @@ export const Main = () => {
           <Route path={docLinks.Intro} element={<MainDoc />} />
           <Route path={docLinks.Quadrilaterals} element={<QuadDoc />} />
           <Route path={docLinks.Axes} element={<AxesDoc />} />
-          <Route path={docLinks.Twine} element={<TwineDoc />} />
+          <Route path={docLinks.Tangle} element={<TangleDoc />} />
         </Route>
       </Routes>
     </BrowserRouter>

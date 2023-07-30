@@ -182,6 +182,7 @@ export type Slice<
   : T extends readonly [...Tup<C>, ...infer S] ? S
   : T extends [...Tup<C>, ...infer S] ? S
   : T;
+
 export function curry<
   Function extends VariadicFunction,
   Length extends number = Parameters<Function>["length"],
@@ -247,6 +248,7 @@ export function compose<
     1: [LastParameterOf<Fns>];
   }[Allowed<Fns> extends never ? 0 : 1],
 >(...args: [...Fns]): (...data: Allow) => Return<Fns>;
+
 export function compose<
   T extends Fn1,
   Fns extends T[],

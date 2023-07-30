@@ -3,6 +3,14 @@ import { Children, ReactNode } from "react";
 import base from "./styles/base.module.scss";
 type Children = { children: ReactNode };
 
+const P1 = ({children}:Children) => {
+  return (
+    <div className={base.p1}>
+      {children}
+    </div>
+  )
+}
+
 const HStack = ({ children }: Children) => {
   return (
     <div className={base.hstack}>
@@ -57,6 +65,7 @@ const components = {
   figcap: FigCap,
   definition: Definition,
   ref: Ref,
+  p1: P1,
 };
 
 export const BaseComponents = ({ children }: Children) => {

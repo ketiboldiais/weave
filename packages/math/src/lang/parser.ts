@@ -546,7 +546,7 @@ export const imul = (tkns: Token[]) => {
   return out;
 };
 
-const coreFnScanner =
+export const coreFnScanner =
   <K extends string[]>(functions: K) => (tokens: Token[]) => {
     const functionNames = new Set(functions);
     const out = [];

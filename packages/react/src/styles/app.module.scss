@@ -8,6 +8,13 @@
 		margin: 0 auto;
 		h1,h2,h3,h4,h5,h6 {
 			font-size: 1rem;
+			width: fit-content;
+			float: left;
+			margin: 0;
+			margin-right: 5px;
+			&::after {
+				content: '.';
+			}
 		}
 		padding: 0 0.9em;
 		section {
