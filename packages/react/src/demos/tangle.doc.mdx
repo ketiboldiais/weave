@@ -1,9 +1,10 @@
 # Tangle
-This is the documentation page for _Tangle_, _Twine_’s compiler. Because _Twine_ is geared towards symbolic manipulation, Part I of this documentation covers the mathematical background necessary for understanding _Tangle_’s architecture and implementation details. Part II provides an overview of the compiler’s API and implementation details. Part IV – _finale_ – presents current limitations and plans for future improvements.
+This is the documentation page for _Tangle_, _Twine_’s compiler. Because _Twine_ is geared towards symbolic manipulation, Part I of this documentation covers the mathematical background necessary for understanding _Tangle_’s architecture and implementation details. Part II provides an overview of the compiler’s API and implementation details. Finally, Part IV presents current limitations and plans for future improvements.
 
 :::p1
 part i
 :::
+
 This part introduces the basic mathematical background necessary to understanding this documentation’s exposition. Readers familiar with the outlined topics should skip to the Part II.
 
 ## Logic
@@ -39,7 +40,7 @@ We reserve the following symbols to denote particular sets:
 | ${\Z}$         | The set of integers        |
 | ${\mathbb{Q}}$ | The set of rationals       |
 | ${\R}$         | The set of reals           |
-| ${\Complex}$         | The set of complex numbers |
+| ${\Complex}$   | The set of complex numbers |
 :::
 
 
@@ -59,6 +60,76 @@ The _set_ containining no objects is called _the empty set_, denoted ${\varnothi
 Given sets ${A}$ and ${B,}$ if every element of ${A}$ is an element of ${B,}$ we say that ${A}$ is a _strict subset_ of ${B,}$ and write ${A \subset B.}$ 
 :::
 
+## Polynomials
+Polynomials are particularly important in Twine, as they comrpise the bedrock of approximation.
 
+:::definition
+### Single-variable Polynomial
+A _single-variable polynomial_ is an expression ${u}$ of the form:
+
+$$
+	u = a_nx^n + a_{n-1}x^{n-1} + \ldots + a_1 + a_0,
+$$
+
+where ${x}$ is a _variable_, and each ${a}$ is a _rational number coefficient_. Where ${a_n \neq 0,}$ the coefficient ${a_n}$ is called the _leading cofficient_ of ${u,}$ and ${n}$ is called its _degree_.
+:::
+
+
+:::p1
+part ii
+:::
+
+This part of the documentation provides an overview of _Tangle_’s API, followed by summaries of its implementation details.
+
+## Auxiliary Functions
+_Tangle_ relies on various standalone helper functions. These functions are presented below.
+
+### Numeric Functions
+_Numeric functions_ are those that perform purely numeric computations.
+
+#### rem
+Given two numbers, ${a}$ and ${b,}$ returns the signed remainder of ${a}$ and ${b.}$ The function is equivalent to writing `a % b`.
+
+:::tbl
+| Parameters                 | Returns |
+| -------------------------- | ------- |
+| (_a_: number, _b_: number) | number  |
+:::
+
+#### mod
+Returns the remainder of ${a}$ and ${b}$ (i.e., ${a \bmod b}$). The function is equivalent to writing `((a % b) + b) % b`.
+
+:::tbl
+| Parameters                 | Returns |
+| -------------------------- | ------- |
+| (_a_: number, _b_: number) | number  |
+:::
+
+#### quot
+Returns the integer quotient of integers ${a}$ and ${b}$ (i.e., ${\lfloor a/b \rfloor}$).
+
+:::tbl
+| Parameters                 | Returns |
+| -------------------------- | ------- |
+| (_a_: number, _b_: number) | number  |
+:::
+
+#### gcd 
+Returns the greatest common divisor of integers ${a}$ and ${b.}$
+
+:::tbl
+| Parameters                 | Returns |
+| -------------------------- | ------- |
+| (_a_: number, _b_: number) | number  |
+:::
+
+#### xgcd
+Returns a triple corresponding to the result of the extended Euclidean algorithm.
+
+:::tbl
+| Parameters               | Returns                  |
+| ------------------------ | ------------------------ |
+| (_a_:number, _b_:number) | [number, number, number] |
+:::
 
 

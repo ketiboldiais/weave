@@ -9,7 +9,6 @@ import {
 } from "./enums.js";
 import { Token } from "./token.js";
 import { complex, floor, frac, toFrac } from "./util.js";
-import { Value } from "./value.js";
 
 export interface Visitor<T> {
   /**
@@ -341,25 +340,8 @@ export const block = (statements: Statement[]) => (
   new BlockStmt(statements)
 );
 
-export interface AlgebraicVisitor<T> {
-  int(node: Integer): T;
-  float(node: Float): T;
-  symbol(node: Variable): T;
-  literal(node: Literal): T;
-  binary(node: Binary): T;
-  vector(node: VectorExpr): T;
-  matrix(node: MatrixExpr): T;
-  fnCall(node: FnCall): T;
-  nativeCall(node: NativeCall): T;
-  relation(node: RelationExpr): T;
-  notExpr(node: NotExpr): T;
-  logicExpr(node: LogicalExpr): T;
-  group(node: Group): T;
-  assign(node: AssignExpr): T;
-}
 
 export abstract class Expr extends ASTNode {
-  abstract map<T>(visitor: AlgebraicVisitor<T>): T;
   constructor(kind: nk) {
     super(nc.expression, kind);
   }
@@ -370,9 +352,6 @@ export const isExpr = (node: ASTNode): node is Expr => (
 export type NativeFn = "sin" | "cos" | "tan" | "log" | "ln" | "-" | "+" | "!";
 export class NativeCall extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.nativeCall(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.nativeCall(this);
   }
   callee: NativeFn;
@@ -392,9 +371,6 @@ export const nativeCall = (callee: NativeFn, args: Expr[]) => (
 
 export class FnCall extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.fnCall(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.fnCall(this);
   }
   callee: Expr;
@@ -417,9 +393,6 @@ export const fnCall = (callee: Expr, args: Expr[], line: number) => (
 
 export class Literal extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.literal(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.literal(this);
   }
   value: string | null | boolean;
@@ -450,9 +423,6 @@ export class VectorExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.vector(this);
   }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
-    return visitor.vector(this);
-  }
   elements: Expr[];
   loc: number;
   type: "vector" = "vector";
@@ -471,9 +441,6 @@ export const vectorExpr = (elements: Expr[], loc: number) => (
 
 export class MatrixExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.matrix(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.matrix(this);
   }
   vectors: VectorExpr[];
@@ -499,9 +466,6 @@ export class AssignExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.assign(this);
   }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
-    return visitor.assign(this);
-  }
   name: Token;
   init: Expr;
   constructor(name: Token, init: Expr) {
@@ -522,9 +486,6 @@ export class NotExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.notExpr(this);
   }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
-    return visitor.notExpr(this);
-  }
   expr: Expr;
   constructor(expr: Expr) {
     super(nk.not);
@@ -542,9 +503,6 @@ export const notExpr = (expr: Expr) => (
 
 export class LogicalExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.logicExpr(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.logicExpr(this);
   }
   left: Expr;
@@ -569,9 +527,6 @@ export class RelationExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.relation(this);
   }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
-    return visitor.relation(this);
-  }
   left: Expr;
   op: Token<RelationalOperator>;
   right: Expr;
@@ -589,9 +544,6 @@ export class RelationExpr extends Expr {
 
 export class Group extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.group(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.group(this);
   }
   expression: Expr;
@@ -618,9 +570,6 @@ export const relation = (
 
 export class Float extends Expr {
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.float(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.float(this);
   }
   n: number;
@@ -659,9 +608,6 @@ export class Integer extends Expr {
   toString(): string {
     return `${this.n}`;
   }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
-    return visitor.int(this);
-  }
   n: number;
   type: "int" = "int";
   constructor(value: number) {
@@ -694,9 +640,6 @@ export class Variable extends Expr {
   }
   toString(): string {
     return this.name.lex;
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
-    return visitor.symbol(this);
   }
   name: Token;
   constructor(name: Token, type: string) {
@@ -737,9 +680,6 @@ export class Binary extends Expr {
     return `${this.left.toString()} ${this.op.lex} ${this.right.toString()}`;
   }
   accept<T>(visitor: Visitor<T>): T {
-    return visitor.binary(this);
-  }
-  map<T>(visitor: AlgebraicVisitor<T>): T {
     return visitor.binary(this);
   }
   left: Expr;

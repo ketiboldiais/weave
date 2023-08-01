@@ -57,6 +57,13 @@ const Ref = ({ children, id }: Children & { id: string }) => {
     </span>
   );
 };
+const Tbl = ({children}:Children) => {
+  return (
+    <div className={base.tbl}>
+      {children}
+    </div>
+  )
+}
 
 const components = {
   hstack: HStack,
@@ -66,6 +73,7 @@ const components = {
   definition: Definition,
   ref: Ref,
   p1: P1,
+  tbl: Tbl,
 };
 
 export const BaseComponents = ({ children }: Children) => {

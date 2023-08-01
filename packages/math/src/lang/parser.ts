@@ -5,7 +5,6 @@ import {
   isLatinGreek,
   Left,
   left,
-  print,
   Right,
   right,
   zip,
