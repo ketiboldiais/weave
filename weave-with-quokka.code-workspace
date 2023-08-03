@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "weave",
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.wordWrapColumn": 80,
+		"editor.wordWrap": "wordWrapColumn",
+		"editor.fontLigatures": true,
+		"javascript.preferences.quoteStyle": "single",
+		"typescript.preferences.quoteStyle": "single"
+	}
+}

@@ -13,3 +13,18 @@ button:hover {
 }
 
 html {font-size: 14px;}
+
+em strong {
+	font-variant: small-caps;
+	font-style: normal;
+	font-weight: normal;
+	font-size: 1.2rem;
+}
+
+pre code {
+	font-size: 0.95rem !important;
+}
+pre {
+	line-height: 1.5;
+}
+

@@ -3,11 +3,13 @@ import MainDoc from "./demos/main.doc.mdx";
 import QuadDoc from "./demos/quad.doc.mdx";
 import AxesDoc from "./demos/axes.doc.mdx";
 import TangleDoc from "./demos/tangle.doc.mdx";
+import VectorDoc from './demos/vector.doc.mdx';
 
 export const docLinks = {
   Intro: "/",
   Quadrilaterals: "/quad",
   Axes: "/axes",
+  Vector: "/vector",
   Tangle: "/tangle",
 };
 
@@ -20,6 +22,7 @@ export const Main = () => {
           <Route path={docLinks.Quadrilaterals} element={<QuadDoc />} />
           <Route path={docLinks.Axes} element={<AxesDoc />} />
           <Route path={docLinks.Tangle} element={<TangleDoc />} />
+          <Route path={docLinks.Vector} element={<VectorDoc />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,19 +1,35 @@
 import { MDXProvider } from "@mdx-js/react";
-import { Children, ReactNode } from "react";
+import { Children, CSSProperties, HTMLAttributes, ReactNode } from "react";
 import base from "./styles/base.module.scss";
 type Children = { children: ReactNode };
 
-const P1 = ({children}:Children) => {
+type BoxProps = {
+  display: string;
+};
+
+const Note = (props: Children) => {
+  return (
+    <div className={`note`}>
+      {props.children}
+    </div>
+  );
+};
+
+const HStack = (props: Children & CSSProperties) => {
+  const { children, ...rest } = props;
+  return (
+    <div
+      className={`hstack`}
+      style={{ ...rest }}
+    >
+      {props.children}
+    </div>
+  );
+};
+
+const P1 = ({ children }: Children) => {
   return (
     <div className={base.p1}>
-      {children}
-    </div>
-  )
-}
-
-const HStack = ({ children }: Children) => {
-  return (
-    <div className={base.hstack}>
       {children}
     </div>
   );
@@ -57,16 +73,31 @@ const Ref = ({ children, id }: Children & { id: string }) => {
     </span>
   );
 };
-const Tbl = ({children}:Children) => {
+const Tbl = ({ children }: Children) => {
   return (
     <div className={base.tbl}>
+      {children}
+    </div>
+  );
+};
+
+const Link = (
+  props: HTMLAttributes<HTMLAnchorElement> & { children?: ReactNode },
+) => {
+  const { children, ...rest } = props;
+  return <a {...rest} target={"_blank"}>{children}</a>;
+};
+
+const Grid = ({children}:Children) => {
+  return (
+    <div className={`grid`}>
       {children}
     </div>
   )
 }
 
 const components = {
-  hstack: HStack,
+  grid: Grid,
   left: Left,
   right: Right,
   figcap: FigCap,
@@ -74,6 +105,9 @@ const components = {
   ref: Ref,
   p1: P1,
   tbl: Tbl,
+  hstack: HStack,
+  note: Note,
+  a: Link,
 };
 
 export const BaseComponents = ({ children }: Children) => {

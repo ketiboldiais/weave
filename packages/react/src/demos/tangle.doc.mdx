@@ -1,11 +1,204 @@
 # Tangle
-This is the documentation page for _Tangle_, _Twine_’s compiler. Because _Twine_ is geared towards symbolic manipulation, Part I of this documentation covers the mathematical background necessary for understanding _Tangle_’s architecture and implementation details. Part II provides an overview of the compiler’s API and implementation details. Finally, Part IV presents current limitations and plans for future improvements.
+This is the documentation page for _Tangle_, _Twine_’s compiler. This documentation is partitioned in five: _**part o**_ presents an overview of the _Twine_ language. _**part i**_ covers the mathematical background necessary for understanding _Tangle_’s architecture. _**part ii**_ provides an overview of the compiler’s API and various implementation details. Finally, _**part iv**_ presents current limitations and plans for future improvements.
+
+:::p1
+part o
+:::
+
+Twine is a scripting language designed specifically for _Loom_. The language supports variable and function declarations, symbolic computation, array-based computation, and classical object-oriented programming.
+
+## Comments
+Single-line comments in Twine start with three hyphens-minus (`“-”`) and terminate on the first newline (the character `“\n”`):
+
+~~~
+--- Single-line comments emphasize intermissions.
+~~~
+
+Multiline comments start with at least three equals signs (`“=”`) and terminate on at least three equals signs:
+
+```
+============================
+Following Twine’s emphasis
+on readability, we use
+multiple “=” signs to call
+the reader’s attention.
+============================
+```
+
+## Variables
+Variables are declared with either the _let_ or _var_ keywords. Variables declared with _let_ are immutable – once declared, they are frozen in place, and we may not assign them a new value. Variables declared with _var_, however, are mutable.
+
+~~~
+let x = 5;
+x = 10; --- environment-error: “x” is an immutable variable
+var y = 3.14;
+y = 5; --- “y” is mutable, so this is ok
+~~~
+
+Following the C tradition, statements are delimited by semicolons.
+
+### Valid Identifiers
+A lexeme will be interpreted as a variable name only if all of the following conditions are satisfied:
+
+1. The lexeme starts with an ASCII Latin character (lower- or upper-case), the underscore character (`“_”`), a dollar sign (`“$”`), or a single-quote (`“'”`).
+2. The lexeme ends with an ASCII Latin character (lower- or upper-case), an ASCII digit (the Hindu-Arabic numerals `“0”` through `“9”`), an underscore character (`“_”`), a dollar sign (`“$”`), or a single-quote (`“'”`).
+3. If the lexeme starts with a single-quote (`“'”`), the name must end with a single-quote (`“'”`).
+4. Unless condition (3) is true, the name must not contain whitespace, operators, keywords, or control characters.
+5. Unless condition (3) is true, the name must not be a reserved word.
+
+Per condition (3), Twine permits variable names with whitespaces:
+
+~~~
+let x = 12 --- standard name
+let 'New York City Pop.' = 8_468_000; --- name with whitespace
+let '+' = 5; --- valid, but not a good idea
+~~~
+
+The single-quote in quoted identifiers are _part of the identifier_. Thus, the following code will err:
+
+
+~~~
+let 'cake and pie' = 15;
+cake and pie = 15; --- syntax-error: invalid assignment target
+~~~
+
+## Types
+Twine recognizes the following core types by default. These types are outlined below, with their documentation symbols parenthesized:
+
+:::hstack
+- :u[__Nonalgebraics__]
+- string ${\mathbb{S}}$
+- boolean ${\mathbb{B}}$
+- null ${\texttt{NULL}}$
+---
+- :u[__Numerics__]
+- int ${\mathbb{Z}}$
+- float ${\mathbb{F}}$
+- rational ${\mathbb{Q}}$
+- big-integer ${\mathbb{Z}^{\uparrow}}$
+- big-rational ${\mathbb{Q}^{\uparrow}}$
+---
+- :u[__Functionals__]
+- function
+- expression
+---
+- :u[__Gatherings__]
+- set
+- map
+- object
+---
+- :u[__Sequentials__]
+- tuple
+- list
+- vector
+- matrix
+- sequence
+:::
+
+Each type belongs to a _family_, marked above in bold, underlined headings. Before discussing these families, we must present an overview of each individual type.
+
+### Strings
+Strings in Twine are always delimited by double quotes:
+~~~ts
+let city = "Oconomowoc";
+~~~
+
+### Booleans
+The set of all Booleans comprises two values, _true_ and _false_:
+
+~~~ts
+let aye = true;
+let nay = false;
+~~~
+
+### Null
+The value _null_ denotes nothing, or empty. In contrast to some procedural languages, Twine has no notion of a _void function_. All semantics reduce to some atomic type, _null_ or otherwise.
+
+~~~ts
+let empty = null;
+~~~
+
+### Numerics
+Twine has several numeric types: _int_, _float_, _fraction_, _real_, _rational_, and _complex_.
+
+### Sequentials
+_Sequentials_ are well-ordered collections of data. Twine’s core sequential types include _vector_, _matrix_, and _tuple_.
+
+~~~
+--- a vector
+[1,2,3,4]
+
+
+[ --- a matrix
+  [1,0,0],
+  [0,1,0],
+  [0,0,1],
+]
+
+--- a tuple
+(1,2,3,4)
+~~~
+
+### Indexing
+All sequentials can be accessed via an _indexing expression_:
+
+~~~
+let vector_A = [2.5, 4.1, 8.9, 13.7];
+let a = vector_A[1] --- 2.5
+~~~
+
+Following mathematical convention, Twine uses 1-based indexing. That is, the first element of a sequential has an index of 1, the second element 2, the third 3, ${\ldots,}$ the ${n^{\text{th}}}$ element ${n.}$
+
+### Vectors
+Vectors in Twine are sequences of strictly _ints_ or _floats_. Inserting or initializing any other type into a vector will return a type error. For fixed-length, homogenous sequences of other data types, we use _tuples_. For mixed sequences of arbitrary length, we use _lists_. 
+
+:::aside
+The policy of restricting vectors to only integers or floating point numbers stems from how heavily used vectors and matrices are in Loom. Under Twine’s current architecture, vectors are the building blocks of matrices, and operations over matrices, in general, are computationally intensive. They can take significant time and memory to perform. Allowing non-homogenous, arbitrary length vectors requires many more checks at runtime, yielding an increased risk of poor performance. 
+:::
+
+Vectors are initialized with square brackets:
+
+~~~ts
+let x = [1,2,3,4];
+~~~
+
+Like other sequentials, we may access individual elements with an indexing expression:
+
+~~~
+let x = [8,9,1,2];
+let element = x[1];
+print element --- 8
+~~~
+
+
+
+## Classes
+Twine supports classical object-oriented programming via classes.[^classical-oop]
+
+[^classical-oop]: By _classical_, we mean the approach taken by _Simula_, _Smalltalk_, and its descendants. _See_ [_**jeff sutherland**_, _A History of Object-Oriented Programming Languates and their Impact on Program Design and Software Development_ 2 (1999)](http://jeffsutherland.com/papers/Rans/OOlanguages.pdf).
+
+~~~
+class Circle {
+  def(r) {
+    this.radius = r;
+  }
+  diameter() {
+    return pi * this.radius^2;
+  }
+}
+
+let my_circle = Circle(5);
+let area = my_circle.diameter();
+print area --- "25"
+~~~
+
+Syntactically, a class in _Twine_ is a collection of functions. Semantically, a class is a bundle of _properties_, where each property is mapped to by a unique _field_. Above, the `Circle` class comprises three fields – `def`, `diameter`, and `radius` – and two properties: (1) `def` maps to `null` (with the side-effect of defining properties bound to the `Circle` instance’s `this` reference), and (2) both `diameter` and `radius` map to numerics.
 
 :::p1
 part i
 :::
 
-This part introduces the basic mathematical background necessary to understanding this documentation’s exposition. Readers familiar with the outlined topics should skip to the Part II.
+This part introduces the basic mathematical background necessary to understanding the compiler’s architecture. Readers familiar with the outlined topics should proceed to Part II.
 
 ## Logic
 The following symbols are used extensively throughout the documentation.
@@ -68,7 +261,7 @@ Polynomials are particularly important in Twine, as they comrpise the bedrock of
 A _single-variable polynomial_ is an expression ${u}$ of the form:
 
 $$
-	u = a_nx^n + a_{n-1}x^{n-1} + \ldots + a_1 + a_0,
+  u = a_nx^n + a_{n-1}x^{n-1} + \ldots + a_1 + a_0,
 $$
 
 where ${x}$ is a _variable_, and each ${a}$ is a _rational number coefficient_. Where ${a_n \neq 0,}$ the coefficient ${a_n}$ is called the _leading cofficient_ of ${u,}$ and ${n}$ is called its _degree_.
@@ -91,45 +284,45 @@ _Numeric functions_ are those that perform purely numeric computations.
 Given two numbers, ${a}$ and ${b,}$ returns the signed remainder of ${a}$ and ${b.}$ The function is equivalent to writing `a % b`.
 
 :::tbl
-| Parameters                 | Returns |
-| -------------------------- | ------- |
-| (_a_: number, _b_: number) | number  |
+| Parameters               | Returns  |
+| ------------------------ | -------- |
+| `(a: number, b: number)` | `number` |
 :::
 
 #### mod
 Returns the remainder of ${a}$ and ${b}$ (i.e., ${a \bmod b}$). The function is equivalent to writing `((a % b) + b) % b`.
 
 :::tbl
-| Parameters                 | Returns |
-| -------------------------- | ------- |
-| (_a_: number, _b_: number) | number  |
+| Parameters               | Returns  |
+| ------------------------ | -------- |
+| `(a: number, b: number)` | `number` |
 :::
 
 #### quot
 Returns the integer quotient of integers ${a}$ and ${b}$ (i.e., ${\lfloor a/b \rfloor}$).
 
 :::tbl
-| Parameters                 | Returns |
-| -------------------------- | ------- |
-| (_a_: number, _b_: number) | number  |
+| Parameters               | Returns  |
+| ------------------------ | -------- |
+| `(a: number, b: number)` | `number` |
 :::
 
 #### gcd 
 Returns the greatest common divisor of integers ${a}$ and ${b.}$
 
 :::tbl
-| Parameters                 | Returns |
-| -------------------------- | ------- |
-| (_a_: number, _b_: number) | number  |
+| Parameters               | Returns  |
+| ------------------------ | -------- |
+| `(a: number, b: number)` | `number` |
 :::
 
 #### xgcd
 Returns a triple corresponding to the result of the extended Euclidean algorithm.
 
 :::tbl
-| Parameters               | Returns                  |
-| ------------------------ | ------------------------ |
-| (_a_:number, _b_:number) | [number, number, number] |
+| Parameters             | Returns                    |
+| ---------------------- | -------------------------- |
+| `(a:number, b:number)` | `[number, number, number]` |
 :::
 
 

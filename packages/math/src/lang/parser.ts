@@ -1296,3 +1296,15 @@ export const read = (src: string) => (
   syntax(imul(lexemes(src)))
 );
 const tf = (src: string) => imul(lexemes(src));
+
+// const lexemes = lexicalAnalysis(src).map(symsplit).map(imul);
+// print(lexemes);
+// const parsing = syntaxAnalysis(lexemes);
+// print(treeof(parsing));
+// const result = interpret(parsing);
+
+// const x = sum([int(2), int(3), product([sym("x"), sym("y")])]);
+// const g = conventialTree(x);
+// const h = algebraicTree(g);
+// print(g);
+// print(h);

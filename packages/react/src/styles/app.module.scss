@@ -1,63 +1,75 @@
 @import './colors.scss';
 
 .app {
+	h1 {
+		text-align: center;
+		margin-bottom: 5rem;
+		margin-top: 5rem;
+	}
+	dfn ul {
+		margin-left: 1em;
+		margin-top: 0;
+		font-size: 0.95rem;
+		padding: 0;
+	}
 	dfn {
 		display: block;
 		width: 70%;
 		font-style: normal;
-		margin: 0 auto;
-		h1,h2,h3,h4,h5,h6 {
-			font-size: 1rem;
-			width: fit-content;
-			float: left;
-			margin: 0;
-			margin-right: 5px;
-			&::after {
-				content: '.';
-			}
+		margin: 1em auto;
+		h1,
+		h2,
+		h3,
+		h4,
+		h5,
+		h6 {
+			font-size: 0.9rem;
+			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+			width: 100%;
+			margin: 5px 0;
+			padding: 0.2em 0;
+			border-bottom: solid thin $black;
+			border-top: solid thin $black;
 		}
 		padding: 0 0.9em;
 		section {
 			margin: 0;
 		}
 	}
+
 	:global .katex {
 		font-size: 1.1rem;
 	}
+
 	:global .texttt {
 		font-family: 'Fira Code', 'KaTeX_Typewriter';
 		font-size: 0.95rem;
 	}
+
 	pre {
 		border-left: solid 3px $bluegrey;
 		padding: 0.2rem 0.5rem;
 	}
-	:not(pre)>code {
-		font-size: 0.85rem;
-	}
-	:not(pre)>em>code {
-		color: $red1;
-		font-style: normal;
-	}
-
+	
 	code {
 		font-family: 'Fira Code';
-		font-size: 0.9rem;
+		font-size: 0.8rem;
 	}
 
 	table {
 		border-collapse: collapse;
 		width: fit-content;
 		margin: 0 auto;
-		td,
-		th {
-			border: solid thin $bluegrey;
+		font-size: 0.95rem;
+		thead {
+			border-bottom: solid thin $ash;
 		}
-
+		tr td:not(:first-child) {
+			border-left: solid thin $ash;
+		}
 		td {
 			padding: 0.2em 0.5em;
 		}
-
 		th {
 			padding: 0.2em 0.8em;
 			font-weight: 600;
@@ -70,7 +82,7 @@
 	}
 
 	color: $black;
-	
+
 	section {
 		margin: 0;
 	}
@@ -102,16 +114,21 @@
 	h6 {
 		font-size: 1rem;
 	}
-	
+
 	nav {
 		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 	}
-	
-	
-	h1, h2, h3,
-	h4, h5, h6,
-	nav, th {
+
+
+	h2,
+	h3,
+	h4,
+	h5,
+	h6,
+	nav,
+	th {
 		margin-bottom: 0;
+
 		code {
 			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 		}
@@ -133,9 +150,11 @@
 		z-index: 10;
 		height: 20px;
 		width: 100vw;
+
 		a {
 			color: $black;
 		}
+
 		ul {
 			background-color: $blue0;
 			border-bottom: solid thin $blue1;
@@ -155,6 +174,22 @@
 		}
 	}
 
+	.page {
+		padding: 1em 5em;
+		padding-bottom: 10em;
+		@media only screen and (min-width: 1344px) {
+			margin-right: 336px;
+			position: relative;
+			max-width: 912px;
+			aside {
+				position: absolute;
+				right: -336px;
+				width: 250px;
+				margin-right: 50px;
+			}
+		}
+	}
+
 	main {
 		font-size: 1.1rem;
 		position: absolute;
@@ -167,8 +202,9 @@
 		width: 100vw;
 	}
 
-	.page {
-		padding: 1em 5em;
-		padding-bottom: 10em;
+	aside {
+		border-top: solid thin $blue1;
+		border-bottom: solid thin $blue1;
+		color: $grey;
 	}
 }
