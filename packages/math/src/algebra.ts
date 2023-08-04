@@ -1205,17 +1205,17 @@ class IndexingExpr extends Expr {
   }
   list: Expr;
   index: Expr;
-  constructor(list: Expr, index: Expr, loc: Location) {
+  constructor(list: Expr, index: Expr) {
     super();
     this.list = list;
     this.index = index;
-    this.L = loc.line;
-    this.C = loc.column;
+    this.L = list.L;
+    this.C = list.C;
   }
 }
 
-function indexingExpr(list: Expr, index: Expr, loc: Location) {
-  return new IndexingExpr(list, index, loc);
+function indexingExpr(list: Expr, index: Expr) {
+  return new IndexingExpr(list, index);
 }
 
 class AlgebraicString extends Expr {
@@ -1229,11 +1229,11 @@ class AlgebraicString extends Expr {
     return nodekind.algebra_string;
   }
   expression: Expr;
-  loc: Location;
   constructor(expression: Expr, loc: Location) {
     super();
     this.expression = expression;
-    this.loc = loc;
+    this.L=loc.line;
+    this.C=loc.column;
   }
 }
 
@@ -1738,17 +1738,19 @@ class Integer extends Expr {
     return nodekind.literal;
   }
   value: number;
-  constructor(value: number) {
+  constructor(value: number, L: number, C: number) {
     super();
     this.value = value;
+    this.L = L;
+    this.C = C;
   }
 }
 
 /**
  * Returns a new {@link Integer|integer node}.
  */
-function integer(n: number) {
-  return new Integer(n);
+function integer(n: number, L: number, C: number) {
+  return new Integer(n, L, C);
 }
 
 class Float extends Expr {
@@ -1771,7 +1773,7 @@ class Float extends Expr {
 /**
  * Returns a new {@link Float|float node}.
  */
-function float(n: number) {
+function float(n: number, line: number, column: number) {
   return new Float(n);
 }
 
@@ -4046,6 +4048,10 @@ function factorialize(num: number) {
 function derivative(expression: AlgebraicExpression, variable: string | Sym) {
   const x = $isString(variable) ? sym(variable) : variable;
   const deriv = (u: AlgebraicExpression): AlgebraicExpression => {
+    if (isSymbol(u)) {
+      return u;
+      k;
+    }
     u = simplify(u);
     /**
      * __DERIV-1__.
@@ -4102,7 +4108,7 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
      * __DERIV-5__.
      */
     if (isAlgebraicFn(u)) {
-      if (!$isUndefined(u) && u.op === "sin") {
+      if (u.op === "sin") {
         const lhs = fn("cos", u.args);
         const rhs = simplify(deriv(u.args[0]));
         return simplify(product([lhs, rhs]));
@@ -4111,7 +4117,7 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
     if (freeof(u, x)) {
       return int(0);
     }
-    return fn(`derivative`, [u]);
+    return Undefined();
   };
   return deriv(simplify(expression));
 }
@@ -4787,6 +4793,18 @@ enum tt {
   scientific, fraction, nan, inf, nil,
   numeric_constant,
   algebra_string,
+  
+  // Vector operators
+  /** Lexeme: `.+` - Vector addition */
+  /** Lexeme: `.*` - Vector multiplication */
+  /** Lexeme: `.-` - Vector difference */
+  /** Lexeme: `./` - Pairwise division */
+  /** Lexeme: `@` - Dot product */
+  
+  // Matrix Operators
+  /** Lexeme: `#+` - Matrix addition */
+  /** Lexeme: `#-` - Matrix subtraction */
+  /** Lexeme: `#*` - Matrix multiplication */
 
   // Native Calls - - - - - - - - - - - - - - - - - - - - - - - - - -
   native,
@@ -5840,9 +5858,6 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   /** The last node parsed. */
   let $lastNode: ASTNode = nil();
 
-  const snap = () => {
-  };
-
   /**
    * Returns true if there are no longer any tokens or if
    * an {@link $error|error} occurred, false otherwise.
@@ -5953,9 +5968,11 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
 
   const number: Parslet = (t) => {
     if (t.isNumber()) {
-      return newnode(
-        ((t.is(tt.float) ? float : integer)(t.literal)).at(t.L, t.C),
-      );
+      if (t.is(tt.int)) {
+        return newnode(integer(t.literal, t.L, t.C));
+      } else {
+        return newnode(float(t.literal, t.L, t.C));
+      }
     } else {
       return error(
         `Expected an integer, but got “${t.lexeme}”`,
@@ -5971,11 +5988,11 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const scientific_number: Parslet = (t) => {
     if (t.isScientific()) {
       const [a, b] = t.literal;
-      const lhs = float(a);
+      const lhs = float(a, t.L, t.C);
       const rhs = binex(
-        integer(10),
+        integer(10, t.L, t.C),
         token(tt.caret, "^", t.L, t.C),
-        integer(b),
+        integer(b, t.L, t.C),
       ).at(t.L, t.C);
       return newnode(binex(
         lhs,
@@ -6335,7 +6352,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         `parsing an index accessor`,
       );
     }
-    return newnode(indexingExpr(lhs, index.unwrap(), op.loc()));
+    return newnode(indexingExpr(lhs, index.unwrap()));
   };
 
   const function_call = (
@@ -6367,7 +6384,11 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
 
   const decrement = (op: Token, node: Expr) => {
     if (isVariable(node)) {
-      const right = binex(node, op.entype(tt.minus).lex("-"), integer(1));
+      const right = binex(
+        node,
+        op.entype(tt.minus).lex("-"),
+        integer(1, op.L, op.C),
+      );
       return newnode(assign(node, right));
     } else {
       return error(
@@ -6379,7 +6400,11 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
 
   const increment = (op: Token, node: Expr) => {
     if (isVariable(node)) {
-      const right = binex(node, op.entype(tt.plus).lex("+"), integer(1));
+      const right = binex(
+        node,
+        op.entype(tt.plus).lex("+"),
+        integer(1, op.L, op.C),
+      );
       return newnode(assign(node, right));
     } else {
       return error(
@@ -7318,18 +7343,20 @@ class AlgebraicTree implements Visitor<AlgebraicExpression> {
  */
 class ConventionalTree implements ExpressionVisitor<Expr> {
   freevariables: Variable[] = [];
-  loc: Location;
+  L: number;
+  C: number;
   constructor(loc: Location) {
-    this.loc = loc;
+    this.L = loc.line;
+    this.C = loc.line;
   }
   map(node: Expression) {
     return node.accept(this);
   }
   int(node: Int): Expr {
-    return integer(node.n);
+    return integer(node.n, this.L, this.C);
   }
   real(node: Real): Expr {
-    return float(node.n);
+    return float(node.n, this.L, this.C);
   }
   sym(node: Sym<string>): Expr {
     return variable(Token.of(tt.symbol, node.s));
@@ -7346,7 +7373,7 @@ class ConventionalTree implements ExpressionVisitor<Expr> {
         case "Inf":
           return numericConstant(Infinity, "Inf");
         default:
-          return float(node.value);
+          return float(node.value, this.L, this.C);
       }
     }
     return nil();
@@ -8056,8 +8083,8 @@ class Compiler implements Visitor<Primitive> {
       throw resolverError(
         m.message,
         `evaluating an algebraic string`,
-        node.loc.line,
-        node.loc.column,
+        node.L,
+        node.C,
       );
     }
     return value.unwrap();
@@ -8580,11 +8607,11 @@ function engine(source: string) {
 }
 
 const src = `
-let j = 'x^2 * x^3';
+let j = '(x^2 * x^3 - y)';
 let k = deriv(j, 'x');
 print k;
 `;
 const k = engine(src).engineSettings({
   implicitMultiplication: true,
-}).execute();
+}).statementTree();
 print(k);
