@@ -25,69 +25,53 @@ const {
   sqrt,
 } = Math;
 
-enum ntype {
-  null,
-  int,
-  float,
-  NAN,
-  Inf,
-  bool,
-  string,
-  bignum,
-  bigrat,
-  vector,
-  matrix,
-  unknown,
-  algebra,
-  number,
-  fraction,
-  tuple,
-}
-type ATOMIC =
-  | ntype.null
-  | ntype.int
-  | ntype.float
-  | ntype.fraction
-  | ntype.NAN
-  | ntype.Inf
-  | ntype.bool
-  | ntype.string
-  | ntype.bignum
-  | ntype.bigrat;
-type SEQUENTIAL_TYPE =
-  | ntype.vector
-  | ntype.matrix
-  | ntype.tuple;
-
-/**
- * Utility method - Logs to the console.
- */
+/** Utility method - Logs to the console. */
 const print = console.log;
+
+/** Typeguard: Returns true if `x` is any string, false otherwise. */
 const $isString = (x: any): x is string => (typeof x === "string");
+
+/** Typeguard: Returns true if `x` is any number, false otherwise. */
 const $isNumber = (x: any): x is number => (typeof x === "number");
+
+/** Typeguard: Returns true if `x` is any array, false otherwise. */
 const $isArray = (x: any): x is any[] => (Array.isArray(x));
+
+/** Typeguard: Returns true if `x` is a boolean, false otherwise. */
 const $isBoolean = (x: any): x is boolean => (typeof x === "boolean");
+
+/** Typeguard: Returns true if `x` is NaN, false otherwise.. */
 const $isNaN = (x: any) => Number.isNaN(x);
-const $isUndefined = (x: any): x is undefined =>
-  (x === undefined) || (x === null);
+
+/** Typeguard : Returns true if `x` is Undefined or null. */
+const $isNothing = (x: any): x is undefined => (
+  (x === undefined) || (x === null)
+);
+
+/** Typeguard: Returns true if `x` is an integer. */
 const $isInt = (x: number) => Number.isInteger(x);
+
+/** Typeguard: Returns true if `x` is Infinity. */
 const $isInfinity = (x: any) => !(Number.isFinite(x));
+
+/** Typeguard: Returns true if `x` is a big integer. */
 const $isBigInt = (x: any): x is bigint => (typeof x === "bigint");
+
+/** Typeguard: Returns true if `x` is any object. */
 const $isObject = (x: any): x is Object => (typeof x === "object");
+
+/** Typeguard: Returns true `x` is a function. */
 const $isFunction = (x: any): x is Function => (typeof x === "function");
+
+/** Global maximum integer. */
 const MAX_INT = Number.MAX_SAFE_INTEGER;
 
-/**
- * @internal Transforms 1-based indices to
- * 0-based indices.
- */
+/** Transforms 1-based indices to 0-based indices. */
 function i0(value: number) {
   return value === 0 ? 0 : value - 1;
 }
 
-/**
- * Concatenates two lists of generic type `T`.
- */
+/** Concatenates two lists of generic type `T`. */
 function concat<T>(left: T[], right: T[]): T[] {
   const out: T[] = [];
   for (let i = 0; i < left.length; i++) {
@@ -99,13 +83,7 @@ function concat<T>(left: T[], right: T[]): T[] {
   return out;
 }
 
-/**
- * Rounds the given number value to the number of given decimal
- * places.
- *
- * @param value - The number to round.
- * @param places - The number of decimal places.
- */
+/** Rounds the given number value to the number of given decimal places. */
 function round(num: number, places: number = 2) {
   const epsilon = Number.EPSILON;
   return (
@@ -115,9 +93,7 @@ function round(num: number, places: number = 2) {
   );
 }
 
-/**
- * Computes the arithmetic mean of the given list of numbers.
- */
+/** Computes the arithmetic mean of the given list of numbers. */
 function avg(...nums: number[]) {
   let sum = 0;
   for (let i = 0; i < nums.length; i++) {
@@ -126,16 +102,12 @@ function avg(...nums: number[]) {
   return sum / nums.length;
 }
 
-/**
- * Returns true if the given string contains digits.
- */
+/** Returns true if the given string contains digits. */
 function isNumericString(s: string) {
   return /\d+/.test(s);
 }
 
-/**
- * Returns the a% of b.
- */
+/** Returns the a% of b. */
 function percent(a: number, b: number) {
   return (100 * a) / b;
 }
@@ -149,9 +121,7 @@ class Complex {
   }
 }
 
-/**
- * Returns a new complex number.
- */
+/** Returns a new complex number. */
 function complex(realComponent: number, complexComponent: number) {
   return new Complex(realComponent, complexComponent);
 }
@@ -187,7 +157,7 @@ export class Vector<T extends number[] = number[]> {
    */
   mag(precision?: number) {
     const out = sqrt(this.elements.reduce((p, c) => (p) + (c ** 2), 0));
-    return !$isUndefined(precision) ? round(out, floor(precision)) : out;
+    return !$isNothing(precision) ? round(out, floor(precision)) : out;
   }
 
   /**
@@ -278,7 +248,7 @@ export class Vector<T extends number[] = number[]> {
    * Returns the first element of this vector.
    */
   get x() {
-    return $isUndefined(this.elements[0]) ? 0 : this.elements[0];
+    return $isNothing(this.elements[0]) ? 0 : this.elements[0];
   }
   /**
    * Sets the second element of this vector to the
@@ -291,7 +261,7 @@ export class Vector<T extends number[] = number[]> {
    * Returns the second element of this vector.
    */
   get y() {
-    return $isUndefined(this.elements[1]) ? 0 : this.elements[1];
+    return $isNothing(this.elements[1]) ? 0 : this.elements[1];
   }
   /**
    * Sets the third element of this vector to the
@@ -304,7 +274,7 @@ export class Vector<T extends number[] = number[]> {
    * Returns the third element of this vector.
    */
   get z() {
-    return $isUndefined(this.elements[2]) ? 0 : this.elements[2];
+    return $isNothing(this.elements[2]) ? 0 : this.elements[2];
   }
   /**
    * Sets the fourt element of this vector to the
@@ -317,7 +287,7 @@ export class Vector<T extends number[] = number[]> {
    * Returns the fourth element of this vector.
    */
   get w() {
-    return $isUndefined(this.elements[3]) ? 0 : this.elements[3];
+    return $isNothing(this.elements[3]) ? 0 : this.elements[3];
   }
 
   element(index: number) {
@@ -349,7 +319,7 @@ export function equalen(vectorA: Vector, vectorB: Vector): [Vector, Vector] {
     let i = 0;
     for (i = 0; i < vectorA.length; i++) {
       A.push(vectorA.elements[i]);
-      B.push($isUndefined(vectorB.elements[i]) ? 0 : vectorB.elements[i]);
+      B.push($isNothing(vectorB.elements[i]) ? 0 : vectorB.elements[i]);
     }
     const n = vectorB.length - i;
     for (let j = 0; j < n; j++) {
@@ -359,7 +329,7 @@ export function equalen(vectorA: Vector, vectorB: Vector): [Vector, Vector] {
   } else if (vectorA.length < vectorB.length) {
     let i = 0;
     for (i = 0; i < vectorB.length; i++) {
-      A.push($isUndefined(vectorA.elements[i]) ? 0 : vectorA.elements[i]);
+      A.push($isNothing(vectorA.elements[i]) ? 0 : vectorA.elements[i]);
       B.push(vectorB.elements[i]);
     }
     const n = vectorB.length - i;
@@ -417,6 +387,7 @@ class Matrix {
     return `[${out}]`;
   }
 }
+
 function matrix(vectors: Vector[], cols?: number) {
   return new Matrix(
     vectors,
@@ -424,6 +395,7 @@ function matrix(vectors: Vector[], cols?: number) {
     cols !== undefined ? cols : vectors[0].cols,
   );
 }
+
 const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 
 class BigRat {
@@ -440,12 +412,10 @@ class BigRat {
     return `#${this.N}|${this.D}`;
   }
 }
+
 function bigRat(N: bigint, D: bigint) {
   return new BigRat(N, D);
 }
-const $isBigRat = (
-  value: any,
-): value is BigRat => (value instanceof BigRat);
 
 class Fraction {
   n: number;
@@ -583,7 +553,7 @@ function arrayString<T extends any>(array: T[]): string {
       const es = arrayString(element);
       out.push(es);
     } else if ($isObject(element)) {
-      const objstr = objectString(element);
+      const objstr = objectTree(element);
       out.push(objstr);
     } else if ($isFunction(element)) {
       const f = `${element.name}`;
@@ -599,7 +569,7 @@ function arrayString<T extends any>(array: T[]): string {
 /**
  * Utility function for printing the AST.
  */
-function objectString<T extends Object>(
+function objectTree<T extends Object>(
   Obj: T,
   initial: string = ".",
   cbfn?: (node: any) => void,
@@ -671,18 +641,10 @@ function objectString<T extends Object>(
   return output;
 }
 
-// § - Either Type
-/**
- * At the parsing stage, all parsed node results are kept
- * in an `Either` type (either an AST node) or an Err (error)
- * object. We want to avoid throwing as much as possible for
- * optimal parsing.
- */
+/** At the parsing stage, all parsed node results are kept in an `Either` type (either an AST node) or an Err (error) object. We want to avoid throwing as much as possible for optimal parsing. */
 type Either<A, B> = Left<A> | Right<B>;
 
-/**
- * A `Left` type indicates failure.
- */
+/** A box type corresponding to failure. */
 class Left<T> {
   private value: T;
   constructor(value: T) {
@@ -714,9 +676,7 @@ class Left<T> {
   }
 }
 
-/**
- * A right type indicates success.
- */
+/** A box type corresponding success. */
 class Right<T> {
   private value: T;
   constructor(value: T) {
@@ -752,14 +712,10 @@ class Right<T> {
   }
 }
 
-/**
- * Returns a new left.
- */
+/** Returns a new left. */
 const left = <T>(x: T): Left<T> => new Left(x);
 
-/**
- * Returns a new right.
- */
+/** Returns a new right. */
 const right = <T>(x: T): Right<T> => new Right(x);
 
 type ErrorType =
@@ -771,6 +727,7 @@ type ErrorType =
   | "environment-error"
   | "algebraic-error";
 
+/** An object containing an error report. */
 class Err extends Error {
   message: string;
   errorType: ErrorType;
@@ -792,6 +749,7 @@ class Err extends Error {
   }
 }
 
+/** Ensures all errors have the same format. */
 function formattedError(
   message: string,
   phase: string,
@@ -825,6 +783,37 @@ function formattedError(
   return (`While ${phase}, a ${errorType} occurred on line ${line}, column ${column}. Reporting from the ${moduleName}: ${message}`);
 }
 
+/** Returns a new lexical error. A lexical error is raised if an error occured during scanning. */
+function lexicalError(
+  message: string,
+  phase: string,
+  line: number,
+  column: number,
+) {
+  return new Err(message, "lexical-error", phase, line, column);
+}
+
+/** Returns a new syntax error. A syntax error is raised if an error occured during parsing. */
+function syntaxError(
+  message: string,
+  phase: string,
+  line: number,
+  column: number,
+) {
+  return new Err(message, "syntax-error", phase, line, column);
+}
+
+/** Returns a new runtime error. A runtime error is raised if an error occured during interpretation. */
+function runtimeError(
+  message: string,
+  phase: string,
+  line: number,
+  column: number,
+) {
+  return new Err(message, "runtime-error", phase, line, column);
+}
+
+/** Returns a new type error. A type error is raised if an error occurred during type-checking. */
 function typeError(
   message: string,
   phase: string,
@@ -834,6 +823,7 @@ function typeError(
   return new Err(message, "type-error", phase, line, column);
 }
 
+/** Returns a new environment error. An environment error is raised if an error occured during an environment lookup. */
 function envError(
   message: string,
   phase: string,
@@ -843,6 +833,7 @@ function envError(
   return new Err(message, "environment-error", phase, line, column);
 }
 
+/** Returns a new resolver error. A resolver error is raised if an error occured during resolution. */
 function resolverError(
   message: string,
   phase: string,
@@ -852,6 +843,7 @@ function resolverError(
   return new Err(message, "resolver-error", phase, line, column);
 }
 
+/** Returns a new algebra error. An algebra error is raised if an error occured during a symbolic operation. Because symbolic operations are handled by the symbol engine, these errors must be handled separately. */
 function algebraError(
   message: string,
   phase: string,
@@ -953,6 +945,18 @@ abstract class ASTNode {
     this.L = line;
     this.C = column;
     return this;
+  }
+  typeError(message: string, phase: string) {
+    return typeError(message, phase, this.L, this.C);
+  }
+  envError(message: string, phase: string) {
+    return envError(message, phase, this.L, this.C);
+  }
+  resolverError(message: string, phase: string) {
+    return resolverError(message, phase, this.L, this.C);
+  }
+  algebraError(message: string, phase: string) {
+    return algebraError(message, phase, this.L, this.C);
   }
 }
 
@@ -1082,6 +1086,7 @@ class IfStmt extends Statement {
     this.alt = alt;
   }
 }
+
 /**
  * Returns a new {@link IfStmt|if-statement}.
  */
@@ -1155,9 +1160,11 @@ class VariableStmt extends Statement {
     return this.variable.name;
   }
 }
+
 function varStmt(name: Token<tt.symbol>, value: Expr) {
   return new VariableStmt(name, value, true);
 }
+
 function letStmt(name: Token<tt.symbol>, value: Expr) {
   return new VariableStmt(name, value, false);
 }
@@ -1177,6 +1184,7 @@ class WhileStmt extends Statement {
     this.body = body;
   }
 }
+
 /**
  * Returns a new {@link WhileStmt|while-statement}.
  */
@@ -1357,6 +1365,7 @@ class BigNumber extends Expr {
     this.value = value;
   }
 }
+
 /**
  * Returns a new {@link BigNumber}.
  */
@@ -1380,6 +1389,7 @@ class RationalExpr extends Expr {
     this.value = bigRat(N, D);
   }
 }
+
 function bigRational(N: bigint, D: bigint) {
   return new RationalExpr(N, D);
 }
@@ -1431,7 +1441,12 @@ type NativeUnary =
   | "simplify"
   | "subex"
   | "arccosh";
+
+/**
+ * A native function that takes more than 1 argument.
+ */
 type NativePolyAry = "max" | "min";
+
 type NativeFn = NativeUnary | NativePolyAry;
 
 class NativeCall extends Expr {
@@ -1454,6 +1469,7 @@ class NativeCall extends Expr {
     this.C = loc.column;
   }
 }
+
 /**
  * Returns a new {@link NativeCall|native call function}.
  */
@@ -1502,6 +1518,7 @@ function algebraicUnary(op: Token<AlgebraicUnaryOperator>, arg: Expr) {
 }
 
 type LogicalUnaryOperator = tt.not;
+
 class LogicalUnaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.logicalUnaryExpr(this);
@@ -1673,6 +1690,7 @@ class Nil extends Expr {
     this.value = null;
   }
 }
+
 function nil() {
   return new Nil();
 }
@@ -1693,6 +1711,7 @@ class FractionExpr extends Expr {
     this.value = ratio(n, d);
   }
 }
+
 function rational(n: number, d: number) {
   return new FractionExpr(n, d);
 }
@@ -1717,6 +1736,7 @@ class NumericConstant extends Expr {
     this.sym = sym;
   }
 }
+
 function numericConstant(value: number, sym: CoreConstant) {
   return new NumericConstant(value, sym);
 }
@@ -1856,21 +1876,6 @@ type BinaryLogicalOperator =
   | tt.xor
   | tt.or;
 
-/**
- * A node corresponding to a logical binary expression.
- * That is, an expression of the form:
- * ~~~
- * <expr> <logical-operator> <expr>
- * ~~~
- * where `<logical-operator>` is a {@link BinaryLogicalOperator|binary logical operator}:
- *
- * 1. {@link tt.and|and},
- * 2. {@link tt.nand|nand},
- * 3. {@link tt.nor|nor},
- * 4. {@link tt.or|or},
- * 5. {@link tt.xnor|xnor},
- * 6. {@link tt.xor|xor},
- */
 class LogicalBinaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.logicalBinaryExpr(this);
@@ -1907,13 +1912,7 @@ function logicalBinex(
   return new LogicalBinaryExpr(left, op, right);
 }
 
-type RelationalOperator =
-  | tt.lt
-  | tt.gt
-  | tt.deq
-  | tt.neq
-  | tt.geq
-  | tt.leq;
+type RelationalOperator = tt.lt | tt.gt | tt.deq | tt.neq | tt.geq | tt.leq;
 
 class GetExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
@@ -1935,9 +1934,11 @@ class GetExpr extends Expr {
     this.C = loc.column;
   }
 }
+
 function isGetExpr(node: ASTNode): node is GetExpr {
   return node.kind === nodekind.get_expression;
 }
+
 function getExpr(object: Expr, name: string, loc: Location) {
   return new GetExpr(object, name, loc);
 }
@@ -1987,6 +1988,7 @@ class SuperExpr extends Expr {
     this.loc = loc;
   }
 }
+
 function superExpr(method: Token, loc: Location) {
   return new SuperExpr(method, loc);
 }
@@ -2008,6 +2010,7 @@ class ThisExpr extends Expr {
     this.C = keyword.C;
   }
 }
+
 function thisExpr(keyword: Token) {
   return new ThisExpr(keyword);
 }
@@ -2049,39 +2052,6 @@ function relation(left: Expr, op: Token<RelationalOperator>, right: Expr) {
  */
 function tidy(s: string) {
   return s.replaceAll("\n", " ");
-}
-
-/**
- * Returns a new lexical error.
- */
-function lexicalError(
-  message: string,
-  phase: string,
-  line: number,
-  column: number,
-) {
-  return new Err(message, "lexical-error", phase, line, column);
-}
-
-/**
- * Returns a new syntax error.
- */
-function syntaxError(
-  message: string,
-  phase: string,
-  line: number,
-  column: number,
-) {
-  return new Err(message, "syntax-error", phase, line, column);
-}
-
-function runtimeError(
-  message: string,
-  phase: string,
-  line: number,
-  column: number,
-) {
-  return new Err(message, "runtime-error", phase, line, column);
 }
 
 /**
@@ -2226,14 +2196,16 @@ interface ExpressionVisitor<T> {
   algebraicFn(node: AlgebraicFn): T;
 }
 
-abstract class Expression<A extends string = string> {
+abstract class AlgebraicExpression {
   abstract accept<T>(visitor: ExpressionVisitor<T>): T;
   /**
    * Returns true if this expression is syntactically
    * equal to the provided expression. Otherwise,
    * returns false.
    */
-  abstract equals(other: Expression): boolean;
+  abstract equals(other: AlgebraicExpression): boolean;
+  abstract get args(): AlgebraicExpression[];
+  abstract set args(args: AlgebraicExpression[]);
   /**
    * Returns this expression as a string.
    */
@@ -2241,13 +2213,13 @@ abstract class Expression<A extends string = string> {
   /**
    * Returns a copy of this expression.
    */
-  abstract copy(): Expression;
+  abstract copy(): AlgebraicExpression;
   /**
    * Returns the ith operand of this expression.
    * If this expression is not a compound expression,
    * returns {@link Undefined}.
    */
-  abstract operand(i: number): Expression;
+  abstract operand(i: number): AlgebraicExpression;
   /**
    * Returns the number of operands of this expression.
    * If this expression is not a compound expression,
@@ -2258,7 +2230,7 @@ abstract class Expression<A extends string = string> {
   /**
    * This expressions operator.
    */
-  readonly op: A;
+  readonly op: string;
   /**
    * The parentheses level of this expression.
    */
@@ -2281,7 +2253,7 @@ abstract class Expression<A extends string = string> {
    * Returns true if this expression and the provided
    * expression have the same parentheses level.
    */
-  sameParenLevel(other: Expression) {
+  sameParenLevel(other: AlgebraicExpression) {
     return this.parenLevel === other.parenLevel;
   }
   /**
@@ -2292,20 +2264,17 @@ abstract class Expression<A extends string = string> {
    * 2. `klass.compound` (corresponding to a compound expression).
    */
   klass: klass;
-  constructor(op: A, klass: klass) {
+  constructor(op: string, klass: klass) {
     this.op = op;
     this.klass = klass;
   }
 }
-const $isExpression = (
-  value: any,
-): value is Expression => (value instanceof Expression);
 
 /**
  * Type predicate. Claims and returns true if the given expression
  * `u` is an {@link Atom|atomic expression}. False otherwise.
  */
-function isAtom(u: Expression): u is Atom {
+function isAtom(u: AlgebraicExpression): u is Atom {
   return u.klass === klass.atom;
 }
 
@@ -2313,7 +2282,7 @@ function isAtom(u: Expression): u is Atom {
  * Type predicate. Claims and returns true if the given expression
  * `u` is a {@link Compound|compound expression}. False otherwise.
  */
-function isCompound(u: Expression): u is Compound {
+function isCompound(u: AlgebraicExpression): u is Compound {
   return u.klass === klass.compound;
 }
 
@@ -2321,16 +2290,16 @@ function isCompound(u: Expression): u is Compound {
  * Type predicate. Claims and returns true if the given expression
  * `u` is an {@link Int|integer}. False otherwise.
  */
-function isInt(u: Expression): u is Int {
-  return !$isUndefined(u) && (u.op === core.int);
+function isInt(u: AlgebraicExpression): u is Int {
+  return !$isNothing(u) && (u.op === core.int);
 }
 
 /**
  * Type predicate. Claims and returns true if the given expression
  * `u` is a {@link Real|real number}. False otherwise.
  */
-function isReal(u: Expression): u is Real {
-  return !$isUndefined(u) && (u.op === core.real);
+function isReal(u: AlgebraicExpression): u is Real {
+  return !$isNothing(u) && (u.op === core.real);
 }
 
 /**
@@ -2339,8 +2308,8 @@ function isReal(u: Expression): u is Real {
  * return true if `u` is `Undefined`, since `Undefined` is a symbol
  * by definition.
  */
-function isSymbol(u: Expression): u is Sym {
-  return !$isUndefined(u) && ((u.op === core.symbol) ||
+function isSymbol(u: AlgebraicExpression): u is Sym {
+  return !$isNothing(u) && ((u.op === core.symbol) ||
     (u.op === core.undefined));
 }
 
@@ -2349,16 +2318,18 @@ function isSymbol(u: Expression): u is Sym {
  * `u` is a {@link Undefined|undefined}. False otherwise. Note
  * that constant `Undefined` maps to the literal null.
  */
-function isUndefined(u: Expression): u is Constant<null, core.undefined> {
-  return !$isUndefined(u) && (u.op === core.undefined);
+function isUndefined(
+  u: AlgebraicExpression,
+): u is Constant<null, core.undefined> {
+  return !$isNothing(u) && (u.op === core.undefined);
 }
 
 /**
  * Type predicate. Returns true if the given expression is a constant,
  * false otherwise. If true, claims that `u` is a {@link Constant|constant type number}.
  */
-function isConstant(u: Expression): u is Constant<number> {
-  return !$isUndefined(u) && (u.op === core.constant);
+function isConstant(u: AlgebraicExpression): u is Constant<number> {
+  return !$isNothing(u) && (u.op === core.constant);
 }
 
 /**
@@ -2371,7 +2342,7 @@ function isConstant(u: Expression): u is Constant<number> {
  *
  * Atoms are the building blocks of all other expressions.
  */
-abstract class Atom extends Expression {
+abstract class Atom extends AlgebraicExpression {
   klass: klass.atom = klass.atom;
   constructor(op: string) {
     super(op, klass.atom);
@@ -2403,7 +2374,7 @@ class Int extends Atom {
     out.parenLevel = this.parenLevel;
     return out;
   }
-  equals(other: Expression<string>): boolean {
+  equals(other: AlgebraicExpression): boolean {
     if (!isInt(other)) return false;
     return (other.n === this.n) && (this.sameParenLevel(other));
   }
@@ -2459,7 +2430,7 @@ class Real extends Atom {
     out.parenLevel = this.parenLevel;
     return out;
   }
-  equals(other: Expression<string>): boolean {
+  equals(other: AlgebraicExpression): boolean {
     if (!isReal(other)) {
       return false;
     }
@@ -2497,7 +2468,7 @@ class Sym<X extends string = string> extends Atom {
     out.parenLevel = this.parenLevel;
     return out;
   }
-  equals(other: Expression<string>): boolean {
+  equals(other: AlgebraicExpression): boolean {
     if (!isSymbol(other)) {
       return false;
     }
@@ -2527,7 +2498,7 @@ class Constant<
   isAlgebraic(): boolean {
     return true;
   }
-  equals(other: Expression<string>): boolean {
+  equals(other: AlgebraicExpression): boolean {
     if (!isConstant(other)) {
       return false;
     } else {
@@ -2596,23 +2567,11 @@ function sym(s: string) {
   return new Sym(s);
 }
 
-type AlgebraicExpression =
-  | Int
-  | Sym
-  | Real
-  | Constant
-  | AlgebraicOp
-  | AlgebraicFn;
-
-function isAlgebraicExpression(node: Expression): node is AlgebraicExpression {
-  return node.isAlgebraic();
-}
-
-abstract class Compound<OP extends string = string> extends Expression {
-  op: OP;
-  args: Expression[];
+abstract class Compound extends AlgebraicExpression {
+  op: string;
+  args: AlgebraicExpression[];
   klass: klass.compound = klass.compound;
-  constructor(op: OP, args: Expression[]) {
+  constructor(op: string, args: AlgebraicExpression[]) {
     super(op, klass.compound);
     this.op = op;
     // this.args = args;
@@ -2634,7 +2593,7 @@ abstract class Compound<OP extends string = string> extends Expression {
     }
     return args;
   }
-  equals(other: Expression<string>): boolean {
+  equals(other: AlgebraicExpression): boolean {
     if (!(other instanceof Compound)) {
       return false;
     }
@@ -2653,14 +2612,9 @@ abstract class Compound<OP extends string = string> extends Expression {
   }
 }
 
-type AlgOP =
-  | core.sum
-  | core.difference
-  | core.product
-  | core.quotient
-  | core.power
-  | core.factorial
-  | core.fraction;
+// deno-fmt-ignore
+type AlgOP = | core.sum | core.difference | core.product | core.quotient | core.power | core.factorial | core.fraction;
+
 /**
  * A node corresponding to an algebraic operation.
  * Algebraic operations comprise of:
@@ -2761,8 +2715,8 @@ function sum(args: AlgebraicExpression[]) {
  * {@link Sum|sum expression}, false otherwise.
  * If true, claims that `u` is a {@link Sum|sum expression}.
  */
-function isSum(u: Expression): u is Sum {
-  return !$isUndefined(u) && (u.op === core.sum);
+function isSum(u: AlgebraicExpression): u is Sum {
+  return !$isNothing(u) && (u.op === core.sum);
 }
 
 /**
@@ -2815,8 +2769,8 @@ function product(args: AlgebraicExpression[]) {
  * Type predicate. Returns true if `u` is a {@link Product|product expression},
  * false otherwise. If true, claims that `u` is a {@link Product|product expression}.
  */
-function isProduct(u: Expression): u is Product {
-  return !$isUndefined(u) && (u.op === core.product);
+function isProduct(u: AlgebraicExpression): u is Product {
+  return !$isNothing(u) && (u.op === core.product);
 }
 
 /**
@@ -2885,8 +2839,8 @@ function quotient(dividend: AlgebraicExpression, divisor: AlgebraicExpression) {
  * Type predicate. Returns true if `u` is a {@link Quotient|quotient expression},
  * false otherwise. If true, claims that `u` is a {@link Quotient|quotient expression}.
  */
-function isQuotient(u: Expression): u is Quotient {
-  return !$isUndefined(u) && (u.op === core.quotient);
+function isQuotient(u: AlgebraicExpression): u is Quotient {
+  return !$isNothing(u) && (u.op === core.quotient);
 }
 
 /**
@@ -2961,8 +2915,8 @@ class Frac extends AlgebraicOp<core.fraction> {
  * Type predicate. Returns true if `u` is a {@link Frac|fraction},
  * false otherwise. If true, claims that `u` is a fraction.
  */
-function isFrac(u: Expression): u is Frac {
-  return !$isUndefined(u) && (u.op === core.fraction);
+function isFrac(u: AlgebraicExpression): u is Frac {
+  return !$isNothing(u) && (u.op === core.fraction);
 }
 
 /**
@@ -3279,8 +3233,8 @@ function power(base: AlgebraicExpression, exponent: AlgebraicExpression) {
  * Type guard. Returns true if `u` is a {@link Power|power expression},
  * false otherwise.
  */
-function isPower(u: Expression): u is Power {
-  return !$isUndefined(u) && (u.op === core.power);
+function isPower(u: AlgebraicExpression): u is Power {
+  return !$isNothing(u) && (u.op === core.power);
 }
 
 /**
@@ -3349,8 +3303,8 @@ function difference(a: AlgebraicExpression, b: AlgebraicExpression) {
  * __Type Predicate__. Returns true if `u` is {@link Difference|difference expression},
  * false otherwise.
  */
-function isDifference(u: Expression): u is Difference {
-  return !$isUndefined(u) && (u.op === core.difference);
+function isDifference(u: AlgebraicExpression): u is Difference {
+  return !$isNothing(u) && (u.op === core.difference);
 }
 
 /**
@@ -3410,8 +3364,8 @@ function factorial(of: AlgebraicExpression) {
  * is a {@link Factorial|factorial expression}, false
  * otherwise.
  */
-function isFactorial(u: Expression): u is Factorial {
-  return !$isUndefined(u) && (u.op === core.factorial);
+function isFactorial(u: AlgebraicExpression): u is Factorial {
+  return !$isNothing(u) && (u.op === core.factorial);
 }
 
 /**
@@ -3472,7 +3426,7 @@ function fn(name: string, args: AlgebraicExpression[]) {
  * otherwise. If true, claims that `u` is an
  * {@link AlgebraicFn|algebraic function}.
  */
-function isAlgebraicFn(u: Expression): u is AlgebraicFn {
+function isAlgebraicFn(u: AlgebraicExpression): u is AlgebraicFn {
   return u instanceof AlgebraicFn;
 }
 
@@ -3534,7 +3488,7 @@ function freeof(expression: AlgebraicExpression, variable: Sym | string) {
 /**
  * Returns the term of this expression.
  */
-function termOf(u: Expression) {
+function termOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isSum(u) || isPower(u) || isFactorial(u) || isAlgebraicFn(u)
   ) {
@@ -3558,9 +3512,9 @@ function termOf(u: Expression) {
 /**
  * Returns true if the given expression is a constant.
  */
-function isConst(u: Expression): u is Int | Frac | Constant<number> {
+function isConst(u: AlgebraicExpression): u is Int | Frac | Constant<number> {
   return (
-    !$isUndefined(u) && ((u.op === core.int) ||
+    !$isNothing(u) && ((u.op === core.int) ||
       (u.op === core.fraction) ||
       (u.op === core.constant)) &&
     (
@@ -3573,7 +3527,7 @@ function isConst(u: Expression): u is Int | Frac | Constant<number> {
  * Returns the constant of the given
  * expression `u`.
  */
-function constantOf(u: Expression) {
+function constantOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isSum(u) || isPower(u) || isFactorial(u) || isAlgebraicFn(u)
   ) {
@@ -3593,7 +3547,7 @@ function constantOf(u: Expression) {
 /**
  * Returns the base of the given expression `u`.
  */
-function baseOf(u: Expression) {
+function baseOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isProduct(u) || isSum(u) || isFactorial(u) ||
     isAlgebraicFn(u)
@@ -3609,7 +3563,7 @@ function baseOf(u: Expression) {
 /**
  * Returns the exponent of the given expression `u`.
  */
-function exponentOf(u: Expression) {
+function exponentOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isProduct(u) || isSum(u) || isFactorial(u) ||
     isAlgebraicFn(u)
@@ -3641,32 +3595,6 @@ function equals(u: Frac | Int, v: Frac | Int) {
       (d1 === d2)
     );
   }
-}
-
-/**
- * From a list of strings, numbers, number pairs, and algebraic
- * expressions, returns a list comprised entirely of
- * algebraic expressions.
- */
-function exprs(
-  args: (string | number | AlgebraicExpression)[],
-) {
-  const out: AlgebraicExpression[] = [];
-  for (let i = 0; i < args.length; i++) {
-    const x = args[i];
-    if ($isNumber(x)) {
-      if (Number.isInteger(x)) {
-        out.push(int(x));
-      } else {
-        out.push(real(x));
-      }
-    } else if ($isString(x)) {
-      out.push(sym(x));
-    } else {
-      out.push(x);
-    }
-  }
-  return out;
 }
 
 /**
@@ -3718,7 +3646,7 @@ function lte(u: Frac | Int, v: Frac | Int): boolean {
  * {@link Sum|sum} or {@link Product|product},
  * false otherwise.
  */
-function isSumlike(u: Expression): u is Sum | Product {
+function isSumlike(u: AlgebraicExpression): u is Sum | Product {
   return (isSum(u)) || isProduct(u);
 }
 
@@ -3727,7 +3655,7 @@ function isSumlike(u: Expression): u is Sum | Product {
  * {@link Int|integer} or {@link Frac|fraction},
  * false otherwise.
  */
-function isNumeric(u: Expression): u is Int | Frac {
+function isNumeric(u: AlgebraicExpression): u is Int | Frac {
   return isInt(u) || isFrac(u);
 }
 
@@ -3937,14 +3865,14 @@ function hasZero(args: AlgebraicExpression[]) {
  *
  * console.log(x.toString()); // a^2 + b^2 + c^2
  */
-function argMap<T extends (AlgebraicOp | AlgebraicFn)>(
+function argMap(
   F: (x: AlgebraicExpression) => AlgebraicExpression,
-  expression: T,
-): T {
+  expression: AlgebraicExpression,
+) {
   const out = expression.args.map(F);
   const op = expression.copy();
   op.args = out;
-  return op as T;
+  return op;
 }
 
 /**
@@ -4044,7 +3972,6 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
   const deriv = (u: AlgebraicExpression): AlgebraicExpression => {
     if (isSymbol(u)) {
       return u;
-      k;
     }
     u = simplify(u);
     /**
@@ -4646,7 +4573,7 @@ function simplify(expression: AlgebraicExpression) {
  */
 function isMonomial1(expression: AlgebraicExpression, variable: string | Sym) {
   const x: Sym = $isString(variable) ? sym(variable) : variable;
-  const monomial_sv = (u: Expression): boolean => {
+  const monomial_sv = (u: AlgebraicExpression): boolean => {
     if (isInt(u) || isFrac(u)) {
       return true;
     } else if (u.equals(x)) {
@@ -4824,20 +4751,17 @@ enum tt {
   /* operator `"div"` */
   div,
 }
-type NumberTokenType =
-  | tt.int
-  | tt.float
-  | tt.scientific
-  | tt.bignumber
-  | tt.bigfraction
-  | tt.fraction;
 
-type LIT = number | boolean | string | bigint | null | [number, number] | [
-  bigint,
-  bigint,
-] | Token[];
+// deno-fmt-ignore
+type NumberTokenType = | tt.int | tt.float | tt.scientific | tt.bignumber | tt.bigfraction | tt.fraction;
+
+// deno-fmt-ignore
+type LIT = number | boolean | string | bigint | null | [number, number] | [ bigint, bigint, ] | Token[];
+
 type Location = { line: number; column: number };
+
 const location = (line: number, column: number): Location => ({ line, column });
+
 class Token<T extends tt = tt, L extends LIT = LIT> {
   /** This token’s {@link tt|type}. */
   type: T;
@@ -5094,705 +5018,6 @@ function isGreekLetterName(c: string) {
     .test(c.toLowerCase());
 }
 
-function lexical(input: string): Either<Err, Token[]> {
-  /**
-   * All variables prefixed with a `$` are
-   * stateful variables.
-   */
-
-  /** The current line. */
-  let $line = 0;
-
-  /** The current column. */
-  let $column = 0;
-
-  /**
-   * Points to the first character
-   * of the lexeme currently being
-   * scanned.
-   */
-  let $start = 0;
-
-  /**
-   * Points at the character currently
-   * being read.
-   */
-  let $current = 0;
-
-  /**
-   * Error indicator defaulting to null.
-   * If initialized, scanning will cease (per the condition
-   * in {@link atEnd}).
-   */
-  let $error: null | Err = null;
-
-  /**
-   * Returns true if the scanner has reached
-   * the end of input.
-   */
-  const atEnd = () => ($current >= input.length) || ($error !== null);
-
-  /**
-   * Consumes and returns the next character
-   * in the input expression.
-   */
-  const tick = () => input[$current++];
-
-  /**
-   * Returns the input substring from
-   * start to current.
-   */
-  const slice = () => input.slice($start, $current);
-
-  /**
-   * Returns a new token.
-   * An optional lexeme may be passed.
-   */
-  const tkn = (type: tt, lexeme: string | null = null) => {
-    lexeme = lexeme ? lexeme : slice();
-    return token(type, lexeme, $line, $column);
-  };
-
-  /**
-   * Returns an error token. If called,
-   * sets the mutable error variable.
-   */
-  const errorTkn = (message: string, phase: string): Token<tt.ERROR> => {
-    const out = tkn(tt.ERROR, message);
-    $error = lexicalError(message, phase, $line, $column);
-    return out as Token<tt.ERROR>;
-  };
-
-  /**
-   * Returns the current character.
-   */
-  const peek = () => atEnd() ? "" : input[$current];
-
-  /**
-   * Returns the character just
-   * head of the current character.
-   */
-  const peekNext = () => atEnd() ? "" : input[$current + 1];
-
-  /**
-   * Returns the character
-   * n places ahead of current.
-   */
-  const lookup = (n: number) => atEnd() ? "" : input[$current + n];
-
-  /**
-   * If the provided expected string
-   * matches, increments the current
-   * pointer and returns true.
-   * Otherwise returns false without
-   * increment.
-   */
-  const match = (expected: string) => {
-    if (atEnd()) return false;
-    if (input[$current] !== expected) return false;
-    $current++;
-    return true;
-  };
-
-  /**
-   * Returns true if the current peek (the character
-   * pointed at by `current`) matches the provided
-   * number.
-   */
-  const peekIs = (c: string) => (peek() === c);
-
-  /**
-   * Consumes all whitespice while
-   * moving the scanner’s `current`
-   * pointer forward.
-   */
-  const skipws = () => {
-    while (!atEnd()) {
-      const c = peek();
-      // deno-fmt-ignore
-      switch (c) {
-        case ' ':
-        case '\r':
-        case '\t': 
-          tick();
-          $column++;
-          break;
-        case '\n':
-          $line++;
-          $column=0;
-          tick();
-          break;
-        default:
-          return;
-      }
-    }
-  };
-
-  const numToken = (
-    numberString: string,
-    type: NumberTokenType,
-    hasSeparators: boolean,
-  ): Token => {
-    const n = hasSeparators ? numberString.replaceAll("_", "") : numberString;
-    switch (type) {
-      case tt.int: {
-        const num = Number.parseInt(n);
-        if (num > MAX_INT) {
-          return errorTkn(
-            `Encountered an integer overflow. Consider rewriting “${numberString}” as a bignumber: “#${numberString}”. If “${numberString}” is to be used symbolically, consider rewriting “${numberString}” as a scientific number.`,
-            "scanning an integer literal",
-          );
-        } else {
-          return tkn(type).lit(num);
-        }
-      }
-      case tt.float: {
-        const num = Number.parseFloat(n);
-        if (num > Number.MAX_VALUE) {
-          return errorTkn(
-            `Encountered a floating point overflow. Consider rewriting "${n}" as a fraction or bigfraction. If "${n}" is to be used symbolically, consider rewriting "${n}" as a scientific number.`,
-            "scanning a floating point literal",
-          );
-        }
-        return tkn(tt.float).lit(num);
-      }
-      case tt.scientific: {
-        const [a, b] = n.split("E");
-        const base = Number.parseFloat(a);
-        const exponent = Number.parseInt(b);
-        return tkn(type).lit(tuple(base, exponent));
-      }
-      case tt.fraction: {
-        const [a, b] = n.split("|");
-        const N = Number.parseInt(a);
-        const D = Number.parseInt(b);
-        if (N > MAX_INT || D > MAX_INT) {
-          return tkn(tt.bigfraction).lit(tuple(
-            BigInt(N),
-            BigInt(D),
-          ));
-        } else {
-          return tkn(type).lit(tuple(N, D));
-        }
-      }
-      default: {
-        return errorTkn(`Unknown number type`, `scanning a literal number`);
-      }
-    }
-  };
-
-  const number = (initialType: NumberTokenType) => {
-    let type = initialType;
-    let scannedSeparators = false;
-    // scanning integer
-    while (isDigit(peek()) && !atEnd()) {
-      tick();
-    }
-    if (peekIs("_") && isDigit(peekNext())) {
-      tick(); // eat the '_'
-      const phase = `scanning a number with separators`;
-      scannedSeparators = true;
-      // scan separators
-      let digits = 0;
-      while (isDigit(peek()) && !atEnd()) {
-        tick();
-        digits++;
-        if (peekIs("_") && isDigit(peekNext())) {
-          if (digits === 3) {
-            tick();
-            digits = 0;
-          } else {
-            return errorTkn(
-              `There must be 3 ASCII digits before the numeric separator “_”.`,
-              phase,
-            );
-          }
-        }
-      }
-      if (digits !== 3) {
-        return errorTkn(
-          `There must be 3 ASCII digits after the numeric separator “_”.`,
-          phase,
-        );
-      }
-    }
-    if (peekIs(".") && isDigit(peekNext())) {
-      tick();
-      type = tt.float;
-      while (isDigit(peek()) && !atEnd()) {
-        tick();
-      }
-    }
-
-    /**
-     * FractionExpr numbers take the form:
-     * ~~~ts
-     * [int] '|' [int]
-     * // e.g., 1|2
-     * ~~~
-     * Both sides must be integers.
-     */
-    if (peekIs("|")) {
-      if (type !== tt.int) {
-        return errorTkn(
-          `Expected an integer before “|”`,
-          "scanning a fraction",
-        );
-      }
-      type = tt.fraction;
-      tick(); // eat the '|'
-      while (isDigit(peek()) && !atEnd()) {
-        tick();
-      }
-      return numToken(slice(), type, scannedSeparators);
-    }
-
-    // scientific
-    /**
-     * Syntax is: [float] 'E' ('+'|'-') [int]
-     * The exponent must always be an integer.
-     */
-    if (peekIs("E")) {
-      if (isDigit(peekNext())) {
-        // This is a scientific with the form [float] E [int]
-        type = tt.scientific;
-        tick(); // eat the 'E'
-        while (isDigit(peek())) tick();
-      } else if (
-        ((peekNext() === "+") || (peekNext() === "-")) && isDigit(lookup(2))
-      ) {
-        // This is a scientific with the form [float] E (+|-) [int]
-        type = tt.scientific;
-        tick(); // eat the 'E'
-        tick(); // eat the '+' or '-'
-        while (isDigit(peek())) tick();
-      }
-    }
-    return numToken(slice(), type, scannedSeparators);
-  };
-
-  /**
-   * Record of native functions. Each key corresponds
-   * to the native function name. The number mapped to
-   * by the key is the function’s arity (the number
-   * of arguments the function takes).
-   */
-  const nativeFunctions: Record<NativeFn, number> = {
-    deriv: 1,
-    avg: 1,
-    gcd: 1,
-    simplify: 1,
-    subex: 1,
-    sqrt: 1,
-    exp: 1,
-    ceil: 1,
-    tanh: 1,
-    floor: 1,
-    sinh: 1,
-    cosh: 1,
-    sin: 1,
-    cos: 1,
-    tan: 1,
-    lg: 1,
-    ln: 1,
-    log: 1,
-    arctan: 1,
-    arccos: 1,
-    arccosh: 1,
-    arcsin: 1,
-    arcsinh: 1,
-    "!": 1,
-    max: 1,
-    min: 1,
-  };
-
-  /**
-   * Scans a single-quoted variable.
-   */
-  const algebraicString = () => {
-    while ((peek() !== `'`) && !atEnd()) {
-      if (peek() === `\n`) {
-        $line++;
-        $column = 0;
-      } else {
-        $column++;
-      }
-      tick();
-    }
-    if (atEnd()) {
-      return errorTkn(
-        `Unterminated algebraic string`,
-        "scanning an algebraic string",
-      );
-    }
-    tick(); // eat the ':'
-    const s = slice().replaceAll(`'`, "");
-    return tkn(tt.algebra_string).lex(s);
-  };
-
-  const stringLiteral = () => {
-    while (peek() !== `"` && !atEnd()) {
-      if (peek() === `\n`) {
-        $line++;
-        $column = 0;
-      } else {
-        $column++;
-      }
-      tick();
-    }
-    if (atEnd()) return errorTkn(`Infinite string`, "scanning a string");
-    tick();
-    return tkn(tt.string);
-  };
-
-  /**
-   * Scans a word. Word is defined as
-   * either a user-defined symbol (the token `SYM`)
-   * or a reserved word.
-   */
-  const word = () => {
-    while ((isValidName(peek()) || isDigit(peek())) && (!atEnd())) {
-      tick();
-    }
-    const string = slice();
-    const native = nativeFunctions[string as NativeFn];
-    if (native !== undefined) {
-      return tkn(tt.native);
-    }
-    // deno-fmt-ignore
-    switch (string) {
-      case 'this': return tkn(tt.this);
-      case 'super': return tkn(tt.super);
-      case 'class': return tkn(tt.class);
-      case 'false': return tkn(tt.bool).lit(false);
-      case 'true': return tkn(tt.bool).lit(true);
-      case 'NAN': return tkn(tt.nan).lit(NaN);
-      case 'Inf': return tkn(tt.inf).lit(Infinity);
-      case 'pi': return tkn(tt.numeric_constant).lit(PI);
-      case 'e': return tkn(tt.numeric_constant).lit(E);
-      case 'return': return tkn(tt.return);
-      case 'while': return tkn(tt.while);
-      case 'for': return tkn(tt.for);
-      case 'let': return tkn(tt.let);
-      case 'var': return tkn(tt.var);
-      case 'fn': return tkn(tt.fn);
-      case 'if': return tkn(tt.if);
-      case 'else': return tkn(tt.else);
-      case 'print': return tkn(tt.print);
-      case 'rem': return tkn(tt.rem);
-      case 'mod': return tkn(tt.mod);
-      case 'nil': return tkn(tt.nil).lit(null);
-      case 'and': return tkn(tt.and);
-      case 'or': return tkn(tt.or);
-      case 'nor': return tkn(tt.nor);
-      case 'xor': return tkn(tt.xor);
-      case 'xnor': return tkn(tt.xnor);
-      case 'not': return tkn(tt.not);
-      case 'nand': return tkn(tt.nand);
-    }
-    return tkn(tt.symbol);
-  };
-
-  const isHexDigit = (char: string) => (
-    (("0" <= char) && (char <= "9")) ||
-    (("a" <= char) && (char <= "f")) ||
-    (("A" <= char) && (char <= "F"))
-  );
-
-  const isOctalDigit = (char: string) => (
-    "0" <= char && char <= "7"
-  );
-
-  const hexNumber = () => {
-    if (!(isHexDigit(peek()))) {
-      return errorTkn(
-        `Expected hexadecimals after “0x”`,
-        "scanning a hexadecimal",
-      );
-    }
-    while (isHexDigit(peek()) && !atEnd()) {
-      tick();
-    }
-    const s = slice().replace("0x", "");
-    const n = Number.parseInt(s, 16);
-    return tkn(tt.int).lit(n);
-  };
-
-  const octalNumber = () => {
-    if (!(isOctalDigit(peek()))) {
-      return errorTkn(
-        `Expected octal digits after “0o”`,
-        "scanning an octal number",
-      );
-    }
-    while (isOctalDigit(peek()) && !atEnd()) {
-      tick();
-    }
-    const s = slice().replace("0o", "");
-    const n = Number.parseInt(s, 8);
-    return tkn(tt.int).lit(n);
-  };
-
-  const binaryNumber = () => {
-    if (!(peekIs("0") || peekIs("1"))) {
-      return errorTkn(
-        `Expected binary digits after “0b”`,
-        "scanning a binary number",
-      );
-    }
-    while ((peekIs("0") || peekIs("1")) && !atEnd()) {
-      tick();
-    }
-    const s = slice().replace("0b", "");
-    const n = Number.parseInt(s, 2);
-    return tkn(tt.int).lit(n);
-  };
-  const scanBigNumber = () => {
-    let didSeeVBAR = false;
-    while (isDigit(peek()) && !atEnd()) {
-      tick();
-    }
-    if (peekIs("|") && isDigit(peekNext())) {
-      tick(); // eat the '|'
-      didSeeVBAR = true;
-      while (isDigit(peek()) && !atEnd()) {
-        tick();
-      }
-    }
-    const n = slice().replace("#", "");
-    if (didSeeVBAR) {
-      const [a, b] = n.split("|");
-      const N = BigInt(a);
-      const D = BigInt(b);
-      return tkn(tt.bigfraction).lit([N, D]);
-    }
-    return tkn(tt.bignumber).lit(BigInt(n));
-  };
-
-  /** Scans a token. */
-  const scan = (): Token => {
-    skipws();
-    $start = $current;
-    if (atEnd()) {
-      return tkn(tt.END, "END");
-    }
-    const c = tick();
-    if (isValidName(c)) {
-      return word();
-    }
-    if (c === "#") {
-      if (!isDigit(peek())) {
-        return errorTkn(`Expected digits after “#”`, `scanning a bignumber`);
-      } else {
-        const out = scanBigNumber();
-        return out;
-      }
-    }
-    if (isDigit(c)) {
-      if (c === "0" && match("b")) {
-        return binaryNumber();
-      } else if (c === "0" && match("o")) {
-        return octalNumber();
-      } else if (c === "0" && match("x")) {
-        return hexNumber();
-      }
-      return number(tt.int);
-    }
-    // deno-fmt-ignore
-    switch (c) {
-      case ":": return tkn(tt.colon);
-      case "&": return tkn(tt.amp);
-      case "~": return tkn(tt.tilde);
-      case "|": return tkn(tt.vbar);
-      case "(": return tkn(tt.lparen);
-      case ")": return tkn(tt.rparen);
-      case "[": return tkn(tt.lbracket);
-      case "]": return tkn(tt.rbracket);
-      case "{": return tkn(tt.lbrace);
-      case "}": return tkn(tt.rbrace);
-      case ",": return tkn(tt.comma);
-      case ".": return tkn(tt.dot);
-      case "-": {
-        if (peek()==='-' && peekNext()==='-') {
-          while (peek()!=='\n' && !atEnd()) {
-            tick();
-          }
-          return Token.empty;
-        } else {
-          return tkn(match('-') ? tt.minus_minus : tt.minus);
-        }
-      }
-      case "+": return tkn(match('+') ? tt.plus_plus : tt.plus);
-      case "*": return tkn(tt.star);
-      case ";": return tkn(tt.semicolon);
-      case '%': return tkn(tt.percent);
-      case "/": return tkn(tt.slash);
-      case "^": return tkn(tt.caret);
-      case '!': return tkn(match('=') ? tt.neq : tt.bang);
-      case '=': {
-        if (peek()==='=' && peekNext()==='=') {
-          while (peek()==='=') {
-            tick();
-          }
-          while (!atEnd()) {
-            tick();
-            if (peek()==='=' && peekNext()==='=' && lookup(2)==='=') {
-              break;
-            }
-          }
-          if (atEnd()) {
-            return errorTkn(`Unterminated block comment`, `scanning a “=”`);
-          }
-          while (peek()==='=') {
-            tick();
-          }
-          return Token.empty;
-        } else {
-          return tkn(match('=') ? tt.deq : tt.eq);
-        }
-      }
-      case '<': return tkn(match('=') ? tt.leq : tt.lt);
-      case '>': return tkn(match('=') ? tt.geq : tt.gt);
-      case `"`: return stringLiteral();
-      case `'`: return algebraicString();
-    }
-    return errorTkn(`Unknown token: “${c}”`, "scanning");
-  };
-  const stream = () => {
-    const out: Token[] = [];
-    let prev = Token.empty;
-    let now = scan();
-    if (!now.isEmpty()) {
-      out.push(now);
-    } else if ($error !== null) {
-      return left($error);
-    }
-    let peek = scan();
-    if ($error !== null) {
-      return left($error);
-    }
-    while (!atEnd()) {
-      prev = now;
-      now = peek;
-      const k = scan();
-      if ($error !== null) {
-        return left($error);
-      }
-      if (k.isEmpty()) {
-        continue;
-      } else {
-        peek = k;
-      }
-      // remove trailing commas
-      if (prev.isRPD() && now.is(tt.comma) && peek.isRPD()) {
-        continue;
-      }
-      out.push(now);
-    }
-    out.push(peek);
-    return right(out);
-  };
-
-  return stream();
-}
-
-/**
- * Given an array of tokens, splits
- * all multicharacter symbols into
- * individual symbols, provided
- * the multicharacter symbol is:
- *
- * 1. not a Greek letter name,
- * 2. not a core function name, and
- * 3. does not include the character `_`.
- */
-function symsplit(
-  lexicalAnalysisResult: Either<Err, Token[]>,
-): Either<Err, Token[]> {
-  if (lexicalAnalysisResult.isLeft()) {
-    return lexicalAnalysisResult;
-  }
-  const tokens = lexicalAnalysisResult.unwrap();
-  const out: Token[] = [];
-  for (let i = 0; i < tokens.length; i++) {
-    const t1 = tokens[i];
-    if (
-      t1.isVariable() && !isGreekLetterName(t1.lexeme) &&
-      !t1.lexeme.includes("_") && !t1.lexeme.includes("$") &&
-      !t1.lexeme.includes(`'`)
-    ) {
-      t1.lexeme.split("").map((c) => token(tt.symbol, c, t1.L, t1.C))
-        .forEach((v) => out.push(v));
-    } else {
-      out.push(t1);
-    }
-  }
-  return right(out);
-}
-
-function tidyAlgebraStrings(
-  lexicalAnalysisResult: Either<Err, Token[]>,
-): Either<Err, Token[]> {
-  if (lexicalAnalysisResult.isLeft()) {
-    return lexicalAnalysisResult;
-  }
-  const tokens = lexicalAnalysisResult.unwrap();
-  const out: Token[] = [];
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (t.is(tt.algebra_string)) {
-      const tks = lexical(t.lexeme);
-      if (tks.isLeft()) {
-        return tks;
-      }
-      const at = symsplit(tks);
-      const withIMUL = imul(at);
-      if (withIMUL.isLeft()) {
-        return withIMUL;
-      }
-      out.push(t.lit(withIMUL.unwrap()));
-    } else {
-      out.push(t);
-    }
-  }
-  return right(out);
-}
-
-function imul(
-  lexicalAnalysisResult: Either<Err, Token[]>,
-): Either<Err, Token[]> {
-  if (lexicalAnalysisResult.isLeft()) {
-    return lexicalAnalysisResult;
-  }
-  const tkns = lexicalAnalysisResult.unwrap();
-  const out: Token[] = [];
-  const tokens = zip(tkns, tkns.slice(1));
-  for (let i = 0; i < tokens.length; i++) {
-    const [now, nxt] = tokens[i];
-    out.push(now);
-    if (now.is(tt.rparen)) {
-      if (nxt.is(tt.symbol)) {
-        out.push(nxt.entype(tt.star).lex("*"));
-      } else if (nxt.is(tt.lparen)) {
-        out.push(nxt.entype(tt.star).lex("*"));
-      }
-    } else if (
-      now.isNumLike() &&
-      (nxt.is(tt.native))
-    ) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    } else if (now.isNumLike() && nxt.is(tt.symbol)) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    } else if (now.isNumLike() && nxt.is(tt.lparen)) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    } else if (now.is(tt.symbol) && nxt.is(tt.symbol)) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    }
-  }
-  out.push(tkns[tkns.length - 1]);
-  return right(out);
-}
-
 enum bp {
   nil,
   lowest,
@@ -5815,1661 +5040,13 @@ enum bp {
   postfix,
   call,
 }
+
 type Parslet = (current: Token, lastNode: Expr) => Either<Err, Expr>;
+
 type ParsletEntry = [Parslet, Parslet, bp];
+type NodeSpec<X> = Record<tt,X>
+
 type BPTable = Record<tt, ParsletEntry>;
-
-function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
-  let $error: null | Err = null;
-  let tkns: Token[] = [];
-  if (lexicalAnalysisResult.isLeft()) {
-    $error = lexicalAnalysisResult.unwrap();
-  } else {
-    tkns = lexicalAnalysisResult.unwrap();
-  }
-  const tokens = tkns;
-  /**
-   * Variable bound to the current error status.
-   * If this variable is not bound to null, then
-   * an error occurred. This variable should only
-   * be modified through the {@link error} function
-   * to ensure line and column numbers are properly
-   * recorded.
-   */
-
-  /** Pointer to the current token. */
-  let $cursor = -1;
-
-  /** The maximum possible cursor position. */
-  let $max = tokens.length;
-
-  /** The token immediately after the current token. */
-  let $peek = Token.empty;
-
-  /** The current token. */
-  let $current = Token.empty;
-
-  /** The last node parsed. */
-  let $lastNode: ASTNode = nil();
-
-  /**
-   * Returns true if there are no longer any tokens or if
-   * an {@link $error|error} occurred, false otherwise.
-   */
-  const atEnd = () => ($cursor >= $max - 1) || ($error !== null);
-
-  /**
-   * Moves the {@link $cursor|cursor} forward and returns
-   * the current {@link $peek|peek}.
-   */
-  const next = () => {
-    $cursor++;
-    $current = $peek;
-    const nextToken = tokens[$cursor] ? tokens[$cursor] : Token.END;
-    $peek = nextToken;
-    return $current;
-  };
-
-  /**
-   * If the given type matches
-   * the upcoming token (the peek),
-   * moves the state forward. Otherwise,
-   * leaves the state as is.
-   */
-  const nextIs = (type: tt) => {
-    if ($peek.is(type)) {
-      next();
-      return true;
-    }
-    return false;
-  };
-
-  /**
-   * Given the list of token types, moves the {@link $cursor|cursor}
-   * forward and returns true on the first type matching the
-   * token just ahead. Otherwise, returns false wit no forwarding.
-   */
-  const matches = (types: tt[]) => {
-    for (let i = 0; i < types.length; i++) {
-      if ($peek.is(types[i])) {
-        next();
-        return true;
-      }
-    }
-    return false;
-  };
-
-  /**
-   * If called, sets the state’s error
-   * status to the provided error message,
-   * and returns a {@link Left}. If
-   * the state’s error field is initialized
-   * (by default `null`), then the parser
-   * will halt immediately and return the
-   * error message.
-   */
-  const error = (message: string, phase: string) => {
-    const e = syntaxError(message, phase, $current.L, $current.C);
-    $error = e;
-    return left(e);
-  };
-
-  /**
-   * Returns true if the next token
-   * is the provided type _without_
-   * consuming the token.
-   */
-  const check = (type: tt) => {
-    if (atEnd()) {
-      return false;
-    } else {
-      return $peek.is(type);
-    }
-  };
-
-  /**
-   * If called, sets the state’s last
-   * parsed node to the provided node T,
-   * and returns `Right<T>` (See {@link Right}).
-   * All nodes should ultimately return their
-   * results through this method so
-   * as to allow other nodes to keep
-   * track of what was last parsed.
-   */
-  const newnode = <X extends ASTNode>(node: X) => {
-    $lastNode = node;
-    return right(node);
-  };
-
-  /**
-   * Returns true if an implicit
-   * semicolon is encountered. An implicit
-   * semicolons exists if:
-   *
-   * 1. The upcoming token is the end of input (`eof` token), or
-   * 2. The token stream has reached an unexpected end of input.
-   */
-  const implicitSemicolonOK = () => {
-    return (
-      $peek.is(tt.END) ||
-      atEnd()
-    );
-  };
-
-  const this_expression = (t: Token) => {
-    return newnode(thisExpr(t).at(t.L, t.C));
-  };
-
-  const number: Parslet = (t) => {
-    if (t.isNumber()) {
-      if (t.is(tt.int)) {
-        return newnode(integer(t.literal, t.L, t.C));
-      } else {
-        return newnode(float(t.literal, t.L, t.C));
-      }
-    } else {
-      return error(
-        `Expected an integer, but got “${t.lexeme}”`,
-        "parsing an integer",
-      );
-    }
-  };
-
-  const string_literal: Parslet = (t) => {
-    return newnode(string(t.lexeme).at(t.L, t.C));
-  };
-
-  const scientific_number: Parslet = (t) => {
-    if (t.isScientific()) {
-      const [a, b] = t.literal;
-      const lhs = float(a, t.L, t.C);
-      const rhs = binex(
-        integer(10, t.L, t.C),
-        token(tt.caret, "^", t.L, t.C),
-        integer(b, t.L, t.C),
-      ).at(t.L, t.C);
-      return newnode(binex(
-        lhs,
-        token(tt.star, "*", t.L, t.C),
-        rhs,
-      ));
-    } else {
-      return error(
-        `Unexpected scientific number`,
-        "parsing a scientific number",
-      );
-    }
-  };
-
-  /**
-   * Parses a {@link RelationalExpr|relational expression}.
-   */
-  const compare = (op: Token, lhs: Expr): Either<Err, RelationalExpr> => {
-    const p = precof(op.type);
-    return expr(p).chain((rhs) => {
-      return newnode(relation(lhs, op as Token<RelationalOperator>, rhs));
-    });
-  };
-
-  /**
-   * Parses a right-associative
-   * {@link AlgebraicBinaryExpr|algebraic binary expression}.
-   */
-  const rinfix = (op: Token, lhs: Expr): Either<Err, AlgebraicBinaryExpr> => {
-    const p = precof(op.type);
-    return expr(p).chain((rhs) => {
-      const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-      return newnode(out);
-    });
-  };
-
-  /**
-   * Parses an {@link AlgebraicBinaryExpr|algebraic binary expression}.
-   */
-  const infix = (
-    op: Token,
-    lhs: Expr,
-  ): Either<Err, AlgebraicBinaryExpr | AssignExpr> => {
-    if (nextIs(tt.eq)) {
-      if (isVariable(lhs)) {
-        const name = lhs;
-        const r = expr();
-        if (r.isLeft()) {
-          return r;
-        }
-        const rhs = r.unwrap();
-        const value = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-        return newnode(assign(name, value));
-      } else {
-        return error(
-          `Invalid lefthand side of assignment. Expected a variable to the left of “${op.lexeme}=”, but got “${lhs.toString()}".`,
-          `parsing the complex assignment “${op.lexeme}=”`,
-        );
-      }
-    }
-    const p = precof(op.type);
-    const RHS = expr(p);
-    if (RHS.isLeft()) {
-      return RHS;
-    }
-    const rhs = RHS.unwrap();
-
-    const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-    return newnode(out);
-  };
-
-  /**
-   * Parses a {@link FractionExpr|rational number}.
-   */
-  const fraction = (op: Token): Either<Err, FractionExpr> => {
-    if (op.isFraction()) {
-      const [N, D] = op.literal;
-      return newnode(rational(floor(N), floor(abs(D))).at(op.L, op.C));
-    } else {
-      return error(`Unexpected rational number`, "parsing a rational number");
-    }
-  };
-
-  /**
-   * Parses a {@link LogicalBinaryExpr|logical infix expression}.
-   */
-  const logic_infix = (
-    op: Token,
-    lhs: Expr,
-  ): Either<Err, LogicalBinaryExpr> => {
-    const p = precof(op.type);
-    return expr(p).chain((rhs) => {
-      return newnode(
-        logicalBinex(lhs, op as Token<BinaryLogicalOperator>, rhs),
-      );
-    });
-  };
-
-  /**
-   * Parses a {@link BigNumber|big number}.
-   */
-  const big_number = (op: Token): Either<Err, BigNumber> => {
-    if (op.isBigNumber()) {
-      return newnode(bigNumber(op.literal));
-    } else {
-      return error(`Unexpected big number literal`, `parsing an expression`);
-    }
-  };
-
-  /**
-   * Parses a {@link RationalExpr|big rational}.
-   */
-  const big_rational = (op: Token): Either<Err, RationalExpr> => {
-    if (op.isBigFraction()) {
-      const [a, b] = op.literal;
-      return newnode(bigRational(a, b).at(op.L, op.C));
-    } else {
-      return error(`Unexpected big rational literal`, `parsing an expression`);
-    }
-  };
-
-  /**
-   * Parses a {@link Bool|boolean literal}.
-   */
-  const boolean_literal = (op: Token): Either<Err, Bool> => {
-    if (op.isBoolean()) {
-      return newnode(bool(op.literal).at(op.L, op.C));
-    } else {
-      return error(`Unexpected boolean literal`, `parsing an expression`);
-    }
-  };
-
-  /**
-   * Parses a {@link NumericConstant|numeric constant} or {@link Nil|nil}.
-   */
-  const constant = (op: Token): Either<Err, NumericConstant | Nil> => {
-    const type = op.type;
-    const L = op.L;
-    const C = op.C;
-    const erm = `Unexpected constant “${op.lexeme}”`;
-    const src = `parsing an expression`;
-    // deno-fmt-ignore
-    switch (type) {
-      case tt.nan: return newnode(numericConstant(NaN, 'NAN').at(L,C));
-      case tt.inf: return newnode(numericConstant(Infinity, 'Inf').at(L,C));
-      case tt.nil: return newnode(nil().at(L,C));
-      case tt.numeric_constant: {
-        switch (op.lexeme) {
-          case "pi": return newnode(numericConstant(PI, "pi").at(L,C));
-          case 'e': return newnode(numericConstant(E, 'e').at(L,C))
-          default: return error(erm, src);
-        }
-      }
-      default: return error(erm, src);
-    }
-  };
-
-  /**
-   * Parses a {@link GroupExpr|parenthesized expression}.
-   */
-  const primary = (op: Token): Either<Err, GroupExpr | TupleExpr> => {
-    const innerExpression = expr();
-    if (innerExpression.isLeft()) {
-      return innerExpression;
-    }
-    if (nextIs(tt.comma)) {
-      const elements: Expr[] = [innerExpression.unwrap()];
-      do {
-        const e = expr();
-        if (e.isLeft()) {
-          return e;
-        }
-        elements.push(e.unwrap());
-      } while (nextIs(tt.comma));
-      if (!nextIs(tt.rparen)) {
-        return error(`Expected “)” to close the tuple`, `parsing a tuple`);
-      }
-      return newnode(tupleExpr(elements, op.L, op.C));
-    }
-    if (!nextIs(tt.rparen)) {
-      return error(
-        `Expected closing “)”`,
-        "parsing a parenthesized expression",
-      );
-    }
-    return innerExpression.map((e) => grouped(e));
-  };
-
-  /**
-   * Parses a {@link NativeCall|native function call}.
-   */
-  const native_call: Parslet = (op): Either<Err, NativeCall> => {
-    const lex = op.lexeme;
-    const src = `parsing a native call “${lex}”`;
-    if (!nextIs(tt.lparen)) {
-      return error(`Expected “(” to open the argument list`, src);
-    }
-    let args: Expr[] = [];
-    if (!check(tt.rparen)) {
-      const arglist = comma_separated_list(
-        isExpr,
-        `Expected expression`,
-        src,
-      );
-      if (arglist.isLeft()) {
-        return arglist;
-      }
-      args = arglist.unwrap();
-    }
-    if (!nextIs(tt.rparen)) {
-      return error(`Expected “)” to close the argument list`, src);
-    }
-    return newnode(nativeCall(lex as NativeFn, args, op.loc()));
-  };
-
-  /**
-   * Parses a variable name.
-   */
-  const variable_name: Parslet = (op) => {
-    if (op.isVariable()) {
-      const out = variable(op);
-      return newnode(out);
-    } else {
-      return error(`Unexpected variable “${op.lex}”`, "parsing expression");
-    }
-  };
-
-  /**
-   * Parses a logical not expression.
-   */
-  const logical_not: Parslet = (op) => {
-    const p = precof(op.type);
-    return expr(p).chain((arg) =>
-      newnode(logicalUnary(op as Token<tt.not>, arg))
-    );
-  };
-
-  /**
-   * Parses an {@link AssignExpr|assignment expression}.
-   */
-  const assignment = (
-    op: Token,
-    node: Expr,
-  ): Either<Err, AssignExpr | SetExpr> => {
-    const src = `parsing an assignment`;
-    if (isVariable(node)) {
-      return expr().chain((n) => {
-        return newnode(assign(node, n));
-      });
-    } else if (isGetExpr(node)) {
-      const rhs = expr();
-      if (rhs.isLeft()) {
-        return rhs;
-      }
-      return newnode(setExpr(node.object, node.name, rhs.unwrap(), op.loc()));
-    } else {
-      return error(
-        `Expected a valid assignment target, but got “${node.toString()}”`,
-        src,
-      );
-    }
-  };
-
-  const comma_separated_list = <K extends Expr>(
-    filter: (e: Expr) => e is K,
-    errorMessage: string,
-    src: string,
-  ) => {
-    const elements: K[] = [];
-    do {
-      const e = expr();
-      if (e.isLeft()) return e;
-      const element = e.unwrap();
-      if (!filter(element)) {
-        return error(errorMessage, src);
-      }
-      elements.push(element);
-    } while (nextIs(tt.comma));
-    return right(elements);
-  };
-
-  const vector_expression = (prev: Token) => {
-    const elements: Expr[] = [];
-    const vectors: VectorExpr[] = [];
-    const src = `parsing a vector expression`;
-    let rows = 0;
-    let columns = 0;
-    if (!check(tt.rbracket)) {
-      do {
-        const elem = expr();
-        if (elem.isLeft()) {
-          return elem;
-        }
-        const element = elem.unwrap();
-        if (isVectorExpr(element)) {
-          rows++;
-          columns = element.elements.length;
-          vectors.push(element);
-        } else {
-          elements.push(element);
-        }
-      } while (nextIs(tt.comma) && !atEnd());
-    }
-    if (!nextIs(tt.rbracket)) {
-      return error(`Expected a right bracket “]” to close the vector`, src);
-    }
-    if (vectors.length !== 0) {
-      if (vectors.length !== columns) {
-        return error(
-          `Encountered a jagged matrix. Jagged matrices are not permitted. For jagged lists, consider using nested tuples.`,
-          src,
-        );
-      }
-      return newnode(matrixExpr(vectors, rows, columns));
-    }
-    return newnode(vectorExpr(elements, prev.loc()));
-  };
-
-  const get_expression = (op: Token, lhs: Expr) => {
-    const src = `parsing a get expression`;
-    const nxt = next();
-    if (!nxt.isVariable()) {
-      return error(`Expected property name`, src);
-    }
-    let exp = getExpr(lhs, nxt.lexeme, op.loc());
-    if (nextIs(tt.lparen)) {
-      const args: Expr[] = [];
-      if (!check(tt.rparen)) {
-        do {
-          const x = expr();
-          if (x.isLeft()) {
-            return x;
-          }
-          const arg = x.unwrap();
-          args.push(arg);
-        } while (nextIs(tt.comma));
-      }
-      const rparen = next();
-      if (!rparen.is(tt.rparen)) {
-        return error(`Expected “)” to after method arguments`, src);
-      }
-      const loc = rparen.loc();
-      return newnode(call(exp, args, loc));
-    }
-    return newnode(exp);
-  };
-
-  const indexing_expression: Parslet = (op, lhs) => {
-    const index = expr();
-    if (index.isLeft()) {
-      return index;
-    }
-    const rbracket = next();
-    if (!rbracket.is(tt.rbracket)) {
-      return error(
-        `Expected a right bracket “]” to close the accessor`,
-        `parsing an index accessor`,
-      );
-    }
-    return newnode(indexingExpr(lhs, index.unwrap()));
-  };
-
-  const function_call = (
-    _: Token,
-    node: Expr,
-  ): Either<Err, CallExpr> => {
-    const callee = node;
-    let args: Expr[] = [];
-    if (!check(tt.rparen)) {
-      const arglist = comma_separated_list(
-        isExpr,
-        `Expected expression`,
-        "call",
-      );
-      if (arglist.isLeft()) return arglist;
-      args = arglist.unwrap();
-    }
-    const paren = next();
-    if (!paren.is(tt.rparen)) {
-      return error(`Expected “)” to close args`, "call");
-    }
-    const out = call(callee, args, paren.loc());
-    return newnode(out);
-  };
-
-  const factorial_expression = (op: Token, node: Expr) => {
-    return newnode(algebraicUnary(op as Token<AlgebraicUnaryOperator>, node));
-  };
-
-  const decrement = (op: Token, node: Expr) => {
-    if (isVariable(node)) {
-      const right = binex(
-        node,
-        op.entype(tt.minus).lex("-"),
-        integer(1, op.L, op.C),
-      );
-      return newnode(assign(node, right));
-    } else {
-      return error(
-        `Expected the lefthand side of “--” to be either a variable or a property accessor, but got “${node.toString()}”`,
-        `parsing a decrement “--”`,
-      );
-    }
-  };
-
-  const increment = (op: Token, node: Expr) => {
-    if (isVariable(node)) {
-      const right = binex(
-        node,
-        op.entype(tt.plus).lex("+"),
-        integer(1, op.L, op.C),
-      );
-      return newnode(assign(node, right));
-    } else {
-      return error(
-        `Expected the lefthand side of “++” to be either a variable or a property accessor, but got “${node.toString()}”`,
-        `parsing an increment “++”`,
-      );
-    }
-  };
-
-  /**
-   * The “blank” parslet. This parslet is used as a placeholder.
-   * If the {@link expr|expression parser} calls this parslet,
-   * then the {@link error} variable is set and parsing shall cease.
-   */
-  const ___: Parslet = (t) => {
-    if ($error !== null) {
-      return left($error);
-    } else {
-      return error(`Unexpected lexeme: ${t.lexeme}`, `expression`);
-    }
-  };
-
-  const algebraic_string: Parslet = (op) => {
-    if (op.isAlgebraString()) {
-      const tkns = op.literal;
-      const result = syntax(right(tkns)).expression();
-      if (result.isLeft()) {
-        return result;
-      }
-      const expression = result.unwrap();
-      const L = op.L;
-      const C = op.C;
-      return newnode(algebraicString(expression, L, C));
-    } else {
-      return error(`Unexpected algebraic string`, `parsing an expression`);
-    }
-  };
-
-  const prefix: Parslet = (op) => {
-    const p = precof(op.type);
-    return expr(p).chain((arg) => {
-      if (op.is(tt.minus)) {
-        return newnode(algebraicUnary(op, arg));
-      } else if (op.is(tt.plus)) {
-        return newnode(algebraicUnary(op, arg));
-      } else {
-        return error(
-          `Unknown prefix operator “${op.lexeme}”`,
-          `parsing a prefix operation`,
-        );
-      }
-    });
-  };
-
-  /**
-   * The “blank” binding power. This particular binding power
-   * is bound either (1) the {@link ___|blank parslet}
-   * or (2) parlsets that should not trigger recursive calls.
-   */
-  const ___o = bp.nil;
-
-  /**
-   * The rules table comprises mappings from every
-   * {@link tt|token type} to a triple `(Prefix, Infix, B)`,
-   * where `Prefix` and `Infix` are {@link Parslet|parslets} (small
-   * parsers that handle a single grammar rule), and `B` is a
-   * {@link bp|binding power}.
-   */
-  const rules: BPTable = {
-    [tt.END]: [___, ___, ___o],
-    [tt.ERROR]: [___, ___, ___o],
-    [tt.EMPTY]: [___, ___, ___o],
-    [tt.lparen]: [primary, function_call, bp.call],
-    [tt.rparen]: [___, ___, ___o],
-    [tt.lbrace]: [___, ___, ___o],
-    [tt.rbrace]: [___, ___, ___o],
-    [tt.lbracket]: [vector_expression, indexing_expression, bp.call],
-    [tt.rbracket]: [___, ___, ___o],
-    [tt.semicolon]: [___, ___, ___o],
-    [tt.colon]: [___, ___, ___o],
-    [tt.dot]: [___, get_expression, bp.call],
-    [tt.comma]: [___, ___, ___o],
-    [tt.super]: [___, ___, ___o],
-
-    [tt.amp]: [___, ___, ___o],
-    [tt.tilde]: [___, ___, ___o],
-    [tt.vbar]: [___, ___, ___o],
-    [tt.eq]: [___, assignment, bp.assign],
-    [tt.bang]: [___, factorial_expression, bp.postfix],
-    [tt.plus_plus]: [___, increment, bp.postfix],
-    [tt.minus_minus]: [___, decrement, bp.postfix],
-
-    // algebraic expressions
-    [tt.plus]: [prefix, infix, bp.sum],
-    [tt.minus]: [prefix, infix, bp.difference],
-    [tt.star]: [___, infix, bp.product],
-    [tt.slash]: [___, infix, bp.quotient],
-    [tt.caret]: [___, rinfix, bp.power],
-    [tt.percent]: [___, infix, bp.quotient],
-    [tt.rem]: [___, infix, bp.quotient],
-    [tt.mod]: [___, infix, bp.quotient],
-    [tt.div]: [___, infix, bp.quotient],
-
-    // comparison expressions
-    [tt.lt]: [___, compare, bp.rel],
-    [tt.gt]: [___, compare, bp.rel],
-    [tt.neq]: [___, compare, bp.rel],
-    [tt.leq]: [___, compare, bp.rel],
-    [tt.geq]: [___, compare, bp.rel],
-    [tt.deq]: [___, compare, bp.rel],
-
-    // logical binary expressions
-    [tt.nand]: [___, logic_infix, bp.nand],
-    [tt.xor]: [___, logic_infix, bp.xor],
-    [tt.xnor]: [___, logic_infix, bp.xnor],
-    [tt.nor]: [___, logic_infix, bp.nor],
-    [tt.and]: [___, logic_infix, bp.and],
-    [tt.or]: [___, logic_infix, bp.or],
-    [tt.not]: [logical_not, ___, bp.not],
-
-    // literals
-    [tt.symbol]: [variable_name, ___, bp.atom],
-    [tt.string]: [string_literal, ___, bp.atom],
-    [tt.bool]: [boolean_literal, ___, bp.atom],
-    [tt.int]: [number, ___, bp.atom],
-    [tt.float]: [number, ___, bp.atom],
-    [tt.bignumber]: [big_number, ___, bp.atom],
-    [tt.bigfraction]: [big_rational, ___, bp.atom],
-    [tt.scientific]: [scientific_number, ___, bp.atom],
-    [tt.fraction]: [fraction, ___, bp.atom],
-    [tt.nan]: [constant, ___, bp.atom],
-    [tt.inf]: [constant, ___, bp.atom],
-    [tt.nil]: [constant, ___, bp.atom],
-    [tt.numeric_constant]: [constant, ___, bp.atom],
-    [tt.this]: [this_expression, ___, bp.atom],
-    [tt.algebra_string]: [algebraic_string, ___, bp.atom],
-
-    // native calls
-    [tt.native]: [native_call, ___, bp.call],
-
-    [tt.if]: [___, ___, ___o],
-    [tt.else]: [___, ___, ___o],
-    [tt.fn]: [___, ___, ___o],
-    [tt.let]: [___, ___, ___o],
-    [tt.var]: [___, ___, ___o],
-    [tt.return]: [___, ___, ___o],
-    [tt.while]: [___, ___, ___o],
-    [tt.for]: [___, ___, ___o],
-    [tt.class]: [___, ___, ___o],
-    [tt.print]: [___, ___, ___o],
-  };
-  /**
-   * Returns the prefix parsing rule mapped to by the given
-   * token type.
-   */
-  const prefixRule = (t: tt): Parslet => rules[t][0];
-
-  /**
-   * Returns the infix parsing rule mapped to by the given
-   * token type.
-   */
-  const infixRule = (t: tt): Parslet => rules[t][1];
-
-  /**
-   * Returns the {@link bp|precedence} of the given token type.
-   */
-  const precof = (t: tt): bp => rules[t][2];
-
-  /**
-   * Parses an {@link Expr|conventional expression} via
-   * Pratt parsing.
-   */
-  const expr = (minbp: number = bp.lowest): Either<Err, Expr> => {
-    let token = next();
-    const pre = prefixRule(token.type);
-    let lhs = pre(token, nil());
-    if (lhs.isLeft()) {
-      return lhs;
-    }
-    while (minbp < precof($peek.type)) {
-      if (atEnd()) {
-        break;
-      }
-      token = next();
-      const r = infixRule(token.type);
-      const rhs = r(token, lhs.unwrap());
-      if (rhs.isLeft()) {
-        return rhs;
-      }
-      lhs = rhs;
-    }
-    return lhs;
-  };
-
-  const PRINT = () => {
-    const current = $current;
-    // print eaten in STMT
-    const arg = EXPRESSION();
-    return arg.map((x) => printStmt(x.expression).at(current.L, current.C));
-  };
-
-  /**
-   * Parses an {@link IfStmt|if-statement}.
-   */
-  const IF = (): Either<Err, IfStmt> => {
-    const c = expr();
-    const src = `parsing an if-statement`;
-    if (c.isLeft()) {
-      return c;
-    }
-    const condition = c.unwrap();
-    if (!nextIs(tt.lbrace)) {
-      return error(
-        `Expected a left brace “{” to begin the consequent block.`,
-        src,
-      );
-    }
-    const consequent = BLOCK();
-    if (consequent.isLeft()) {
-      return consequent;
-    }
-    const thenBranch = consequent.unwrap();
-    let elseBranch: Statement = returnStmt(
-      nil(),
-      $current.loc(),
-    );
-    if (nextIs(tt.else)) {
-      const _else = STMT();
-      if (_else.isLeft()) {
-        return _else;
-      }
-      elseBranch = _else.unwrap();
-    }
-    return newnode(ifStmt(condition, thenBranch, elseBranch));
-  };
-
-  /**
-   * Parses a {@link FnStmt|function statement} (i.e., a function declaration).
-   */
-  const FN = (): Either<Err, FnStmt> => {
-    // fn eaten in STMT
-    const name = next();
-    const src = `parsing a function a declaration`;
-    if (!name.isVariable()) {
-      return error(
-        `Expected a valid identifier for the function’s name, but got “${name.lexeme}”.`,
-        src,
-      );
-    }
-    if (!nextIs(tt.lparen)) {
-      return error(
-        `Expected a left parenthesis “(” to begin the parameter list`,
-        src,
-      );
-    }
-    const params: Token<tt.symbol>[] = [];
-    if (!$peek.is(tt.rparen)) {
-      do {
-        const expression = next();
-        if (!expression.isVariable()) {
-          return error(
-            `Expected a valid identifier as a parameter, but got “${expression.lexeme}”`,
-            src,
-          );
-        }
-        params.push(expression);
-      } while (nextIs(tt.comma));
-    }
-    if (!nextIs(tt.rparen)) {
-      return error(
-        `Expected a right parenthesis “)” to close the parameter list`,
-        src,
-      );
-    }
-    if (nextIs(tt.eq)) {
-      const body = EXPRESSION();
-      return body.chain((b) => newnode(functionStmt(name, params, [b])));
-    }
-    if (!nextIs(tt.lbrace)) {
-      return error(
-        `Expected a left-brace “{” to open the function’s body. If this function’s body is composed of a single statement, consider using the assignment operator “=”`,
-        src,
-      );
-    }
-    const body = BLOCK();
-    return body.chain((b) => newnode(functionStmt(name, params, b.statements)));
-  };
-
-  const WHILE = () => {
-    const src = `parsing a while loop`;
-    const loopCondition = expr();
-    if (loopCondition.isLeft()) {
-      return loopCondition;
-    }
-    if (!nextIs(tt.lbrace)) {
-      return error(`Expected a block after the condition`, src);
-    }
-    const body = BLOCK();
-    if (body.isLeft()) {
-      return body;
-    }
-    return body.chain((loopBody) =>
-      newnode(whileStmt(loopCondition.unwrap(), loopBody))
-    );
-  };
-
-  /**
-   * Parses a {@link BlockStmt|block statement}.
-   */
-  const BLOCK = (): Either<Err, BlockStmt> => {
-    const statements: Statement[] = [];
-    const c = $current;
-    while (!atEnd() && !check(tt.rbrace)) {
-      const stmt = STMT();
-      if (stmt.isLeft()) {
-        return stmt;
-      }
-      statements.push(stmt.unwrap());
-    }
-    if (!nextIs(tt.rbrace)) {
-      return error(
-        `Expected a right brace “}” to close the block`,
-        `parsing a block`,
-      );
-    }
-    return newnode(block(statements, c.L, c.C));
-  };
-
-  /**
-   * Parses a {@link VariableStmt|let statement}.
-   */
-  const VAR = (prev: tt.let | tt.var): Either<Err, VariableStmt> => {
-    const current = $current;
-    const src = `parsing a variable declaration`;
-    const name = next();
-    if (!name.isVariable()) {
-      return error(`Expected a valid identifier`, src);
-    }
-    if (!nextIs(tt.eq)) {
-      return error(`Expected an assignment operator “=”`, src);
-    }
-    const init = EXPRESSION();
-    if (init.isLeft()) {
-      return init;
-    }
-    const value = init.unwrap();
-    return newnode(
-      (prev === tt.let ? letStmt : varStmt)(name, value.expression).at(
-        current.L,
-        current.C,
-      ),
-    );
-  };
-
-  /**
-   * Parses an expression statement.
-   */
-  const EXPRESSION = (): Either<Err, ExprStmt> => {
-    const out = expr();
-    if (out.isLeft()) {
-      return out;
-    }
-    const expression = out.unwrap();
-    if (nextIs(tt.semicolon) || implicitSemicolonOK()) {
-      return newnode(exprStmt(expression));
-    }
-    return error(`Expected “;” to end the statement`, "expression-statement");
-  };
-
-  const RETURN = (): Either<Err, ReturnStmt> => {
-    const c = $current;
-    const out = EXPRESSION();
-    return out.chain((e) => newnode(returnStmt(e.expression, c.loc())));
-  };
-
-  const FOR = (): Either<Err, Statement> => {
-    // keyword 'for' eaten by STMT
-    const src = `parsing a for-loop`;
-    const preclauseToken = next();
-    if (!preclauseToken.is(tt.lparen)) {
-      return error(
-        `Expected a left parentheses “(” after the keyword “for” to begin the loop’s clauses, but got “${preclauseToken.lexeme}”.`,
-        src,
-      );
-    }
-    const loc = preclauseToken.loc();
-    let init: Statement | null = null;
-    if (nextIs(tt.semicolon)) {
-      init = init;
-    } else if (nextIs(tt.var)) {
-      const initializer = VAR(tt.var);
-      if (initializer.isLeft()) {
-        return initializer;
-      }
-      init = initializer.unwrap();
-    } else {
-      const exp = EXPRESSION();
-      if (exp.isLeft()) {
-        return exp;
-      }
-      init = exp.unwrap();
-    }
-    let condition: Expr | null = null;
-    if (!check(tt.semicolon)) {
-      const c = expr();
-      if (c.isLeft()) {
-        return c;
-      }
-      condition = c.unwrap();
-    }
-    const postConditionToken = next();
-    if (!postConditionToken.is(tt.semicolon)) {
-      return error(
-        `Expected a semicolon “;” after the for-loop condition, but got “${postConditionToken.lexeme}”.`,
-        src,
-      );
-    }
-    let increment: Expr | null = null;
-    if (!check(tt.rparen)) {
-      const inc = expr();
-      if (inc.isLeft()) {
-        return inc;
-      }
-      increment = inc.unwrap();
-    }
-    const postIncrementToken = next();
-    if (!postIncrementToken.is(tt.rparen)) {
-      return error(
-        `Expected a right “)” to close the for-loop’s clauses, but got “${postIncrementToken.lexeme}”`,
-        src,
-      );
-    }
-    const b = STMT();
-    if (b.isLeft()) {
-      return b;
-    }
-    let body: Statement = b.unwrap();
-    if (increment !== null) {
-      if (isBlock(body)) {
-        body.statements.push(exprStmt(increment));
-      } else {
-        body = block([body, exprStmt(increment)], loc.line, loc.column);
-      }
-    }
-    let loopCondition: Expr = bool(true);
-    if (condition !== null) {
-      loopCondition = condition;
-    }
-    body = whileStmt(loopCondition, body);
-    if (init !== null) {
-      body = block([init, body], loc.line, loc.column);
-    }
-    return newnode(body);
-  };
-
-  const CLASS = () => {
-    // class keyword eaten in Stmt
-    const src = `parsing a class declaration`;
-    const name = next();
-    if (!name.isVariable()) {
-      return error(
-        `Expected a class name after “class”, but got “${name.lexeme}”`,
-        src,
-      );
-    }
-    const lbrace = next();
-    if (!lbrace.is(tt.lbrace)) {
-      return error(
-        `Expected a left-brace “{” to begin the body of class “${name.lexeme}”, but got “${lbrace.lexeme}”`,
-        src,
-      );
-    }
-    const methods = [];
-    while (!check(tt.rbrace) && !atEnd()) {
-      const f = FN();
-      if (f.isLeft()) {
-        return f;
-      }
-      methods.push(f.unwrap());
-    }
-    const postMethodsToken = next();
-    if (!postMethodsToken.is(tt.rbrace)) {
-      return error(
-        `Expected a right brace “}” after the body of class “${name.lexeme}”, but got “${postMethodsToken.lexeme}”.`,
-        src,
-      );
-    }
-    return newnode(classStmt(name, methods));
-  };
-
-  /**
-   * Parses a statement.
-   */
-  const STMT = (): Either<Err, Statement> => {
-    if (nextIs(tt.var)) {
-      return VAR(tt.var);
-    } else if (nextIs(tt.let)) {
-      return VAR(tt.let);
-    } else if (nextIs(tt.fn)) {
-      return FN();
-    } else if (nextIs(tt.lbrace)) {
-      return BLOCK();
-    } else if (nextIs(tt.if)) {
-      return IF();
-    } else if (nextIs(tt.return)) {
-      return RETURN();
-    } else if (nextIs(tt.while)) {
-      return WHILE();
-    } else if (nextIs(tt.for)) {
-      return FOR();
-    } else if (nextIs(tt.print)) {
-      return PRINT();
-    } else if (nextIs(tt.class)) {
-      return CLASS();
-    } else {
-      return EXPRESSION();
-    }
-  };
-
-  return {
-    /**
-     * Returns a syntax analysis of
-     * a single expression.
-     */
-    expression() {
-      // The error is not null if
-      // an error occurred during
-      // scanning. In that case we
-      // immediately return the scanner’s
-      // reported error.
-      if ($error !== null) {
-        return left($error);
-      }
-      next();
-      return expr();
-    },
-    /**
-     * Returns a syntax analysis of the entire
-     * program with statements.
-     */
-    statements() {
-      // Similar to analyzeExpression, we
-      // immediately return the scanner’s
-      // reported error.
-      if ($error !== null) {
-        return left($error);
-      }
-      next(); // prime the parser
-      const stmts: Statement[] = [];
-      while (!atEnd()) {
-        const stmt = STMT();
-        if (stmt.isLeft()) {
-          return stmt;
-        }
-        stmts.push(stmt.unwrap());
-      }
-      return right(stmts);
-    },
-  };
-}
-
-/**
- * An AST visitor that transforms its given AST into
- * algebraic tree form.
- */
-class AlgebraicTree implements Visitor<AlgebraicExpression> {
-  error: Err | null = null;
-  private croak(message: string, line: number = 0, column: number = 0) {
-    this.error = algebraError(
-      message,
-      "converting to an algebraic tree",
-      line,
-      column,
-    );
-    return Undefined();
-  }
-  map(node: ASTNode) {
-    const out = node.accept(this);
-    if (this.error !== null) {
-      throw this.error;
-    }
-    return out;
-  }
-  indexingExpr(node: IndexingExpr) {
-    return this.croak(
-      `The algebra API does not currently support indexing expressions.`,
-    );
-  }
-  algebraicString(node: AlgebraicString): AlgebraicExpression {
-    return this.croak(
-      `Algebraic strings may not be used within themselves.`,
-    );
-  }
-  thisExpr(node: ThisExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support “this” expressions.`,
-    );
-  }
-  superExpr(node: SuperExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support super expressions.`,
-    );
-  }
-  setExpr(node: GetExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support set expressions.`,
-    );
-  }
-  getExpr(node: GetExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support get expressions.`,
-    );
-  }
-  tupleExpr(node: TupleExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support tuple expressions.`,
-    );
-  }
-  matrixExpr(node: MatrixExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support matrix expressions.`,
-    );
-  }
-  vectorExpr(node: VectorExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support vector expressions.`,
-    );
-  }
-  integer(node: Integer): AlgebraicExpression {
-    return int(node.value);
-  }
-  numericConstant(node: NumericConstant): AlgebraicExpression {
-    const name = node.sym;
-    switch (name) {
-      case "Inf":
-        return constant("Inf", Infinity);
-      case "NAN":
-        return constant("NAN", NaN);
-      case "e":
-        return constant("e", E);
-      case "pi":
-        return constant("pi", PI);
-    }
-  }
-  bigNumber(node: BigNumber): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support big numbers.`,
-    );
-  }
-  fractionExpr(node: FractionExpr): AlgebraicExpression {
-    const r = node.value;
-    return frac(r.n, r.d);
-  }
-  bigRational(node: RationalExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support big rationals.`,
-    );
-  }
-  float(node: Float): AlgebraicExpression {
-    return real(node.value);
-  }
-  bool(node: Bool): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support boolean literals.`,
-    );
-  }
-  string(node: StringLiteral): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support string literals.`,
-    );
-  }
-  nil(node: Nil): AlgebraicExpression {
-    return Undefined();
-  }
-  variable(node: Variable): AlgebraicExpression {
-    return sym(node.name);
-  }
-  assignExpr(node: AssignExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support assignments.`,
-    );
-  }
-  algebraicBinaryExpr(node: AlgebraicBinaryExpr): AlgebraicExpression {
-    const left = this.map(node.left);
-    if (isUndefined(left)) {
-      return left;
-    }
-    const right = this.map(node.right);
-    if (isUndefined(right)) {
-      return right;
-    }
-    switch (node.op) {
-      case tt.plus: {
-        if (isInt(left) && isInt(right)) {
-          return int(left.n + right.n);
-        } else if (isSum(left) && isSum(right)) {
-          return sum(concat(left.args, right.args));
-        } else if (isSum(left)) {
-          return sum(concat(left.args, [right]));
-        } else if (isSum(right)) {
-          return sum(concat([left], right.args));
-        } else {
-          return sum([left, right]);
-        }
-      }
-      case tt.star: {
-        if (isInt(left) && isInt(right)) {
-          return int(left.n * right.n);
-        } else if (isProduct(left) && isProduct(right)) {
-          return product(concat(left.args, right.args));
-        } else if (isProduct(left)) {
-          return product(concat(left.args, [right]));
-        } else if (isProduct(right)) {
-          return product(concat([left], right.args));
-        } else {
-          return product([left, right]);
-        }
-      }
-      case tt.caret: {
-        if (isInt(left) && isInt(right)) {
-          return int(left.n ** right.n);
-        } else {
-          return power(left, right);
-        }
-      }
-      case tt.slash: {
-        if (isInt(left) && isInt(right)) {
-          return frac(left.n, right.n);
-        } else {
-          return quotient(left, right);
-        }
-      }
-      case tt.minus: {
-        if (isInt(left) && isInt(right)) {
-          return int(left.n - right.n);
-        } else {
-          return difference(left, right);
-        }
-      }
-      case tt.rem: {
-        return this.croak(
-          `The algebra API does not currently support the remainder (“rem”) operator`,
-          node.L,
-          node.C,
-        );
-      }
-      case tt.mod: {
-        return this.croak(
-          `The algebra API does not currently support the mod (“mod”) operator`,
-          node.L,
-          node.C,
-        );
-      }
-      case tt.percent: {
-        return this.croak(
-          `The algebra API does not currently support the percent (“%”) operator`,
-          node.L,
-          node.C,
-        );
-      }
-      case tt.div: {
-        return this.croak(
-          `The algebra API does not currently support the integer division (“div”) operator`,
-          node.L,
-          node.C,
-        );
-      }
-    }
-  }
-  algebraicUnaryExpr(node: AlgebraicUnaryExpr): AlgebraicExpression {
-    const arg = this.map(node.arg);
-    if (isUndefined(arg)) {
-      return arg;
-    }
-    switch (node.op) {
-      case tt.plus: {
-        if (isInt(arg)) {
-          return int(abs(arg.n));
-        } else {
-          return sum([int(0), arg]);
-        }
-      }
-      case tt.minus: {
-        if (isInt(arg)) {
-          return int(-arg.n);
-        } else {
-          return product([int(-1), arg]);
-        }
-      }
-      case tt.bang: {
-        if (isInt(arg)) {
-          return int(factorialize(arg.n));
-        } else {
-          return factorial(arg);
-        }
-      }
-    }
-  }
-  logicalBinaryExpr(node: LogicalBinaryExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support logical binary expressions`,
-      node.L,
-      node.C,
-    );
-  }
-  logicalUnaryExpr(node: LogicalUnaryExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support logical unary expressions`,
-      node.L,
-      node.C,
-    );
-  }
-  relationalExpr(node: RelationalExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support relational expressions`,
-      node.L,
-      node.C,
-    );
-  }
-  callExpr(node: CallExpr): AlgebraicExpression {
-    return this.croak(
-      `The algebra API does not currently support user-defined functions`,
-      node.L,
-      node.C,
-    );
-  }
-  nativeCall(node: NativeCall): AlgebraicExpression {
-    const args = node.args.map((x) => this.map(x));
-    if (hasUndefined(args)) {
-      return Undefined();
-    }
-    // deno-fmt-ignore
-    switch (node.name) {
-      case 'simplify': {
-        const arg = args[0];
-        if (arg===undefined) {
-          return this.croak(
-            `Expected at least one argument to simplify`,
-            node.L,
-            node.C,
-          )
-        }
-        return simplify(args[0]);
-      }
-      case 'deriv': {
-        const expr = args[0];
-        const x = args[1];
-        if (!isSymbol(x)) {
-          throw algebraError(
-            `“derive” requires a symbol for its second argument`,
-            `evaluating deriv`,
-            node.L,
-            node.C,
-          )
-        }
-        return derivative(simplify(expr),x)
-      }
-      case 'subex': {
-        return this.croak(
-          `subex cannot be called from the algebra API`,
-          node.L,
-          node.C,
-        )
-      };
-      case 'avg': return fn('avg', args);
-      case 'gcd': return fn('gcd', args);
-      case 'tanh': return fn('tanh', args);
-      case 'exp': return power(constant('e', E), args[0])
-      case 'sqrt': return fn('sqrt', args);
-      case 'sinh': return fn('sinh', args);
-      case 'cosh': return fn('cosh', args);
-      case 'floor': return fn('floor', args);
-      case 'ceil': return fn('ceil', args);
-      case 'arcsinh': return fn('arcsinh', args);
-      case 'arctan': return fn('arctan', args);
-      case "cos": return fn("cos", args);
-      case 'arcsin': return fn('arcsin', args);
-      case 'arccosh': return fn('arccosh', args);
-      case 'arccos': return fn('arccos', args);
-      case 'log': return fn('log', args);
-      case "sin": return fn("sin", args);
-      case "tan": return fn("tan", args);
-      case "lg": return fn("lg", args);
-      case "ln": return fn("ln", args);
-      case "max": return fn("max", args);
-      case "min": return fn("min", args);
-      case "!": return factorial(args[0]);
-    }
-  }
-  groupExpr(node: GroupExpr): AlgebraicExpression {
-    const out = this.map(node.expression);
-    out.tickParen();
-    return out;
-  }
-  blockStmt(node: BlockStmt): AlgebraicExpression {
-    return this.croak(`Expected an expression, but got a block statement.`);
-  }
-  classStmt(node: ClassStmt): AlgebraicExpression {
-    return this.croak(`Expected an expression, but got a class statement.`);
-  }
-  exprStmt(node: ExprStmt): AlgebraicExpression {
-    return this.croak(
-      `Expected an expression, but got an expression statement.`,
-    );
-  }
-  fnStmt(node: FnStmt): AlgebraicExpression {
-    return this.croak(
-      `Expected an expression, but got a function declaration`,
-      node.L,
-      node.C,
-    );
-  }
-  ifStmt(node: IfStmt): AlgebraicExpression {
-    return this.croak(`Expected an expression, but got a branching statement.`);
-  }
-  printStmt(node: PrintStmt): AlgebraicExpression {
-    return this.croak(`Expected an expression, but got a print statement.`);
-  }
-  returnStmt(node: ReturnStmt): AlgebraicExpression {
-    return this.croak(`Expected an expression, but got a return statement.`);
-  }
-  letStmt(node: VariableStmt): AlgebraicExpression {
-    return this.croak(
-      `Expected an expression, but got a variable declaration.`,
-      node.L,
-      node.C,
-    );
-  }
-  whileStmt(node: WhileStmt): AlgebraicExpression {
-    return this.croak(`Expected an expression, but got a while-statement.`);
-  }
-}
-
-/**
- * An ExpressionVisitor that transforms
- * its given {@link Expr|conventional expression} into
- * an algebraic tree.
- */
-class ConventionalTree implements ExpressionVisitor<Expr> {
-  freevariables: Variable[] = [];
-  L: number;
-  C: number;
-  constructor(loc: Location) {
-    this.L = loc.line;
-    this.C = loc.line;
-  }
-  map(node: Expression) {
-    return node.accept(this);
-  }
-  int(node: Int): Expr {
-    return integer(node.n, this.L, this.C);
-  }
-  real(node: Real): Expr {
-    return float(node.n, this.L, this.C);
-  }
-  sym(node: Sym<string>): Expr {
-    return variable(Token.of(tt.symbol, node.s));
-  }
-  constant(node: Constant<number | null, string>): Expr {
-    if (isConstant(node)) {
-      switch (node.c) {
-        case "pi":
-          return numericConstant(PI, "pi");
-        case "e":
-          return numericConstant(E, "e");
-        case "NAN":
-          return numericConstant(NaN, "NAN");
-        case "Inf":
-          return numericConstant(Infinity, "Inf");
-        default:
-          return float(node.value, this.L, this.C);
-      }
-    }
-    return nil();
-  }
-  sum(node: Sum): Expr {
-    const args = node.args;
-    if (args.length === 1) {
-      const arg = this.map(args[0]);
-      return algebraicUnary(Token.of(tt.plus, "+"), arg);
-    } else if (args.length === 2) {
-      let left = this.map(args[0]);
-      left = args[0].hasParens() ? grouped(left) : left;
-      let right = this.map(args[1]);
-      right = args[1].hasParens() ? grouped(right) : right;
-      return binex(left, Token.of(tt.plus, "+"), right);
-    } else {
-      let left = this.map(args[0]);
-      for (let i = 1; i < args.length; i++) {
-        let right = this.map(args[i]);
-        right = args[1].hasParens() ? grouped(right) : right;
-        left = binex(left, Token.of(tt.plus, "+"), right);
-      }
-      return left;
-    }
-  }
-  product(node: Product): Expr {
-    const args = node.args;
-    if (args.length === 1) {
-      const arg = this.map(args[0]);
-      return arg;
-    } else if (args.length === 2) {
-      let left = this.map(args[0]);
-      left = args[0].hasParens() ? grouped(left) : left;
-      let right = this.map(args[1]);
-      right = args[1].hasParens() ? grouped(right) : right;
-      return binex(left, Token.of(tt.star, "*"), right);
-    } else {
-      let left = this.map(args[0]);
-      for (let i = 1; i < args.length; i++) {
-        let right = this.map(args[i]);
-        right = args[1].hasParens() ? grouped(right) : right;
-        left = binex(left, Token.of(tt.star, "*"), right);
-      }
-      return left;
-    }
-  }
-  quotient(node: Quotient): Expr {
-    const left = this.map(node.dividend);
-    const right = this.map(node.divisor);
-    return binex(left, Token.of(tt.slash, "/"), right);
-  }
-  fraction(node: Frac): Expr {
-    const N = node.numerator.n;
-    const D = node.denominator.n;
-    return rational(N, D);
-  }
-  power(node: Power): Expr {
-    const base = this.map(node.base);
-    const exponent = this.map(node.exponent);
-    return binex(base, Token.of(tt.caret, "^"), exponent);
-  }
-  difference(node: Difference): Expr {
-    const left = this.map(node.left);
-    const right = this.map(node.right);
-    return binex(left, Token.of(tt.minus, "-"), right);
-  }
-  factorial(node: Factorial): Expr {
-    const arg = this.map(node.arg);
-    return nativeCall("!", [arg], location(0, 0));
-  }
-  algebraicFn(node: AlgebraicFn): Expr {
-    const name = node.op;
-    const args = node.args.map((n) => this.map(n));
-    const N = Token.of(tt.symbol, name);
-    return call(variable(N), args, location(0, 0));
-  }
-}
-
-/**
- * Given the {@link Expr|expr node}, returns
- * the node in algebraic tree form.
- */
-function algebraicTree(node: Expr) {
-  const tree = new AlgebraicTree();
-  try {
-    const out = tree.map(node);
-    return right(out);
-  } catch (error) {
-    return left(error as Err);
-  }
-}
-
-/**
- * Given the {@link Expression|expression node},
- * returns the expression in conventional tree
- * form.
- */
-function conventialTree(node: Expression, loc: Location) {
-  return new ConventionalTree(loc).map(node);
-}
 
 class RETURN {
   value: Primitive;
@@ -7477,6 +5054,7 @@ class RETURN {
     this.value = value;
   }
 }
+
 function returnValue(value: Primitive) {
   return new RETURN(value);
 }
@@ -7500,7 +5078,7 @@ class Fn {
   toString() {
     return `fn ${this.declaration.name}(...) {...}`;
   }
-  bind(instance: KlassInstance) {
+  bind(instance: Obj) {
     const environment = runtimeEnv(this.closure);
     environment.define("this", instance, true);
     return new Fn(this.declaration, environment, this.isInitializer);
@@ -7538,10 +5116,10 @@ function $isFn(x: any): x is Fn {
   return x instanceof Fn;
 }
 
-class KlassInstance {
-  private klass: Klass;
+class Obj {
+  private klass: Class;
   private fields: Map<string, Primitive>;
-  constructor(klass: Klass) {
+  constructor(klass: Class) {
     this.klass = klass;
     this.fields = new Map();
   }
@@ -7568,11 +5146,12 @@ class KlassInstance {
     return `${this.klass.name} instance`;
   }
 }
-function $isKlassInstance(x: any): x is KlassInstance {
-  return x instanceof KlassInstance;
+
+function $isKlassInstance(x: any): x is Obj {
+  return x instanceof Obj;
 }
 
-class Klass {
+class Class {
   name: string;
   methods: Map<string, Fn>;
   constructor(name: string, methods: Map<string, Fn>) {
@@ -7593,7 +5172,7 @@ class Klass {
     return null;
   }
   call(interpreter: Compiler, args: Primitive[]) {
-    const instance = new KlassInstance(this);
+    const instance = new Obj(this);
     const initializer = this.findMethod("init");
     if (initializer !== null) {
       initializer.bind(instance).call(interpreter, args);
@@ -7604,11 +5183,13 @@ class Klass {
     return this.name;
   }
 }
-function $isKlass(x: any): x is Klass {
-  return x instanceof Klass;
+
+function $isKlass(x: any): x is Class {
+  return x instanceof Class;
 }
+
 function klassObj(name: string, methods: Map<string, Fn>) {
-  return new Klass(name, methods);
+  return new Class(name, methods);
 }
 
 interface Resolvable<X = any> {
@@ -8006,21 +5587,8 @@ function runtimeEnv(enclosing: Environment<Primitive> | null) {
   return new Environment<Primitive>(enclosing);
 }
 
-type Primitive =
-  | number
-  | boolean
-  | null
-  | string
-  | bigint
-  | Fraction
-  | BigRat
-  | Vector
-  | Matrix
-  | Fn
-  | Klass
-  | KlassInstance
-  | Primitive[]
-  | Expression;
+// deno-fmt-ignore
+type Primitive = | number | boolean | null | string | bigint | Fraction | BigRat | Vector | Matrix | Fn | Class | Obj | Primitive[] | AlgebraicExpression;
 
 function stringify(value: Primitive): string {
   if (value === null) {
@@ -8072,18 +5640,7 @@ class Compiler implements Visitor<Primitive> {
     this.locals = new Map();
   }
   algebraicString(node: AlgebraicString): Primitive {
-    const string = node.expression;
-    const value = algebraicTree(string);
-    if (value.isLeft()) {
-      const m = value.unwrap();
-      throw resolverError(
-        m.message,
-        `evaluating an algebraic string`,
-        node.L,
-        node.C,
-      );
-    }
-    return value.unwrap();
+    throw new Error(`method unimplemented`);
   }
   lookupVariable(name: string, expr: Expr) {
     const distance = this.locals.get(expr);
@@ -8375,7 +5932,7 @@ class Compiler implements Visitor<Primitive> {
         if ($isString(x)) {
           x = sym(x);
         }
-        if (!isAlgebraicExpression(arg)) {
+        if (!(arg instanceof AlgebraicExpression)) {
           throw runtimeError(
             `Only algebraic expressions may be passed to “deriv”`,
             `evaluating a native call`,
@@ -8400,7 +5957,7 @@ class Compiler implements Visitor<Primitive> {
       }
       case 'simplify': {
         const arg = val[0];
-        if (!isAlgebraicExpression(arg)) {
+        if (!(arg instanceof AlgebraicExpression)) {
           throw runtimeError(
             `Only algebraic expressions may be passed to “simplify”`,
             `evaluating a native call`,
@@ -8411,7 +5968,7 @@ class Compiler implements Visitor<Primitive> {
         return simplify(arg);
       }
       case 'subex': {
-        if (!isAlgebraicExpression(val[0])) {
+        if (!(val[0] instanceof AlgebraicExpression)) {
           throw runtimeError(
             `subex may only be called with an algebraic expressions`,
             `evaluating a native call`,
@@ -8538,6 +6095,1851 @@ type EngineSettings = {
 };
 
 function engine(source: string) {
+  function lexical(input: string): Either<Err, Token[]> {
+    /**
+     * All variables prefixed with a `$` are
+     * stateful variables.
+     */
+
+    /** The current line. */
+    let $line = 0;
+
+    /** The current column. */
+    let $column = 0;
+
+    /**
+     * Points to the first character
+     * of the lexeme currently being
+     * scanned.
+     */
+    let $start = 0;
+
+    /**
+     * Points at the character currently
+     * being read.
+     */
+    let $current = 0;
+
+    /**
+     * Error indicator defaulting to null.
+     * If initialized, scanning will cease (per the condition
+     * in {@link atEnd}).
+     */
+    let $error: null | Err = null;
+
+    /**
+     * Returns true if the scanner has reached
+     * the end of input.
+     */
+    const atEnd = () => ($current >= input.length) || ($error !== null);
+
+    /**
+     * Consumes and returns the next character
+     * in the input expression.
+     */
+    const tick = () => input[$current++];
+
+    /**
+     * Returns the input substring from
+     * start to current.
+     */
+    const slice = () => input.slice($start, $current);
+
+    /**
+     * Returns a new token.
+     * An optional lexeme may be passed.
+     */
+    const tkn = (type: tt, lexeme: string | null = null) => {
+      lexeme = lexeme ? lexeme : slice();
+      return token(type, lexeme, $line, $column);
+    };
+
+    /**
+     * Returns an error token. If called,
+     * sets the mutable error variable.
+     */
+    const errorTkn = (message: string, phase: string): Token<tt.ERROR> => {
+      const out = tkn(tt.ERROR, message);
+      $error = lexicalError(message, phase, $line, $column);
+      return out as Token<tt.ERROR>;
+    };
+
+    /**
+     * Returns the current character.
+     */
+    const peek = () => atEnd() ? "" : input[$current];
+
+    /**
+     * Returns the character just
+     * head of the current character.
+     */
+    const peekNext = () => atEnd() ? "" : input[$current + 1];
+
+    /**
+     * Returns the character
+     * n places ahead of current.
+     */
+    const lookup = (n: number) => atEnd() ? "" : input[$current + n];
+
+    /**
+     * If the provided expected string
+     * matches, increments the current
+     * pointer and returns true.
+     * Otherwise returns false without
+     * increment.
+     */
+    const match = (expected: string) => {
+      if (atEnd()) return false;
+      if (input[$current] !== expected) return false;
+      $current++;
+      return true;
+    };
+
+    /**
+     * Returns true if the current peek (the character
+     * pointed at by `current`) matches the provided
+     * number.
+     */
+    const peekIs = (c: string) => (peek() === c);
+
+    /**
+     * Consumes all whitespice while
+     * moving the scanner’s `current`
+     * pointer forward.
+     */
+    const skipws = () => {
+      while (!atEnd()) {
+        const c = peek();
+        // deno-fmt-ignore
+        switch (c) {
+          case ' ':
+          case '\r':
+          case '\t': 
+            tick();
+            $column++;
+            break;
+          case '\n':
+            $line++;
+            $column=0;
+            tick();
+            break;
+          default:
+            return;
+        }
+      }
+    };
+
+    const numToken = (
+      numberString: string,
+      type: NumberTokenType,
+      hasSeparators: boolean,
+    ): Token => {
+      const n = hasSeparators ? numberString.replaceAll("_", "") : numberString;
+      switch (type) {
+        case tt.int: {
+          const num = Number.parseInt(n);
+          if (num > MAX_INT) {
+            return errorTkn(
+              `Encountered an integer overflow. Consider rewriting “${numberString}” as a bignumber: “#${numberString}”. If “${numberString}” is to be used symbolically, consider rewriting “${numberString}” as a scientific number.`,
+              "scanning an integer literal",
+            );
+          } else {
+            return tkn(type).lit(num);
+          }
+        }
+        case tt.float: {
+          const num = Number.parseFloat(n);
+          if (num > Number.MAX_VALUE) {
+            return errorTkn(
+              `Encountered a floating point overflow. Consider rewriting "${n}" as a fraction or bigfraction. If "${n}" is to be used symbolically, consider rewriting "${n}" as a scientific number.`,
+              "scanning a floating point literal",
+            );
+          }
+          return tkn(tt.float).lit(num);
+        }
+        case tt.scientific: {
+          const [a, b] = n.split("E");
+          const base = Number.parseFloat(a);
+          const exponent = Number.parseInt(b);
+          return tkn(type).lit(tuple(base, exponent));
+        }
+        case tt.fraction: {
+          const [a, b] = n.split("|");
+          const N = Number.parseInt(a);
+          const D = Number.parseInt(b);
+          if (N > MAX_INT || D > MAX_INT) {
+            return tkn(tt.bigfraction).lit(tuple(
+              BigInt(N),
+              BigInt(D),
+            ));
+          } else {
+            return tkn(type).lit(tuple(N, D));
+          }
+        }
+        default: {
+          return errorTkn(`Unknown number type`, `scanning a literal number`);
+        }
+      }
+    };
+
+    const number = (initialType: NumberTokenType) => {
+      let type = initialType;
+      let scannedSeparators = false;
+      // scanning integer
+      while (isDigit(peek()) && !atEnd()) {
+        tick();
+      }
+      if (peekIs("_") && isDigit(peekNext())) {
+        tick(); // eat the '_'
+        const phase = `scanning a number with separators`;
+        scannedSeparators = true;
+        // scan separators
+        let digits = 0;
+        while (isDigit(peek()) && !atEnd()) {
+          tick();
+          digits++;
+          if (peekIs("_") && isDigit(peekNext())) {
+            if (digits === 3) {
+              tick();
+              digits = 0;
+            } else {
+              return errorTkn(
+                `There must be 3 ASCII digits before the numeric separator “_”.`,
+                phase,
+              );
+            }
+          }
+        }
+        if (digits !== 3) {
+          return errorTkn(
+            `There must be 3 ASCII digits after the numeric separator “_”.`,
+            phase,
+          );
+        }
+      }
+      if (peekIs(".") && isDigit(peekNext())) {
+        tick();
+        type = tt.float;
+        while (isDigit(peek()) && !atEnd()) {
+          tick();
+        }
+      }
+
+      /**
+       * FractionExpr numbers take the form:
+       * ~~~ts
+       * [int] '|' [int]
+       * // e.g., 1|2
+       * ~~~
+       * Both sides must be integers.
+       */
+      if (peekIs("|")) {
+        if (type !== tt.int) {
+          return errorTkn(
+            `Expected an integer before “|”`,
+            "scanning a fraction",
+          );
+        }
+        type = tt.fraction;
+        tick(); // eat the '|'
+        while (isDigit(peek()) && !atEnd()) {
+          tick();
+        }
+        return numToken(slice(), type, scannedSeparators);
+      }
+
+      // scientific
+      /**
+       * Syntax is: [float] 'E' ('+'|'-') [int]
+       * The exponent must always be an integer.
+       */
+      if (peekIs("E")) {
+        if (isDigit(peekNext())) {
+          // This is a scientific with the form [float] E [int]
+          type = tt.scientific;
+          tick(); // eat the 'E'
+          while (isDigit(peek())) tick();
+        } else if (
+          ((peekNext() === "+") || (peekNext() === "-")) && isDigit(lookup(2))
+        ) {
+          // This is a scientific with the form [float] E (+|-) [int]
+          type = tt.scientific;
+          tick(); // eat the 'E'
+          tick(); // eat the '+' or '-'
+          while (isDigit(peek())) tick();
+        }
+      }
+      return numToken(slice(), type, scannedSeparators);
+    };
+
+    /**
+     * Record of native functions. Each key corresponds
+     * to the native function name. The number mapped to
+     * by the key is the function’s arity (the number
+     * of arguments the function takes).
+     */
+    const nativeFunctions: Record<NativeFn, number> = {
+      deriv: 1,
+      avg: 1,
+      gcd: 1,
+      simplify: 1,
+      subex: 1,
+      sqrt: 1,
+      exp: 1,
+      ceil: 1,
+      tanh: 1,
+      floor: 1,
+      sinh: 1,
+      cosh: 1,
+      sin: 1,
+      cos: 1,
+      tan: 1,
+      lg: 1,
+      ln: 1,
+      log: 1,
+      arctan: 1,
+      arccos: 1,
+      arccosh: 1,
+      arcsin: 1,
+      arcsinh: 1,
+      "!": 1,
+      max: 1,
+      min: 1,
+    };
+
+    /**
+     * Scans a single-quoted variable.
+     */
+    const algebraicString = () => {
+      while ((peek() !== `'`) && !atEnd()) {
+        if (peek() === `\n`) {
+          $line++;
+          $column = 0;
+        } else {
+          $column++;
+        }
+        tick();
+      }
+      if (atEnd()) {
+        return errorTkn(
+          `Unterminated algebraic string`,
+          "scanning an algebraic string",
+        );
+      }
+      tick(); // eat the ':'
+      const s = slice().replaceAll(`'`, "");
+      return tkn(tt.algebra_string).lex(s);
+    };
+
+    const stringLiteral = () => {
+      while (peek() !== `"` && !atEnd()) {
+        if (peek() === `\n`) {
+          $line++;
+          $column = 0;
+        } else {
+          $column++;
+        }
+        tick();
+      }
+      if (atEnd()) return errorTkn(`Infinite string`, "scanning a string");
+      tick();
+      return tkn(tt.string);
+    };
+
+    /**
+     * Scans a word. Word is defined as
+     * either a user-defined symbol (the token `SYM`)
+     * or a reserved word.
+     */
+    const word = () => {
+      while ((isValidName(peek()) || isDigit(peek())) && (!atEnd())) {
+        tick();
+      }
+      const string = slice();
+      const native = nativeFunctions[string as NativeFn];
+      if (native !== undefined) {
+        return tkn(tt.native);
+      }
+      // deno-fmt-ignore
+      switch (string) {
+        case 'this': return tkn(tt.this);
+        case 'super': return tkn(tt.super);
+        case 'class': return tkn(tt.class);
+        case 'false': return tkn(tt.bool).lit(false);
+        case 'true': return tkn(tt.bool).lit(true);
+        case 'NAN': return tkn(tt.nan).lit(NaN);
+        case 'Inf': return tkn(tt.inf).lit(Infinity);
+        case 'pi': return tkn(tt.numeric_constant).lit(PI);
+        case 'e': return tkn(tt.numeric_constant).lit(E);
+        case 'return': return tkn(tt.return);
+        case 'while': return tkn(tt.while);
+        case 'for': return tkn(tt.for);
+        case 'let': return tkn(tt.let);
+        case 'var': return tkn(tt.var);
+        case 'fn': return tkn(tt.fn);
+        case 'if': return tkn(tt.if);
+        case 'else': return tkn(tt.else);
+        case 'print': return tkn(tt.print);
+        case 'rem': return tkn(tt.rem);
+        case 'mod': return tkn(tt.mod);
+        case 'nil': return tkn(tt.nil).lit(null);
+        case 'and': return tkn(tt.and);
+        case 'or': return tkn(tt.or);
+        case 'nor': return tkn(tt.nor);
+        case 'xor': return tkn(tt.xor);
+        case 'xnor': return tkn(tt.xnor);
+        case 'not': return tkn(tt.not);
+        case 'nand': return tkn(tt.nand);
+      }
+      return tkn(tt.symbol);
+    };
+
+    const isHexDigit = (char: string) => (
+      (("0" <= char) && (char <= "9")) ||
+      (("a" <= char) && (char <= "f")) ||
+      (("A" <= char) && (char <= "F"))
+    );
+
+    const isOctalDigit = (char: string) => (
+      "0" <= char && char <= "7"
+    );
+
+    const hexNumber = () => {
+      if (!(isHexDigit(peek()))) {
+        return errorTkn(
+          `Expected hexadecimals after “0x”`,
+          "scanning a hexadecimal",
+        );
+      }
+      while (isHexDigit(peek()) && !atEnd()) {
+        tick();
+      }
+      const s = slice().replace("0x", "");
+      const n = Number.parseInt(s, 16);
+      return tkn(tt.int).lit(n);
+    };
+
+    const octalNumber = () => {
+      if (!(isOctalDigit(peek()))) {
+        return errorTkn(
+          `Expected octal digits after “0o”`,
+          "scanning an octal number",
+        );
+      }
+      while (isOctalDigit(peek()) && !atEnd()) {
+        tick();
+      }
+      const s = slice().replace("0o", "");
+      const n = Number.parseInt(s, 8);
+      return tkn(tt.int).lit(n);
+    };
+
+    const binaryNumber = () => {
+      if (!(peekIs("0") || peekIs("1"))) {
+        return errorTkn(
+          `Expected binary digits after “0b”`,
+          "scanning a binary number",
+        );
+      }
+      while ((peekIs("0") || peekIs("1")) && !atEnd()) {
+        tick();
+      }
+      const s = slice().replace("0b", "");
+      const n = Number.parseInt(s, 2);
+      return tkn(tt.int).lit(n);
+    };
+    const scanBigNumber = () => {
+      let didSeeVBAR = false;
+      while (isDigit(peek()) && !atEnd()) {
+        tick();
+      }
+      if (peekIs("|") && isDigit(peekNext())) {
+        tick(); // eat the '|'
+        didSeeVBAR = true;
+        while (isDigit(peek()) && !atEnd()) {
+          tick();
+        }
+      }
+      const n = slice().replace("#", "");
+      if (didSeeVBAR) {
+        const [a, b] = n.split("|");
+        const N = BigInt(a);
+        const D = BigInt(b);
+        return tkn(tt.bigfraction).lit([N, D]);
+      }
+      return tkn(tt.bignumber).lit(BigInt(n));
+    };
+
+    /** Scans a token. */
+    const scan = (): Token => {
+      skipws();
+      $start = $current;
+      if (atEnd()) {
+        return tkn(tt.END, "END");
+      }
+      const c = tick();
+      if (isValidName(c)) {
+        return word();
+      }
+      if (c === "#") {
+        if (!isDigit(peek())) {
+          return errorTkn(`Expected digits after “#”`, `scanning a bignumber`);
+        } else {
+          const out = scanBigNumber();
+          return out;
+        }
+      }
+      if (isDigit(c)) {
+        if (c === "0" && match("b")) {
+          return binaryNumber();
+        } else if (c === "0" && match("o")) {
+          return octalNumber();
+        } else if (c === "0" && match("x")) {
+          return hexNumber();
+        }
+        return number(tt.int);
+      }
+      // deno-fmt-ignore
+      switch (c) {
+        case ":": return tkn(tt.colon);
+        case "&": return tkn(tt.amp);
+        case "~": return tkn(tt.tilde);
+        case "|": return tkn(tt.vbar);
+        case "(": return tkn(tt.lparen);
+        case ")": return tkn(tt.rparen);
+        case "[": return tkn(tt.lbracket);
+        case "]": return tkn(tt.rbracket);
+        case "{": return tkn(tt.lbrace);
+        case "}": return tkn(tt.rbrace);
+        case ",": return tkn(tt.comma);
+        case ".": return tkn(tt.dot);
+        case "-": {
+          if (peek()==='-' && peekNext()==='-') {
+            while (peek()!=='\n' && !atEnd()) {
+              tick();
+            }
+            return Token.empty;
+          } else {
+            return tkn(match('-') ? tt.minus_minus : tt.minus);
+          }
+        }
+        case "+": return tkn(match('+') ? tt.plus_plus : tt.plus);
+        case "*": return tkn(tt.star);
+        case ";": return tkn(tt.semicolon);
+        case '%': return tkn(tt.percent);
+        case "/": return tkn(tt.slash);
+        case "^": return tkn(tt.caret);
+        case '!': return tkn(match('=') ? tt.neq : tt.bang);
+        case '=': {
+          if (peek()==='=' && peekNext()==='=') {
+            while (peek()==='=') {
+              tick();
+            }
+            while (!atEnd()) {
+              tick();
+              if (peek()==='=' && peekNext()==='=' && lookup(2)==='=') {
+                break;
+              }
+            }
+            if (atEnd()) {
+              return errorTkn(`Unterminated block comment`, `scanning a “=”`);
+            }
+            while (peek()==='=') {
+              tick();
+            }
+            return Token.empty;
+          } else {
+            return tkn(match('=') ? tt.deq : tt.eq);
+          }
+        }
+        case '<': return tkn(match('=') ? tt.leq : tt.lt);
+        case '>': return tkn(match('=') ? tt.geq : tt.gt);
+        case `"`: return stringLiteral();
+        case `'`: return algebraicString();
+      }
+      return errorTkn(`Unknown token: “${c}”`, "scanning");
+    };
+    const stream = () => {
+      const out: Token[] = [];
+      let prev = Token.empty;
+      let now = scan();
+      if (!now.isEmpty()) {
+        out.push(now);
+      } else if ($error !== null) {
+        return left($error);
+      }
+      let peek = scan();
+      if ($error !== null) {
+        return left($error);
+      }
+      while (!atEnd()) {
+        prev = now;
+        now = peek;
+        const k = scan();
+        if ($error !== null) {
+          return left($error);
+        }
+        if (k.isEmpty()) {
+          continue;
+        } else {
+          peek = k;
+        }
+        // remove trailing commas
+        if (prev.isRPD() && now.is(tt.comma) && peek.isRPD()) {
+          continue;
+        }
+        out.push(now);
+      }
+      out.push(peek);
+      return right(out);
+    };
+
+    return stream();
+  }
+
+  /**
+   * Given an array of tokens, splits
+   * all multicharacter symbols into
+   * individual symbols, provided
+   * the multicharacter symbol is:
+   *
+   * 1. not a Greek letter name,
+   * 2. not a core function name, and
+   * 3. does not include the character `_`.
+   */
+  function symsplit(
+    lexicalAnalysisResult: Either<Err, Token[]>,
+  ): Either<Err, Token[]> {
+    if (lexicalAnalysisResult.isLeft()) {
+      return lexicalAnalysisResult;
+    }
+    const tokens = lexicalAnalysisResult.unwrap();
+    const out: Token[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t1 = tokens[i];
+      if (
+        t1.isVariable() && !isGreekLetterName(t1.lexeme) &&
+        !t1.lexeme.includes("_") && !t1.lexeme.includes("$") &&
+        !t1.lexeme.includes(`'`)
+      ) {
+        t1.lexeme.split("").map((c) => token(tt.symbol, c, t1.L, t1.C))
+          .forEach((v) => out.push(v));
+      } else {
+        out.push(t1);
+      }
+    }
+    return right(out);
+  }
+
+  function tidyAlgebraStrings(
+    lexicalAnalysisResult: Either<Err, Token[]>,
+  ): Either<Err, Token[]> {
+    if (lexicalAnalysisResult.isLeft()) {
+      return lexicalAnalysisResult;
+    }
+    const tokens = lexicalAnalysisResult.unwrap();
+    const out: Token[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t.is(tt.algebra_string)) {
+        const tks = lexical(t.lexeme);
+        if (tks.isLeft()) {
+          return tks;
+        }
+        const at = symsplit(tks);
+        const withIMUL = imul(at);
+        if (withIMUL.isLeft()) {
+          return withIMUL;
+        }
+        out.push(t.lit(withIMUL.unwrap()));
+      } else {
+        out.push(t);
+      }
+    }
+    return right(out);
+  }
+
+  function imul(
+    lexicalAnalysisResult: Either<Err, Token[]>,
+  ): Either<Err, Token[]> {
+    if (lexicalAnalysisResult.isLeft()) {
+      return lexicalAnalysisResult;
+    }
+    const tkns = lexicalAnalysisResult.unwrap();
+    const out: Token[] = [];
+    const tokens = zip(tkns, tkns.slice(1));
+    for (let i = 0; i < tokens.length; i++) {
+      const [now, nxt] = tokens[i];
+      out.push(now);
+      if (now.is(tt.rparen)) {
+        if (nxt.is(tt.symbol)) {
+          out.push(nxt.entype(tt.star).lex("*"));
+        } else if (nxt.is(tt.lparen)) {
+          out.push(nxt.entype(tt.star).lex("*"));
+        }
+      } else if (
+        now.isNumLike() &&
+        (nxt.is(tt.native))
+      ) {
+        out.push(nxt.entype(tt.star).lex("*"));
+      } else if (now.isNumLike() && nxt.is(tt.symbol)) {
+        out.push(nxt.entype(tt.star).lex("*"));
+      } else if (now.isNumLike() && nxt.is(tt.lparen)) {
+        out.push(nxt.entype(tt.star).lex("*"));
+      } else if (now.is(tt.symbol) && nxt.is(tt.symbol)) {
+        out.push(nxt.entype(tt.star).lex("*"));
+      }
+    }
+    out.push(tkns[tkns.length - 1]);
+    return right(out);
+  }
+
+  function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
+    let $error: null | Err = null;
+    let tkns: Token[] = [];
+    if (lexicalAnalysisResult.isLeft()) {
+      $error = lexicalAnalysisResult.unwrap();
+    } else {
+      tkns = lexicalAnalysisResult.unwrap();
+    }
+    const tokens = tkns;
+    /**
+     * Variable bound to the current error status.
+     * If this variable is not bound to null, then
+     * an error occurred. This variable should only
+     * be modified through the {@link error} function
+     * to ensure line and column numbers are properly
+     * recorded.
+     */
+
+    /** Pointer to the current token. */
+    let $cursor = -1;
+
+    /** The maximum possible cursor position. */
+    let $max = tokens.length;
+
+    /** The token immediately after the current token. */
+    let $peek = Token.empty;
+
+    /** The current token. */
+    let $current = Token.empty;
+
+    /** The last node parsed. */
+    let $lastNode: ASTNode = nil();
+
+    /**
+     * Returns true if there are no longer any tokens or if
+     * an {@link $error|error} occurred, false otherwise.
+     */
+    const atEnd = () => ($cursor >= $max - 1) || ($error !== null);
+
+    /**
+     * Moves the {@link $cursor|cursor} forward and returns
+     * the current {@link $peek|peek}.
+     */
+    const next = () => {
+      $cursor++;
+      $current = $peek;
+      const nextToken = tokens[$cursor] ? tokens[$cursor] : Token.END;
+      $peek = nextToken;
+      return $current;
+    };
+
+    /**
+     * If the given type matches
+     * the upcoming token (the peek),
+     * moves the state forward. Otherwise,
+     * leaves the state as is.
+     */
+    const nextIs = (type: tt) => {
+      if ($peek.is(type)) {
+        next();
+        return true;
+      }
+      return false;
+    };
+
+    /**
+     * Given the list of token types, moves the {@link $cursor|cursor}
+     * forward and returns true on the first type matching the
+     * token just ahead. Otherwise, returns false wit no forwarding.
+     */
+    const matches = (types: tt[]) => {
+      for (let i = 0; i < types.length; i++) {
+        if ($peek.is(types[i])) {
+          next();
+          return true;
+        }
+      }
+      return false;
+    };
+
+    /**
+     * If called, sets the state’s error
+     * status to the provided error message,
+     * and returns a {@link Left}. If
+     * the state’s error field is initialized
+     * (by default `null`), then the parser
+     * will halt immediately and return the
+     * error message.
+     */
+    const error = (message: string, phase: string) => {
+      const e = syntaxError(message, phase, $current.L, $current.C);
+      $error = e;
+      return left(e);
+    };
+
+    /**
+     * Returns true if the next token
+     * is the provided type _without_
+     * consuming the token.
+     */
+    const check = (type: tt) => {
+      if (atEnd()) {
+        return false;
+      } else {
+        return $peek.is(type);
+      }
+    };
+
+    /**
+     * If called, sets the state’s last
+     * parsed node to the provided node T,
+     * and returns `Right<T>` (See {@link Right}).
+     * All nodes should ultimately return their
+     * results through this method so
+     * as to allow other nodes to keep
+     * track of what was last parsed.
+     */
+    const newnode = <X extends ASTNode>(node: X) => {
+      $lastNode = node;
+      return right(node);
+    };
+
+    /**
+     * Returns true if an implicit
+     * semicolon is encountered. An implicit
+     * semicolons exists if:
+     *
+     * 1. The upcoming token is the end of input (`eof` token), or
+     * 2. The token stream has reached an unexpected end of input.
+     */
+    const implicitSemicolonOK = () => {
+      return (
+        $peek.is(tt.END) ||
+        atEnd()
+      );
+    };
+
+    const this_expression = (t: Token) => {
+      return newnode(thisExpr(t).at(t.L, t.C));
+    };
+
+    const number: Parslet = (t) => {
+      if (t.isNumber()) {
+        if (t.is(tt.int)) {
+          return newnode(integer(t.literal, t.L, t.C));
+        } else {
+          return newnode(float(t.literal, t.L, t.C));
+        }
+      } else {
+        return error(
+          `Expected an integer, but got “${t.lexeme}”`,
+          "parsing an integer",
+        );
+      }
+    };
+
+    const string_literal: Parslet = (t) => {
+      return newnode(string(t.lexeme).at(t.L, t.C));
+    };
+
+    const scientific_number: Parslet = (t) => {
+      if (t.isScientific()) {
+        const [a, b] = t.literal;
+        const lhs = float(a, t.L, t.C);
+        const rhs = binex(
+          integer(10, t.L, t.C),
+          token(tt.caret, "^", t.L, t.C),
+          integer(b, t.L, t.C),
+        ).at(t.L, t.C);
+        return newnode(binex(
+          lhs,
+          token(tt.star, "*", t.L, t.C),
+          rhs,
+        ));
+      } else {
+        return error(
+          `Unexpected scientific number`,
+          "parsing a scientific number",
+        );
+      }
+    };
+
+    /**
+     * Parses a {@link RelationalExpr|relational expression}.
+     */
+    const compare = (op: Token, lhs: Expr): Either<Err, RelationalExpr> => {
+      const p = precof(op.type);
+      return expr(p).chain((rhs) => {
+        return newnode(relation(lhs, op as Token<RelationalOperator>, rhs));
+      });
+    };
+
+    /**
+     * Parses a right-associative
+     * {@link AlgebraicBinaryExpr|algebraic binary expression}.
+     */
+    const rinfix = (op: Token, lhs: Expr): Either<Err, AlgebraicBinaryExpr> => {
+      const p = precof(op.type);
+      return expr(p).chain((rhs) => {
+        const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
+        return newnode(out);
+      });
+    };
+
+    /**
+     * Parses an {@link AlgebraicBinaryExpr|algebraic binary expression}.
+     */
+    const infix = (
+      op: Token,
+      lhs: Expr,
+    ): Either<Err, AlgebraicBinaryExpr | AssignExpr> => {
+      if (nextIs(tt.eq)) {
+        if (isVariable(lhs)) {
+          const name = lhs;
+          const r = expr();
+          if (r.isLeft()) {
+            return r;
+          }
+          const rhs = r.unwrap();
+          const value = binex(lhs, op as Token<ArithmeticOperator>, rhs);
+          return newnode(assign(name, value));
+        } else {
+          return error(
+            `Invalid lefthand side of assignment. Expected a variable to the left of “${op.lexeme}=”, but got “${lhs.toString()}".`,
+            `parsing the complex assignment “${op.lexeme}=”`,
+          );
+        }
+      }
+      const p = precof(op.type);
+      const RHS = expr(p);
+      if (RHS.isLeft()) {
+        return RHS;
+      }
+      const rhs = RHS.unwrap();
+
+      const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
+      return newnode(out);
+    };
+
+    /**
+     * Parses a {@link FractionExpr|rational number}.
+     */
+    const fraction = (op: Token): Either<Err, FractionExpr> => {
+      if (op.isFraction()) {
+        const [N, D] = op.literal;
+        return newnode(rational(floor(N), floor(abs(D))).at(op.L, op.C));
+      } else {
+        return error(`Unexpected rational number`, "parsing a rational number");
+      }
+    };
+
+    /**
+     * Parses a {@link LogicalBinaryExpr|logical infix expression}.
+     */
+    const logic_infix = (
+      op: Token,
+      lhs: Expr,
+    ): Either<Err, LogicalBinaryExpr> => {
+      const p = precof(op.type);
+      return expr(p).chain((rhs) => {
+        return newnode(
+          logicalBinex(lhs, op as Token<BinaryLogicalOperator>, rhs),
+        );
+      });
+    };
+
+    /**
+     * Parses a {@link BigNumber|big number}.
+     */
+    const big_number = (op: Token): Either<Err, BigNumber> => {
+      if (op.isBigNumber()) {
+        return newnode(bigNumber(op.literal));
+      } else {
+        return error(`Unexpected big number literal`, `parsing an expression`);
+      }
+    };
+
+    /**
+     * Parses a {@link RationalExpr|big rational}.
+     */
+    const big_rational = (op: Token): Either<Err, RationalExpr> => {
+      if (op.isBigFraction()) {
+        const [a, b] = op.literal;
+        return newnode(bigRational(a, b).at(op.L, op.C));
+      } else {
+        return error(
+          `Unexpected big rational literal`,
+          `parsing an expression`,
+        );
+      }
+    };
+
+    /**
+     * Parses a {@link Bool|boolean literal}.
+     */
+    const boolean_literal = (op: Token): Either<Err, Bool> => {
+      if (op.isBoolean()) {
+        return newnode(bool(op.literal).at(op.L, op.C));
+      } else {
+        return error(`Unexpected boolean literal`, `parsing an expression`);
+      }
+    };
+
+    /**
+     * Parses a {@link NumericConstant|numeric constant} or {@link Nil|nil}.
+     */
+    const constant = (op: Token): Either<Err, NumericConstant | Nil> => {
+      const type = op.type;
+      const L = op.L;
+      const C = op.C;
+      const erm = `Unexpected constant “${op.lexeme}”`;
+      const src = `parsing an expression`;
+      // deno-fmt-ignore
+      switch (type) {
+        case tt.nan: return newnode(numericConstant(NaN, 'NAN').at(L,C));
+        case tt.inf: return newnode(numericConstant(Infinity, 'Inf').at(L,C));
+        case tt.nil: return newnode(nil().at(L,C));
+        case tt.numeric_constant: {
+          switch (op.lexeme) {
+            case "pi": return newnode(numericConstant(PI, "pi").at(L,C));
+            case 'e': return newnode(numericConstant(E, 'e').at(L,C))
+            default: return error(erm, src);
+          }
+        }
+        default: return error(erm, src);
+      }
+    };
+
+    /**
+     * Parses a {@link GroupExpr|parenthesized expression}.
+     */
+    const primary = (op: Token): Either<Err, GroupExpr | TupleExpr> => {
+      const innerExpression = expr();
+      if (innerExpression.isLeft()) {
+        return innerExpression;
+      }
+      if (nextIs(tt.comma)) {
+        const elements: Expr[] = [innerExpression.unwrap()];
+        do {
+          const e = expr();
+          if (e.isLeft()) {
+            return e;
+          }
+          elements.push(e.unwrap());
+        } while (nextIs(tt.comma));
+        if (!nextIs(tt.rparen)) {
+          return error(`Expected “)” to close the tuple`, `parsing a tuple`);
+        }
+        return newnode(tupleExpr(elements, op.L, op.C));
+      }
+      if (!nextIs(tt.rparen)) {
+        return error(
+          `Expected closing “)”`,
+          "parsing a parenthesized expression",
+        );
+      }
+      return innerExpression.map((e) => grouped(e));
+    };
+
+    /**
+     * Parses a {@link NativeCall|native function call}.
+     */
+    const native_call: Parslet = (op): Either<Err, NativeCall> => {
+      const lex = op.lexeme;
+      const src = `parsing a native call “${lex}”`;
+      if (!nextIs(tt.lparen)) {
+        return error(`Expected “(” to open the argument list`, src);
+      }
+      let args: Expr[] = [];
+      if (!check(tt.rparen)) {
+        const arglist = comma_separated_list(
+          isExpr,
+          `Expected expression`,
+          src,
+        );
+        if (arglist.isLeft()) {
+          return arglist;
+        }
+        args = arglist.unwrap();
+      }
+      if (!nextIs(tt.rparen)) {
+        return error(`Expected “)” to close the argument list`, src);
+      }
+      return newnode(nativeCall(lex as NativeFn, args, op.loc()));
+    };
+
+    /**
+     * Parses a variable name.
+     */
+    const variable_name: Parslet = (op) => {
+      if (op.isVariable()) {
+        const out = variable(op);
+        return newnode(out);
+      } else {
+        return error(`Unexpected variable “${op.lex}”`, "parsing expression");
+      }
+    };
+
+    /**
+     * Parses a logical not expression.
+     */
+    const logical_not: Parslet = (op) => {
+      const p = precof(op.type);
+      return expr(p).chain((arg) =>
+        newnode(logicalUnary(op as Token<tt.not>, arg))
+      );
+    };
+
+    /**
+     * Parses an {@link AssignExpr|assignment expression}.
+     */
+    const assignment = (
+      op: Token,
+      node: Expr,
+    ): Either<Err, AssignExpr | SetExpr> => {
+      const src = `parsing an assignment`;
+      if (isVariable(node)) {
+        return expr().chain((n) => {
+          return newnode(assign(node, n));
+        });
+      } else if (isGetExpr(node)) {
+        const rhs = expr();
+        if (rhs.isLeft()) {
+          return rhs;
+        }
+        return newnode(setExpr(node.object, node.name, rhs.unwrap(), op.loc()));
+      } else {
+        return error(
+          `Expected a valid assignment target, but got “${node.toString()}”`,
+          src,
+        );
+      }
+    };
+
+    const comma_separated_list = <K extends Expr>(
+      filter: (e: Expr) => e is K,
+      errorMessage: string,
+      src: string,
+    ) => {
+      const elements: K[] = [];
+      do {
+        const e = expr();
+        if (e.isLeft()) return e;
+        const element = e.unwrap();
+        if (!filter(element)) {
+          return error(errorMessage, src);
+        }
+        elements.push(element);
+      } while (nextIs(tt.comma));
+      return right(elements);
+    };
+
+    const vector_expression = (prev: Token) => {
+      const elements: Expr[] = [];
+      const vectors: VectorExpr[] = [];
+      const src = `parsing a vector expression`;
+      let rows = 0;
+      let columns = 0;
+      if (!check(tt.rbracket)) {
+        do {
+          const elem = expr();
+          if (elem.isLeft()) {
+            return elem;
+          }
+          const element = elem.unwrap();
+          if (isVectorExpr(element)) {
+            rows++;
+            columns = element.elements.length;
+            vectors.push(element);
+          } else {
+            elements.push(element);
+          }
+        } while (nextIs(tt.comma) && !atEnd());
+      }
+      if (!nextIs(tt.rbracket)) {
+        return error(`Expected a right bracket “]” to close the vector`, src);
+      }
+      if (vectors.length !== 0) {
+        if (vectors.length !== columns) {
+          return error(
+            `Encountered a jagged matrix. Jagged matrices are not permitted. For jagged lists, consider using nested tuples.`,
+            src,
+          );
+        }
+        return newnode(matrixExpr(vectors, rows, columns));
+      }
+      return newnode(vectorExpr(elements, prev.loc()));
+    };
+
+    const get_expression = (op: Token, lhs: Expr) => {
+      const src = `parsing a get expression`;
+      const nxt = next();
+      if (!nxt.isVariable()) {
+        return error(`Expected property name`, src);
+      }
+      let exp = getExpr(lhs, nxt.lexeme, op.loc());
+      if (nextIs(tt.lparen)) {
+        const args: Expr[] = [];
+        if (!check(tt.rparen)) {
+          do {
+            const x = expr();
+            if (x.isLeft()) {
+              return x;
+            }
+            const arg = x.unwrap();
+            args.push(arg);
+          } while (nextIs(tt.comma));
+        }
+        const rparen = next();
+        if (!rparen.is(tt.rparen)) {
+          return error(`Expected “)” to after method arguments`, src);
+        }
+        const loc = rparen.loc();
+        return newnode(call(exp, args, loc));
+      }
+      return newnode(exp);
+    };
+
+    const indexing_expression: Parslet = (op, lhs) => {
+      const index = expr();
+      if (index.isLeft()) {
+        return index;
+      }
+      const rbracket = next();
+      if (!rbracket.is(tt.rbracket)) {
+        return error(
+          `Expected a right bracket “]” to close the accessor`,
+          `parsing an index accessor`,
+        );
+      }
+      return newnode(indexingExpr(lhs, index.unwrap()));
+    };
+
+    const function_call = (
+      _: Token,
+      node: Expr,
+    ): Either<Err, CallExpr> => {
+      const callee = node;
+      let args: Expr[] = [];
+      if (!check(tt.rparen)) {
+        const arglist = comma_separated_list(
+          isExpr,
+          `Expected expression`,
+          "call",
+        );
+        if (arglist.isLeft()) return arglist;
+        args = arglist.unwrap();
+      }
+      const paren = next();
+      if (!paren.is(tt.rparen)) {
+        return error(`Expected “)” to close args`, "call");
+      }
+      const out = call(callee, args, paren.loc());
+      return newnode(out);
+    };
+
+    const factorial_expression = (op: Token, node: Expr) => {
+      return newnode(algebraicUnary(op as Token<AlgebraicUnaryOperator>, node));
+    };
+
+    const decrement = (op: Token, node: Expr) => {
+      if (isVariable(node)) {
+        const right = binex(
+          node,
+          op.entype(tt.minus).lex("-"),
+          integer(1, op.L, op.C),
+        );
+        return newnode(assign(node, right));
+      } else {
+        return error(
+          `Expected the lefthand side of “--” to be either a variable or a property accessor, but got “${node.toString()}”`,
+          `parsing a decrement “--”`,
+        );
+      }
+    };
+
+    const increment = (op: Token, node: Expr) => {
+      if (isVariable(node)) {
+        const right = binex(
+          node,
+          op.entype(tt.plus).lex("+"),
+          integer(1, op.L, op.C),
+        );
+        return newnode(assign(node, right));
+      } else {
+        return error(
+          `Expected the lefthand side of “++” to be either a variable or a property accessor, but got “${node.toString()}”`,
+          `parsing an increment “++”`,
+        );
+      }
+    };
+
+    /**
+     * The “blank” parslet. This parslet is used as a placeholder.
+     * If the {@link expr|expression parser} calls this parslet,
+     * then the {@link error} variable is set and parsing shall cease.
+     */
+    const ___: Parslet = (t) => {
+      if ($error !== null) {
+        return left($error);
+      } else {
+        return error(`Unexpected lexeme: ${t.lexeme}`, `expression`);
+      }
+    };
+
+    const algebraic_string: Parslet = (op) => {
+      if (op.isAlgebraString()) {
+        const tkns = op.literal;
+        const result = syntax(right(tkns)).expression();
+        if (result.isLeft()) {
+          return result;
+        }
+        const expression = result.unwrap();
+        const L = op.L;
+        const C = op.C;
+        return newnode(algebraicString(expression, L, C));
+      } else {
+        return error(`Unexpected algebraic string`, `parsing an expression`);
+      }
+    };
+
+    const prefix: Parslet = (op) => {
+      const p = precof(op.type);
+      return expr(p).chain((arg) => {
+        if (op.is(tt.minus)) {
+          return newnode(algebraicUnary(op, arg));
+        } else if (op.is(tt.plus)) {
+          return newnode(algebraicUnary(op, arg));
+        } else {
+          return error(
+            `Unknown prefix operator “${op.lexeme}”`,
+            `parsing a prefix operation`,
+          );
+        }
+      });
+    };
+
+    /**
+     * The “blank” binding power. This particular binding power
+     * is bound either (1) the {@link ___|blank parslet}
+     * or (2) parlsets that should not trigger recursive calls.
+     */
+    const ___o = bp.nil;
+
+    /**
+     * The rules table comprises mappings from every
+     * {@link tt|token type} to a triple `(Prefix, Infix, B)`,
+     * where `Prefix` and `Infix` are {@link Parslet|parslets} (small
+     * parsers that handle a single grammar rule), and `B` is a
+     * {@link bp|binding power}.
+     */
+    const rules: BPTable = {
+      [tt.END]: [___, ___, ___o],
+      [tt.ERROR]: [___, ___, ___o],
+      [tt.EMPTY]: [___, ___, ___o],
+      [tt.lparen]: [primary, function_call, bp.call],
+      [tt.rparen]: [___, ___, ___o],
+      [tt.lbrace]: [___, ___, ___o],
+      [tt.rbrace]: [___, ___, ___o],
+      [tt.lbracket]: [vector_expression, indexing_expression, bp.call],
+      [tt.rbracket]: [___, ___, ___o],
+      [tt.semicolon]: [___, ___, ___o],
+      [tt.colon]: [___, ___, ___o],
+      [tt.dot]: [___, get_expression, bp.call],
+      [tt.comma]: [___, ___, ___o],
+      [tt.super]: [___, ___, ___o],
+
+      [tt.amp]: [___, ___, ___o],
+      [tt.tilde]: [___, ___, ___o],
+      [tt.vbar]: [___, ___, ___o],
+      [tt.eq]: [___, assignment, bp.assign],
+      [tt.bang]: [___, factorial_expression, bp.postfix],
+      [tt.plus_plus]: [___, increment, bp.postfix],
+      [tt.minus_minus]: [___, decrement, bp.postfix],
+
+      // algebraic expressions
+      [tt.plus]: [prefix, infix, bp.sum],
+      [tt.minus]: [prefix, infix, bp.difference],
+      [tt.star]: [___, infix, bp.product],
+      [tt.slash]: [___, infix, bp.quotient],
+      [tt.caret]: [___, rinfix, bp.power],
+      [tt.percent]: [___, infix, bp.quotient],
+      [tt.rem]: [___, infix, bp.quotient],
+      [tt.mod]: [___, infix, bp.quotient],
+      [tt.div]: [___, infix, bp.quotient],
+
+      // comparison expressions
+      [tt.lt]: [___, compare, bp.rel],
+      [tt.gt]: [___, compare, bp.rel],
+      [tt.neq]: [___, compare, bp.rel],
+      [tt.leq]: [___, compare, bp.rel],
+      [tt.geq]: [___, compare, bp.rel],
+      [tt.deq]: [___, compare, bp.rel],
+
+      // logical binary expressions
+      [tt.nand]: [___, logic_infix, bp.nand],
+      [tt.xor]: [___, logic_infix, bp.xor],
+      [tt.xnor]: [___, logic_infix, bp.xnor],
+      [tt.nor]: [___, logic_infix, bp.nor],
+      [tt.and]: [___, logic_infix, bp.and],
+      [tt.or]: [___, logic_infix, bp.or],
+      [tt.not]: [logical_not, ___, bp.not],
+
+      // literals
+      [tt.symbol]: [variable_name, ___, bp.atom],
+      [tt.string]: [string_literal, ___, bp.atom],
+      [tt.bool]: [boolean_literal, ___, bp.atom],
+      [tt.int]: [number, ___, bp.atom],
+      [tt.float]: [number, ___, bp.atom],
+      [tt.bignumber]: [big_number, ___, bp.atom],
+      [tt.bigfraction]: [big_rational, ___, bp.atom],
+      [tt.scientific]: [scientific_number, ___, bp.atom],
+      [tt.fraction]: [fraction, ___, bp.atom],
+      [tt.nan]: [constant, ___, bp.atom],
+      [tt.inf]: [constant, ___, bp.atom],
+      [tt.nil]: [constant, ___, bp.atom],
+      [tt.numeric_constant]: [constant, ___, bp.atom],
+      [tt.this]: [this_expression, ___, bp.atom],
+      [tt.algebra_string]: [algebraic_string, ___, bp.atom],
+
+      // native calls
+      [tt.native]: [native_call, ___, bp.call],
+
+      [tt.if]: [___, ___, ___o],
+      [tt.else]: [___, ___, ___o],
+      [tt.fn]: [___, ___, ___o],
+      [tt.let]: [___, ___, ___o],
+      [tt.var]: [___, ___, ___o],
+      [tt.return]: [___, ___, ___o],
+      [tt.while]: [___, ___, ___o],
+      [tt.for]: [___, ___, ___o],
+      [tt.class]: [___, ___, ___o],
+      [tt.print]: [___, ___, ___o],
+    };
+    /**
+     * Returns the prefix parsing rule mapped to by the given
+     * token type.
+     */
+    const prefixRule = (t: tt): Parslet => rules[t][0];
+
+    /**
+     * Returns the infix parsing rule mapped to by the given
+     * token type.
+     */
+    const infixRule = (t: tt): Parslet => rules[t][1];
+
+    /**
+     * Returns the {@link bp|precedence} of the given token type.
+     */
+    const precof = (t: tt): bp => rules[t][2];
+
+    /**
+     * Parses an {@link Expr|conventional expression} via
+     * Pratt parsing.
+     */
+    const expr = (minbp: number = bp.lowest): Either<Err, Expr> => {
+      let token = next();
+      const pre = prefixRule(token.type);
+      let lhs = pre(token, nil());
+      if (lhs.isLeft()) {
+        return lhs;
+      }
+      while (minbp < precof($peek.type)) {
+        if (atEnd()) {
+          break;
+        }
+        token = next();
+        const r = infixRule(token.type);
+        const rhs = r(token, lhs.unwrap());
+        if (rhs.isLeft()) {
+          return rhs;
+        }
+        lhs = rhs;
+      }
+      return lhs;
+    };
+
+    const PRINT = () => {
+      const current = $current;
+      // print eaten in STMT
+      const arg = EXPRESSION();
+      return arg.map((x) => printStmt(x.expression).at(current.L, current.C));
+    };
+
+    /**
+     * Parses an {@link IfStmt|if-statement}.
+     */
+    const IF = (): Either<Err, IfStmt> => {
+      const c = expr();
+      const src = `parsing an if-statement`;
+      if (c.isLeft()) {
+        return c;
+      }
+      const condition = c.unwrap();
+      if (!nextIs(tt.lbrace)) {
+        return error(
+          `Expected a left brace “{” to begin the consequent block.`,
+          src,
+        );
+      }
+      const consequent = BLOCK();
+      if (consequent.isLeft()) {
+        return consequent;
+      }
+      const thenBranch = consequent.unwrap();
+      let elseBranch: Statement = returnStmt(
+        nil(),
+        $current.loc(),
+      );
+      if (nextIs(tt.else)) {
+        const _else = STMT();
+        if (_else.isLeft()) {
+          return _else;
+        }
+        elseBranch = _else.unwrap();
+      }
+      return newnode(ifStmt(condition, thenBranch, elseBranch));
+    };
+
+    /**
+     * Parses a {@link FnStmt|function statement} (i.e., a function declaration).
+     */
+    const FN = (): Either<Err, FnStmt> => {
+      // fn eaten in STMT
+      const name = next();
+      const src = `parsing a function a declaration`;
+      if (!name.isVariable()) {
+        return error(
+          `Expected a valid identifier for the function’s name, but got “${name.lexeme}”.`,
+          src,
+        );
+      }
+      if (!nextIs(tt.lparen)) {
+        return error(
+          `Expected a left parenthesis “(” to begin the parameter list`,
+          src,
+        );
+      }
+      const params: Token<tt.symbol>[] = [];
+      if (!$peek.is(tt.rparen)) {
+        do {
+          const expression = next();
+          if (!expression.isVariable()) {
+            return error(
+              `Expected a valid identifier as a parameter, but got “${expression.lexeme}”`,
+              src,
+            );
+          }
+          params.push(expression);
+        } while (nextIs(tt.comma));
+      }
+      if (!nextIs(tt.rparen)) {
+        return error(
+          `Expected a right parenthesis “)” to close the parameter list`,
+          src,
+        );
+      }
+      if (nextIs(tt.eq)) {
+        const body = EXPRESSION();
+        return body.chain((b) => newnode(functionStmt(name, params, [b])));
+      }
+      if (!nextIs(tt.lbrace)) {
+        return error(
+          `Expected a left-brace “{” to open the function’s body. If this function’s body is composed of a single statement, consider using the assignment operator “=”`,
+          src,
+        );
+      }
+      const body = BLOCK();
+      return body.chain((b) =>
+        newnode(functionStmt(name, params, b.statements))
+      );
+    };
+
+    const WHILE = () => {
+      const src = `parsing a while loop`;
+      const loopCondition = expr();
+      if (loopCondition.isLeft()) {
+        return loopCondition;
+      }
+      if (!nextIs(tt.lbrace)) {
+        return error(`Expected a block after the condition`, src);
+      }
+      const body = BLOCK();
+      if (body.isLeft()) {
+        return body;
+      }
+      return body.chain((loopBody) =>
+        newnode(whileStmt(loopCondition.unwrap(), loopBody))
+      );
+    };
+
+    /**
+     * Parses a {@link BlockStmt|block statement}.
+     */
+    const BLOCK = (): Either<Err, BlockStmt> => {
+      const statements: Statement[] = [];
+      const c = $current;
+      while (!atEnd() && !check(tt.rbrace)) {
+        const stmt = STMT();
+        if (stmt.isLeft()) {
+          return stmt;
+        }
+        statements.push(stmt.unwrap());
+      }
+      if (!nextIs(tt.rbrace)) {
+        return error(
+          `Expected a right brace “}” to close the block`,
+          `parsing a block`,
+        );
+      }
+      return newnode(block(statements, c.L, c.C));
+    };
+
+    /**
+     * Parses a {@link VariableStmt|let statement}.
+     */
+    const VAR = (prev: tt.let | tt.var): Either<Err, VariableStmt> => {
+      const current = $current;
+      const src = `parsing a variable declaration`;
+      const name = next();
+      if (!name.isVariable()) {
+        return error(`Expected a valid identifier`, src);
+      }
+      if (!nextIs(tt.eq)) {
+        return error(`Expected an assignment operator “=”`, src);
+      }
+      const init = EXPRESSION();
+      if (init.isLeft()) {
+        return init;
+      }
+      const value = init.unwrap();
+      return newnode(
+        (prev === tt.let ? letStmt : varStmt)(name, value.expression).at(
+          current.L,
+          current.C,
+        ),
+      );
+    };
+
+    /**
+     * Parses an expression statement.
+     */
+    const EXPRESSION = (): Either<Err, ExprStmt> => {
+      const out = expr();
+      if (out.isLeft()) {
+        return out;
+      }
+      const expression = out.unwrap();
+      if (nextIs(tt.semicolon) || implicitSemicolonOK()) {
+        return newnode(exprStmt(expression));
+      }
+      return error(`Expected “;” to end the statement`, "expression-statement");
+    };
+
+    const RETURN = (): Either<Err, ReturnStmt> => {
+      const c = $current;
+      const out = EXPRESSION();
+      return out.chain((e) => newnode(returnStmt(e.expression, c.loc())));
+    };
+
+    const FOR = (): Either<Err, Statement> => {
+      // keyword 'for' eaten by STMT
+      const src = `parsing a for-loop`;
+      const preclauseToken = next();
+      if (!preclauseToken.is(tt.lparen)) {
+        return error(
+          `Expected a left parentheses “(” after the keyword “for” to begin the loop’s clauses, but got “${preclauseToken.lexeme}”.`,
+          src,
+        );
+      }
+      const loc = preclauseToken.loc();
+      let init: Statement | null = null;
+      if (nextIs(tt.semicolon)) {
+        init = init;
+      } else if (nextIs(tt.var)) {
+        const initializer = VAR(tt.var);
+        if (initializer.isLeft()) {
+          return initializer;
+        }
+        init = initializer.unwrap();
+      } else {
+        const exp = EXPRESSION();
+        if (exp.isLeft()) {
+          return exp;
+        }
+        init = exp.unwrap();
+      }
+      let condition: Expr | null = null;
+      if (!check(tt.semicolon)) {
+        const c = expr();
+        if (c.isLeft()) {
+          return c;
+        }
+        condition = c.unwrap();
+      }
+      const postConditionToken = next();
+      if (!postConditionToken.is(tt.semicolon)) {
+        return error(
+          `Expected a semicolon “;” after the for-loop condition, but got “${postConditionToken.lexeme}”.`,
+          src,
+        );
+      }
+      let increment: Expr | null = null;
+      if (!check(tt.rparen)) {
+        const inc = expr();
+        if (inc.isLeft()) {
+          return inc;
+        }
+        increment = inc.unwrap();
+      }
+      const postIncrementToken = next();
+      if (!postIncrementToken.is(tt.rparen)) {
+        return error(
+          `Expected a right “)” to close the for-loop’s clauses, but got “${postIncrementToken.lexeme}”`,
+          src,
+        );
+      }
+      const b = STMT();
+      if (b.isLeft()) {
+        return b;
+      }
+      let body: Statement = b.unwrap();
+      if (increment !== null) {
+        if (isBlock(body)) {
+          body.statements.push(exprStmt(increment));
+        } else {
+          body = block([body, exprStmt(increment)], loc.line, loc.column);
+        }
+      }
+      let loopCondition: Expr = bool(true);
+      if (condition !== null) {
+        loopCondition = condition;
+      }
+      body = whileStmt(loopCondition, body);
+      if (init !== null) {
+        body = block([init, body], loc.line, loc.column);
+      }
+      return newnode(body);
+    };
+
+    const CLASS = () => {
+      // class keyword eaten in Stmt
+      const src = `parsing a class declaration`;
+      const name = next();
+      if (!name.isVariable()) {
+        return error(
+          `Expected a class name after “class”, but got “${name.lexeme}”`,
+          src,
+        );
+      }
+      const lbrace = next();
+      if (!lbrace.is(tt.lbrace)) {
+        return error(
+          `Expected a left-brace “{” to begin the body of class “${name.lexeme}”, but got “${lbrace.lexeme}”`,
+          src,
+        );
+      }
+      const methods = [];
+      while (!check(tt.rbrace) && !atEnd()) {
+        const f = FN();
+        if (f.isLeft()) {
+          return f;
+        }
+        methods.push(f.unwrap());
+      }
+      const postMethodsToken = next();
+      if (!postMethodsToken.is(tt.rbrace)) {
+        return error(
+          `Expected a right brace “}” after the body of class “${name.lexeme}”, but got “${postMethodsToken.lexeme}”.`,
+          src,
+        );
+      }
+      return newnode(classStmt(name, methods));
+    };
+
+    /**
+     * Parses a statement.
+     */
+    const STMT = (): Either<Err, Statement> => {
+      if (nextIs(tt.var)) {
+        return VAR(tt.var);
+      } else if (nextIs(tt.let)) {
+        return VAR(tt.let);
+      } else if (nextIs(tt.fn)) {
+        return FN();
+      } else if (nextIs(tt.lbrace)) {
+        return BLOCK();
+      } else if (nextIs(tt.if)) {
+        return IF();
+      } else if (nextIs(tt.return)) {
+        return RETURN();
+      } else if (nextIs(tt.while)) {
+        return WHILE();
+      } else if (nextIs(tt.for)) {
+        return FOR();
+      } else if (nextIs(tt.print)) {
+        return PRINT();
+      } else if (nextIs(tt.class)) {
+        return CLASS();
+      } else {
+        return EXPRESSION();
+      }
+    };
+
+    return {
+      /**
+       * Returns a syntax analysis of
+       * a single expression.
+       */
+      expression() {
+        // The error is not null if
+        // an error occurred during
+        // scanning. In that case we
+        // immediately return the scanner’s
+        // reported error.
+        if ($error !== null) {
+          return left($error);
+        }
+        next();
+        return expr();
+      },
+      /**
+       * Returns a syntax analysis of the entire
+       * program with statements.
+       */
+      statements() {
+        // Similar to analyzeExpression, we
+        // immediately return the scanner’s
+        // reported error.
+        if ($error !== null) {
+          return left($error);
+        }
+        next(); // prime the parser
+        const stmts: Statement[] = [];
+        while (!atEnd()) {
+          const stmt = STMT();
+          if (stmt.isLeft()) {
+            return stmt;
+          }
+          stmts.push(stmt.unwrap());
+        }
+        return right(stmts);
+      },
+    };
+  }
+
   let settings: EngineSettings = {
     implicitMultiplication: true,
   };
@@ -8581,6 +7983,9 @@ function engine(source: string) {
       settings = { ...settings, ...options };
       return this;
     },
+    algebraTree() {
+      throw new Error(`method unimplemented`);
+    },
     statementTree() {
       const out = parse();
       if (out.isLeft()) return out.unwrap().message;
@@ -8603,9 +8008,7 @@ function engine(source: string) {
 }
 
 const src = `
-let j = '(x^2 * x^3 - y)';
-let k = deriv(j, 'x');
-print k;
+x < 12 < 5;
 `;
 const k = engine(src).engineSettings({
   implicitMultiplication: true,
