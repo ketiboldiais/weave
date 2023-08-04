@@ -996,11 +996,11 @@ class BlockStmt extends Statement {
     return nodekind.block_statement;
   }
   statements: Statement[];
-  constructor(statements: Statement[], loc: Location) {
+  constructor(statements: Statement[], line: number, column: number) {
     super();
     this.statements = statements;
-    this.L = loc.line;
-    this.C = loc.column;
+    this.L = line;
+    this.C = column;
   }
 }
 
@@ -1008,8 +1008,8 @@ function isBlock(node: ASTNode): node is BlockStmt {
   return node.kind === nodekind.block_statement;
 }
 
-function block(statements: Statement[], loc: Location) {
-  return new BlockStmt(statements, loc);
+function block(statements: Statement[], line: number, column: number) {
+  return new BlockStmt(statements, line, column);
 }
 
 class ExprStmt extends Statement {
@@ -1229,16 +1229,16 @@ class AlgebraicString extends Expr {
     return nodekind.algebra_string;
   }
   expression: Expr;
-  constructor(expression: Expr, loc: Location) {
+  constructor(expression: Expr, line: number, column: number) {
     super();
     this.expression = expression;
-    this.L=loc.line;
-    this.C=loc.column;
+    this.L = line;
+    this.C = column;
   }
 }
 
-function algebraicString(expression: Expr, loc: Location) {
-  return new AlgebraicString(expression, loc);
+function algebraicString(expression: Expr, line: number, column: number) {
+  return new AlgebraicString(expression, line, column);
 }
 
 /**
@@ -1257,11 +1257,11 @@ class TupleExpr extends Expr {
     return nodekind.tuple_expression;
   }
   elements: Expr[];
-  loc: Location;
-  constructor(elements: Expr[], loc: Location) {
+  constructor(elements: Expr[], line: number, column: number) {
     super();
     this.elements = elements;
-    this.loc = loc;
+    this.L = line;
+    this.C = column;
   }
   toString(): string {
     const elements = this.elements.map((e) => e.toString()).join(",");
@@ -1277,21 +1277,15 @@ class VectorExpr extends Expr {
     return nodekind.vector_expression;
   }
   elements: Expr[];
-  loc: Location;
   constructor(elements: Expr[], loc: Location) {
     super();
     this.elements = elements;
-    this.loc = loc;
+    this.L = loc.line;
+    this.C = loc.column;
   }
   toString(): string {
     const elements = this.elements.map((e) => e.toString()).join(",");
     return `[${elements}]`;
-  }
-  get line() {
-    return this.loc.line;
-  }
-  get column() {
-    return this.loc.column;
   }
 }
 
@@ -1343,8 +1337,8 @@ function matrixExpr(vectors: Expr[], rows: number, columns: number) {
 /**
  * Returns a new {@link TupleExpr|tuple expression}.
  */
-function tupleExpr(elements: Expr[], loc: Location) {
-  return new TupleExpr(elements, loc);
+function tupleExpr(elements: Expr[], line: number, column: number) {
+  return new TupleExpr(elements, line, column);
 }
 
 class BigNumber extends Expr {
@@ -1451,13 +1445,13 @@ class NativeCall extends Expr {
     return nodekind.native_call;
   }
   name: NativeFn;
-  loc: Location;
   args: Expr[];
   constructor(name: NativeFn, args: Expr[], loc: Location) {
     super();
     this.name = name;
     this.args = args;
-    this.loc = loc;
+    this.L = loc.line;
+    this.C = loc.column;
   }
 }
 /**
@@ -6170,7 +6164,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       if (!nextIs(tt.rparen)) {
         return error(`Expected “)” to close the tuple`, `parsing a tuple`);
       }
-      return newnode(tupleExpr(elements, op.loc()));
+      return newnode(tupleExpr(elements, op.L, op.C));
     }
     if (!nextIs(tt.rparen)) {
       return error(
@@ -6435,7 +6429,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         return result;
       }
       const expression = result.unwrap();
-      return newnode(algebraicString(expression, op.loc()));
+      const L = op.L;
+      const C = op.C;
+      return newnode(algebraicString(expression, L, C));
     } else {
       return error(`Unexpected algebraic string`, `parsing an expression`);
     }
@@ -6728,7 +6724,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         `parsing a block`,
       );
     }
-    return newnode(block(statements, c.loc()));
+    return newnode(block(statements, c.L, c.C));
   };
 
   /**
@@ -6844,7 +6840,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       if (isBlock(body)) {
         body.statements.push(exprStmt(increment));
       } else {
-        body = block([body, exprStmt(increment)], loc);
+        body = block([body, exprStmt(increment)], loc.line, loc.column);
       }
     }
     let loopCondition: Expr = bool(true);
@@ -6853,7 +6849,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     }
     body = whileStmt(loopCondition, body);
     if (init !== null) {
-      body = block([init, body], loc);
+      body = block([init, body], loc.line, loc.column);
     }
     return newnode(body);
   };
@@ -7241,8 +7237,8 @@ class AlgebraicTree implements Visitor<AlgebraicExpression> {
         if (arg===undefined) {
           return this.croak(
             `Expected at least one argument to simplify`,
-            node.loc.line,
-            node.loc.column,
+            node.L,
+            node.C,
           )
         }
         return simplify(args[0]);
@@ -7254,8 +7250,8 @@ class AlgebraicTree implements Visitor<AlgebraicExpression> {
           throw algebraError(
             `“derive” requires a symbol for its second argument`,
             `evaluating deriv`,
-            node.loc.line,
-            node.loc.column,
+            node.L,
+            node.C,
           )
         }
         return derivative(simplify(expr),x)
@@ -7263,8 +7259,8 @@ class AlgebraicTree implements Visitor<AlgebraicExpression> {
       case 'subex': {
         return this.croak(
           `subex cannot be called from the algebra API`,
-          node.loc.line,
-          node.loc.column,
+          node.L,
+          node.C,
         )
       };
       case 'avg': return fn('avg', args);
@@ -8180,8 +8176,8 @@ class Compiler implements Visitor<Primitive> {
             stringify(n)
           } is not a number.`,
           `interpreting a vector expression`,
-          node.line,
-          node.column,
+          node.L,
+          node.C,
         );
       }
       nums.push(n);
@@ -8383,16 +8379,16 @@ class Compiler implements Visitor<Primitive> {
           throw runtimeError(
             `Only algebraic expressions may be passed to “deriv”`,
             `evaluating a native call`,
-            node.loc.line,
-            node.loc.column,
+            node.L,
+            node.C,
           )
         }
         if (!isSymbol(x)) {
           throw runtimeError(
             `“deriv” requires a symbol as its second argument`,
             `evaluating a native call`,
-            node.loc.line,
-            node.loc.column,
+            node.L,
+            node.C,
           )
         }
         return derivative(arg, x)
@@ -8408,8 +8404,8 @@ class Compiler implements Visitor<Primitive> {
           throw runtimeError(
             `Only algebraic expressions may be passed to “simplify”`,
             `evaluating a native call`,
-            node.loc.line,
-            node.loc.column,
+            node.L,
+            node.C,
           )
         }
         return simplify(arg);
@@ -8419,8 +8415,8 @@ class Compiler implements Visitor<Primitive> {
           throw runtimeError(
             `subex may only be called with an algebraic expressions`,
             `evaluating a native call`,
-            node.loc.line,
-            node.loc.column,
+            node.L,
+            node.C,
           )
         }
         return subex(val[0]);
