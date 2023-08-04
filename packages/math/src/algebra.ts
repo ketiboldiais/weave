@@ -645,8 +645,6 @@ function objectString<T extends Object>(
     }
     if (root instanceof Expr || root instanceof Statement) {
       // @ts-ignore
-      root["type"] = ntype[root.type];
-      // @ts-ignore
       root["node"] = nodekind[root.kind];
     }
     if (!circ && typeof root === "object") {
@@ -660,10 +658,8 @@ function objectString<T extends Object>(
   let output = "";
   const obj = Object.assign({}, Obj);
   if (Obj instanceof Statement) {
+    // @ts-ignore
     initial = nodekind[Obj.kind];
-    // @ts-ignore
-    obj["type"] = ntype[Obj.type];
-    // @ts-ignore
   }
   grow(
     initial as keyof T,
@@ -953,14 +949,6 @@ abstract class ASTNode {
   abstract isStatement(): this is Statement;
   abstract isExpr(): this is Expr;
   abstract get kind(): nodekind;
-  type: ntype;
-  typed(type: ntype) {
-    this.type = type;
-    return this;
-  }
-  constructor(type: ntype) {
-    this.type = type;
-  }
   at(line: number, column: number) {
     this.L = line;
     this.C = column;
@@ -990,7 +978,7 @@ class ClassStmt extends Statement {
   name: Token;
   methods: FnStmt[];
   constructor(name: Token, methods: FnStmt[]) {
-    super(ntype.unknown);
+    super();
     this.name = name;
     this.methods = methods;
   }
@@ -1009,7 +997,7 @@ class BlockStmt extends Statement {
   }
   statements: Statement[];
   constructor(statements: Statement[], loc: Location) {
-    super(ntype.unknown);
+    super();
     this.statements = statements;
     this.L = loc.line;
     this.C = loc.column;
@@ -1033,7 +1021,7 @@ class ExprStmt extends Statement {
   }
   expression: Expr;
   constructor(expression: Expr) {
-    super(expression.type);
+    super();
     this.expression = expression;
   }
 }
@@ -1057,7 +1045,7 @@ class FnStmt extends Statement {
     params: Token<tt.symbol>[],
     body: Statement[],
   ) {
-    super(ntype.unknown);
+    super();
     this.name = name.lexeme;
     this.L = name.L;
     this.C = name.C;
@@ -1088,7 +1076,7 @@ class IfStmt extends Statement {
   then: Statement;
   alt: Statement;
   constructor(condition: Expr, then: Statement, alt: Statement) {
-    super(ntype.unknown);
+    super();
     this.condition = condition;
     this.then = then;
     this.alt = alt;
@@ -1110,7 +1098,7 @@ class PrintStmt extends Statement {
   }
   expression: Expr;
   constructor(expression: Expr) {
-    super(ntype.null);
+    super();
     this.expression = expression;
   }
 }
@@ -1131,7 +1119,7 @@ class ReturnStmt extends Statement {
   }
   value: Expr;
   constructor(value: Expr, loc: Location) {
-    super(value.type);
+    super();
     this.value = value;
     this.L = loc.line;
     this.C = loc.column;
@@ -1156,8 +1144,8 @@ class VariableStmt extends Statement {
   value: Expr;
   mutable: boolean;
   constructor(name: Token<tt.symbol>, value: Expr, mutable: boolean) {
-    super(value.type);
-    this.variable = variable(name).typed(value.type);
+    super();
+    this.variable = variable(name);
     this.L = name.L;
     this.C = name.C;
     this.value = value;
@@ -1184,7 +1172,7 @@ class WhileStmt extends Statement {
   condition: Expr;
   body: Statement;
   constructor(condition: Expr, body: Statement) {
-    super(ntype.null);
+    super();
     this.condition = condition;
     this.body = body;
   }
@@ -1203,10 +1191,6 @@ abstract class Expr extends ASTNode {
   isExpr(): this is Expr {
     return true;
   }
-  constructor(type: ntype) {
-    super(type);
-    this.type = type;
-  }
 }
 
 class IndexingExpr extends Expr {
@@ -1222,7 +1206,7 @@ class IndexingExpr extends Expr {
   list: Expr;
   index: Expr;
   constructor(list: Expr, index: Expr, loc: Location) {
-    super(ntype.unknown);
+    super();
     this.list = list;
     this.index = index;
     this.L = loc.line;
@@ -1247,7 +1231,7 @@ class AlgebraicString extends Expr {
   expression: Expr;
   loc: Location;
   constructor(expression: Expr, loc: Location) {
-    super(ntype.algebra);
+    super();
     this.expression = expression;
     this.loc = loc;
   }
@@ -1275,7 +1259,7 @@ class TupleExpr extends Expr {
   elements: Expr[];
   loc: Location;
   constructor(elements: Expr[], loc: Location) {
-    super(ntype.unknown);
+    super();
     this.elements = elements;
     this.loc = loc;
   }
@@ -1295,7 +1279,7 @@ class VectorExpr extends Expr {
   elements: Expr[];
   loc: Location;
   constructor(elements: Expr[], loc: Location) {
-    super(ntype.vector);
+    super();
     this.elements = elements;
     this.loc = loc;
   }
@@ -1345,7 +1329,7 @@ class MatrixExpr extends Expr {
     rows: number,
     columns: number,
   ) {
-    super(ntype.matrix);
+    super();
     this.vectors = vectors;
     this.rows = rows;
     this.cols = columns;
@@ -1375,7 +1359,7 @@ class BigNumber extends Expr {
   }
   value: bigint;
   constructor(value: bigint) {
-    super(ntype.bignum);
+    super();
     this.value = value;
   }
 }
@@ -1398,7 +1382,7 @@ class RationalExpr extends Expr {
   }
   value: BigRat;
   constructor(N: bigint, D: bigint) {
-    super(ntype.bigrat);
+    super();
     this.value = bigRat(N, D);
   }
 }
@@ -1419,8 +1403,8 @@ class AssignExpr extends Expr {
   variable: Variable;
   value: Expr;
   constructor(variable: Variable, value: Expr) {
-    super(value.type);
-    this.variable = variable.typed(value.type);
+    super();
+    this.variable = variable;
     this.value = value;
   }
   get name() {
@@ -1470,7 +1454,7 @@ class NativeCall extends Expr {
   loc: Location;
   args: Expr[];
   constructor(name: NativeFn, args: Expr[], loc: Location) {
-    super(ntype.unknown);
+    super();
     this.name = name;
     this.args = args;
     this.loc = loc;
@@ -1508,7 +1492,7 @@ class AlgebraicUnaryExpr extends Expr {
   op: AlgebraicUnaryOperator;
   arg: Expr;
   constructor(op: Token<AlgebraicUnaryOperator>, arg: Expr) {
-    super(arg.type);
+    super();
     this.op = op.type;
     this.arg = arg;
     this.L = op.L;
@@ -1537,7 +1521,7 @@ class LogicalUnaryExpr extends Expr {
   op: LogicalUnaryOperator;
   arg: Expr;
   constructor(op: Token<LogicalUnaryOperator>, arg: Expr) {
-    super(ntype.bool);
+    super();
     this.op = op.type;
     this.arg = arg;
     this.L = op.L;
@@ -1605,7 +1589,7 @@ class AlgebraicBinaryExpr extends Expr {
     }
   }
   constructor(left: Expr, op: Token<ArithmeticOperator>, right: Expr) {
-    super(ntype.number);
+    super();
     this.left = left;
     this.op = op.type;
     this.right = right;
@@ -1636,7 +1620,7 @@ class CallExpr extends Expr {
   callee: Expr;
   args: Expr[];
   constructor(callee: Expr, args: Expr[], loc: Location) {
-    super(ntype.unknown);
+    super();
     this.callee = callee;
     this.args = args;
     this.L = loc.line;
@@ -1667,7 +1651,7 @@ class GroupExpr extends Expr {
   }
   expression: Expr;
   constructor(expression: Expr) {
-    super(expression.type);
+    super();
     this.expression = expression;
   }
 }
@@ -1691,7 +1675,7 @@ class Nil extends Expr {
   }
   value: null;
   constructor() {
-    super(ntype.null);
+    super();
     this.value = null;
   }
 }
@@ -1711,7 +1695,7 @@ class FractionExpr extends Expr {
   }
   value: Fraction;
   constructor(n: number, d: number) {
-    super(ntype.fraction);
+    super();
     this.value = ratio(n, d);
   }
 }
@@ -1734,9 +1718,7 @@ class NumericConstant extends Expr {
   value: number;
   sym: CoreConstant;
   constructor(value: number, sym: CoreConstant) {
-    super(
-      sym === "NAN" ? ntype.NAN : sym === "Inf" ? ntype.Inf : ntype.float,
-    );
+    super();
     this.value = value;
     this.sym = sym;
   }
@@ -1757,7 +1739,7 @@ class Integer extends Expr {
   }
   value: number;
   constructor(value: number) {
-    super(ntype.int);
+    super();
     this.value = value;
   }
 }
@@ -1781,7 +1763,7 @@ class Float extends Expr {
   }
   value: number;
   constructor(value: number) {
-    super(ntype.float);
+    super();
     this.value = value;
   }
 }
@@ -1805,7 +1787,7 @@ class Bool extends Expr {
   }
   value: boolean;
   constructor(value: boolean) {
-    super(ntype.bool);
+    super();
     this.value = value;
   }
 }
@@ -1829,7 +1811,7 @@ class StringLiteral extends Expr {
   }
   value: string;
   constructor(value: string) {
-    super(ntype.string);
+    super();
     this.value = value;
   }
 }
@@ -1853,7 +1835,7 @@ class Variable extends Expr {
   }
   name: string;
   constructor(name: Token<tt.symbol>) {
-    super(ntype.unknown);
+    super();
     this.name = name.lexeme;
     this.L = name.L;
     this.C = name.C;
@@ -1909,7 +1891,7 @@ class LogicalBinaryExpr extends Expr {
   op: BinaryLogicalOperator;
   right: Expr;
   constructor(left: Expr, op: Token<BinaryLogicalOperator>, right: Expr) {
-    super(ntype.bool);
+    super();
     this.left = left;
     this.op = op.type;
     this.right = right;
@@ -1950,7 +1932,7 @@ class GetExpr extends Expr {
   object: Expr;
   name: string;
   constructor(object: Expr, name: string, loc: Location) {
-    super(ntype.unknown);
+    super();
     this.object = object;
     this.name = name;
     this.L = loc.line;
@@ -1978,7 +1960,7 @@ class SetExpr extends Expr {
   name: string;
   value: Expr;
   constructor(object: Expr, name: string, value: Expr, loc: Location) {
-    super(ntype.unknown);
+    super();
     this.object = object;
     this.name = name;
     this.value = value;
@@ -2004,7 +1986,7 @@ class SuperExpr extends Expr {
   method: Token;
   loc: Location;
   constructor(method: Token, loc: Location) {
-    super(ntype.unknown);
+    super();
     this.method = method;
     this.loc = loc;
   }
@@ -2025,7 +2007,7 @@ class ThisExpr extends Expr {
   }
   keyword: "this" = "this";
   constructor(keyword: Token) {
-    super(ntype.unknown);
+    super();
     this.L = keyword.L;
     this.C = keyword.C;
   }
@@ -2050,7 +2032,7 @@ class RelationalExpr extends Expr {
   op: RelationalOperator;
   right: Expr;
   constructor(left: Expr, op: Token<RelationalOperator>, right: Expr) {
-    super(ntype.bool);
+    super();
     this.left = left;
     this.op = op.type;
     this.right = right;
@@ -8625,5 +8607,5 @@ print k;
 `;
 const k = engine(src).engineSettings({
   implicitMultiplication: true,
-}).execute();
+}).statementTree();
 print(k);
