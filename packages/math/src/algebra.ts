@@ -5398,7 +5398,7 @@ function lexical(input: string): Either<Err, Token[]> {
    * Scans a single-quoted variable.
    */
   const algebraicString = () => {
-    while (!(peek() === `:` && peekNext() === `:`) && !atEnd()) {
+    while ((peek() !== `'`) && !atEnd()) {
       if (peek() === `\n`) {
         $line++;
         $column = 0;
@@ -5414,29 +5414,8 @@ function lexical(input: string): Either<Err, Token[]> {
       );
     }
     tick(); // eat the ':'
-    tick(); // eat the ':'
-    const s = slice().replaceAll(`::`, "");
+    const s = slice().replaceAll(`'`, "");
     return tkn(tt.algebra_string).lex(s);
-  };
-
-  const variableName = () => {
-    while (peek() !== `'` && !atEnd()) {
-      if (peek() === `\n`) {
-        $line++;
-        $column = 0;
-      } else {
-        $column++;
-      }
-      tick();
-    }
-    if (atEnd()) {
-      return errorTkn(
-        `Unterminated variable name`,
-        `scanning a variable name`,
-      );
-    }
-    tick();
-    return tkn(tt.symbol);
   };
 
   const stringLiteral = () => {
@@ -5609,7 +5588,7 @@ function lexical(input: string): Either<Err, Token[]> {
     }
     // deno-fmt-ignore
     switch (c) {
-      case ":": return match(':') ? algebraicString() : tkn(tt.colon);
+      case ":": return tkn(tt.colon);
       case "&": return tkn(tt.amp);
       case "~": return tkn(tt.tilde);
       case "|": return tkn(tt.vbar);
@@ -5663,7 +5642,7 @@ function lexical(input: string): Either<Err, Token[]> {
       case '<': return tkn(match('=') ? tt.leq : tt.lt);
       case '>': return tkn(match('=') ? tt.geq : tt.gt);
       case `"`: return stringLiteral();
-      case `'`: return variableName();
+      case `'`: return algebraicString();
     }
     return errorTkn(`Unknown token: “${c}”`, "scanning");
   };
@@ -8601,11 +8580,11 @@ function engine(source: string) {
 }
 
 const src = `
-let j = ::x^2 * x^3::;
-let k = deriv(j, ::x::);
+let j = 'x^2 * x^3';
+let k = deriv(j, 'x');
 print k;
 `;
 const k = engine(src).engineSettings({
   implicitMultiplication: true,
-}).statementTree();
+}).execute();
 print(k);
