@@ -10,6 +10,7 @@
 		"editor.wordWrap": "wordWrapColumn",
 		"editor.fontLigatures": true,
 		"javascript.preferences.quoteStyle": "single",
-		"typescript.preferences.quoteStyle": "single"
+		"typescript.preferences.quoteStyle": "single",
+		"deno.config": ""
 	}
 }
