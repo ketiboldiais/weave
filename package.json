@@ -4,11 +4,21 @@
 	"description": "A diagramming library",
 	"main": "index.js",
 	"scripts": {
-		"reed": "pnpm --filter @weave/reed dev",
-		"twine": "pnpm --filter @weave/twine dev",
-		"loom": "pnpm --filter @weave/loom dev",
-		"react": "pnpm --filter @weave/react dev",
-		"math": "pnpm --filter @weave/math dev"
+		"dev": "turbo run dev",
+		"build": "turbo run build"
+	},
+	"turbo": {
+		"pipeline": {
+			"dev": {
+				"cache": false
+			},
+			"build": {
+				"dependsOn": ["^build"],
+				"outputs": [
+					"dist/**"
+				]
+			}
+		}
 	},
 	"workspaces": [
 		"apps/**",
@@ -17,6 +27,7 @@
 	"author": "Ketib Oldiais",
 	"license": "ISC",
 	"devDependencies": {
-		"vitest": "^0.31.4"
+		"vitest": "^0.31.4",
+		"turbo": "^1.10.12"
 	}
 }

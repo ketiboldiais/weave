@@ -6149,7 +6149,7 @@ type EngineSettings = {
   implicitMultiplication: boolean;
 };
 
-function lexical(input: string): Either<Err, Token[]> {
+function lexical(input: string) {
   /**
    * All variables prefixed with a `$` are
    * stateful variables.
@@ -6749,7 +6749,10 @@ function lexical(input: string): Either<Err, Token[]> {
     return right(out);
   };
 
-  return stream();
+  return {
+    stream,
+    scan,
+  }
 }
 
 /**
@@ -6797,7 +6800,7 @@ function tidyAlgebraStrings(
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
     if (t.is(tt.algebra_string)) {
-      const tks = lexical(t.lexeme);
+      const tks = lexical(t.lexeme).stream();
       if (tks.isLeft()) {
         return tks;
       }
@@ -6850,19 +6853,39 @@ function imul(
 }
 
 class ParserState<NODE> {
+  /**
+   * Property bound to the current error status.
+   * If this variable is not bound to null, then
+   * an error occurred. This variable should only
+   * be modified through the panic method or
+   * through the error method.
+   */
   ERROR: null | Err = null;
-  tokens: Token[];
+  tokens: Token[] = [];
+  max: number = 0;
+  panic(error: Err) {
+    this.ERROR = error;
+    return this;
+  }
+  init(tokens: Token[]) {
+    this.tokens=tokens;
+    this.max=tokens.length;
+    this.next();
+  }
   cursor: number = -1;
-  max: number;
   peek: Token = Token.empty;
   current: Token = Token.empty;
   lastNode: NODE;
-  constructor(tokens: Token[], nil: NODE) {
-    this.tokens = tokens;
-    this.max = tokens.length;
+  constructor(nil: NODE) {
     this.lastNode = nil;
   }
-  newnode(node: NODE) {
+  implicitSemicolonOK() {
+    return (
+      this.peek.is(tt.END) ||
+      this.atEnd()
+    )
+  }
+  newnode<X extends NODE>(node: X) {
     this.lastNode = node;
     return right(node);
   }
@@ -6905,140 +6928,27 @@ class ParserState<NODE> {
   }
 }
 
-const enstate = <NODE>(tokens: Token[], nil:NODE) => (new ParserState(tokens, nil))
+const enstate = <NODE>(nil:NODE) => (new ParserState(nil))
 
 function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
-  let $error: null | Err = null;
-  let tkns: Token[] = [];
+  const state = enstate<ASTNode>(nil());
   if (lexicalAnalysisResult.isLeft()) {
-    $error = lexicalAnalysisResult.unwrap();
+    state.panic(lexicalAnalysisResult.unwrap());
   } else {
-    tkns = lexicalAnalysisResult.unwrap();
+    state.init(lexicalAnalysisResult.unwrap());
   }
-  const tokens = tkns;
-  const state = enstate<ASTNode>(tokens, nil());
-  /**
-   * Variable bound to the current error status.
-   * If this variable is not bound to null, then
-   * an error occurred. This variable should only
-   * be modified through the {@link error} function
-   * to ensure line and column numbers are properly
-   * recorded.
-   */
-
-  /** Pointer to the current token. */
-  let $cursor = -1;
-
-  /** The maximum possible cursor position. */
-  let $max = tokens.length;
-
-  /** The token immediately after the current token. */
-  let $peek = Token.empty;
-
-  /** The current token. */
-  let $current = Token.empty;
-
-  /**
-   * Returns true if there are no longer any tokens or if
-   * an {@link $error|error} occurred, false otherwise.
-   */
-  const atEnd = () => ($cursor >= $max - 1) || ($error !== null);
-
-  /**
-   * Moves the {@link $cursor|cursor} forward and returns
-   * the current {@link $peek|peek}.
-   */
-  const next = () => {
-    $cursor++;
-    $current = $peek;
-    const nextToken = tokens[$cursor] ? tokens[$cursor] : Token.END;
-    $peek = nextToken;
-    return $current;
-  };
-
-  /**
-   * If the given type matches
-   * the upcoming token (the peek),
-   * moves the state forward. Otherwise,
-   * leaves the state as is.
-   */
-  const nextIs = (type: tt) => {
-    if ($peek.is(type)) {
-      next();
-      return true;
-    }
-    return false;
-  };
-
-  /**
-   * If called, sets the state’s error
-   * status to the provided error message,
-   * and returns a {@link Left}. If
-   * the state’s error field is initialized
-   * (by default `null`), then the parser
-   * will halt immediately and return the
-   * error message.
-   */
-  const error = (message: string, phase: string) => {
-    const e = syntaxError(message, phase, $current.L, $current.C);
-    $error = e;
-    return left(e);
-  };
-
-  /**
-   * Returns true if the next token
-   * is the provided type _without_
-   * consuming the token.
-   */
-  const check = (type: tt) => {
-    if (atEnd()) {
-      return false;
-    } else {
-      return $peek.is(type);
-    }
-  };
-
-  /**
-   * If called, sets the state’s last
-   * parsed node to the provided node T,
-   * and returns `Right<T>` (See {@link Right}).
-   * All nodes should ultimately return their
-   * results through this method so
-   * as to allow other nodes to keep
-   * track of what was last parsed.
-   */
-  const newnode = <X extends ASTNode>(node: X) => {
-    return right(node);
-  };
-
-  /**
-   * Returns true if an implicit
-   * semicolon is encountered. An implicit
-   * semicolons exists if:
-   *
-   * 1. The upcoming token is the end of input (`eof` token), or
-   * 2. The token stream has reached an unexpected end of input.
-   */
-  const implicitSemicolonOK = () => {
-    return (
-      $peek.is(tt.END) ||
-      atEnd()
-    );
-  };
-
   const this_expression = (t: Token) => {
-    return newnode(thisExpr(t));
+    return state.newnode(thisExpr(t));
   };
-
   const number: Parslet = (t) => {
     if (t.isNumber()) {
       if (t.is(tt.int)) {
-        return newnode(integer(t.literal));
+        return state.newnode(integer(t.literal));
       } else {
-        return newnode(float(t.literal));
+        return state.newnode(float(t.literal));
       }
     } else {
-      return error(
+      return state.error(
         `Expected an integer, but got “${t.lexeme}”`,
         "parsing an integer",
       );
@@ -7046,7 +6956,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   };
 
   const string_literal: Parslet = (t) => {
-    return newnode(string(t.lexeme));
+    return state.newnode(string(t.lexeme));
   };
 
   const scientific_number: Parslet = (t) => {
@@ -7058,13 +6968,13 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         token(tt.caret, "^", t.L, t.C),
         integer(b),
       );
-      return newnode(binex(
+      return state.newnode(binex(
         lhs,
         token(tt.star, "*", t.L, t.C),
         rhs,
       ));
     } else {
-      return error(
+      return state.error(
         `Unexpected scientific number`,
         "parsing a scientific number",
       );
@@ -7077,7 +6987,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const compare = (op: Token, lhs: Expr): Either<Err, RelationalExpr> => {
     const p = precof(op.type);
     return expr(p).chain((rhs) => {
-      return newnode(relation(lhs, op as Token<RelationalOperator>, rhs));
+      return state.newnode(relation(lhs, op as Token<RelationalOperator>, rhs));
     });
   };
 
@@ -7089,7 +6999,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const p = precof(op.type);
     return expr(p).chain((rhs) => {
       const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-      return newnode(out);
+      return state.newnode(out);
     });
   };
 
@@ -7100,7 +7010,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     op: Token,
     lhs: Expr,
   ): Either<Err, AlgebraicBinaryExpr | AssignExpr> => {
-    if (nextIs(tt.eq)) {
+    if (state.nextIs(tt.eq)) {
       if (isVariable(lhs)) {
         const name = lhs;
         const r = expr();
@@ -7109,9 +7019,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         }
         const rhs = r.unwrap();
         const value = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-        return newnode(assign(name, value));
+        return state.newnode(assign(name, value));
       } else {
-        return error(
+        return state.error(
           `Invalid lefthand side of assignment. Expected a variable to the left of “${op.lexeme}=”, but got “${lhs.toString()}".`,
           `parsing the complex assignment “${op.lexeme}=”`,
         );
@@ -7125,7 +7035,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const rhs = RHS.unwrap();
 
     const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-    return newnode(out);
+    return state.newnode(out);
   };
 
   /**
@@ -7134,9 +7044,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const fraction = (op: Token): Either<Err, FractionExpr> => {
     if (op.isFraction()) {
       const [N, D] = op.literal;
-      return newnode(rational(floor(N), floor(abs(D))));
+      return state.newnode(rational(floor(N), floor(abs(D))));
     } else {
-      return error(`Unexpected rational number`, "parsing a rational number");
+      return state.error(`Unexpected rational number`, "parsing a rational number");
     }
   };
 
@@ -7149,7 +7059,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   ): Either<Err, LogicalBinaryExpr> => {
     const p = precof(op.type);
     return expr(p).chain((rhs) => {
-      return newnode(
+      return state.newnode(
         logicalBinex(lhs, op as Token<BinaryLogicalOperator>, rhs),
       );
     });
@@ -7160,9 +7070,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    */
   const big_number = (op: Token): Either<Err, BigNumber> => {
     if (op.isBigNumber()) {
-      return newnode(bigNumber(op.literal));
+      return state.newnode(bigNumber(op.literal));
     } else {
-      return error(`Unexpected big number literal`, `parsing an expression`);
+      return state.error(`Unexpected big number literal`, `parsing an expression`);
     }
   };
 
@@ -7172,9 +7082,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const big_rational = (op: Token): Either<Err, RationalExpr> => {
     if (op.isBigFraction()) {
       const [a, b] = op.literal;
-      return newnode(bigRational(a, b));
+      return state.newnode(bigRational(a, b));
     } else {
-      return error(
+      return state.error(
         `Unexpected big rational literal`,
         `parsing an expression`,
       );
@@ -7186,9 +7096,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    */
   const boolean_literal = (op: Token): Either<Err, Bool> => {
     if (op.isBoolean()) {
-      return newnode(bool(op.literal));
+      return state.newnode(bool(op.literal));
     } else {
-      return error(`Unexpected boolean literal`, `parsing an expression`);
+      return state.error(`Unexpected boolean literal`, `parsing an expression`);
     }
   };
 
@@ -7201,17 +7111,17 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const src = `parsing an expression`;
     // deno-fmt-ignore
     switch (type) {
-      case tt.nan: return newnode(numericConstant(NaN, 'NAN'));
-      case tt.inf: return newnode(numericConstant(Infinity, 'Inf'));
-      case tt.nil: return newnode(nil());
+      case tt.nan: return state.newnode(numericConstant(NaN, 'NAN'));
+      case tt.inf: return state.newnode(numericConstant(Infinity, 'Inf'));
+      case tt.nil: return state.newnode(nil());
       case tt.numeric_constant: {
         switch (op.lexeme) {
-          case "pi": return newnode(numericConstant(PI, "pi"));
-          case 'e': return newnode(numericConstant(E, 'e'))
-          default: return error(erm, src);
+          case "pi": return state.newnode(numericConstant(PI, "pi"));
+          case 'e': return state.newnode(numericConstant(E, 'e'))
+          default: return state.error(erm, src);
         }
       }
-      default: return error(erm, src);
+      default: return state.error(erm, src);
     }
   };
 
@@ -7223,7 +7133,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     if (innerExpression.isLeft()) {
       return innerExpression;
     }
-    if (nextIs(tt.comma)) {
+    if (state.nextIs(tt.comma)) {
       const elements: Expr[] = [innerExpression.unwrap()];
       do {
         const e = expr();
@@ -7231,14 +7141,14 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
           return e;
         }
         elements.push(e.unwrap());
-      } while (nextIs(tt.comma));
-      if (!nextIs(tt.rparen)) {
-        return error(`Expected “)” to close the tuple`, `parsing a tuple`);
+      } while (state.nextIs(tt.comma));
+      if (!state.nextIs(tt.rparen)) {
+        return state.error(`Expected “)” to close the tuple`, `parsing a tuple`);
       }
-      return newnode(tupleExpr(elements));
+      return state.newnode(tupleExpr(elements));
     }
-    if (!nextIs(tt.rparen)) {
-      return error(
+    if (!state.nextIs(tt.rparen)) {
+      return state.error(
         `Expected closing “)”`,
         "parsing a parenthesized expression",
       );
@@ -7252,11 +7162,11 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const native_call: Parslet = (op): Either<Err, NativeCall> => {
     const lex = op.lexeme;
     const src = `parsing a native call “${lex}”`;
-    if (!nextIs(tt.lparen)) {
-      return error(`Expected “(” to open the argument list`, src);
+    if (!state.nextIs(tt.lparen)) {
+      return state.error(`Expected “(” to open the argument list`, src);
     }
     let args: Expr[] = [];
-    if (!check(tt.rparen)) {
+    if (!state.check(tt.rparen)) {
       const arglist = comma_separated_list(
         isExpr,
         `Expected expression`,
@@ -7267,10 +7177,10 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       }
       args = arglist.unwrap();
     }
-    if (!nextIs(tt.rparen)) {
-      return error(`Expected “)” to close the argument list`, src);
+    if (!state.nextIs(tt.rparen)) {
+      return state.error(`Expected “)” to close the argument list`, src);
     }
-    return newnode(nativeCall(op as Token<tt.native, string, NativeFn>, args));
+    return state.newnode(nativeCall(op as Token<tt.native, string, NativeFn>, args));
   };
 
   /**
@@ -7279,9 +7189,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const variable_name: Parslet = (op) => {
     if (op.isVariable()) {
       const out = variable(op);
-      return newnode(out);
+      return state.newnode(out);
     } else {
-      return error(`Unexpected variable “${op.lex}”`, "parsing expression");
+      return state.error(`Unexpected variable “${op.lex}”`, "parsing expression");
     }
   };
 
@@ -7291,7 +7201,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const logical_not: Parslet = (op) => {
     const p = precof(op.type);
     return expr(p).chain((arg) =>
-      newnode(logicalUnary(op as Token<tt.not>, arg))
+      state.newnode(logicalUnary(op as Token<tt.not>, arg))
     );
   };
 
@@ -7305,16 +7215,16 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const src = `parsing an assignment`;
     if (isVariable(node)) {
       return expr().chain((n) => {
-        return newnode(assign(node, n));
+        return state.newnode(assign(node, n));
       });
     } else if (isGetExpr(node)) {
       const rhs = expr();
       if (rhs.isLeft()) {
         return rhs;
       }
-      return newnode(setExpr(node.object, node.name, rhs.unwrap(), op.loc()));
+      return state.newnode(setExpr(node.object, node.name, rhs.unwrap(), op.loc()));
     } else {
-      return error(
+      return state.error(
         `Expected a valid assignment target, but got “${node.toString()}”`,
         src,
       );
@@ -7332,10 +7242,10 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       if (e.isLeft()) return e;
       const element = e.unwrap();
       if (!filter(element)) {
-        return error(errorMessage, src);
+        return state.error(errorMessage, src);
       }
       elements.push(element);
-    } while (nextIs(tt.comma));
+    } while (state.nextIs(tt.comma));
     return right(elements);
   };
 
@@ -7345,7 +7255,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const src = `parsing a vector expression`;
     let rows = 0;
     let columns = 0;
-    if (!check(tt.rbracket)) {
+    if (!state.check(tt.rbracket)) {
       do {
         const elem = expr();
         if (elem.isLeft()) {
@@ -7359,33 +7269,33 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         } else {
           elements.push(element);
         }
-      } while (nextIs(tt.comma) && !atEnd());
+      } while (state.nextIs(tt.comma) && !state.atEnd());
     }
-    if (!nextIs(tt.rbracket)) {
-      return error(`Expected a right bracket “]” to close the vector`, src);
+    if (!state.nextIs(tt.rbracket)) {
+      return state.error(`Expected a right bracket “]” to close the vector`, src);
     }
     if (vectors.length !== 0) {
       if (vectors.length !== columns) {
-        return error(
+        return state.error(
           `Encountered a jagged matrix. Jagged matrices are not permitted. For jagged lists, consider using nested tuples.`,
           src,
         );
       }
-      return newnode(matrixExpr(vectors, rows, columns));
+      return state.newnode(matrixExpr(vectors, rows, columns));
     }
-    return newnode(vectorExpr(elements));
+    return state.newnode(vectorExpr(elements));
   };
 
   const get_expression = (op: Token, lhs: Expr) => {
     const src = `parsing a get expression`;
-    const nxt = next();
+    const nxt = state.next();
     if (!nxt.isVariable()) {
-      return error(`Expected property name`, src);
+      return state.error(`Expected property name`, src);
     }
     let exp = getExpr(lhs, nxt, op.loc());
-    if (nextIs(tt.lparen)) {
+    if (state.nextIs(tt.lparen)) {
       const args: Expr[] = [];
-      if (!check(tt.rparen)) {
+      if (!state.check(tt.rparen)) {
         do {
           const x = expr();
           if (x.isLeft()) {
@@ -7393,16 +7303,16 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
           }
           const arg = x.unwrap();
           args.push(arg);
-        } while (nextIs(tt.comma));
+        } while (state.nextIs(tt.comma));
       }
-      const rparen = next();
+      const rparen = state.next();
       if (!rparen.is(tt.rparen)) {
-        return error(`Expected “)” to after method arguments`, src);
+        return state.error(`Expected “)” to after method arguments`, src);
       }
       const loc = rparen.loc();
-      return newnode(call(exp, args));
+      return state.newnode(call(exp, args));
     }
-    return newnode(exp);
+    return state.newnode(exp);
   };
 
   const indexing_expression: Parslet = (op, lhs) => {
@@ -7410,14 +7320,14 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     if (index.isLeft()) {
       return index;
     }
-    const rbracket = next();
+    const rbracket = state.next();
     if (!rbracket.is(tt.rbracket)) {
-      return error(
+      return state.error(
         `Expected a right bracket “]” to close the accessor`,
         `parsing an index accessor`,
       );
     }
-    return newnode(indexingExpr(lhs, index.unwrap(), op));
+    return state.newnode(indexingExpr(lhs, index.unwrap(), op));
   };
 
   const function_call = (
@@ -7426,7 +7336,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   ): Either<Err, CallExpr> => {
     const callee = node;
     let args: Expr[] = [];
-    if (!check(tt.rparen)) {
+    if (!state.check(tt.rparen)) {
       const arglist = comma_separated_list(
         isExpr,
         `Expected expression`,
@@ -7435,16 +7345,16 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       if (arglist.isLeft()) return arglist;
       args = arglist.unwrap();
     }
-    const paren = next();
+    const paren = state.next();
     if (!paren.is(tt.rparen)) {
-      return error(`Expected “)” to close args`, "call");
+      return state.error(`Expected “)” to close args`, "call");
     }
     const out = call(callee, args);
-    return newnode(out);
+    return state.newnode(out);
   };
 
   const factorial_expression = (op: Token, node: Expr) => {
-    return newnode(algebraicUnary(op as Token<AlgebraicUnaryOperator>, node));
+    return state.newnode(algebraicUnary(op as Token<AlgebraicUnaryOperator>, node));
   };
 
   const decrement = (op: Token, node: Expr) => {
@@ -7454,9 +7364,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         op.entype(tt.minus).lex("-"),
         integer(1),
       );
-      return newnode(assign(node, right));
+      return state.newnode(assign(node, right));
     } else {
-      return error(
+      return state.error(
         `Expected the lefthand side of “--” to be either a variable or a property accessor, but got “${node.toString()}”`,
         `parsing a decrement “--”`,
       );
@@ -7470,9 +7380,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         op.entype(tt.plus).lex("+"),
         integer(1),
       );
-      return newnode(assign(node, right));
+      return state.newnode(assign(node, right));
     } else {
-      return error(
+      return state.error(
         `Expected the lefthand side of “++” to be either a variable or a property accessor, but got “${node.toString()}”`,
         `parsing an increment “++”`,
       );
@@ -7485,10 +7395,10 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    * then the {@link error} variable is set and parsing shall cease.
    */
   const ___: Parslet = (t) => {
-    if ($error !== null) {
-      return left($error);
+    if (state.ERROR !== null) {
+      return left(state.ERROR);
     } else {
-      return error(`Unexpected lexeme: ${t.lexeme}`, `expression`);
+      return state.error(`Unexpected lexeme: ${t.lexeme}`, `expression`);
     }
   };
 
@@ -7500,9 +7410,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         return result;
       }
       const expression = result.unwrap();
-      return newnode(algebraicString(expression));
+      return state.newnode(algebraicString(expression));
     } else {
-      return error(`Unexpected algebraic string`, `parsing an expression`);
+      return state.error(`Unexpected algebraic string`, `parsing an expression`);
     }
   };
 
@@ -7510,11 +7420,11 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const p = precof(op.type);
     return expr(p).chain((arg) => {
       if (op.is(tt.minus)) {
-        return newnode(algebraicUnary(op, arg));
+        return state.newnode(algebraicUnary(op, arg));
       } else if (op.is(tt.plus)) {
-        return newnode(algebraicUnary(op, arg));
+        return state.newnode(algebraicUnary(op, arg));
       } else {
-        return error(
+        return state.error(
           `Unknown prefix operator “${op.lexeme}”`,
           `parsing a prefix operation`,
         );
@@ -7641,17 +7551,17 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    * Pratt parsing.
    */
   const expr = (minbp: number = bp.lowest): Either<Err, Expr> => {
-    let token = next();
+    let token = state.next();
     const pre = prefixRule(token.type);
     let lhs = pre(token, nil());
     if (lhs.isLeft()) {
       return lhs;
     }
-    while (minbp < precof($peek.type)) {
-      if (atEnd()) {
+    while (minbp < precof(state.peek.type)) {
+      if (state.atEnd()) {
         break;
       }
-      token = next();
+      token = state.next();
       const r = infixRule(token.type);
       const rhs = r(token, lhs.unwrap());
       if (rhs.isLeft()) {
@@ -7663,7 +7573,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   };
 
   const PRINT = () => {
-    const current = $current;
+    const current = state.current;
     // print eaten in STMT
     const arg = EXPRESSION();
     return arg.map((x) => printStmt(current, x.expression));
@@ -7673,15 +7583,15 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    * Parses an {@link IfStmt|if-statement}.
    */
   const IF = (): Either<Err, IfStmt> => {
-    const keyword = $current;
+    const keyword = state.current;
     const c = expr();
     const src = `parsing an if-statement`;
     if (c.isLeft()) {
       return c;
     }
     const condition = c.unwrap();
-    if (!nextIs(tt.lbrace)) {
-      return error(
+    if (!state.nextIs(tt.lbrace)) {
+      return state.error(
         `Expected a left brace “{” to begin the consequent block.`,
         src,
       );
@@ -7693,16 +7603,16 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const thenBranch = consequent.unwrap();
     let elseBranch: Statement = returnStmt(
       nil(),
-      $current,
+      state.current,
     );
-    if (nextIs(tt.else)) {
+    if (state.nextIs(tt.else)) {
       const _else = STMT();
       if (_else.isLeft()) {
         return _else;
       }
       elseBranch = _else.unwrap();
     }
-    return newnode(ifStmt(keyword, condition, thenBranch, elseBranch));
+    return state.newnode(ifStmt(keyword, condition, thenBranch, elseBranch));
   };
 
   /**
@@ -7710,69 +7620,69 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    */
   const FN = (): Either<Err, FnStmt> => {
     // fn eaten in STMT
-    const name = next();
+    const name = state.next();
     const src = `parsing a function a declaration`;
     if (!name.isVariable()) {
-      return error(
+      return state.error(
         `Expected a valid identifier for the function’s name, but got “${name.lexeme}”.`,
         src,
       );
     }
-    if (!nextIs(tt.lparen)) {
-      return error(
+    if (!state.nextIs(tt.lparen)) {
+      return state.error(
         `Expected a left parenthesis “(” to begin the parameter list`,
         src,
       );
     }
     const params: Token<tt.symbol>[] = [];
-    if (!$peek.is(tt.rparen)) {
+    if (!state.peek.is(tt.rparen)) {
       do {
-        const expression = next();
+        const expression = state.next();
         if (!expression.isVariable()) {
-          return error(
+          return state.error(
             `Expected a valid identifier as a parameter, but got “${expression.lexeme}”`,
             src,
           );
         }
         params.push(expression);
-      } while (nextIs(tt.comma));
+      } while (state.nextIs(tt.comma));
     }
-    if (!nextIs(tt.rparen)) {
-      return error(
+    if (!state.nextIs(tt.rparen)) {
+      return state.error(
         `Expected a right parenthesis “)” to close the parameter list`,
         src,
       );
     }
-    if (nextIs(tt.eq)) {
+    if (state.nextIs(tt.eq)) {
       const body = EXPRESSION();
-      return body.chain((b) => newnode(functionStmt(name, params, [b])));
+      return body.chain((b) => state.newnode(functionStmt(name, params, [b])));
     }
-    if (!nextIs(tt.lbrace)) {
-      return error(
+    if (!state.nextIs(tt.lbrace)) {
+      return state.error(
         `Expected a left-brace “{” to open the function’s body. If this function’s body is composed of a single statement, consider using the assignment operator “=”`,
         src,
       );
     }
     const body = BLOCK();
-    return body.chain((b) => newnode(functionStmt(name, params, b.statements)));
+    return body.chain((b) => state.newnode(functionStmt(name, params, b.statements)));
   };
 
   const WHILE = () => {
-    const current = $current;
+    const current = state.current;
     const src = `parsing a while loop`;
     const loopCondition = expr();
     if (loopCondition.isLeft()) {
       return loopCondition;
     }
-    if (!nextIs(tt.lbrace)) {
-      return error(`Expected a block after the condition`, src);
+    if (!state.nextIs(tt.lbrace)) {
+      return state.error(`Expected a block after the condition`, src);
     }
     const body = BLOCK();
     if (body.isLeft()) {
       return body;
     }
     return body.chain((loopBody) =>
-      newnode(whileStmt(current, loopCondition.unwrap(), loopBody))
+      state.newnode(whileStmt(current, loopCondition.unwrap(), loopBody))
     );
   };
 
@@ -7781,41 +7691,41 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    */
   const BLOCK = (): Either<Err, BlockStmt> => {
     const statements: Statement[] = [];
-    while (!atEnd() && !check(tt.rbrace)) {
+    while (!state.atEnd() && !state.check(tt.rbrace)) {
       const stmt = STMT();
       if (stmt.isLeft()) {
         return stmt;
       }
       statements.push(stmt.unwrap());
     }
-    if (!nextIs(tt.rbrace)) {
-      return error(
+    if (!state.nextIs(tt.rbrace)) {
+      return state.error(
         `Expected a right brace “}” to close the block`,
         `parsing a block`,
       );
     }
-    return newnode(block(statements));
+    return state.newnode(block(statements));
   };
 
   /**
    * Parses a {@link VariableStmt|let statement}.
    */
   const VAR = (prev: tt.let | tt.var): Either<Err, VariableStmt> => {
-    const current = $current;
+    const current = state.current;
     const src = `parsing a variable declaration`;
-    const name = next();
+    const name = state.next();
     if (!name.isVariable()) {
-      return error(`Expected a valid identifier`, src);
+      return state.error(`Expected a valid identifier`, src);
     }
-    if (!nextIs(tt.eq)) {
-      return error(`Expected an assignment operator “=”`, src);
+    if (!state.nextIs(tt.eq)) {
+      return state.error(`Expected an assignment operator “=”`, src);
     }
     const init = EXPRESSION();
     if (init.isLeft()) {
       return init;
     }
     const value = init.unwrap();
-    return newnode(
+    return state.newnode(
       (prev === tt.let ? letStmt : varStmt)(name, value.expression),
     );
   };
@@ -7829,34 +7739,34 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       return out;
     }
     const expression = out.unwrap();
-    const line = $peek.L;
-    if (nextIs(tt.semicolon) || implicitSemicolonOK()) {
-      return newnode(exprStmt(expression, line));
+    const line = state.peek.L;
+    if (state.nextIs(tt.semicolon) || state.implicitSemicolonOK()) {
+      return state.newnode(exprStmt(expression, line));
     }
-    return error(`Expected “;” to end the statement`, "expression-statement");
+    return state.error(`Expected “;” to end the statement`, "expression-statement");
   };
 
   const RETURN = (): Either<Err, ReturnStmt> => {
-    const c = $current;
+    const c = state.current;
     const out = EXPRESSION();
-    return out.chain((e) => newnode(returnStmt(e.expression, c)));
+    return out.chain((e) => state.newnode(returnStmt(e.expression, c)));
   };
 
   const FOR = (): Either<Err, Statement> => {
     // keyword 'for' eaten by STMT
-    const current = $current;
+    const current = state.current;
     const src = `parsing a for-loop`;
-    const preclauseToken = next();
+    const preclauseToken = state.next();
     if (!preclauseToken.is(tt.lparen)) {
-      return error(
+      return state.error(
         `Expected a left parentheses “(” after the keyword “for” to begin the loop’s clauses, but got “${preclauseToken.lexeme}”.`,
         src,
       );
     }
     let init: Statement | null = null;
-    if (nextIs(tt.semicolon)) {
+    if (state.nextIs(tt.semicolon)) {
       init = init;
-    } else if (nextIs(tt.var)) {
+    } else if (state.nextIs(tt.var)) {
       const initializer = VAR(tt.var);
       if (initializer.isLeft()) {
         return initializer;
@@ -7870,31 +7780,31 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       init = exp.unwrap();
     }
     let condition: Expr | null = null;
-    if (!check(tt.semicolon)) {
+    if (!state.check(tt.semicolon)) {
       const c = expr();
       if (c.isLeft()) {
         return c;
       }
       condition = c.unwrap();
     }
-    const postConditionToken = next();
+    const postConditionToken = state.next();
     if (!postConditionToken.is(tt.semicolon)) {
-      return error(
+      return state.error(
         `Expected a semicolon “;” after the for-loop condition, but got “${postConditionToken.lexeme}”.`,
         src,
       );
     }
     let increment: Expr | null = null;
-    if (!check(tt.rparen)) {
+    if (!state.check(tt.rparen)) {
       const inc = expr();
       if (inc.isLeft()) {
         return inc;
       }
       increment = inc.unwrap();
     }
-    const postIncrementToken = next();
+    const postIncrementToken = state.next();
     if (!postIncrementToken.is(tt.rparen)) {
-      return error(
+      return state.error(
         `Expected a right “)” to close the for-loop’s clauses, but got “${postIncrementToken.lexeme}”`,
         src,
       );
@@ -7903,7 +7813,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     if (b.isLeft()) {
       return b;
     }
-    const bodyLine = $current.L;
+    const bodyLine = state.current.L;
     let body: Statement = b.unwrap();
     if (increment !== null) {
       if (isBlock(body)) {
@@ -7920,67 +7830,67 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     if (init !== null) {
       body = block([init, body]);
     }
-    return newnode(body);
+    return state.newnode(body);
   };
 
   const CLASS = () => {
     // class keyword eaten in Stmt
     const src = `parsing a class declaration`;
-    const name = next();
+    const name = state.next();
     if (!name.isVariable()) {
-      return error(
+      return state.error(
         `Expected a class name after “class”, but got “${name.lexeme}”`,
         src,
       );
     }
-    const lbrace = next();
+    const lbrace = state.next();
     if (!lbrace.is(tt.lbrace)) {
-      return error(
+      return state.error(
         `Expected a left-brace “{” to begin the body of class “${name.lexeme}”, but got “${lbrace.lexeme}”`,
         src,
       );
     }
     const methods = [];
-    while (!check(tt.rbrace) && !atEnd()) {
+    while (!state.check(tt.rbrace) && !state.atEnd()) {
       const f = FN();
       if (f.isLeft()) {
         return f;
       }
       methods.push(f.unwrap());
     }
-    const postMethodsToken = next();
+    const postMethodsToken = state.next();
     if (!postMethodsToken.is(tt.rbrace)) {
-      return error(
+      return state.error(
         `Expected a right brace “}” after the body of class “${name.lexeme}”, but got “${postMethodsToken.lexeme}”.`,
         src,
       );
     }
-    return newnode(classStmt(name, methods));
+    return state.newnode(classStmt(name, methods));
   };
 
   /**
    * Parses a statement.
    */
   const STMT = (): Either<Err, Statement> => {
-    if (nextIs(tt.var)) {
+    if (state.nextIs(tt.var)) {
       return VAR(tt.var);
-    } else if (nextIs(tt.let)) {
+    } else if (state.nextIs(tt.let)) {
       return VAR(tt.let);
-    } else if (nextIs(tt.fn)) {
+    } else if (state.nextIs(tt.fn)) {
       return FN();
-    } else if (nextIs(tt.lbrace)) {
+    } else if (state.nextIs(tt.lbrace)) {
       return BLOCK();
-    } else if (nextIs(tt.if)) {
+    } else if (state.nextIs(tt.if)) {
       return IF();
-    } else if (nextIs(tt.return)) {
+    } else if (state.nextIs(tt.return)) {
       return RETURN();
-    } else if (nextIs(tt.while)) {
+    } else if (state.nextIs(tt.while)) {
       return WHILE();
-    } else if (nextIs(tt.for)) {
+    } else if (state.nextIs(tt.for)) {
       return FOR();
-    } else if (nextIs(tt.print)) {
+    } else if (state.nextIs(tt.print)) {
       return PRINT();
-    } else if (nextIs(tt.class)) {
+    } else if (state.nextIs(tt.class)) {
       return CLASS();
     } else {
       return EXPRESSION();
@@ -7998,10 +7908,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       // scanning. In that case we
       // immediately return the scanner’s
       // reported error.
-      if ($error !== null) {
-        return left($error);
+      if (state.ERROR !== null) {
+        return left(state.ERROR);
       }
-      next();
       return expr();
     },
     /**
@@ -8012,12 +7921,11 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       // Similar to analyzeExpression, we
       // immediately return the scanner’s
       // reported error.
-      if ($error !== null) {
-        return left($error);
+      if (state.ERROR !== null) {
+        return left(state.ERROR);
       }
-      next(); // prime the parser
       const stmts: Statement[] = [];
-      while (!atEnd()) {
+      while (!state.atEnd()) {
         const stmt = STMT();
         if (stmt.isLeft()) {
           return stmt;
@@ -8036,7 +7944,7 @@ function engine(source: string) {
 
   /** Scans the source code. */
   const scan = () => {
-    let lexemes = tidyAlgebraStrings(lexical(source));
+    let lexemes = tidyAlgebraStrings(lexical(source).stream());
     if (lexemes.isLeft()) return lexemes;
     if (settings.implicitMultiplication) lexemes = imul(lexemes);
     return lexemes;
@@ -8094,3 +8002,9 @@ function engine(source: string) {
     },
   };
 }
+
+const k = engine(`
+fn f(x) = x^2;
+print f(5);
+`).execute();
+print(k);
