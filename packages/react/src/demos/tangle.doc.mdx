@@ -47,33 +47,29 @@ y = 5;
 Following the C tradition, statements are delimited by semicolons.
 
 <Terminal source={`var y = 8;
-y = 10;`}/>
-
+y = 10;
+print y;`}/>
 
 ### Valid Identifiers
 A lexeme will be interpreted as a variable name only if all of the following conditions are satisfied:
 
-1. The lexeme starts with an ASCII Latin character (lower- or upper-case), the underscore character (`“_”`), a dollar sign (`“$”`), or a single-quote (`“'”`).
-2. The lexeme ends with an ASCII Latin character (lower- or upper-case), an ASCII digit (the Hindu-Arabic numerals `“0”` through `“9”`), an underscore character (`“_”`), a dollar sign (`“$”`), or a single-quote (`“'”`).
-3. If the lexeme starts with a single-quote (`“'”`), the name must end with a single-quote (`“'”`).
-4. Unless condition (3) is true, the name must not contain whitespace, operators, keywords, or control characters.
-5. Unless condition (3) is true, the name must not be a reserved word.
-
-Per condition (3), Twine permits variable names with whitespaces:
-
-~~~
-let x = 12 --- standard name
-let 'New York City Pop.' = 8_468_000; --- name with whitespace
-let '+' = 5; --- valid, but not a good idea
-~~~
-
-The single-quote in quoted identifiers are _part of the identifier_. Thus, the following code will err:
+1. The lexeme starts with an ASCII Latin character (lower- or upper-case), the underscore character (`“_”`) or a dollar sign (`“$”`).
+2. The lexeme ends with an ASCII Latin character (lower- or upper-case), an ASCII digit (the Hindu-Arabic numerals `“0”` through `“9”`), an underscore character (`“_”`), or a dollar sign (`“$”`).
+3. The lexeme is not a reserved word.
 
 
-~~~
-let 'cake and pie' = 15;
-cake and pie = 15; --- syntax-error: invalid assignment target
-~~~
+### Functions
+Functions are declared with the `fn` keyword, followed by an identifier, and a parenthesized argument list. If the function’s body comprises a single statement, then the assignment operator (`=`) may follow the list: Otherwise, braces are required to indicate a block of statements:
+
+<Terminal source={`fn f(x) = x^2;
+print f(5);
+fn g(x) {
+  let k = 1/2;
+  return x * k;
+}
+print g(6);`} height={"210px"}/>
+
+
 
 ## Types
 Twine recognizes the following core types by default. These types are outlined below, with their documentation symbols parenthesized:
@@ -166,6 +162,12 @@ let element = x[1];
 print element;`}/>
 
 Following mathematical convention, Twine uses 1-based indexing. That is, the first element of a sequential has an index of 1, the second element 2, the third 3, ${\ldots,}$ the ${n^{\text{th}}}$ element ${n.}$
+
+In contrast to JavaScript, Twine does not allow indices exceeding the length of a given sequential. Thus, indexing into an array with a value beyond that of the array’s length will return an error:
+
+<Terminal source={`let x = [8,9,1,2];
+let element = x[5];
+print element;`}/>
 
 ### Vectors
 Vectors in Twine are sequences of strictly _ints_ or _floats_. Inserting or initializing any other type into a vector will return a type error. For fixed-length, homogenous sequences of other data types, we use _tuples_. For mixed sequences of arbitrary length, we use _lists_. 

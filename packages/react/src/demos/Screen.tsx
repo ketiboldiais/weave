@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { engine } from "./io.js";
 
-export const Terminal = ({ source }: { source: string }) => {
+export const Terminal = (
+  { source, height='max-content' }: { source: string; height: string | number },
+) => {
   const [result, setResult] = useState("");
   const [code, setCode] = useState(source);
   const click = () => {
@@ -12,7 +14,11 @@ export const Terminal = ({ source }: { source: string }) => {
   return (
     <div>
       <div>
-        <textarea value={code} onChange={(e) => setCode(e.target.value)} />
+        <textarea
+          style={{ height }}
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+        />
       </div>
       {result && <pre className={"terminal"}>{result}</pre>}
       <div>

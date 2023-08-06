@@ -819,8 +819,9 @@ function runtimeError(
   message: string,
   phase: string,
   token: Token,
+  rec: string = "none",
 ) {
-  return new Err(message, "runtime-error", phase, token.L, token.C);
+  return new Err(message, "runtime-error", phase, token.L, token.C, rec);
 }
 
 /** Returns a new type error. A type error is raised if an error occurred during type-checking. */
@@ -861,36 +862,9 @@ function algebraError(
 }
 
 enum nodekind {
-  // numeric,
-  literal,
-  // rational,
-  // nil,
-  // big_number,
-  // big_rational,
-  // numeric_constant,
-  tuple_expression,
-  indexing_expression,
-  vector_expression,
-  matrix_expression,
-  algebra_string,
-  get_expression,
-  set_expression,
-  super_expression,
-  this_expression,
-  // bool,
-  // string,
-  assignment_expression,
-  algebraic_infix,
-  // variable,
-  symbol,
-  logical_infix,
-  relation,
-  call,
-  native_call,
-  algebraic_unary,
-  logical_unary,
   class_statement,
   block_statement,
+  grouped_expression,
   expression_statement,
   function_declaration,
   branching_statement,
@@ -898,6 +872,34 @@ enum nodekind {
   return_statement,
   variable_declaration,
   loop_statement,
+  algebra_string,
+  tuple_expression,
+  vector_expression,
+  matrix_expression,
+  assignment_expression,
+  native_call,
+  algebraic_unary,
+  algebraic_infix,
+  logical_unary,
+  call,
+  nil,
+  fraction_expression,
+  numeric_constant,
+  integer,
+  float,
+  bool,
+  string,
+  symbol,
+  logical_infix,
+  let_expression,
+  get_expression,
+  set_expression,
+  super_expression,
+  this_expression,
+  relation,
+  indexing_expression,
+  big_number,
+  big_rational,
 }
 
 interface Visitor<T> {
@@ -940,12 +942,15 @@ interface Visitor<T> {
   whileStmt(node: WhileStmt): T;
 }
 
-abstract class ASTNode {
+abstract class TREENODE {
+  abstract get kind(): nodekind;
+}
+
+abstract class ASTNode extends TREENODE {
   abstract accept<T>(visitor: Visitor<T>): T;
   abstract toString(): string;
   abstract isStatement(): this is Statement;
   abstract isExpr(): this is Expr;
-  abstract get kind(): nodekind;
 }
 
 abstract class Statement extends ASTNode {
@@ -1367,7 +1372,7 @@ class BigNumber extends Expr {
     return `#${this.value}`;
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.big_number;
   }
   value: bigint;
   constructor(value: bigint) {
@@ -1392,7 +1397,7 @@ class RationalExpr extends Expr {
     return this.value.toString();
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.big_rational;
   }
   value: BigRat;
   constructor(N: bigint, D: bigint) {
@@ -1483,6 +1488,9 @@ class NativeCall extends Expr {
     this.args = args;
   }
 }
+const isNativeCall = (node: ASTNode): node is NativeCall => (
+  node.kind === nodekind.native_call
+);
 
 /**
  * Returns a new {@link NativeCall|native call function}.
@@ -1622,6 +1630,9 @@ class AlgebraicBinaryExpr extends Expr {
     this.right = right;
   }
 }
+const isBinex = (node: ASTNode): node is AlgebraicBinaryExpr => (
+  node.kind === nodekind.algebraic_infix
+);
 
 /**
  * Returns a new {@link AlgebraicBinaryExpr|binary expression}.
@@ -1674,7 +1685,7 @@ class GroupExpr extends Expr {
     return `(${this.expression.toString()})`;
   }
   get kind(): nodekind {
-    return this.expression.kind;
+    return nodekind.grouped_expression;
   }
   expression: Expr;
   constructor(expression: Expr) {
@@ -1682,6 +1693,9 @@ class GroupExpr extends Expr {
     this.expression = expression;
   }
 }
+const isGroupExpr = (node: ASTNode): node is GroupExpr => (
+  node.kind === nodekind.grouped_expression
+);
 
 /**
  * Returns a new {@link GroupExpr|group expression}.
@@ -1699,7 +1713,7 @@ class Nil extends Expr {
     return `nil`;
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.nil;
   }
   value: null;
   constructor() {
@@ -1721,7 +1735,7 @@ class FractionExpr extends Expr {
     return this.value.toString();
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.fraction_expression;
   }
   value: Fraction;
   constructor(n: number, d: number) {
@@ -1745,7 +1759,7 @@ class NumericConstant extends Expr {
     return `${this.sym}`;
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.numeric_constant;
   }
   value: number;
   sym: CoreConstant;
@@ -1755,6 +1769,9 @@ class NumericConstant extends Expr {
     this.sym = sym;
   }
 }
+const isNumericConsant = (node: ASTNode): node is NumericConstant => (
+  node.kind === nodekind.numeric_constant
+);
 
 function numericConstant(value: number, sym: CoreConstant) {
   return new NumericConstant(value, sym);
@@ -1769,7 +1786,7 @@ class Integer extends Expr {
     return `${this.value}`;
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.integer;
   }
   value: number;
   constructor(value: number) {
@@ -1777,6 +1794,9 @@ class Integer extends Expr {
     this.value = value;
   }
 }
+const isInteger = (node: ASTNode): node is Integer => (
+  node.kind === nodekind.integer
+);
 
 /**
  * Returns a new {@link Integer|integer node}.
@@ -1793,7 +1813,7 @@ class Float extends Expr {
     return `${this.value}`;
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.float;
   }
   value: number;
   constructor(value: number) {
@@ -1801,6 +1821,9 @@ class Float extends Expr {
     this.value = value;
   }
 }
+const isFloat = (node: ASTNode): node is Float => (
+  node.kind === nodekind.float
+);
 
 /**
  * Returns a new {@link Float|float node}.
@@ -1818,7 +1841,7 @@ class Bool extends Expr {
     return `${this.value}`;
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.bool;
   }
   value: boolean;
   constructor(value: boolean) {
@@ -1843,7 +1866,7 @@ class StringLiteral extends Expr {
     return this.value;
   }
   get kind(): nodekind {
-    return nodekind.literal;
+    return nodekind.string;
   }
   value: string;
   constructor(value: string) {
@@ -4799,7 +4822,7 @@ enum tt {
 type NumberTokenType = | tt.int | tt.float | tt.scientific | tt.bignumber | tt.bigfraction | tt.fraction;
 
 // deno-fmt-ignore
-type LIT = number | boolean | string | bigint | null | [number, number] | [ bigint, bigint, ] | Token[];
+type LIT = number | boolean | string | bigint | null | [number, number] | [ bigint, bigint] | Err;
 
 type Location = { line: number; column: number };
 
@@ -4856,7 +4879,7 @@ class Token<T extends tt = tt, L extends LIT = LIT, S extends string = string> {
     }
     return false;
   }
-  isAlgebraString(): this is Token<tt.algebra_string, Token[]> {
+  isAlgebraString(): this is Token<tt.algebra_string, string> {
     return (
       this.type === tt.algebra_string
     );
@@ -4864,7 +4887,7 @@ class Token<T extends tt = tt, L extends LIT = LIT, S extends string = string> {
   /**
    * Returns true if this token maps to the error token.
    */
-  isError(): this is Token<tt.ERROR> {
+  isError(): this is Token<tt.ERROR, Err> {
     return this.type === tt.ERROR;
   }
   isVariable(): this is Token<tt.symbol> {
@@ -5731,9 +5754,10 @@ class Compiler implements Visitor<Primitive> {
       const out = L.element(I);
       if (out === null) {
         throw runtimeError(
-          `Encountered an out-of-bounds index.\nThe provided index exceeds the length of this sequential.`,
-          `evaluating an index expression`,
+          `Encountered an out-of-bounds index.\nThe provided index exceeds the length of the targed sequential.`,
+          `evaluating an indexing expression`,
           node.op,
+          "Ensure the index value is less than the sequential’s length.",
         );
       } else {
         return out;
@@ -6226,10 +6250,10 @@ function lexical(input: string) {
    * Returns an error token. If called,
    * sets the mutable error variable.
    */
-  const errorTkn = (message: string, phase: string): Token<tt.ERROR> => {
-    const out = tkn(tt.ERROR, message);
-    $error = lexicalError(message, phase, out);
-    return out as Token<tt.ERROR>;
+  const errorTkn = (message: string, phase: string): Token<tt.ERROR, Err> => {
+    const errToken = token(tt.ERROR, "", $line, $column);
+    $error = lexicalError(message, phase, errToken);
+    return token(tt.ERROR, "", $line, $column).lit($error);
   };
 
   /**
@@ -6763,9 +6787,12 @@ function lexical(input: string) {
     return right(out);
   };
 
+  const isDone = () => ($current >= input.length);
+
   return {
     stream,
     scan,
+    isDone,
   };
 }
 
@@ -6823,7 +6850,8 @@ function tidyAlgebraStrings(
       if (withIMUL.isLeft()) {
         return withIMUL;
       }
-      out.push(t.lit(withIMUL.unwrap()));
+      const m = withIMUL.unwrap().map((c) => c.lexeme).join("");
+      out.push(t.lit(m));
     } else {
       out.push(t);
     }
@@ -6866,7 +6894,7 @@ function imul(
   return right(out);
 }
 
-class ParserState<NODE> {
+class ParserState<STMT extends TREENODE, EXPR extends TREENODE> {
   /**
    * Property bound to the current error status.
    * If this variable is not bound to null, then
@@ -6875,28 +6903,30 @@ class ParserState<NODE> {
    * through the error method.
    */
   ERROR: null | Err = null;
-  tokens: Token[] = [];
-  max: number = 0;
   panic(error: Err) {
     this.ERROR = error;
     return this;
   }
-  init(tokens: Token[]) {
-    this.tokens = tokens;
-    this.max = tokens.length;
+  private lexer!: ReturnType<typeof lexical>;
+  init(source: string) {
+    this.lexer = lexical(source);
     this.next();
+    return this;
   }
+  prev: Token = Token.empty;
   cursor: number = -1;
   peek: Token = Token.empty;
   current: Token = Token.empty;
-  lastNode: NODE;
-  source:string='';
-  lexer!: ReturnType<typeof lexical>;
-  prime(source:string) {
-    this.lexer = lexical(source);
-  }
-  constructor(nil: NODE) {
-    this.lastNode = nil;
+  lastExpression: EXPR;
+  currentExpression: EXPR;
+  lastStmt: nodekind;
+  currentStmt: nodekind;
+  source: string = "";
+  constructor(nil: EXPR, emptyStmt: STMT) {
+    this.lastExpression = nil;
+    this.currentExpression = nil;
+    this.lastStmt = emptyStmt.kind;
+    this.currentStmt = emptyStmt.kind;
   }
   implicitSemicolonOK() {
     return (
@@ -6904,9 +6934,18 @@ class ParserState<NODE> {
       this.atEnd()
     );
   }
-  newnode<X extends NODE>(node: X) {
-    this.lastNode = node;
-    return right(node);
+  newExpression<E extends EXPR>(expression: E) {
+    const prev = this.currentExpression;
+    this.currentExpression = expression;
+    this.lastExpression = prev;
+    return right(expression);
+  }
+  newStmt<S extends STMT>(statement: S) {
+    const prev = this.currentStmt;
+    this.currentStmt = statement.kind;
+    this.lastStmt = prev;
+    const out = right(statement);
+    return out;
   }
   semicolonOK() {
     return (
@@ -6917,14 +6956,16 @@ class ParserState<NODE> {
   next() {
     this.cursor++;
     this.current = this.peek;
-    const nextToken = this.tokens[this.cursor]
-      ? this.tokens[this.cursor]
-      : Token.END;
-    this.peek = nextToken;
+    const nxtToken = this.lexer.scan();
+    if (nxtToken.isError()) {
+      this.ERROR = nxtToken.literal;
+      return Token.END;
+    }
+    this.peek = nxtToken;
     return this.current;
   }
   atEnd() {
-    return (this.cursor >= this.max - 1) || (this.ERROR !== null);
+    return (this.lexer.isDone()) || (this.ERROR !== null);
   }
   error(message: string, phase: string) {
     const e = syntaxError(message, phase, this.current);
@@ -6947,25 +6988,38 @@ class ParserState<NODE> {
   }
 }
 
-const enstate = <NODE>(nil: NODE) => (new ParserState(nil));
+const enstate = <EXPR extends TREENODE, STMT extends TREENODE>(
+  nil: EXPR,
+  emptyStmt: STMT,
+) => (new ParserState(nil, emptyStmt));
 
-function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
-  const state = enstate<ASTNode>(nil());
-  if (lexicalAnalysisResult.isLeft()) {
-    state.panic(lexicalAnalysisResult.unwrap());
-  } else {
-    state.init(lexicalAnalysisResult.unwrap());
-  }
+function syntax(source: string) {
+  const state = enstate<Expr, Statement>(nil(), exprStmt(nil(), -1))
+    .init(
+      source,
+    );
   const this_expression = (t: Token) => {
-    return state.newnode(thisExpr(t));
+    return state.newExpression(thisExpr(t));
   };
   const number: Parslet = (t) => {
     if (t.isNumber()) {
-      if (t.is(tt.int)) {
-        return state.newnode(integer(t.literal));
-      } else {
-        return state.newnode(float(t.literal));
+      const out = t.is(tt.int)
+        ? state.newExpression(integer(t.literal))
+        : state.newExpression(float(t.literal));
+      const peek = state.peek;
+      if (peek.is(tt.lparen) || peek.is(tt.native)) {
+        const r = expr();
+        if (r.isLeft()) {
+          return r;
+        }
+        const right = r.unwrap();
+        const star = token(tt.star, "*", peek.L, peek.C);
+        const left = out.unwrap();
+        return state.newExpression(
+          grouped(binex(left, star, right)),
+        );
       }
+      return out;
     } else {
       return state.error(
         `Expected an integer, but got “${t.lexeme}”`,
@@ -6973,11 +7027,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       );
     }
   };
-  
-  
 
   const string_literal: Parslet = (t) => {
-    return state.newnode(string(t.lexeme));
+    return state.newExpression(string(t.lexeme));
   };
 
   const scientific_number: Parslet = (t) => {
@@ -6989,7 +7041,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         token(tt.caret, "^", t.L, t.C),
         integer(b),
       );
-      return state.newnode(binex(
+      return state.newExpression(binex(
         lhs,
         token(tt.star, "*", t.L, t.C),
         rhs,
@@ -7008,7 +7060,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const compare = (op: Token, lhs: Expr): Either<Err, RelationalExpr> => {
     const p = precof(op.type);
     return expr(p).chain((rhs) => {
-      return state.newnode(relation(lhs, op as Token<RelationalOperator>, rhs));
+      return state.newExpression(
+        relation(lhs, op as Token<RelationalOperator>, rhs),
+      );
     });
   };
 
@@ -7020,7 +7074,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const p = precof(op.type);
     return expr(p).chain((rhs) => {
       const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-      return state.newnode(out);
+      return state.newExpression(out);
     });
   };
 
@@ -7040,7 +7094,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         }
         const rhs = r.unwrap();
         const value = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-        return state.newnode(assign(name, value));
+        return state.newExpression(assign(name, value));
       } else {
         return state.error(
           `Invalid lefthand side of assignment. Expected a variable to the left of “${op.lexeme}=”, but got “${lhs.toString()}".`,
@@ -7056,7 +7110,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const rhs = RHS.unwrap();
 
     const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
-    return state.newnode(out);
+    return state.newExpression(out);
   };
 
   /**
@@ -7065,7 +7119,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const fraction = (op: Token): Either<Err, FractionExpr> => {
     if (op.isFraction()) {
       const [N, D] = op.literal;
-      return state.newnode(rational(floor(N), floor(abs(D))));
+      return state.newExpression(rational(floor(N), floor(abs(D))));
     } else {
       return state.error(
         `Unexpected rational number`,
@@ -7083,7 +7137,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   ): Either<Err, LogicalBinaryExpr> => {
     const p = precof(op.type);
     return expr(p).chain((rhs) => {
-      return state.newnode(
+      return state.newExpression(
         logicalBinex(lhs, op as Token<BinaryLogicalOperator>, rhs),
       );
     });
@@ -7094,7 +7148,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    */
   const big_number = (op: Token): Either<Err, BigNumber> => {
     if (op.isBigNumber()) {
-      return state.newnode(bigNumber(op.literal));
+      return state.newExpression(bigNumber(op.literal));
     } else {
       return state.error(
         `Unexpected big number literal`,
@@ -7109,7 +7163,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const big_rational = (op: Token): Either<Err, RationalExpr> => {
     if (op.isBigFraction()) {
       const [a, b] = op.literal;
-      return state.newnode(bigRational(a, b));
+      return state.newExpression(bigRational(a, b));
     } else {
       return state.error(
         `Unexpected big rational literal`,
@@ -7123,7 +7177,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
    */
   const boolean_literal = (op: Token): Either<Err, Bool> => {
     if (op.isBoolean()) {
-      return state.newnode(bool(op.literal));
+      return state.newExpression(bool(op.literal));
     } else {
       return state.error(`Unexpected boolean literal`, `parsing an expression`);
     }
@@ -7138,13 +7192,13 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const src = `parsing an expression`;
     // deno-fmt-ignore
     switch (type) {
-      case tt.nan: return state.newnode(numericConstant(NaN, 'NAN'));
-      case tt.inf: return state.newnode(numericConstant(Infinity, 'Inf'));
-      case tt.nil: return state.newnode(nil());
+      case tt.nan: return state.newExpression(numericConstant(NaN, 'NAN'));
+      case tt.inf: return state.newExpression(numericConstant(Infinity, 'Inf'));
+      case tt.nil: return state.newExpression(nil());
       case tt.numeric_constant: {
         switch (op.lexeme) {
-          case "pi": return state.newnode(numericConstant(PI, "pi"));
-          case 'e': return state.newnode(numericConstant(E, 'e'))
+          case "pi": return state.newExpression(numericConstant(PI, "pi"));
+          case 'e': return state.newExpression(numericConstant(E, 'e'))
           default: return state.error(erm, src);
         }
       }
@@ -7155,7 +7209,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   /**
    * Parses a {@link GroupExpr|parenthesized expression}.
    */
-  const primary = (op: Token): Either<Err, GroupExpr | TupleExpr> => {
+  const primary = (op: Token) => {
     const innerExpression = expr();
     if (innerExpression.isLeft()) {
       return innerExpression;
@@ -7175,7 +7229,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
           `parsing a tuple`,
         );
       }
-      return state.newnode(tupleExpr(elements));
+      return state.newExpression(tupleExpr(elements));
     }
     if (!state.nextIs(tt.rparen)) {
       return state.error(
@@ -7184,6 +7238,53 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       );
     }
     return innerExpression.map((e) => grouped(e));
+  };
+
+  const allowImplicit = (kind: nodekind) => (
+    kind === nodekind.algebraic_infix ||
+    kind === nodekind.algebraic_unary ||
+    kind === nodekind.float ||
+    kind === nodekind.numeric_constant ||
+    kind === nodekind.native_call ||
+    kind === nodekind.integer ||
+    kind === nodekind.grouped_expression
+  );
+
+  const function_call = (
+    op: Token,
+    node: Expr,
+  ) => {
+    const callee = node;
+    if (isGroupExpr(callee) && allowImplicit(callee.expression.kind)) {
+      const left = callee.expression;
+      const r = expr();
+      if (r.isLeft()) return r;
+      if (!state.nextIs(tt.rparen)) {
+        return state.error(
+          `Expected a “)” to close the expression`,
+          "parsing an implicit multiplication",
+        );
+      }
+      const right = r.unwrap();
+      const star = token(tt.star, "*", op.L, op.C);
+      return state.newExpression(binex(left, star, right));
+    }
+    let args: Expr[] = [];
+    if (!state.check(tt.rparen)) {
+      const arglist = comma_separated_list(
+        isExpr,
+        `Expected expression`,
+        "call",
+      );
+      if (arglist.isLeft()) return arglist;
+      args = arglist.unwrap();
+    }
+    const paren = state.next();
+    if (!paren.is(tt.rparen)) {
+      return state.error(`Expected “)” to close args`, "call");
+    }
+    const out = call(callee, args, op);
+    return state.newExpression(out);
   };
 
   /**
@@ -7210,7 +7311,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     if (!state.nextIs(tt.rparen)) {
       return state.error(`Expected “)” to close the argument list`, src);
     }
-    return state.newnode(
+    return state.newExpression(
       nativeCall(op as Token<tt.native, string, NativeFn>, args),
     );
   };
@@ -7221,7 +7322,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const variable_name: Parslet = (op) => {
     if (op.isVariable()) {
       const out = variable(op);
-      return state.newnode(out);
+      return state.newExpression(out);
     } else {
       return state.error(
         `Unexpected variable “${op.lex}”`,
@@ -7236,7 +7337,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const logical_not: Parslet = (op) => {
     const p = precof(op.type);
     return expr(p).chain((arg) =>
-      state.newnode(logicalUnary(op as Token<tt.not>, arg))
+      state.newExpression(logicalUnary(op as Token<tt.not>, arg))
     );
   };
 
@@ -7250,14 +7351,14 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const src = `parsing an assignment`;
     if (isVariable(node)) {
       return expr().chain((n) => {
-        return state.newnode(assign(node, n));
+        return state.newExpression(assign(node, n));
       });
     } else if (isGetExpr(node)) {
       const rhs = expr();
       if (rhs.isLeft()) {
         return rhs;
       }
-      return state.newnode(
+      return state.newExpression(
         setExpr(node.object, node.name, rhs.unwrap(), op.loc()),
       );
     } else {
@@ -7321,9 +7422,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
           src,
         );
       }
-      return state.newnode(matrixExpr(vectors, rows, columns));
+      return state.newExpression(matrixExpr(vectors, rows, columns));
     }
-    return state.newnode(vectorExpr(elements, prev));
+    return state.newExpression(vectorExpr(elements, prev));
   };
 
   const get_expression = (op: Token, lhs: Expr) => {
@@ -7349,9 +7450,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       if (!rparen.is(tt.rparen)) {
         return state.error(`Expected “)” to after method arguments`, src);
       }
-      return state.newnode(call(exp, args, op));
+      return state.newExpression(call(exp, args, op));
     }
-    return state.newnode(exp);
+    return state.newExpression(exp);
   };
 
   const indexing_expression: Parslet = (op, lhs) => {
@@ -7366,36 +7467,30 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         `parsing an index accessor`,
       );
     }
-    return state.newnode(indexingExpr(lhs, index.unwrap(), rbracket));
-  };
-
-  const function_call = (
-    op: Token,
-    node: Expr,
-  ): Either<Err, CallExpr> => {
-    const callee = node;
-    let args: Expr[] = [];
-    if (!state.check(tt.rparen)) {
-      const arglist = comma_separated_list(
-        isExpr,
-        `Expected expression`,
-        "call",
-      );
-      if (arglist.isLeft()) return arglist;
-      args = arglist.unwrap();
-    }
-    const paren = state.next();
-    if (!paren.is(tt.rparen)) {
-      return state.error(`Expected “)” to close args`, "call");
-    }
-    const out = call(callee, args, op);
-    return state.newnode(out);
+    return state.newExpression(indexingExpr(lhs, index.unwrap(), rbracket));
   };
 
   const factorial_expression = (op: Token, node: Expr) => {
-    return state.newnode(
+    return state.newExpression(
       algebraicUnary(op as Token<AlgebraicUnaryOperator>, node),
     );
+  };
+
+  const implicitMUL: Parslet = (op, left) => {
+    if (op.is(tt.symbol)) {
+      const right = variable(op);
+      const star = token(tt.star, "*", op.L, op.C);
+      return state.newExpression(binex(
+        left,
+        star,
+        right,
+      ));
+    } else {
+      return state.error(
+        `Expected a symbol for implicit multiplication, but got “${op.lexeme}”`,
+        "parsing implicit multiplication",
+      );
+    }
   };
 
   const decrement = (op: Token, node: Expr) => {
@@ -7405,7 +7500,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         op.entype(tt.minus).lex("-"),
         integer(1),
       );
-      return state.newnode(assign(node, right));
+      return state.newExpression(assign(node, right));
     } else {
       return state.error(
         `Expected the lefthand side of “--” to be either a variable or a property accessor, but got “${node.toString()}”`,
@@ -7421,7 +7516,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         op.entype(tt.plus).lex("+"),
         integer(1),
       );
-      return state.newnode(assign(node, right));
+      return state.newExpression(assign(node, right));
     } else {
       return state.error(
         `Expected the lefthand side of “++” to be either a variable or a property accessor, but got “${node.toString()}”`,
@@ -7446,12 +7541,12 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const algebraic_string: Parslet = (op) => {
     if (op.isAlgebraString()) {
       const tkns = op.literal;
-      const result = syntax(right(tkns)).expression();
+      const result = syntax(tkns).expression();
       if (result.isLeft()) {
         return result;
       }
       const expression = result.unwrap();
-      return state.newnode(algebraicString(expression));
+      return state.newExpression(algebraicString(expression));
     } else {
       return state.error(
         `Unexpected algebraic string`,
@@ -7464,9 +7559,9 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const p = precof(op.type);
     return expr(p).chain((arg) => {
       if (op.is(tt.minus)) {
-        return state.newnode(algebraicUnary(op, arg));
+        return state.newExpression(algebraicUnary(op, arg));
       } else if (op.is(tt.plus)) {
-        return state.newnode(algebraicUnary(op, arg));
+        return state.newExpression(algebraicUnary(op, arg));
       } else {
         return state.error(
           `Unknown prefix operator “${op.lexeme}”`,
@@ -7543,7 +7638,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     [tt.not]: [logical_not, ___, bp.not],
 
     // literals
-    [tt.symbol]: [variable_name, ___, bp.atom],
+    [tt.symbol]: [variable_name, implicitMUL, bp.atom],
     [tt.string]: [string_literal, ___, bp.atom],
     [tt.bool]: [boolean_literal, ___, bp.atom],
     [tt.int]: [number, ___, bp.atom],
@@ -7656,7 +7751,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       }
       elseBranch = _else.unwrap();
     }
-    return state.newnode(ifStmt(keyword, condition, thenBranch, elseBranch));
+    return state.newStmt(ifStmt(keyword, condition, thenBranch, elseBranch));
   };
 
   /**
@@ -7699,7 +7794,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     }
     if (state.nextIs(tt.eq)) {
       const body = EXPRESSION();
-      return body.chain((b) => state.newnode(functionStmt(name, params, [b])));
+      return body.chain((b) => state.newStmt(functionStmt(name, params, [b])));
     }
     if (!state.nextIs(tt.lbrace)) {
       return state.error(
@@ -7709,7 +7804,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     }
     const body = BLOCK();
     return body.chain((b) =>
-      state.newnode(functionStmt(name, params, b.statements))
+      state.newStmt(functionStmt(name, params, b.statements))
     );
   };
 
@@ -7728,7 +7823,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       return body;
     }
     return body.chain((loopBody) =>
-      state.newnode(whileStmt(current, loopCondition.unwrap(), loopBody))
+      state.newStmt(whileStmt(current, loopCondition.unwrap(), loopBody))
     );
   };
 
@@ -7750,7 +7845,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         `parsing a block`,
       );
     }
-    return state.newnode(block(statements));
+    return state.newStmt(block(statements));
   };
 
   /**
@@ -7771,7 +7866,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       return init;
     }
     const value = init.unwrap();
-    return state.newnode(
+    return state.newStmt(
       (prev === tt.let ? letStmt : varStmt)(name, value.expression),
     );
   };
@@ -7787,7 +7882,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     const expression = out.unwrap();
     const line = state.peek.L;
     if (state.nextIs(tt.semicolon) || state.implicitSemicolonOK()) {
-      return state.newnode(exprStmt(expression, line));
+      return state.newStmt(exprStmt(expression, line));
     }
     return state.error(
       `Expected “;” to end the statement`,
@@ -7798,7 +7893,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   const RETURN = (): Either<Err, ReturnStmt> => {
     const c = state.current;
     const out = EXPRESSION();
-    return out.chain((e) => state.newnode(returnStmt(e.expression, c)));
+    return out.chain((e) => state.newStmt(returnStmt(e.expression, c)));
   };
 
   const FOR = (): Either<Err, Statement> => {
@@ -7879,7 +7974,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
     if (init !== null) {
       body = block([init, body]);
     }
-    return state.newnode(body);
+    return state.newStmt(body);
   };
 
   const CLASS = () => {
@@ -7914,7 +8009,7 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
         src,
       );
     }
-    return state.newnode(classStmt(name, methods));
+    return state.newStmt(classStmt(name, methods));
   };
 
   /**
@@ -7998,22 +8093,8 @@ export function engine(source: string) {
     implicitMultiplication: true,
   };
 
-  /** Scans the source code. */
-  const scan = () => {
-    let lexemes = tidyAlgebraStrings(lexical(source).stream());
-    if (lexemes.isLeft()) return lexemes;
-    if (settings.implicitMultiplication) lexemes = imul(lexemes);
-    return lexemes;
-  };
-
   /** Parses the source code. */
-  const parse = () => {
-    const lexemes = scan();
-    if (lexemes.isLeft()) {
-      return lexemes;
-    }
-    return syntax(lexemes).statements();
-  };
+  const parse = () => syntax(source).statements();
 
   /** Compiles the source code. */
   const compile = (program: Left<Err> | Right<Statement[]>) => {
@@ -8030,19 +8111,15 @@ export function engine(source: string) {
   };
 
   return {
-    /**
-     * Sets the engine’s settings.
-     */
+    tokens: () => lexical(source).stream(),
+    ast: () => objectTree(parse()),
+    /** Sets the engine’s settings. */
     engineSettings(options: Partial<EngineSettings>) {
       settings = { ...settings, ...options };
       return this;
     },
     algebraTree() {
       throw new Error(`method unimplemented`);
-    },
-    statementTree() {
-      const out = parse();
-      return objectTree(out);
     },
     /**
      * Executes the given source code with the current
@@ -8081,4 +8158,3 @@ export function engine(source: string) {
     },
   };
 }
-
