@@ -5187,9 +5187,11 @@ class Fn {
     } catch (E) {
       if (this.isInitializer) {
         return this.closure.getAt(0, "this");
+      } else if (E instanceof RETURN) {
+        return E.value;
+      } else {
+        throw E;
       }
-      const out = (E as RETURN).value;
-      return out;
     }
   }
 }
@@ -5248,7 +5250,7 @@ class Class {
     this.methods = methods;
   }
   arity() {
-    const initalizer = this.findMethod("init");
+    const initalizer = this.findMethod("def");
     if (initalizer === null) {
       return 0;
     }
@@ -5262,7 +5264,7 @@ class Class {
   }
   call(interpreter: Compiler, args: Primitive[]) {
     const instance = new Obj(this);
-    const initializer = this.findMethod("init");
+    const initializer = this.findMethod("def");
     if (initializer !== null) {
       initializer.bind(instance).call(interpreter, args);
     }
@@ -8158,3 +8160,4 @@ export function engine(source: string) {
     },
   };
 }
+

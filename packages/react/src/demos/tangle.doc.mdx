@@ -58,16 +58,6 @@ A lexeme will be interpreted as a variable name only if all of the following con
 3. The lexeme is not a reserved word.
 
 
-### Functions
-Functions are declared with the `fn` keyword, followed by an identifier, and a parenthesized argument list. If the function’s body comprises a single statement, then the assignment operator (`=`) may follow the list: Otherwise, braces are required to indicate a block of statements:
-
-<Terminal source={`fn f(x) = x^2;
-print f(5);
-fn g(x) {
-  let k = 1/2;
-  return x * k;
-}
-print g(6);`} height={"210px"}/>
 
 
 
@@ -178,40 +168,73 @@ The policy of restricting vectors to only integers or floating point numbers ste
 
 Vectors are initialized with square brackets:
 
-~~~ts
-let x = [1,2,3,4];
-~~~
+<Terminal source={`let x = [1,2,3,4];
+print x;`}/>
 
-Like other sequentials, we may access individual elements with an indexing expression:
+## Branching Statements
+Twine provides the standard `if-else` construct for branching:
 
-~~~ts
-let x = [8,9,1,2];
-let element = x[1];
-~~~
+<Terminal source={`
+var x = 5;
+if x < 10 {
+  x = 4;
+} else {
+  x = 8;
+}
+print x;
+`} height={"200px"}/>
 
+Like Rust and other modern languages, the if-block’s necessary condition need not be surrounded by parentheses. However, a left-brace is required to demarcate the consequent’s start. The else branch doesn’t require braces, but it’s best to do so for readability.
+
+## Functions
+Functions are declared with the `fn` keyword, followed by an identifier, and a parenthesized argument list. If the function’s body comprises a single statement, then the assignment operator (`=`) may follow the list. Otherwise, braces are required to indicate a block of statements:
+
+<Terminal source={`fn f(x) = x^2;
+print f(5);
+fn g(x) {
+  let k = 1/2;
+  return x * k;
+}
+print g(6);`} height={"210px"}/>
 
 
 ## Classes
-Twine supports classical object-oriented programming via classes.[^classical-oop]
+Twine supports classical object-oriented programming (OOP) via classes.[^classical-oop]
 
 [^classical-oop]: By _classical_, we mean the approach taken by _Simula_, _Smalltalk_, and its descendants. _See_ [_**jeff sutherland**_, _A History of Object-Oriented Programming Languates and their Impact on Program Design and Software Development_ 2 (1999)](http://jeffsutherland.com/papers/Rans/OOlanguages.pdf).
 
-~~~ts
+<Terminal source={`
 class Circle {
-  def(r) {
-    this.radius = r;
-  }
-  diameter() {
-    return pi * this.radius^2;
+  callThyself() {
+    print "circle!";
   }
 }
-
-let my_circle = Circle(5);
-let area = my_circle.diameter();
-~~~
-
+let circle1 = Circle(5);
+circle1.callThyself();
+`} height={"200px"}/>
 
 Syntactically, a class in _Twine_ is a collection of functions. Semantically, a class is a bundle of _properties_, where each property is mapped to by a unique _field_. Above, the `Circle` class comprises three fields – `def`, `diameter`, and `radius` – and two properties: (1) `def` maps to `null` (with the side-effect of defining properties bound to the `Circle` instance’s `this` reference), and (2) both `diameter` and `radius` map to numerics.
+
+### `def` and `this`
+Like other OOP languages, class instances in Twine have a _this_ reference:
+
+
+<Terminal source={`
+class Box {
+  def(length, width, height) {
+    this.length = length;
+    this.width = width;
+    this.height = height;
+  }
+  volume() {
+    return this.length * this.width * this.height;
+  }
+}
+let box1 = Box(3,5,2);
+print box1.volume();
+`} height={"320px"}/>
+
+Above, we see that the the `Box` class consists of three properties, `length`, `width`, and `height`. These properties are initialized with the `def` method (what might be called a _constructor_ in other OOP languages). All class instances in Twine have a `def` method for initializing their properties.
 
 :::p1
 part i

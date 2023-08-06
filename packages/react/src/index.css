@@ -135,6 +135,7 @@ code {
 textarea {
 	width: 100%;
 	resize: vertical;
+	font-size: 0.9rem;
 	padding: 0.9em;
 	padding-bottom: 3em;
 	line-height: 2;

@@ -5,7 +5,7 @@ export const Terminal = (
   { source, height='max-content' }: { source: string; height: string | number },
 ) => {
   const [result, setResult] = useState("");
-  const [code, setCode] = useState(source);
+  const [code, setCode] = useState(source.trimStart().trimEnd());
   const click = () => {
     const logs = engine(code).log();
     const result = logs.join("\n");
