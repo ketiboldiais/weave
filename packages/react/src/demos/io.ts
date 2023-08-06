@@ -733,21 +733,21 @@ class Err extends Error {
   errorType: ErrorType;
   phase: string;
   location: Location;
-  recommendation: string;
+	recommendation: string;
   constructor(
     message: string,
     errorType: ErrorType,
     phase: string,
     line: number,
     column: number,
-    recommendation: string = "none",
+		recommendation: string = 'none',
   ) {
     super(message);
     this.errorType = errorType;
     this.phase = phase;
     this.location = { line, column };
     this.message = message;
-    this.recommendation = recommendation;
+		this.recommendation = recommendation;
   }
   report() {
     return formattedError(
@@ -756,7 +756,7 @@ class Err extends Error {
       this.errorType,
       this.location.line,
       this.location.column,
-      this.recommendation,
+			this.recommendation,
     );
   }
 }
@@ -768,7 +768,7 @@ function formattedError(
   errorType: ErrorType,
   line: number,
   column: number,
-  recommendation: string,
+	recommendation: string,
 ) {
   let moduleName = "module";
   switch (errorType) {
@@ -809,7 +809,7 @@ function lexicalError(
 function syntaxError(
   message: string,
   phase: string,
-  token: Token,
+	token: Token,
 ) {
   return new Err(message, "syntax-error", phase, token.L, token.C);
 }
@@ -818,7 +818,7 @@ function syntaxError(
 function runtimeError(
   message: string,
   phase: string,
-  token: Token,
+	token: Token,
 ) {
   return new Err(message, "runtime-error", phase, token.L, token.C);
 }
@@ -836,8 +836,8 @@ function typeError(
 function envError(
   message: string,
   phase: string,
-  token: Token,
-  rec: string,
+	token: Token,
+	rec:string,
 ) {
   return new Err(message, "environment-error", phase, token.L, token.C, rec);
 }
@@ -846,7 +846,7 @@ function envError(
 function resolverError(
   message: string,
   phase: string,
-  token: Token,
+	token: Token,
 ) {
   return new Err(message, "resolver-error", phase, token.L, token.C);
 }
@@ -855,7 +855,7 @@ function resolverError(
 function algebraError(
   message: string,
   phase: string,
-  token: Token,
+	token: Token,
 ) {
   return new Err(message, "algebraic-error", phase, token.L, token.C);
 }
@@ -1293,12 +1293,12 @@ class VectorExpr extends Expr {
   get kind(): nodekind {
     return nodekind.vector_expression;
   }
-  op: Token;
+	op: Token;
   elements: Expr[];
   constructor(elements: Expr[], op: Token) {
     super();
     this.elements = elements;
-    this.op = op;
+		this.op = op;
   }
   toString(): string {
     const elements = this.elements.map((e) => e.toString()).join(",");
@@ -1644,13 +1644,13 @@ class CallExpr extends Expr {
     return nodekind.call;
   }
   callee: Expr;
-  paren: Token;
+	paren: Token;
   args: Expr[];
   constructor(callee: Expr, args: Expr[], paren: Token) {
     super();
     this.callee = callee;
     this.args = args;
-    this.paren = paren;
+		this.paren = paren;
   }
 }
 
@@ -5205,7 +5205,7 @@ class Obj {
     throw runtimeError(
       `User accessed a non-existent property “${name}”.`,
       `evaluating a property of “${this.klass.name}”`,
-      name,
+			name,
     );
   }
   toString() {
@@ -5314,7 +5314,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
       throw resolverError(
         `Encountered a name collision. The variable “${name.lexeme}” has already been declared in the current scope.`,
         `resolving a declaration`,
-        name,
+				name,
       );
     }
     scope.set(name.lexeme, false);
@@ -5357,7 +5357,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
       throw resolverError(
         `Encountered the keyword “this” outside of a class definition. This syntax has no semantic, since “this” points to nothing.`,
         `resolving “this”`,
-        node.keyword,
+				node.keyword,
       );
     }
     this.resolveLocal(node, "this");
@@ -5420,7 +5420,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
       throw resolverError(
         `The user is attempting to read the variable “${node.name}” from its own initializer. This syntax has no semantic.`,
         `resolving the variable ${node.name}`,
-        node.name,
+				node.name,
       );
     }
     this.resolveLocal(node, node.name.lexeme);
@@ -5519,14 +5519,14 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
       throw resolverError(
         `Encountered the “return” keyword at the top-level. This syntax has no semantic.`,
         `resolving a return-statement`,
-        node.keyword,
+				node.keyword,
       );
     }
     if (this.currentFunction === function_type.initializer) {
       throw resolverError(
         `Encounterd the “return” keyword within an initializer.`,
         `resolving a return-statement`,
-        node.keyword,
+				node.keyword,
       );
     }
     this.resolve(node.value);
@@ -5598,8 +5598,8 @@ class Environment<T> {
       throw envError(
         `The variable “${name.lexeme}” is not a mutable variable.`,
         `assigning a new value to a variable`,
-        name,
-        `Declare “${name.lexeme}” with “var”.`,
+				name,
+				`Declare “${name.lexeme}” with “var”.`
       );
     }
     if (this.enclosing !== null) {
@@ -5608,8 +5608,8 @@ class Environment<T> {
     throw envError(
       `The variable “${name.lexeme}” is not defined and only defined variables may be assigned.`,
       `assigning a new value to a variable`,
-      name,
-      `define ${name.lexeme} with “let” or “var” before line ${name.L}.`,
+			name,
+			`define ${name.lexeme} with “let” or “var” before line ${name.L}.`
     );
   }
   /**
@@ -5638,8 +5638,8 @@ class Environment<T> {
     throw envError(
       `The variable “${name.lexeme}” is not defined, and only defined variables may be read.`,
       `reading a variable`,
-      name,
-      `Declare “${name.lexeme}” with “let” or “var” before usage.`,
+			name,
+			`Declare “${name.lexeme}” with “let” or “var” before usage.`
     );
   }
 }
@@ -5724,7 +5724,7 @@ class Compiler implements Visitor<Primitive> {
       throw runtimeError(
         `Expected a number index, but got “${stringify(I)}”`,
         `evaluating an index expression`,
-        node.op,
+				node.op
       );
     }
     if ($isVector(L) || $isMatrix(L)) {
@@ -5733,7 +5733,7 @@ class Compiler implements Visitor<Primitive> {
         throw runtimeError(
           `Encountered an out-of-bounds index.\nThe provided index exceeds the length of this sequential.`,
           `evaluating an index expression`,
-          node.op,
+					node.op
         );
       } else {
         return out;
@@ -5751,7 +5751,7 @@ class Compiler implements Visitor<Primitive> {
           stringify(L)
         }” is neither.`,
         `evaluating an indexing expression`,
-        node.op,
+				node.op
       );
     }
   }
@@ -5771,7 +5771,7 @@ class Compiler implements Visitor<Primitive> {
       throw runtimeError(
         `Only instances have fields`,
         `interpreting a field set`,
-        node.name,
+				node.name,
       );
     }
     const value = this.evaluate(node.value);
@@ -5787,7 +5787,7 @@ class Compiler implements Visitor<Primitive> {
         stringify(obj)
       }” is not a class instance.`,
       `interpreting a property access`,
-      node.name,
+			node.name,
     );
   }
   matrixExpr(node: MatrixExpr): Primitive {
@@ -5805,7 +5805,7 @@ class Compiler implements Visitor<Primitive> {
             stringify(n)
           } is not a number.`,
           `interpreting a vector expression`,
-          node.op,
+					node.op,
         );
       }
       nums.push(n);
@@ -6890,11 +6890,6 @@ class ParserState<NODE> {
   peek: Token = Token.empty;
   current: Token = Token.empty;
   lastNode: NODE;
-  source:string='';
-  lexer!: ReturnType<typeof lexical>;
-  prime(source:string) {
-    this.lexer = lexical(source);
-  }
   constructor(nil: NODE) {
     this.lastNode = nil;
   }
@@ -6973,8 +6968,6 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
       );
     }
   };
-  
-  
 
   const string_literal: Parslet = (t) => {
     return state.newnode(string(t.lexeme));
@@ -7986,13 +7979,6 @@ function syntax(lexicalAnalysisResult: Either<Err, Token[]>) {
   };
 }
 
-const html = {
-  span: (
-    x: string | number,
-    className: string,
-  ) => (`<span class="${className}">${x}</span>`),
-};
-
 export function engine(source: string) {
   let settings: EngineSettings = {
     implicitMultiplication: true,
@@ -8081,4 +8067,3 @@ export function engine(source: string) {
     },
   };
 }
-

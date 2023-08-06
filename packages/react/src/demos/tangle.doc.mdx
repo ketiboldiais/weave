@@ -1,3 +1,5 @@
+import {Terminal} from './Screen.tsx';
+
 # Tangle
 This is the documentation page for _Tangle_, _Twine_’s compiler. This documentation is partitioned in five: _**part o**_ presents an overview of the _Twine_ language. _**part i**_ covers the mathematical background necessary for understanding _Tangle_’s architecture. _**part ii**_ provides an overview of the compiler’s API and various implementation details. Finally, _**part iv**_ presents current limitations and plans for future improvements.
 
@@ -28,14 +30,25 @@ the reader’s attention.
 ## Variables
 Variables are declared with either the _let_ or _var_ keywords. Variables declared with _let_ are immutable – once declared, they are frozen in place, and we may not assign them a new value. Variables declared with _var_, however, are mutable.
 
+For example, this is permissible:
+
+~~~ts
+var y = 12;
+y = 11;
 ~~~
-let x = 5;
-x = 10; --- environment-error: “x” is an immutable variable
-var y = 3.14;
-y = 5; --- “y” is mutable, so this is ok
+
+However, this will trigger an environment error, since `y` is immutable:
+
+~~~ts
+let y = 3.14;
+y = 5;
 ~~~
 
 Following the C tradition, statements are delimited by semicolons.
+
+<Terminal source={`var y = 8;
+y = 10;`}/>
+
 
 ### Valid Identifiers
 A lexeme will be interpreted as a variable name only if all of the following conditions are satisfied:
@@ -124,28 +137,33 @@ Twine has several numeric types: _int_, _float_, _fraction_, _real_, _rational_,
 ### Sequentials
 _Sequentials_ are well-ordered collections of data. Twine’s core sequential types include _vector_, _matrix_, and _tuple_.
 
+A vector `v`:
+
+~~~ts
+let v = [1,2,3,4];
 ~~~
---- a vector
-[1,2,3,4]
 
+A matrix `M`:
 
-[ --- a matrix
+~~~ts
+let M = [
   [1,0,0],
   [0,1,0],
   [0,0,1],
 ]
+~~~
 
---- a tuple
-(1,2,3,4)
+A tuple `t`:
+~~~ts
+let t = (1,2,3,4)
 ~~~
 
 ### Indexing
 All sequentials can be accessed via an _indexing expression_:
 
-~~~
-let vector_A = [2.5, 4.1, 8.9, 13.7];
-let a = vector_A[1] --- 2.5
-~~~
+<Terminal source={`let x = [8,9,1,2];
+let element = x[1];
+print element;`}/>
 
 Following mathematical convention, Twine uses 1-based indexing. That is, the first element of a sequential has an index of 1, the second element 2, the third 3, ${\ldots,}$ the ${n^{\text{th}}}$ element ${n.}$
 
@@ -164,10 +182,9 @@ let x = [1,2,3,4];
 
 Like other sequentials, we may access individual elements with an indexing expression:
 
-~~~
+~~~ts
 let x = [8,9,1,2];
 let element = x[1];
-print element --- 8
 ~~~
 
 
@@ -177,7 +194,7 @@ Twine supports classical object-oriented programming via classes.[^classical-oop
 
 [^classical-oop]: By _classical_, we mean the approach taken by _Simula_, _Smalltalk_, and its descendants. _See_ [_**jeff sutherland**_, _A History of Object-Oriented Programming Languates and their Impact on Program Design and Software Development_ 2 (1999)](http://jeffsutherland.com/papers/Rans/OOlanguages.pdf).
 
-~~~
+~~~ts
 class Circle {
   def(r) {
     this.radius = r;
@@ -189,8 +206,8 @@ class Circle {
 
 let my_circle = Circle(5);
 let area = my_circle.diameter();
-print area --- "25"
 ~~~
+
 
 Syntactically, a class in _Twine_ is a collection of functions. Semantically, a class is a bundle of _properties_, where each property is mapped to by a unique _field_. Above, the `Circle` class comprises three fields – `def`, `diameter`, and `radius` – and two properties: (1) `def` maps to `null` (with the side-effect of defining properties bound to the `Circle` instance’s `this` reference), and (2) both `diameter` and `radius` map to numerics.
 

@@ -131,3 +131,31 @@ pre code .token.class-name {
 code {
 	white-space: pre;
 }
+
+textarea {
+	width: 100%;
+	resize: vertical;
+	padding: 0.9em;
+	padding-bottom: 3em;
+	line-height: 2;
+	min-height: max-content;
+	font-family: 'Fira Code';
+	border: solid thin lightgrey;
+	border-radius: 0.3em;
+}
+
+pre.terminal {
+	background-color: inherit;
+	color: #2d3748;
+	font-size: 0.9rem;
+	border: solid thin lightgrey;
+	border-radius: 0.3em;
+}
+
+.run-button {
+	border: solid thin rgb(144, 177, 144);
+	color: rgb(37, 117, 37);
+	background-color: inherit;
+	font-family: 'Fira Code';
+	background-color: rgb(221, 238, 221);
+}
