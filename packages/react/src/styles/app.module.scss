@@ -170,21 +170,9 @@
 			}
 		}
 	}
-
 	.page {
-		padding: 1em 5em;
-		padding-bottom: 10em;
-		@media only screen and (min-width: 1344px) {
-			margin-right: 336px;
-			position: relative;
-			max-width: 912px;
-			aside {
-				position: absolute;
-				right: -336px;
-				width: 250px;
-				margin-right: 50px;
-			}
-		}
+		max-width: 700px;
+		margin: 0 auto;
 	}
 
 	main {

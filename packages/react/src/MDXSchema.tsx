@@ -3,9 +3,16 @@ import { Children, CSSProperties, HTMLAttributes, ReactNode } from "react";
 import base from "./styles/base.module.scss";
 type Children = { children: ReactNode };
 
-type BoxProps = {
-  display: string;
-};
+export const DocPage = ({children}:Children) => (
+  <div className={'doc-page'}>
+    {children}
+  </div>
+)
+export const MainPage = ({children}:Children) => (
+  <div className={'main-page'}>
+    {children}
+  </div>
+)
 
 const Note = (props: Children) => {
   return (

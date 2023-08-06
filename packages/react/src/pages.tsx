@@ -3,7 +3,9 @@ import MainDoc from "./demos/main.doc.mdx";
 import QuadDoc from "./demos/quad.doc.mdx";
 import AxesDoc from "./demos/axes.doc.mdx";
 import TangleDoc from "./demos/tangle.doc.mdx";
-import VectorDoc from './demos/vector.doc.mdx';
+import VectorDoc from "./demos/vector.doc.mdx";
+
+import { DocPage, MainPage } from "./MDXSchema.js";
 
 export const docLinks = {
   Intro: "/",
@@ -13,12 +15,19 @@ export const docLinks = {
   Tangle: "/tangle",
 };
 
+const MAIN = () => (
+  <MainPage>
+    <MainDoc />
+  </MainPage>
+);
+
+
 export const Main = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Page />}>
-          <Route path={docLinks.Intro} element={<MainDoc />} />
+          <Route path={docLinks.Intro} element={<MAIN />} />
           <Route path={docLinks.Quadrilaterals} element={<QuadDoc />} />
           <Route path={docLinks.Axes} element={<AxesDoc />} />
           <Route path={docLinks.Tangle} element={<TangleDoc />} />
