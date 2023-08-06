@@ -17,9 +17,6 @@ import remarkDirectiveRehype from "remark-directive-rehype";
 export default defineConfig({
   plugins: [
     react(),
-    dts({
-      insertTypesEntry: true,
-    }),
     mdx({
       providerImportSource: "@mdx-js/react",
       remarkPlugins: [
@@ -39,15 +36,6 @@ export default defineConfig({
     exclude: ["@weave/loom", "@weave/twine"],
   },
   build: {
-    sourcemap: false,
-    rollupOptions: {
-      external: ["react", "react-dom"],
-      output: {
-        globals: {
-          react: "React",
-          "react-dom": "ReactDOM",
-        },
-      },
-    },
+    sourcemap: false
   },
 });

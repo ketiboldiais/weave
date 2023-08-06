@@ -5,8 +5,7 @@
 	"main": "index.js",
 	"scripts": {
 		"dev": "turbo run dev",
-		"build": "turbo run build",
-		"deploy": "turbo run build --scope=packages --includeDependencies --no-deps"
+		"build": "turbo run build"
 	},
 	"turbo": {
 		"pipeline": {
