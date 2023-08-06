@@ -40,14 +40,8 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
-    lib: {
-      entry: path.resolve(__dirname, "src/index.tsx"),
-      name: "weave-react",
-      formats: ["es"],
-      fileName: "index",
-    },
     rollupOptions: {
-      external: ["react", "react-dom", "d3"],
+      external: ["react", "react-dom"],
       output: {
         globals: {
           react: "React",
