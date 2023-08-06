@@ -1,6 +1,21 @@
-import {PolarAxis} from './axis.demo.tsx';
+import {PolarAxis, LinearAxis} from './axis.demo.tsx';
 
 # Axes
-Weave provides basic linear axes.
+Weave provides several axis modules. Axes are drawn with basic geometries: Lines for linear axes and circles for polar axes. Scaling is done through either linear interpolation or coordinate transformation (e.g., polar axes to 2D-coordinates).
+
+## Linear Axes
+The `axis` function implements standard linear axes:
+
+<LinearAxis/>
+
+~~~ts
+const axisPlane = plane([
+  axis('x'),
+  axis('y'),
+]) 
+export const LinearAxis = () => <Figure of={axisPlane}/>
+~~~
+
+## Polar Axes
 
 <PolarAxis/>

@@ -2,6 +2,15 @@ import { axis, circle, path, plane, space } from "@weave/loom";
 import { Figure } from "../components/figure";
 import { cos, pi, sin } from "@weave/math";
 
+const L = plane([
+  axis('x'),
+  axis('y'),
+]) 
+
+export const LinearAxis = () => {
+  return <Figure of={L}/>
+}
+
 const twopi = 2 * pi;
 const fn = (t: number) => 1 + (cos(3 * t));
 const f = () => {

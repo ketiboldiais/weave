@@ -15,7 +15,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
   const translateXY = of.translationXY();
   return (
     <g transform={translateXY}>
-      <g transform={rotate} opacity={of.opacityValue || 0.4}>
+      <g transform={rotate} opacity={of.opacityValue || 0.5}>
         {!of.hasNo("axis-line") && (
           <path
             d={of.axisLine()}
@@ -27,7 +27,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
       </g>
       {!of.hasNo("ticks") &&
         ticks.map(({ text, line }, i) => (
-          <g key={(text.text as any) + i} opacity={of.opacityValue || 0.4}>
+          <g key={(text.text as any) + i} opacity={of.opacityValue || 0.6}>
             <line
               x1={line.x1}
               y1={line.y1}
@@ -38,7 +38,7 @@ export const Axis2D = ({ of }: Axis2DProps) => {
             <text
               x={text.x}
               y={text.y}
-              fontSize={"7px"}
+              fontSize={"11px"}
               color={text.FontColor || "currentColor"}
               textAnchor={text.anchor || "start"}
             >
