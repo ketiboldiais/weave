@@ -1256,14 +1256,16 @@ class AlgebraicString extends Expr {
     return nodekind.algebra_string;
   }
   expression: Expr;
-  constructor(expression: Expr) {
+  op: Token;
+  constructor(expression: Expr, op: Token) {
     super();
     this.expression = expression;
+    this.op = op;
   }
 }
 
-function algebraicString(expression: Expr) {
-  return new AlgebraicString(expression);
+function algebraicString(expression: Expr, op: Token) {
+  return new AlgebraicString(expression, op);
 }
 
 /**
@@ -5716,6 +5718,138 @@ function truthy(x: Primitive) {
   );
 }
 
+class Simplifier implements Visitor<AlgebraicExpression> {
+  op: Token;
+  constructor(op: Token) {
+    this.op = op;
+  }
+  private unsupportedError(nodetype:string) {
+    return this.error(`${nodetype} cannot be used in algebraic strings.`);
+  }
+  private error(message: string) {
+    return algebraError(
+      message,
+      "transforming to an algebraic expression",
+      this.op,
+    );
+  }
+  integer(node: Integer): AlgebraicExpression {
+    return int(node.value);
+  }
+  numericConstant(node: NumericConstant): AlgebraicExpression {
+    if (node.sym === "NAN") {
+      throw this.unsupportedError('NAN');
+    } else {
+      return constant(node.sym, node.value);
+    }
+  }
+  vectorExpr(node: VectorExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Vectors`)
+  }
+  matrixExpr(node: MatrixExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Matrices`);
+  }
+  indexingExpr(node: IndexingExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Indexing expressions`);
+  }
+  bigNumber(node: BigNumber): AlgebraicExpression {
+    throw this.unsupportedError(`Big numbers`);
+  }
+  fractionExpr(node: FractionExpr): AlgebraicExpression {
+    return frac(node.value.n, node.value.d);
+  }
+  bigRational(node: RationalExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Big rationals`);
+  }
+  float(node: Float): AlgebraicExpression {
+    return real(node.value);
+  }
+  bool(node: Bool): AlgebraicExpression {
+    throw this.unsupportedError(`Booleans`);
+  }
+  tupleExpr(node: TupleExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Tuples`);
+  }
+  getExpr(node: GetExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Get expressions`);
+  }
+  setExpr(node: SetExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Set expressions`);
+  }
+  superExpr(node: SuperExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Super expressions`);
+  }
+  thisExpr(node: ThisExpr): AlgebraicExpression {
+    throw this.unsupportedError(`This expressions`);
+  }
+  string(node: StringLiteral): AlgebraicExpression {
+    throw this.unsupportedError(`Strings expressions`);
+  }
+  algebraicString(node: AlgebraicString): AlgebraicExpression {
+    throw this.error(`Algebraic strings cannot be used within themselves`);
+  }
+  nil(node: Nil): AlgebraicExpression {
+    throw this.unsupportedError(`Null`);
+  }
+  variable(node: Variable): AlgebraicExpression {
+    return sym(node.name.lexeme);
+  }
+  assignExpr(node: AssignExpr): AlgebraicExpression {
+    throw this.unsupportedError(`Assignment expressions`);
+  }
+  algebraicBinaryExpr(node: AlgebraicBinaryExpr): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  algebraicUnaryExpr(node: AlgebraicUnaryExpr): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  logicalBinaryExpr(node: LogicalBinaryExpr): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  logicalUnaryExpr(node: LogicalUnaryExpr): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  relationalExpr(node: RelationalExpr): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  callExpr(node: CallExpr): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  nativeCall(node: NativeCall): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  groupExpr(node: GroupExpr): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  blockStmt(node: BlockStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  exprStmt(node: ExprStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  fnStmt(node: FnStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  ifStmt(node: IfStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  classStmt(node: ClassStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  printStmt(node: PrintStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  returnStmt(node: ReturnStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  letStmt(node: VariableStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+  whileStmt(node: WhileStmt): AlgebraicExpression {
+    throw new Error("Method not implemented.");
+  }
+}
+
 class Compiler implements Visitor<Primitive> {
   environment: Environment<Primitive>;
   globals: Environment<Primitive>;
@@ -6533,7 +6667,7 @@ function lexical(input: string) {
     }
     tick(); // eat the ':'
     const s = slice().replaceAll(`'`, "");
-    return tkn(tt.algebra_string).lex(s);
+    return tkn(tt.algebra_string).lit(s);
   };
 
   const stringLiteral = () => {
@@ -6807,104 +6941,6 @@ function lexical(input: string) {
     scan,
     isDone,
   };
-}
-
-/**
- * Given an array of tokens, splits
- * all multicharacter symbols into
- * individual symbols, provided
- * the multicharacter symbol is:
- *
- * 1. not a Greek letter name,
- * 2. not a core function name, and
- * 3. does not include the character `_`.
- */
-function symsplit(
-  lexicalAnalysisResult: Either<Err, Token[]>,
-): Either<Err, Token[]> {
-  if (lexicalAnalysisResult.isLeft()) {
-    return lexicalAnalysisResult;
-  }
-  const tokens = lexicalAnalysisResult.unwrap();
-  const out: Token[] = [];
-  for (let i = 0; i < tokens.length; i++) {
-    const t1 = tokens[i];
-    if (
-      t1.isVariable() && !isGreekLetterName(t1.lexeme) &&
-      !t1.lexeme.includes("_") && !t1.lexeme.includes("$") &&
-      !t1.lexeme.includes(`'`)
-    ) {
-      t1.lexeme.split("").map((c) => token(tt.symbol, c, t1.L, t1.C))
-        .forEach((v) => out.push(v));
-    } else {
-      out.push(t1);
-    }
-  }
-  return right(out);
-}
-
-function tidyAlgebraStrings(
-  lexicalAnalysisResult: Either<Err, Token[]>,
-): Either<Err, Token[]> {
-  if (lexicalAnalysisResult.isLeft()) {
-    return lexicalAnalysisResult;
-  }
-  const tokens = lexicalAnalysisResult.unwrap();
-  const out: Token[] = [];
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (t.is(tt.algebra_string)) {
-      const tks = lexical(t.lexeme).stream();
-      if (tks.isLeft()) {
-        return tks;
-      }
-      const at = symsplit(tks);
-      const withIMUL = imul(at);
-      if (withIMUL.isLeft()) {
-        return withIMUL;
-      }
-      const m = withIMUL.unwrap().map((c) => c.lexeme).join("");
-      out.push(t.lit(m));
-    } else {
-      out.push(t);
-    }
-  }
-  return right(out);
-}
-
-function imul(
-  lexicalAnalysisResult: Either<Err, Token[]>,
-): Either<Err, Token[]> {
-  if (lexicalAnalysisResult.isLeft()) {
-    return lexicalAnalysisResult;
-  }
-  const tkns = lexicalAnalysisResult.unwrap();
-  const out: Token[] = [];
-  const tokens = zip(tkns, tkns.slice(1));
-  for (let i = 0; i < tokens.length; i++) {
-    const [now, nxt] = tokens[i];
-    out.push(now);
-    if (now.is(tt.rparen)) {
-      if (nxt.is(tt.symbol)) {
-        out.push(nxt.entype(tt.star).lex("*"));
-      } else if (nxt.is(tt.lparen)) {
-        out.push(nxt.entype(tt.star).lex("*"));
-      }
-    } else if (
-      now.isNumLike() &&
-      (nxt.is(tt.native))
-    ) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    } else if (now.isNumLike() && nxt.is(tt.symbol)) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    } else if (now.isNumLike() && nxt.is(tt.lparen)) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    } else if (now.is(tt.symbol) && nxt.is(tt.symbol)) {
-      out.push(nxt.entype(tt.star).lex("*"));
-    }
-  }
-  out.push(tkns[tkns.length - 1]);
-  return right(out);
 }
 
 class ParserState<STMT extends TREENODE, EXPR extends TREENODE> {
@@ -7554,12 +7590,13 @@ function syntax(source: string) {
   const algebraic_string: Parslet = (op) => {
     if (op.isAlgebraString()) {
       const tkns = op.literal;
+      const t = token(tt.algebra_string, "", op.L, op.C);
       const result = syntax(tkns).expression();
       if (result.isLeft()) {
         return result;
       }
       const expression = result.unwrap();
-      return state.newExpression(algebraicString(expression));
+      return state.newExpression(algebraicString(expression, t));
     } else {
       return state.error(
         `Unexpected algebraic string`,
@@ -7865,7 +7902,6 @@ function syntax(source: string) {
    * Parses a {@link VariableStmt|let statement}.
    */
   const VAR = (prev: tt.let | tt.var): Either<Err, VariableStmt> => {
-    const current = state.current;
     const src = `parsing a variable declaration`;
     const name = state.next();
     if (!name.isVariable()) {
@@ -8094,13 +8130,6 @@ function syntax(source: string) {
   };
 }
 
-const html = {
-  span: (
-    x: string | number,
-    className: string,
-  ) => (`<span class="${className}">${x}</span>`),
-};
-
 export function engine(source: string) {
   let settings: EngineSettings = {
     implicitMultiplication: true,
@@ -8172,3 +8201,8 @@ export function engine(source: string) {
   };
 }
 
+const src = `
+let y = '2x - y';
+`;
+const p = engine(src).ast();
+print(p);

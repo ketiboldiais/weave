@@ -73,6 +73,17 @@ print 1|3 - 3|8;
 print 12|17 * 1|4;
 `} height={110}/>
 
+## Comparisons
+Twine’s comparison operators always reduce to the Booleans true or false. Equality is checked with the double-equals `==` operator.
+
+<Terminal source={`
+print 1 < 2;
+print 2 > 5;
+print 3 <= 4;
+print 8 >= 9;
+print 8 == 8;
+`} height={160}/>
+
 ## Variables
 Variables are declared with either the _let_ or _var_ keywords. Variables declared with _let_ are immutable – once declared, they are frozen in place, and we may not assign them a new value. Variables declared with _var_, however, are mutable.
 
@@ -297,75 +308,3 @@ print box1.volume();
 
 Above, we see that the the `Box` class consists of three properties, `length`, `width`, and `height`. These properties are initialized with the `def` method (what might be called a _constructor_ in other OOP languages). All class instances in Twine have a `def` method for initializing their properties.
 
-:::p1
-part i
-:::
-
-This part introduces the basic mathematical background necessary to understanding the compiler’s architecture. Readers familiar with the outlined topics should proceed to Part II.
-
-## Logic
-The following symbols are used extensively throughout the documentation.
-
-| Symbol      | Semantic                 | Example Usage                          |
-| ----------- | ------------------------ | -------------------------------------- |
-| ${\land}$   | Logical _and_            | ${a \land b}$ (“${a}$ and ${b}$”)      |
-| ${\lor}$    | Logical _or_             | ${a \lor b}$ (“${a}$ or ${b}$”)        |
-| ${\neg}$    | Logical _not_            | ${\neg x}$ (“not ${x}$”)               |
-| ${\exist}$  | _Existence_ predicate    | ${\exist x}$ (“there exists an ${x}$”) |
-| ${\forall}$ | _Universality_ predicate | ${\forall x}$ (“for all ${x}$”)        |
-
-## Set Theory
-In Twine, the word _object_ refers to any entity that may be persisted in computer memory. We refer to an unordered collection of such entities with the word _set_.
-
-:::definition
-### Set
-A _set_ is a collection of objects. By convention, we denote sets with upper-case Latin characters, and objects with lower-case Latin characters. Should a set comprise many elements, we use _ellipses_ (${\ldots}$) to denote the fact.
-:::
-
-__Example.__ The set ${S = \set{1, 10}}$ is a set comprising two objects, 1 and 10.
-
-__Example.__ The set ${A = \set{1, 2, \ldots, 9, 10}}$ comprises 10 objects, the numbers ${1}$ through ${10.}$
-
-:::definition
-### Common Sets
-We reserve the following symbols to denote particular sets:
-
-| Symbol         | Set                        |
-| -------------- | -------------------------- |
-| ${\natnums}$   | The set of natural numbers |
-| ${\Z}$         | The set of integers        |
-| ${\mathbb{Q}}$ | The set of rationals       |
-| ${\R}$         | The set of reals           |
-| ${\Complex}$   | The set of complex numbers |
-:::
-
-
-
-:::definition
-### Member
-Given a set ${S,}$ if ${S}$ contains an object ${x,}$ we say that ${x}$ is a _member of_ ${S,}$ and write ${x \in S.}$ If ${x}$ is _not_ a member of ${S,}$ we write ${x \notin S.}$
-:::
-
-:::definition
-### Empty Set
-The _set_ containining no objects is called _the empty set_, denoted ${\varnothing.}$
-:::
-
-:::definition
-### Strict Subset
-Given sets ${A}$ and ${B,}$ if every element of ${A}$ is an element of ${B,}$ we say that ${A}$ is a _strict subset_ of ${B,}$ and write ${A \subset B.}$ 
-:::
-
-## Polynomials
-Polynomials are particularly important in Twine, as they comrpise the bedrock of approximation.
-
-:::definition
-### Single-variable Polynomial
-A _single-variable polynomial_ is an expression ${u}$ of the form:
-
-$$
-  u = a_nx^n + a_{n-1}x^{n-1} + \ldots + a_1 + a_0,
-$$
-
-where ${x}$ is a _variable_, and each ${a}$ is a _rational number coefficient_. Where ${a_n \neq 0,}$ the coefficient ${a_n}$ is called the _leading cofficient_ of ${u,}$ and ${n}$ is called its _degree_.
-:::

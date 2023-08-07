@@ -4,8 +4,7 @@ import QuadDoc from "./demos/quad.doc.mdx";
 import AxesDoc from "./demos/axes.doc.mdx";
 import TwineDoc from "./demos/twine.doc.mdx";
 import VectorDoc from "./demos/vector.doc.mdx";
-
-import { DocPage, MainPage } from "./MDXSchema.js";
+import { MainPage } from "./MDXSchema.js";
 
 export const docLinks = {
   Intro: "/",
