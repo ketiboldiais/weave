@@ -793,7 +793,7 @@ function formattedError(
     case "type-error":
       moduleName = "typechecker";
   }
-  return (`${errorType.toUpperCase()}.\nWhile ${phase}, an occurred on\nline ${line}, column ${column}.\nReporting from the ${moduleName}:\n${message} \nRecommendation: ${recommendation}`);
+  return (`${errorType.toUpperCase()}.\nWhile ${phase}, an error occurred on\nline ${line}, column ${column}.\nReporting from the ${moduleName}:\n${message} \nRecommendation: ${recommendation}`);
 }
 
 /** Returns a new lexical error. A lexical error is raised if an error occured during scanning. */
