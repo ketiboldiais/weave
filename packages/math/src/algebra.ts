@@ -5756,7 +5756,7 @@ class Compiler implements Visitor<Primitive> {
       const out = L.element(I);
       if (out === null) {
         throw runtimeError(
-          `Encountered an out-of-bounds index.\nThe provided index exceeds the length of the targed sequential.`,
+          `Encountered an out-of-bounds index.\nThe provided index exceeds the length of the targted sequential.`,
           `evaluating an indexing expression`,
           node.op,
           "Ensure the index value is less than the sequential’s length.",
@@ -5773,9 +5773,7 @@ class Compiler implements Visitor<Primitive> {
       }
     } else {
       throw runtimeError(
-        `Only tuples, vectors, and matrices may be indexed into. “${
-          stringify(L)
-        }” is neither.`,
+        `Expected a sequential for indexing, but got “${stringify(L)}”`,
         `evaluating an indexing expression`,
         node.op,
       );
