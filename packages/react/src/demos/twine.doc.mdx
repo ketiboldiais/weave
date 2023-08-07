@@ -1,54 +1,97 @@
 import {Terminal} from './Screen.tsx';
 
-# Tangle
-This is the documentation page for _Tangle_, _Twine_’s compiler. This documentation is partitioned in five: _**part o**_ presents an overview of the _Twine_ language. _**part i**_ covers the mathematical background necessary for understanding _Tangle_’s architecture. _**part ii**_ provides an overview of the compiler’s API and various implementation details. Finally, _**part iv**_ presents current limitations and plans for future improvements.
-
-:::p1
-part o
-:::
-
+# Twine
 Twine is a scripting language designed specifically for _Loom_. The language supports variable and function declarations, symbolic computation, array-based computation, and classical object-oriented programming.
 
 ## Comments
 Single-line comments in Twine start with three hyphens-minus (`“-”`) and terminate on the first newline (the character `“\n”`):
 
-~~~
+
+<Terminal source={`
 --- Single-line comments emphasize intermissions.
-~~~
+`} height={60}/>
 
 Multiline comments start with at least three equals signs (`“=”`) and terminate on at least three equals signs:
 
-```
+
+<Terminal source={`
 ============================
 Following Twine’s emphasis
 on readability, we use
 multiple “=” signs to call
 the reader’s attention.
 ============================
-```
+`} height={190}/>
+
+## First Program
+Nodding to tradition, here is our first program in Twine. Clicking the “Run” button, we should see `“Hello, world!”`, followed by an `OK`, beneath the block.
+ 
+<Terminal source={`print "Hello, world!";`} height={60}/>
+
+The keyword `print` is a built-in operator in Twine for logging. Try entering something else between the double quotes.
+
+## Basic Arithmetic
+Twine recognizes a variety of arithmetic operations:
+
+<Terminal source={`
+print 1 + 2;
+print 3 - 5;
+print 5 / 2;
+print 5 div 2;
+print 2^3;
+print 4 rem 2;
+print 4 % 10;
+`} height={"210px"}/>
+
+Twine calls these _algebraic infix operators_, defined as follows:
+
+:::definition
+__Algebraic Infix Operators.__ Where `a` and `b` are numbers:
+
+| Expression | Semantic                                                            |
+| ---------- | ------------------------------------------------------------------- |
+| `a + b`    | The sum of `a` and `b`                                              |
+| `a - b`    | The difference of `a` and `b`                                       |
+| `a * b`    | The product of `a` and `b`                                          |
+| `a / b`    | The division of `a` by `b`                                          |
+| `a div b`  | The quotient of `a` and `b` (equivalent to ${\lfloor a/b \rfloor}$) |
+| `a^b`      | `a` raised to `b`                                                   |
+| `a mod b`  | The _remainder_ of `a` and `b`                                        |
+| `a rem b`  | The _signed remainder_ of `a` and `b`                               |
+| `a % b`    | `a%` of `b`                                                         |
+:::
+
+Note the emphasis on _remainder_ and _signed remainder_. Twine recognizes two different forms of remainder: `rem` for the “C-style” remainder (the `%` operator in JavaScript) and `mod` for the more mathematical definition. The key difference between these two operators is that `mod` always reduces to a positive integer.
+
+## Fraction Arithmetic
+The arithmetic operators above can apply over ${\mathbb{Q}}$ (i.e., fraction arithmetic). Fractions are written with the syntax `a|b`, where `a` and `b` are integers.
+
+
+<Terminal source={`
+print 1|2 + 2|3;
+print 1|3 - 3|8;
+print 12|17 * 1|4;
+`} height={110}/>
 
 ## Variables
 Variables are declared with either the _let_ or _var_ keywords. Variables declared with _let_ are immutable – once declared, they are frozen in place, and we may not assign them a new value. Variables declared with _var_, however, are mutable.
 
 For example, this is permissible:
 
-~~~ts
+<Terminal source={`
 var y = 12;
 y = 11;
-~~~
+`}/>
 
 However, this will trigger an environment error, since `y` is immutable:
 
-~~~ts
+<Terminal source={`
 let y = 3.14;
 y = 5;
-~~~
+`}/>
 
 Following the C tradition, statements are delimited by semicolons.
 
-<Terminal source={`var y = 8;
-y = 10;
-print y;`}/>
 
 ### Valid Identifiers
 A lexeme will be interpreted as a variable name only if all of the following conditions are satisfied:
@@ -56,10 +99,6 @@ A lexeme will be interpreted as a variable name only if all of the following con
 1. The lexeme starts with an ASCII Latin character (lower- or upper-case), the underscore character (`“_”`) or a dollar sign (`“$”`).
 2. The lexeme ends with an ASCII Latin character (lower- or upper-case), an ASCII digit (the Hindu-Arabic numerals `“0”` through `“9”`), an underscore character (`“_”`), or a dollar sign (`“$”`).
 3. The lexeme is not a reserved word.
-
-
-
-
 
 ## Types
 Twine recognizes the following core types by default. These types are outlined below, with their documentation symbols parenthesized:
@@ -149,7 +188,7 @@ All sequentials can be accessed via an _indexing expression_:
 
 <Terminal source={`let x = [8,9,1,2];
 let element = x[1];
-print element;`}/>
+print element;`} height={110}/>
 
 Following mathematical convention, Twine uses 1-based indexing. That is, the first element of a sequential has an index of 1, the second element 2, the third 3, ${\ldots,}$ the ${n^{\text{th}}}$ element ${n.}$
 
@@ -157,7 +196,7 @@ In contrast to JavaScript, Twine does not allow indices exceeding the length of 
 
 <Terminal source={`let x = [8,9,1,2];
 let element = x[5];
-print element;`}/>
+print element;`} height={110}/>
 
 ### Vectors
 Vectors in Twine are sequences of strictly _ints_ or _floats_. Inserting or initializing any other type into a vector will return a type error. For fixed-length, homogenous sequences of other data types, we use _tuples_. For mixed sequences of arbitrary length, we use _lists_. 
@@ -182,9 +221,31 @@ if x < 10 {
   x = 8;
 }
 print x;
-`} height={"200px"}/>
+`} height={"210px"}/>
 
 Like Rust and other modern languages, the if-block’s necessary condition need not be surrounded by parentheses. However, a left-brace is required to demarcate the consequent’s start. The else branch doesn’t require braces, but it’s best to do so for readability.
+
+## Loops
+Twine provides two iterative constructs, for-loops and while-loops (note that the compiler used for this page has a safety cap of 600 iterations):
+
+
+<Terminal source={`
+var k = 1;
+var n = 0;
+while (k < 10) {
+  n += k;
+  k++;
+}
+print n;
+k = 0;
+for (var i = 0; i < 20; i++) {
+  k += 2;
+}
+print k;
+`} height={"330px"}/>
+
+When working with loops, it’s important to remember that variables declared with `let` are immutable by default.
+
 
 ## Functions
 Functions are declared with the `fn` keyword, followed by an identifier, and a parenthesized argument list. If the function’s body comprises a single statement, then the assignment operator (`=`) may follow the list. Otherwise, braces are required to indicate a block of statements:
@@ -211,7 +272,7 @@ class Circle {
 }
 let circle1 = Circle(5);
 circle1.callThyself();
-`} height={"200px"}/>
+`} height={"210px"}/>
 
 Syntactically, a class in _Twine_ is a collection of functions. Semantically, a class is a bundle of _properties_, where each property is mapped to by a unique _field_. Above, the `Circle` class comprises three fields – `def`, `diameter`, and `radius` – and two properties: (1) `def` maps to `null` (with the side-effect of defining properties bound to the `Circle` instance’s `this` reference), and (2) both `diameter` and `radius` map to numerics.
 
@@ -232,7 +293,7 @@ class Box {
 }
 let box1 = Box(3,5,2);
 print box1.volume();
-`} height={"320px"}/>
+`} height={330}/>
 
 Above, we see that the the `Box` class consists of three properties, `length`, `width`, and `height`. These properties are initialized with the `def` method (what might be called a _constructor_ in other OOP languages). All class instances in Twine have a `def` method for initializing their properties.
 
@@ -308,63 +369,3 @@ $$
 
 where ${x}$ is a _variable_, and each ${a}$ is a _rational number coefficient_. Where ${a_n \neq 0,}$ the coefficient ${a_n}$ is called the _leading cofficient_ of ${u,}$ and ${n}$ is called its _degree_.
 :::
-
-
-:::p1
-part ii
-:::
-
-This part of the documentation provides an overview of _Tangle_’s API, followed by summaries of its implementation details.
-
-## Auxiliary Functions
-_Tangle_ relies on various standalone helper functions. These functions are presented below.
-
-### Numeric Functions
-_Numeric functions_ are those that perform purely numeric computations.
-
-#### rem
-Given two numbers, ${a}$ and ${b,}$ returns the signed remainder of ${a}$ and ${b.}$ The function is equivalent to writing `a % b`.
-
-:::tbl
-| Parameters               | Returns  |
-| ------------------------ | -------- |
-| `(a: number, b: number)` | `number` |
-:::
-
-#### mod
-Returns the remainder of ${a}$ and ${b}$ (i.e., ${a \bmod b}$). The function is equivalent to writing `((a % b) + b) % b`.
-
-:::tbl
-| Parameters               | Returns  |
-| ------------------------ | -------- |
-| `(a: number, b: number)` | `number` |
-:::
-
-#### quot
-Returns the integer quotient of integers ${a}$ and ${b}$ (i.e., ${\lfloor a/b \rfloor}$).
-
-:::tbl
-| Parameters               | Returns  |
-| ------------------------ | -------- |
-| `(a: number, b: number)` | `number` |
-:::
-
-#### gcd 
-Returns the greatest common divisor of integers ${a}$ and ${b.}$
-
-:::tbl
-| Parameters               | Returns  |
-| ------------------------ | -------- |
-| `(a: number, b: number)` | `number` |
-:::
-
-#### xgcd
-Returns a triple corresponding to the result of the extended Euclidean algorithm.
-
-:::tbl
-| Parameters             | Returns                    |
-| ---------------------- | -------------------------- |
-| `(a:number, b:number)` | `[number, number, number]` |
-:::
-
-

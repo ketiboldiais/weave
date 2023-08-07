@@ -109,7 +109,7 @@ function isNumericString(s: string) {
 
 /** Returns the a% of b. */
 function percent(a: number, b: number) {
-  return (100 * a) / b;
+  return (a / 100) * b;
 }
 
 class Complex {
@@ -451,6 +451,9 @@ class Fraction {
       k = k2 + a * k1;
     }
     return Fraction.of(h, abs(k));
+  }
+  asInt() {
+    return floor(this.n / this.d);
   }
   asFloat() {
     return (this.n / this.d);
@@ -5756,7 +5759,7 @@ class Compiler implements Visitor<Primitive> {
       const out = L.element(I);
       if (out === null) {
         throw runtimeError(
-          `Encountered an out-of-bounds index.\nThe provided index exceeds the length of the targted sequential.`,
+          `Encountered an out-of-bounds index.\nThe provided index exceeds the length of the targeted sequential.`,
           `evaluating an indexing expression`,
           node.op,
           "Ensure the index value is less than the sequential’s length.",
@@ -5897,14 +5900,10 @@ class Compiler implements Visitor<Primitive> {
         case tt.plus: return L.add(R);
         case tt.minus: return L.sub(R);
         case tt.percent: return percent(L.asFloat(), R.asFloat());
-        case tt.rem:
-        case tt.mod:
-        case tt.div:
-          throw runtimeError(
-            `The “${tt[node.op.type]}” operator is not defined on fractions`,
-            `evaluating a binary expression`,
-						node.op,
-          )
+        case tt.rem: return (L.asInt()) % (R.asInt());
+        case tt.mod: return mod(L.asInt(), R.asInt());
+        case tt.div: return floor(L.asInt()/R.asInt());
+        case tt.caret: return (L.asInt() ** R.asInt());
       }
     }
     // deno-fmt-ignore
@@ -6158,10 +6157,24 @@ class Compiler implements Visitor<Primitive> {
     this.environment.define(node.name.lexeme, value, node.mutable);
     return value;
   }
+  maxLoops: number = Infinity;
+  loopcap(n: number) {
+    this.maxLoops = n;
+    return this;
+  }
   whileStmt(node: WhileStmt): Primitive {
     let out: Primitive = null;
+    let i = 0;
     while (truthy(this.evaluate(node.condition))) {
       out = this.evaluate(node.body);
+      i++;
+      if (i > this.maxLoops) {
+        throw runtimeError(
+          `Iterations exceed this environment’s safety ceiling`,
+          "interpreting a while-loop",
+          node.keyword,
+        );
+      }
     }
     return out;
   }
@@ -8140,7 +8153,7 @@ export function engine(source: string) {
         return [msg];
       }
       const statements = program.unwrap();
-      const interpreter = new Compiler().setmode("log");
+      const interpreter = new Compiler().setmode("log").loopcap(600);
       const resolved = resolvable(interpreter).resolved(statements);
       if (resolved.isLeft()) {
         const msg = resolved.unwrap().report();

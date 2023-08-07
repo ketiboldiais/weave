@@ -136,10 +136,8 @@ textarea {
 	width: 100%;
 	resize: vertical;
 	font-size: 0.9rem;
-	padding: 0.9em;
-	padding-bottom: 3em;
+	padding: 1em 0.9em;
 	line-height: 2;
-	min-height: max-content;
 	font-family: 'Fira Code';
 	border: solid thin lightgrey;
 	border-radius: 0.3em;

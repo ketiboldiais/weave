@@ -2,7 +2,7 @@ import { useState } from "react";
 import { engine } from "./io.js";
 
 export const Terminal = (
-  { source, height='max-content' }: { source: string; height: string | number },
+  { source, height='fit-content' }: { source: string; height: string | number },
 ) => {
   const [result, setResult] = useState("");
   const [code, setCode] = useState(source.trimStart().trimEnd());
