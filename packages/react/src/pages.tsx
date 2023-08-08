@@ -31,6 +31,7 @@ export const Main = () => {
           <Route path={docLinks.Axes} element={<AxesDoc />} />
           <Route path={docLinks.Twine} element={<TwineDoc />} />
           <Route path={docLinks.Vector} element={<VectorDoc />} />
+          <Route path={'/tangle'} element={<TwineDoc/>}/>
         </Route>
       </Routes>
     </BrowserRouter>
