@@ -1,6 +1,7 @@
 @import './colors.scss';
 
 .app {
+	font-family: 'KaTeX_Main';
 	h1 {
 		text-align: center;
 		margin-bottom: 5rem;
@@ -174,7 +175,7 @@
 	.page {
 		max-width: 700px;
 		margin: 0 auto;
-		padding-bottom: 5em;
+		padding-bottom: 50%;
 		padding-left: 2em;
 		padding-right: 2em;
 	}

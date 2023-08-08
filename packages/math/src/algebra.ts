@@ -2637,13 +2637,7 @@ abstract class Compound extends AlgebraicExpression {
   constructor(op: string, args: AlgebraicExpression[]) {
     super(op, klass.compound);
     this.op = op;
-    // this.args = args;
-    this.args = args.map((x) => {
-      if (isCompound(x)) {
-        x.tickParen();
-      }
-      return x;
-    });
+    this.args = args;
   }
   get numberOfOperands(): number {
     return this.args.length;
@@ -2664,6 +2658,7 @@ abstract class Compound extends AlgebraicExpression {
       return false;
     }
     if (this.args.length !== other.args.length) return false;
+    if (this.parenLevel !== other.parenLevel) return false;
     for (let i = 0; i < this.args.length; i++) {
       const a = this.args[i];
       const b = other.args[i];
@@ -2800,7 +2795,6 @@ class Product extends AlgebraicOp<core.product> {
     return out;
   }
   toString(): string {
-    const out: string[] = [];
     const args = this.args;
     if (args.length === 2) {
       const [a, b] = args;
@@ -2812,11 +2806,17 @@ class Product extends AlgebraicOp<core.product> {
         return `${a.toString()}${b.toString()}`;
       }
     }
+    const out: string[] = [];
     for (let i = 0; i < args.length; i++) {
       const a = args[i];
       out.push(a.toString());
     }
-    return out.join(" * ");
+    const expr = out.join("");
+    if (this.parenLevel !== 0) {
+      return `(${expr})`;
+    } else {
+      return expr;
+    }
   }
   constructor(args: AlgebraicExpression[]) {
     super(core.product, args);
@@ -3254,7 +3254,10 @@ class Power extends AlgebraicOp<core.power> {
   }
   toString(): string {
     const base = this.base.toString();
-    const exponent = this.exponent.toString();
+    let exponent = this.exponent.toString();
+    if (!isInt(this.exponent) && !isSymbol(this.exponent)) {
+      exponent = `(${exponent})`;
+    }
     const out = `${base}^${exponent}`;
     if (this.parenLevel !== 0) {
       return parend(out);
@@ -3865,7 +3868,7 @@ function precedes(
     if (isSum(u) && ( isFactorial(v) || isAlgebraicFn(v) || isSymbol(v))) return O10(u, v);
     if (isFactorial(u) && ( isAlgebraicFn(v) || isSymbol(v))) return O11(u, v);
     if (isAlgebraicFn(u) && isSymbol(v)) return O12(u, v);
-    return !order(v,u);
+    return false;
   };
   return order(expression1, expression2);
 }
@@ -4115,13 +4118,9 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
 }
 
 function simplify(expression: AlgebraicExpression) {
-  if (isConst(expression)) {
-    return expression;
-  }
   const simplify_function = (expr: AlgebraicFn): AlgebraicExpression => {
     return expr;
   };
-
   const simplify_factorial = (expr: Factorial): AlgebraicExpression => {
     const arg = expr.arg;
     if (isUndefined(arg)) {
@@ -5720,10 +5719,14 @@ function truthy(x: Primitive) {
 
 class Simplifier implements Visitor<AlgebraicExpression> {
   op: Token;
+  place(op: Token) {
+    this.op = op;
+    return this;
+  }
   constructor(op: Token) {
     this.op = op;
   }
-  private unsupportedError(nodetype:string) {
+  private unsupportedError(nodetype: string) {
     return this.error(`${nodetype} cannot be used in algebraic strings.`);
   }
   private error(message: string) {
@@ -5733,18 +5736,28 @@ class Simplifier implements Visitor<AlgebraicExpression> {
       this.op,
     );
   }
+  reduce(node: ASTNode) {
+    return node.accept(this);
+  }
+  reduceEach(nodes: ASTNode[]) {
+    const args = [];
+    for (let i = 0; i < nodes.length; i++) {
+      args.push(this.reduce(nodes[i]));
+    }
+    return args;
+  }
   integer(node: Integer): AlgebraicExpression {
     return int(node.value);
   }
   numericConstant(node: NumericConstant): AlgebraicExpression {
     if (node.sym === "NAN") {
-      throw this.unsupportedError('NAN');
+      throw this.unsupportedError("NAN");
     } else {
       return constant(node.sym, node.value);
     }
   }
   vectorExpr(node: VectorExpr): AlgebraicExpression {
-    throw this.unsupportedError(`Vectors`)
+    throw this.unsupportedError(`Vectors`);
   }
   matrixExpr(node: MatrixExpr): AlgebraicExpression {
     throw this.unsupportedError(`Matrices`);
@@ -5789,7 +5802,7 @@ class Simplifier implements Visitor<AlgebraicExpression> {
     throw this.error(`Algebraic strings cannot be used within themselves`);
   }
   nil(node: Nil): AlgebraicExpression {
-    throw this.unsupportedError(`Null`);
+    return Undefined();
   }
   variable(node: Variable): AlgebraicExpression {
     return sym(node.name.lexeme);
@@ -5798,55 +5811,119 @@ class Simplifier implements Visitor<AlgebraicExpression> {
     throw this.unsupportedError(`Assignment expressions`);
   }
   algebraicBinaryExpr(node: AlgebraicBinaryExpr): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    const left = this.reduce(node.left);
+    const right = this.reduce(node.right);
+    const op = node.op.type;
+    switch (op) {
+      case tt.caret: {
+        return power(left, right);
+      }
+      case tt.plus: {
+        return sum([left, right]);
+      }
+      case tt.minus: {
+        return difference(left, right);
+      }
+      case tt.star: {
+        return product([left, right]);
+      }
+      case tt.slash: {
+        return quotient(left, right);
+      }
+    }
+    const lexeme = node.op.lexeme;
+    throw this.error(
+      `The “${lexeme}” operator is not supported in algebraic expressions`,
+    );
   }
   algebraicUnaryExpr(node: AlgebraicUnaryExpr): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    const arg = this.reduce(node.arg);
+    const op = node.op.type;
+    switch (op) {
+      case tt.plus: {
+        return sum([arg]);
+      }
+      case tt.minus: {
+        if (isInt(arg) || isReal(arg)) {
+          return int(-arg.n);
+        } else {
+          return product([int(-1), arg]);
+        }
+      }
+      case tt.bang: {
+        return factorial(arg);
+      }
+    }
   }
   logicalBinaryExpr(node: LogicalBinaryExpr): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Logical binary expressions`);
   }
   logicalUnaryExpr(node: LogicalUnaryExpr): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Logical unary expressions`);
   }
   relationalExpr(node: RelationalExpr): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Relational expressions`);
   }
   callExpr(node: CallExpr): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`User defined functions`);
   }
   nativeCall(node: NativeCall): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    const args = this.reduceEach(node.args);
+    if (args.length === 0) {
+      throw this.error(`Encountered a native call with no arguments.`);
+    }
+    const name = node.name.lexeme;
+    switch (name) {
+      case "deriv": {
+        const expr = args[0];
+        const variable = args[1];
+        if (variable === undefined || !isSymbol(variable)) {
+          throw this.error(
+            `Derivatives require a second symbol parameter.\n I.e., the derivative with respect to what variable?`,
+          );
+        } else {
+          return derivative(expr, variable);
+        }
+      }
+      case "simplify": {
+        return simplify(args[0]);
+      }
+      default: {
+        return fn(name, args);
+      }
+    }
   }
   groupExpr(node: GroupExpr): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    const out = this.reduce(node.expression);
+    out.tickParen();
+    return out;
   }
   blockStmt(node: BlockStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Block statements`);
   }
   exprStmt(node: ExprStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Expression statements`);
   }
   fnStmt(node: FnStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Function declarations`);
   }
   ifStmt(node: IfStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`If statements`);
   }
   classStmt(node: ClassStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Class statements`);
   }
   printStmt(node: PrintStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Print statements`);
   }
   returnStmt(node: ReturnStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Return statements`);
   }
   letStmt(node: VariableStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`Let statements`);
   }
   whileStmt(node: WhileStmt): AlgebraicExpression {
-    throw new Error("Method not implemented.");
+    throw this.unsupportedError(`While statements`);
   }
 }
 
@@ -5856,6 +5933,7 @@ class Compiler implements Visitor<Primitive> {
   locals: Map<Expr, number>;
   mode: "log" | "exec" = "exec";
   prints: string[] = [];
+  simplifier: Simplifier;
   evaluate(node: ASTNode): Primitive {
     return node.accept(this);
   }
@@ -5867,9 +5945,11 @@ class Compiler implements Visitor<Primitive> {
     this.globals = runtimeEnv(null);
     this.environment = this.globals;
     this.locals = new Map();
+    this.simplifier = new Simplifier(Token.empty);
   }
   algebraicString(node: AlgebraicString): Primitive {
-    throw new Error(`method unimplemented`);
+    const expression = node.expression;
+    return this.simplifier.place(node.op).reduce(expression);
   }
   lookupVariable(name: Token, expr: Expr) {
     const distance = this.locals.get(expr);
@@ -7056,7 +7136,7 @@ function syntax(source: string) {
         ? state.newExpression(integer(t.literal))
         : state.newExpression(float(t.literal));
       const peek = state.peek;
-      if (peek.is(tt.lparen) || peek.is(tt.native)) {
+      if (peek.is(tt.lparen) || peek.is(tt.native) || peek.is(tt.symbol)) {
         const r = expr();
         if (r.isLeft()) {
           return r;
@@ -7120,8 +7200,7 @@ function syntax(source: string) {
    * {@link AlgebraicBinaryExpr|algebraic binary expression}.
    */
   const rinfix = (op: Token, lhs: Expr): Either<Err, AlgebraicBinaryExpr> => {
-    const p = precof(op.type);
-    return expr(p).chain((rhs) => {
+    return expr().chain((rhs) => {
       const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
       return state.newExpression(out);
     });
@@ -8104,7 +8183,8 @@ function syntax(source: string) {
       if (state.ERROR !== null) {
         return left(state.ERROR);
       }
-      return expr();
+      const out = expr();
+      return out;
     },
     /**
      * Returns a syntax analysis of the entire
@@ -8201,8 +8281,11 @@ export function engine(source: string) {
   };
 }
 
+
 const src = `
-let y = '2x - y';
+let y = '((2x^2) * (6x^3)) * ((x^2) / (x^3))';
+let j = simplify(y);
+print j;
 `;
-const p = engine(src).ast();
+const p = engine(src).execute();
 print(p);

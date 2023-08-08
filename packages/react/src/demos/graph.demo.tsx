@@ -14,3 +14,13 @@ const d = forceSpace(graph({
 export const ForceGraph1 = () => {
   return <Figure of={d} />;
 };
+
+const datum = forceSpace(graph({
+  a: ["b", "x", "n"],
+  b: ["c"],
+  n: ["g", 'a'],
+})).context(space(200,200).dom(-5,5).ran(-4,4)).figure();
+
+export const ForceGraph = () => {
+  return <Figure of={datum} />;
+};

@@ -53,3 +53,42 @@ Binary search tree drawn with an HV algorithm.
 :::
 ::::
 
+import {ForceGraph} from './graph.demo.tsx'
+
+## Graphs
+Loom draws graphs with a force-directed algorithm (specifically, a variation of _Eades’s_ spring layout approach). Below is an example of a force-directed layout:
+
+:::col2
+
+~~~tsx
+const datum = forceSpace(graph({
+  a: ["b", "x", "n"],
+  b: ["c"],
+  n: ["g", 'a'],
+})).context(
+space(200,200)
+ .dom(-5,5)
+ .ran(-4,4)
+).figure();
+
+const ForceGraph = () => (
+ <Figure of={datum}/>
+)
+~~~
+
+<ForceGraph/>
+
+:::
+
+The graph above is drawn with several modules. The `forceSpace` function is a _layout function_. This function takes the data provided by `graph`, and applies physical forces to each node. The `context` property is a property available on all layout functions: It takes a given `Space` object, and scales all the layout algorithm’s final coordinates according to the given SVG width and height. In this case: 
+
+1. The SVG above has a width and height of ${200 \times 200}$ (set by the `space` function’s arguments).
+2. The ${x}$-coordinates are constrained to the interval `[-5,5]` (set by the `dom` method on `space`).
+3. The ${y}$-coordinates are constrained to the interval `[-4,4]` (set by the `ran` method on `space`).
+
+Given these arguments, the `forceSpace` function will output ${x}$-coordinates along the interval ${-5 \leq x \leq 5}$, ${y}$-coordinates  along the interval ${-4 \leq x \leq 4,}$ then scale them up to ${200 \times 200.}$
+
+:::aside
+Using this scaling approach makes it much easier to compute physical forces. In real-world physics, forces on objects often require working with large numbers. Working with such large numbers makes reasoning about space awkward (e.g., coordinates that look like `(3288184884,-83818394)`) and complex computations risky (floating-point overflow). It’s far easier to think algorithmically about single-digit floating point numbers, or, even better, integers.
+:::
+

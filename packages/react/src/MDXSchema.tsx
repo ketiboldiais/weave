@@ -13,6 +13,11 @@ export const MainPage = ({children}:Children) => (
     {children}
   </div>
 )
+const Col2 = ({children}:Children) => (
+  <div className={base.col2}>
+    {children}
+  </div>
+)
 
 const Note = (props: Children) => {
   return (
@@ -115,6 +120,7 @@ const components = {
   hstack: HStack,
   note: Note,
   a: Link,
+  col2: Col2,
 };
 
 export const BaseComponents = ({ children }: Children) => {

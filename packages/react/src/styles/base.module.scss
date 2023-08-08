@@ -1,5 +1,10 @@
 @import './colors.scss';
 
+.col2 {
+	display: grid;
+	grid-template-columns: 8fr 9fr;
+}
+
 .hstack {
 	display: flex;
 	justify-content: space-evenly;
@@ -18,9 +23,8 @@
 }
 
 .figcap {
-	font-family: Georgia,'Times New Roman', Times, serif;
 	font-style: italic;
-	font-size: 0.85rem;
+	font-size: 1.2rem;
 	text-align: center;
 	margin: 0.2rem 0;
 	padding: 0;

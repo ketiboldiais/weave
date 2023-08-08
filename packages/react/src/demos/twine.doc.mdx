@@ -308,3 +308,11 @@ print box1.volume();
 
 Above, we see that the the `Box` class consists of three properties, `length`, `width`, and `height`. These properties are initialized with the `def` method (what might be called a _constructor_ in other OOP languages). All class instances in Twine have a `def` method for initializing their properties.
 
+## Symbolics
+In Twine, everything surrounded in single-quotes (`'`) is treated as a _symbolic_ – a string to be treated purely as a mathematical expression. This ensures that procedures like _automatic simplification_ (provided by the native `simplify` function below) work correctly.
+
+<Terminal source={`
+let y = '((2x^2) * (6x^3)) * ((x^2) / (x^3))';
+let j = simplify(y);
+print j;
+`} height={110}/>

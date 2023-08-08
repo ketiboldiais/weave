@@ -6,12 +6,17 @@ import TwineDoc from "./demos/twine.doc.mdx";
 import VectorDoc from "./demos/vector.doc.mdx";
 import { MainPage } from "./MDXSchema.js";
 
-export const docLinks = {
-  Intro: "/",
-  Quadrilaterals: "/quad",
-  Axes: "/axes",
-  Vector: "/vector",
-  Twine: "/twine",
+type LinkEntry = {
+  path: string;
+  visible: boolean;
+};
+
+export const docLinks: Record<string, LinkEntry> = {
+  Intro: { path: "/", visible: true },
+  Quadrilaterals: { path: "/quad", visible: false },
+  Axes: { path: "/axes", visible: false },
+  Vector: { path: "/vector", visible: false },
+  Twine: { path: "/twine", visible: true },
 };
 
 const MAIN = () => (
@@ -20,18 +25,17 @@ const MAIN = () => (
   </MainPage>
 );
 
-
 export const Main = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Page />}>
-          <Route path={docLinks.Intro} element={<MAIN />} />
-          <Route path={docLinks.Quadrilaterals} element={<QuadDoc />} />
-          <Route path={docLinks.Axes} element={<AxesDoc />} />
-          <Route path={docLinks.Twine} element={<TwineDoc />} />
-          <Route path={docLinks.Vector} element={<VectorDoc />} />
-          <Route path={'/tangle'} element={<TwineDoc/>}/>
+          <Route path={docLinks.Intro.path} element={<MAIN />} />
+          <Route path={docLinks.Quadrilaterals.path} element={<QuadDoc />} />
+          <Route path={docLinks.Axes.path} element={<AxesDoc />} />
+          <Route path={docLinks.Twine.path} element={<TwineDoc />} />
+          <Route path={docLinks.Vector.path} element={<VectorDoc />} />
+          <Route path={"/tangle"} element={<TwineDoc />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -47,9 +51,9 @@ function Page() {
       <nav>
         <ul>
           {Object.entries(docLinks).map(([name, path]) => (
-            <li key={name + path}>
-              <Link to={path}>{name}</Link>
-            </li>
+            path.visible && (<li key={name + path}>
+              <Link to={path.path}>{name}</Link>
+            </li>)
           ))}
         </ul>
       </nav>

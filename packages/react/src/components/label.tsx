@@ -47,8 +47,8 @@ export const Label = ({
   return (
     <g transform={translate}>
       <text
-        fontSize={data.FontSize ? data.FontSize : "9px"}
-        fontFamily={data.FontFamily ? data.FontFamily : "system-ui"}
+        fontSize={data.FontSize ? data.FontSize : "12px"}
+        fontFamily={data.FontFamily ? data.FontFamily : "KaTeX_Math"}
         fill={data.FontColor ? data.FontColor : "currentColor"}
         textAnchor={data.anchor ? data.anchor : "middle"}
       >
