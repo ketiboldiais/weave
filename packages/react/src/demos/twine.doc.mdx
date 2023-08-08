@@ -1,11 +1,11 @@
 import {Terminal} from './Screen.tsx';
 
 # Twine
+
 Twine is a scripting language designed specifically for _Loom_. The language supports variable and function declarations, symbolic computation, array-based computation, and classical object-oriented programming.
 
 ## Comments
 Single-line comments in Twine start with three hyphens-minus (`“-”`) and terminate on the first newline (the character `“\n”`):
-
 
 <Terminal source={`
 --- Single-line comments emphasize intermissions.
@@ -63,7 +63,7 @@ __Algebraic Infix Operators.__ Where `a` and `b` are numbers:
 
 Note the emphasis on _remainder_ and _signed remainder_. Twine recognizes two different forms of remainder: `rem` for the “C-style” remainder (the `%` operator in JavaScript) and `mod` for the more mathematical definition. The key difference between these two operators is that `mod` always reduces to a positive integer.
 
-## Fraction Arithmetic
+## Rational Arithmetic
 The arithmetic operators above can apply over ${\mathbb{Q}}$ (i.e., fraction arithmetic). Fractions are written with the syntax `a|b`, where `a` and `b` are integers.
 
 
@@ -83,6 +83,16 @@ print 3 <= 4;
 print 8 >= 9;
 print 8 == 8;
 `} height={160}/>
+
+## Vector Operations
+_Vector operators_ are operators over sequentials:
+
+<Terminal source={`
+let v = [1,2,3,4] .+ [7,3,2,4];
+print v;
+`} height={90}/>
+
+Importantly, these operators are limited to [vectors](#vectors). They are not defined over primitives, nor are they defined over other sequentials.
 
 ## Variables
 Variables are declared with either the _let_ or _var_ keywords. Variables declared with _let_ are immutable – once declared, they are frozen in place, and we may not assign them a new value. Variables declared with _var_, however, are mutable.
@@ -111,88 +121,97 @@ A lexeme will be interpreted as a variable name only if all of the following con
 2. The lexeme ends with an ASCII Latin character (lower- or upper-case), an ASCII digit (the Hindu-Arabic numerals `“0”` through `“9”`), an underscore character (`“_”`), or a dollar sign (`“$”`).
 3. The lexeme is not a reserved word.
 
-## Types
-Twine recognizes the following core types by default. These types are outlined below, with their documentation symbols parenthesized:
-
-:::hstack
-- :u[__Nonalgebraics__]
-- string ${\mathbb{S}}$
-- boolean ${\mathbb{B}}$
-- null ${\texttt{NULL}}$
----
-- :u[__Numerics__]
-- int ${\mathbb{Z}}$
-- float ${\mathbb{F}}$
-- rational ${\mathbb{Q}}$
-- big-integer ${\mathbb{Z}^{\uparrow}}$
-- big-rational ${\mathbb{Q}^{\uparrow}}$
----
-- :u[__Functionals__]
-- function
-- expression
----
-- :u[__Gatherings__]
-- set
-- map
-- object
----
-- :u[__Sequentials__]
-- tuple
-- list
-- vector
-- matrix
-- sequence
-:::
-
-Each type belongs to a _family_, marked above in bold, underlined headings. Before discussing these families, we must present an overview of each individual type.
-
-### Strings
+## Strings
 Strings in Twine are always delimited by double quotes:
-~~~ts
-let city = "Oconomowoc";
-~~~
 
-### Booleans
+<Terminal source={`
+let city = "Oconomowoc";
+print city;
+`} height={80}/>
+
+### String Concatenation
+To concatenate strings, we use the `&` operator:
+
+<Terminal source={`
+let j = 10;
+let k = "j is " & j;
+print k;
+`} height={110}/>
+
+## Booleans
 The set of all Booleans comprises two values, _true_ and _false_:
 
-~~~ts
+<Terminal source={`
 let aye = true;
 let nay = false;
-~~~
+print k;
+`} height={110}/>
 
-### Null
-The value _null_ denotes nothing, or empty. In contrast to some procedural languages, Twine has no notion of a _void function_. All semantics reduce to some atomic type, _null_ or otherwise.
+### Boolean Operators
+Booleans may be used in logical infix expressions:
 
-~~~ts
-let empty = null;
-~~~
+<Terminal source={`
+let a = 1 < 5;
+let b = 2 < 1;
 
-### Numerics
-Twine has several numeric types: _int_, _float_, _fraction_, _real_, _rational_, and _complex_.
+let not_a = not a;
+print "not a is: " & not_a;
 
-### Sequentials
+let a_or_b = a or b;
+print "a or b is: " & a_or_b;
+
+let a_and_b = a and b;
+print "a and b is: " & a_and_b;
+
+let a_nand_b = a nand b;
+print "a nand b is: " & a_nand_b;
+
+let a_xor_b = a xor b;
+print "a xor b is: " & a_xor_b;
+
+let a_xnor_b = a xnor b;
+print "a xnor b is: " & a_xnor_b;
+
+let a_nor_b = a nor b;
+print "a nor b is: " & a_nor_b;
+`} height={620}/>
+
+## Nil
+The value _nil_ denotes nothing, or empty. In contrast to some procedural languages, Twine has no notion of a _void function_. All semantics reduce to some atomic type, _nil_ or otherwise.
+
+<Terminal source={`
+let empty = nil;
+print empty;
+`} height={80}/>
+
+
+## Sequentials
 _Sequentials_ are well-ordered collections of data. Twine’s core sequential types include _vector_, _matrix_, and _tuple_.
 
 A vector `v`:
 
-~~~ts
+<Terminal source={`
 let v = [1,2,3,4];
-~~~
+print v;
+`} height={80}/>
 
 A matrix `M`:
 
-~~~ts
+<Terminal source={`
 let M = [
   [1,0,0],
   [0,1,0],
-  [0,0,1],
-]
-~~~
+  [0,0,1]
+];
+print M;
+`} height={200}/>
 
 A tuple `t`:
-~~~ts
-let t = (1,2,3,4)
-~~~
+
+<Terminal source={`
+let t = (1,2,3,4);
+print t;
+`} height={80}/>
 
 ### Indexing
 All sequentials can be accessed via an _indexing expression_:

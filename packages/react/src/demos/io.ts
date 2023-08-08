@@ -170,6 +170,15 @@ export class Vector<T extends number[] = number[]> {
   }
 
   /**
+   * Returns the product between this vector and
+   * the provided argument. If a number is passed,
+   * returns the scalar difference.
+   */
+  mul(other: Vector | number[] | number) {
+    return this.binop(other, (a, b) => a * b);
+  }
+
+  /**
    * Returns the sum of this vector and the provided
    * argument. If a number is passed, returns the
    * scalar difference.
@@ -867,6 +876,7 @@ function algebraError(
 enum nodekind {
   class_statement,
   block_statement,
+  string_binex,
   grouped_expression,
   expression_statement,
   function_declaration,
@@ -874,6 +884,7 @@ enum nodekind {
   print_statement,
   return_statement,
   variable_declaration,
+  vector_binex,
   loop_statement,
   algebra_string,
   tuple_expression,
@@ -909,6 +920,7 @@ interface Visitor<T> {
   integer(node: Integer): T;
   numericConstant(node: NumericConstant): T;
   vectorExpr(node: VectorExpr): T;
+  vectorBinaryExpr(node: VectorBinaryExpr): T;
   matrixExpr(node: MatrixExpr): T;
   indexingExpr(node: IndexingExpr): T;
   bigNumber(node: BigNumber): T;
@@ -922,6 +934,7 @@ interface Visitor<T> {
   superExpr(node: SuperExpr): T;
   thisExpr(node: ThisExpr): T;
   string(node: StringLiteral): T;
+  stringBinaryExpr(node: StringBinaryExpr): T;
   algebraicString(node: AlgebraicString): T;
   nil(node: Nil): T;
   variable(node: Variable): T;
@@ -1574,6 +1587,67 @@ class LogicalUnaryExpr extends Expr {
 function logicalUnary(op: Token<LogicalUnaryOperator>, arg: Expr) {
   return new LogicalUnaryExpr(op, arg);
 }
+
+type StringBinop = tt.amp;
+class StringBinaryExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.stringBinaryExpr(this);
+  }
+  toString(): string {
+    const left = this.left.toString();
+    const op = this.op.lexeme;
+    const right = this.right.toString();
+    return `${left} ${op} ${right}`;
+  }
+  get kind(): nodekind {
+    return nodekind.string_binex;
+  }
+  left: Expr;
+  op: Token<StringBinop>;
+  right: Expr;
+  constructor(left: Expr, op: Token<StringBinop>, right: Expr) {
+    super();
+    this.left = left;
+    this.op = op;
+    this.right = right;
+  }
+}
+const stringBinex = (left: Expr, op: Token<StringBinop>, right: Expr) => (
+  new StringBinaryExpr(left, op, right)
+);
+
+type VectorBinaryOP = tt.dot_add | tt.dot_minus | tt.dot_star;
+class VectorBinaryExpr extends Expr {
+  accept<T>(visitor: Visitor<T>): T {
+    return visitor.vectorBinaryExpr(this);
+  }
+  toString(): string {
+    const left = this.left.toString();
+    const op = this.op.lexeme;
+    const right = this.right.toString();
+    return `${left} ${op} ${right}`;
+  }
+  get kind(): nodekind {
+    return nodekind.vector_binex;
+  }
+  left: Expr;
+  op: Token<VectorBinaryOP>;
+  right: Expr;
+  constructor(left: Expr, op: Token<VectorBinaryOP>, right: Expr) {
+    super();
+    this.left = left;
+    this.op = op;
+    this.right = right;
+  }
+}
+
+const vectorBinaryExpr = (
+  left: Expr,
+  op: Token<VectorBinaryOP>,
+  right: Expr,
+) => (
+  new VectorBinaryExpr(left, op, right)
+);
 
 type ArithmeticOperator =
   | tt.plus
@@ -4787,8 +4861,11 @@ enum tt {
   
   // Vector operators
   /** Lexeme: `.+` - Vector addition */
+  dot_add,
   /** Lexeme: `.*` - Vector multiplication */
+  dot_star,
   /** Lexeme: `.-` - Vector difference */
+  dot_minus,
   /** Lexeme: `./` - Pairwise division */
   /** Lexeme: `@` - Dot product */
   
@@ -5112,6 +5189,7 @@ function isGreekLetterName(c: string) {
 enum bp {
   nil,
   lowest,
+  stringop,
   assign,
   atom,
   or,
@@ -5460,6 +5538,16 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
     this.resolveLocal(node, node.name.lexeme);
     return;
   }
+  stringBinaryExpr(node: StringBinaryExpr): void {
+    this.resolve(node.left);
+    this.resolve(node.right);
+    return;
+  }
+  vectorBinaryExpr(node: VectorBinaryExpr): void {
+    this.resolve(node.left);
+    this.resolve(node.right);
+    return;
+  }
   algebraicBinaryExpr(node: AlgebraicBinaryExpr): void {
     this.resolve(node.left);
     this.resolve(node.right);
@@ -5682,12 +5770,12 @@ type Primitive = | number | boolean | null | string | bigint | Fraction | BigRat
 
 function stringify(value: Primitive): string {
   if (value === null) {
-    return `null`;
+    return `nil`;
   } else if (value === undefined) {
     return `undefined`;
   } else if ($isArray(value)) {
     const elems = value.map((v) => stringify(v)).join(", ");
-    return `[${elems}]`;
+    return `(${elems})`;
   } else if ($isNumber(value)) {
     if ($isNaN(value)) {
       return `NaN`;
@@ -5735,6 +5823,9 @@ class Simplifier implements Visitor<AlgebraicExpression> {
       "transforming to an algebraic expression",
       this.op,
     );
+  }
+  vectorBinaryExpr(node: VectorBinaryExpr): AlgebraicExpression {
+    throw this.unsupportedError("Vector binary expressions");
   }
   reduce(node: ASTNode) {
     return node.accept(this);
@@ -5855,6 +5946,9 @@ class Simplifier implements Visitor<AlgebraicExpression> {
       }
     }
   }
+  stringBinaryExpr(node: StringBinaryExpr): AlgebraicExpression {
+    throw this.unsupportedError(`String binary expressions`);
+  }
   logicalBinaryExpr(node: LogicalBinaryExpr): AlgebraicExpression {
     throw this.unsupportedError(`Logical binary expressions`);
   }
@@ -5947,6 +6041,29 @@ class Compiler implements Visitor<Primitive> {
     this.locals = new Map();
     this.simplifier = new Simplifier(Token.empty);
   }
+  vectorBinaryExpr(node: VectorBinaryExpr): Primitive {
+    const op = node.op;
+    const left = this.evaluate(node.left);
+    const right = this.evaluate(node.right);
+    if (!$isVector(left) || !$isVector(right)) {
+      throw runtimeError(
+        `The operator “${node.op.lexeme}” is restricted to vectors`,
+        "interpreting an infix vector expression",
+        op,
+      );
+    }
+    switch (op.type) {
+      case tt.dot_add: {
+        return left.add(right);
+      }
+      case tt.dot_minus: {
+        return left.sub(right);
+      }
+      case tt.dot_star: {
+        return left.mul(right);
+      }
+    }
+  }
   algebraicString(node: AlgebraicString): Primitive {
     const expression = node.expression;
     return this.simplifier.place(node.op).reduce(expression);
@@ -5999,9 +6116,17 @@ class Compiler implements Visitor<Primitive> {
   resolve(expression: Expr, depth: number) {
     this.locals.set(expression, depth);
   }
-
   thisExpr(node: ThisExpr): Primitive {
     return this.lookupVariable(node.keyword, node);
+  }
+  stringBinaryExpr(node: StringBinaryExpr): Primitive {
+    const left = stringify(this.evaluate(node.left));
+    const right = stringify(this.evaluate(node.right));
+    const op = node.op.type;
+    switch (op) {
+      case tt.amp:
+        return left + right;
+    }
   }
   superExpr(node: SuperExpr): Primitive {
     throw new Error(`superExpr not implemented`);
@@ -6762,7 +6887,8 @@ function lexical(input: string) {
     }
     if (atEnd()) return errorTkn(`Infinite string`, "scanning a string");
     tick();
-    return tkn(tt.string);
+    const lex = slice().slice(1,-1);
+    return tkn(tt.string, lex);
   };
 
   /**
@@ -6932,7 +7058,17 @@ function lexical(input: string) {
       case "{": return tkn(tt.lbrace);
       case "}": return tkn(tt.rbrace);
       case ",": return tkn(tt.comma);
-      case ".": return tkn(tt.dot);
+      case ".": {
+        if (match('+')) {
+          return tkn(tt.dot_add);
+        } else if (match('-')) {
+          return tkn(tt.dot_minus);
+        } else if (match('*')) {
+          return tkn(tt.dot_star);
+        } else {
+          return tkn(tt.dot);
+        }
+      }
       case "-": {
         if (peek()==='-' && peekNext()==='-') {
           while (peek()!=='\n' && !atEnd()) {
@@ -7666,6 +7802,27 @@ function syntax(source: string) {
     }
   };
 
+  const vector_infix: Parslet = (op, left) => {
+    const p = precof(op.type);
+    return expr(p).chain((right) => {
+      return state.newExpression(
+        vectorBinaryExpr(left, op as Token<VectorBinaryOP>, right),
+      );
+    });
+  };
+  
+  
+  const string_infix: Parslet = (op, left) => {
+    const p = precof(op.type);
+    return expr(p).chain((right) => {
+      return state.newExpression(
+        stringBinex(left, op as Token<StringBinop>, right),
+      );
+    });
+  };
+  
+  
+
   const algebraic_string: Parslet = (op) => {
     if (op.isAlgebraString()) {
       const tkns = op.literal;
@@ -7730,13 +7887,17 @@ function syntax(source: string) {
     [tt.comma]: [___, ___, ___o],
     [tt.super]: [___, ___, ___o],
 
-    [tt.amp]: [___, ___, ___o],
+    [tt.amp]: [___, string_infix, bp.stringop],
     [tt.tilde]: [___, ___, ___o],
     [tt.vbar]: [___, ___, ___o],
     [tt.eq]: [___, assignment, bp.assign],
     [tt.bang]: [___, factorial_expression, bp.postfix],
     [tt.plus_plus]: [___, increment, bp.postfix],
     [tt.minus_minus]: [___, decrement, bp.postfix],
+    // vector expressions
+    [tt.dot_add]: [___, vector_infix, bp.sum],
+    [tt.dot_minus]: [___, vector_infix, bp.sum],
+    [tt.dot_star]: [___, vector_infix, bp.product],
 
     // algebraic expressions
     [tt.plus]: [prefix, infix, bp.sum],
@@ -8281,10 +8442,3 @@ export function engine(source: string) {
   };
 }
 
-const src = `
-let y = '((2x^2) * (6x^3)) * ((x^2) / (x^3))';
-let j = simplify(y);
-print j;
-`;
-const p = engine(src).execute();
-print(p);
