@@ -71,18 +71,6 @@ function i0(value: number) {
   return value === 0 ? 0 : value - 1;
 }
 
-/** Concatenates two lists of generic type `T`. */
-function concat<T>(left: T[], right: T[]): T[] {
-  const out: T[] = [];
-  for (let i = 0; i < left.length; i++) {
-    out.push(left[i]);
-  }
-  for (let j = 0; j < right.length; j++) {
-    out.push(right[j]);
-  }
-  return out;
-}
-
 /** Rounds the given number value to the number of given decimal places. */
 function round(num: number, places: number = 2) {
   const epsilon = Number.EPSILON;
@@ -110,20 +98,6 @@ function isNumericString(s: string) {
 /** Returns the a% of b. */
 function percent(a: number, b: number) {
   return (a / 100) * b;
-}
-
-class Complex {
-  R: number;
-  I: number;
-  constructor(R: number, I: number) {
-    this.R = R;
-    this.I = I;
-  }
-}
-
-/** Returns a new complex number. */
-function complex(realComponent: number, complexComponent: number) {
-  return new Complex(realComponent, complexComponent);
 }
 
 export class Vector<T extends number[] = number[]> {
@@ -176,6 +150,14 @@ export class Vector<T extends number[] = number[]> {
    */
   mul(other: Vector | number[] | number) {
     return this.binop(other, (a, b) => a * b);
+  }
+  /**
+   * Returns this pair-wise power of this vector to
+   * the provided argument. If a number is passed,
+   * returns the scalar difference.
+   */
+  pow(other: Vector | number[] | number) {
+    return this.binop(other, (a, b) => a ** b);
   }
 
   /**
@@ -378,6 +360,16 @@ export function vector(elements: number[] | Vector) {
 
 const $isVector = (value: any): value is Vector => (value instanceof Vector);
 
+/**
+ * Returns a `translate` string for use with the `g`
+ * element.
+ */
+const shift = (
+  x: number = 0,
+  y: number = 0,
+) => `translate(${x},${y})`;
+
+export const Id = <T>(x: T) => x;
 class Matrix {
   vectors: Vector[];
   rows: number;
@@ -407,6 +399,134 @@ function matrix(vectors: Vector[], cols?: number) {
 
 const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 
+/** An enum of types mapped to SVG Path command prefixes. */
+// deno-fmt-ignore
+enum pc { M, L, H, V, Q, C, A, }
+
+abstract class PathCommand {
+  readonly type: pc;
+  end: Vector;
+  constructor(type: pc, end: Vector) {
+    this.type = type;
+    this.end = end;
+  }
+  abstract endPoint(x: number, y: number, z?: number): PathCommand;
+}
+
+class MCommand extends PathCommand {
+  readonly type: pc.M;
+  constructor(x: number, y: number, z: number) {
+    super(pc.M, vector([x, y, z]));
+    this.type = pc.M;
+  }
+  endPoint(x: number, y: number, z: number = 1): MCommand {
+    return new MCommand(x, y, z);
+  }
+  toString() {
+    return `M${this.end.x},${this.end.y}`;
+  }
+}
+
+const M = (x: number, y: number, z: number = 1) => (new MCommand(x, y, z));
+
+class LCommand extends PathCommand {
+  readonly type: pc.L;
+  constructor(x: number, y: number, z: number) {
+    super(pc.L, vector([x, y, z]));
+    this.type = pc.L;
+  }
+  endPoint(x: number, y: number, z: number = 1): LCommand {
+    return new LCommand(x, y, z);
+  }
+  toString() {
+    return `L${this.end.x},${this.end.y}`;
+  }
+}
+const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
+
+class VCommand extends PathCommand {
+  readonly type: pc.V;
+  constructor(x: number, y: number, z: number) {
+    super(pc.V, vector([x, y, z]));
+    this.type = pc.V;
+  }
+  endPoint(x: number, y: number, z: number = 1): VCommand {
+    return new VCommand(x, y, z);
+  }
+  toString() {
+    return `V${this.end.x},${this.end.y}`;
+  }
+}
+const V = (x: number, y: number, z: number = 1) => (new VCommand(x, y, z));
+
+class HCommand extends PathCommand {
+  readonly type: pc.H;
+  constructor(x: number, y: number, z: number) {
+    super(pc.H, vector([x, y, z]));
+    this.type = pc.H;
+  }
+  endPoint(x: number, y: number, z: number = 1): HCommand {
+    return new HCommand(x, y, z);
+  }
+  toString() {
+    return `H${this.end.x},${this.end.y}`;
+  }
+}
+const H = (x: number, y: number, z: number = 1) => (new HCommand(x, y, z));
+
+class QCommand extends PathCommand {
+  readonly type: pc.Q = pc.Q;
+  ctrl1: Vector;
+  constructor(x: number, y: number, z: number) {
+    super(pc.Q, vector([x, y, z]));
+    this.ctrl1 = vector([x, y, z]);
+  }
+  ctrlPoint(x: number, y: number, z: number = 1): QCommand {
+    const out = new QCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl1 = vector([x, y, z]);
+    return out;
+  }
+  endPoint(x: number, y: number, z: number = 1): QCommand {
+    return new QCommand(x, y, z);
+  }
+  toString() {
+    return `Q${this.ctrl1.x},${this.ctrl1.y},${this.end.x},${this.end.y}`;
+  }
+}
+const Q = (x: number, y: number, z: number = 1) => (new QCommand(x, y, z));
+
+class CCommand extends PathCommand {
+  type: pc.C = pc.C;
+  ctrl1: Vector = vector([0, 0, 1]);
+  ctrl2: Vector = vector([0, 0, 1]);
+  constructor(x: number, y: number, z: number = 1) {
+    super(pc.C, vector([x, y, z]));
+  }
+  copy() {
+    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl1 = this.ctrl1.copy();
+    out.ctrl2 = this.ctrl2.copy();
+    return out;
+  }
+  ctrlPoint2(x: number, y: number, z: number = 1) {
+    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl2 = vector([x, y, z]);
+    return out;
+  }
+  ctrlPoint1(x: number, y: number, z: number = 1) {
+    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl1 = vector([x, y, z]);
+    return out;
+  }
+  endPoint(x: number, y: number, z: number = 1): PathCommand {
+    return new CCommand(x, y, z);
+  }
+  toString() {
+    return `C${this.ctrl1.x},${this.ctrl1.y},${this.ctrl2.x},${this.ctrl2.y},${this.end.x},${this.end.y}`;
+  }
+}
+const C = (x: number, y: number, z: number = 1) => (new CCommand(x, y, z));
+
 class BigRat {
   N: bigint;
   D: bigint;
@@ -414,7 +534,7 @@ class BigRat {
     this.N = N;
     this.D = D;
   }
-  isZero() {
+  get isZero() {
     return this.N !== 0n;
   }
   toString() {
@@ -424,127 +544,6 @@ class BigRat {
 
 function bigRat(N: bigint, D: bigint) {
   return new BigRat(N, D);
-}
-
-class Fraction {
-  n: number;
-  d: number;
-  constructor(n: number, d: number) {
-    this.n = n;
-    this.d = abs(d);
-  }
-  static of(n: number, d: number) {
-    return new Fraction(n, abs(d));
-  }
-  static from(numberValue: number | Fraction) {
-    if (!$isNumber(numberValue)) {
-      return numberValue;
-    }
-    if (Number.isInteger(numberValue)) return Fraction.of(numberValue, 1);
-    let eps = 1.0E-15;
-    let h, h1, h2, k, k1, k2, a, x;
-    x = numberValue;
-    a = floor(x);
-    h1 = 1;
-    k1 = 0;
-    h = a;
-    k = 1;
-    while (x - a > eps * k * k) {
-      x = 1 / (x - a);
-      a = floor(x);
-      h2 = h1;
-      h1 = h;
-      k2 = k1;
-      k1 = k;
-      h = h2 + a * h1;
-      k = k2 + a * k1;
-    }
-    return Fraction.of(h, abs(k));
-  }
-  asInt() {
-    return floor(this.n / this.d);
-  }
-  asFloat() {
-    return (this.n / this.d);
-  }
-  lt(other: Fraction) {
-    return this.leq(other) && !this.equals(other);
-  }
-  pos() {
-    const n = +this.n;
-    const d = this.d;
-    return new Fraction(n, d);
-  }
-  neg() {
-    const n = -this.n;
-    const d = this.d;
-    return new Fraction(n, d);
-  }
-
-  gt(other: Fraction) {
-    return !this.leq(other);
-  }
-
-  geq(other: Fraction) {
-    return this.gt(other) || this.equals(other);
-  }
-  leq(other: Fraction) {
-    const { n: thisN, d: thisD } = simplifyFraction(
-      this.n,
-      this.d,
-    );
-    const { n: otherN, d: otherD } = simplifyFraction(
-      other.n,
-      other.d,
-    );
-    return thisN * otherD <= otherN * thisD;
-  }
-  sub(x: Fraction) {
-    return simplifyFraction(
-      this.n * x.d - x.n * this.d,
-      this.d * x.d,
-    );
-  }
-  add(x: Fraction) {
-    return simplifyFraction(
-      this.n * x.d + x.n * this.d,
-      this.d * x.d,
-    );
-  }
-  div(x: Fraction) {
-    return simplifyFraction(
-      this.n * x.d,
-      this.d * x.n,
-    );
-  }
-  times(x: Fraction) {
-    return simplifyFraction(
-      x.n * this.n,
-      x.d * this.d,
-    );
-  }
-  equals(other: Fraction) {
-    const a = simplifyFraction(this.n, this.d);
-    const b = simplifyFraction(other.n, other.d);
-    return (
-      a.n === b.n &&
-      a.d === b.d
-    );
-  }
-  isZero() {
-    return this.n !== 0;
-  }
-  toString() {
-    return `${this.n}|${this.d}`;
-  }
-}
-
-function simplifyFraction(numerator: number, denominator: number) {
-  const sgn = sign(numerator) * sign(denominator);
-  const n = abs(numerator);
-  const d = abs(denominator);
-  const f = gcd(n, d);
-  return new Fraction((sgn * n) / f, d / f);
 }
 
 const $isFraction = (
@@ -1506,9 +1505,6 @@ class NativeCall extends Expr {
     this.args = args;
   }
 }
-const isNativeCall = (node: ASTNode): node is NativeCall => (
-  node.kind === nodekind.native_call
-);
 
 /**
  * Returns a new {@link NativeCall|native call function}.
@@ -1616,7 +1612,7 @@ const stringBinex = (left: Expr, op: Token<StringBinop>, right: Expr) => (
   new StringBinaryExpr(left, op, right)
 );
 
-type VectorBinaryOP = tt.dot_add | tt.dot_minus | tt.dot_star;
+type VectorBinaryOP = tt.dot_add | tt.dot_minus | tt.dot_star | tt.dot_caret;
 class VectorBinaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.vectorBinaryExpr(this);
@@ -1709,9 +1705,6 @@ class AlgebraicBinaryExpr extends Expr {
     this.right = right;
   }
 }
-const isBinex = (node: ASTNode): node is AlgebraicBinaryExpr => (
-  node.kind === nodekind.algebraic_infix
-);
 
 /**
  * Returns a new {@link AlgebraicBinaryExpr|binary expression}.
@@ -1742,10 +1735,6 @@ class CallExpr extends Expr {
     this.args = args;
     this.paren = paren;
   }
-}
-
-function isCallExpr(node: ASTNode): node is CallExpr {
-  return node.kind === nodekind.call;
 }
 
 /**
@@ -1848,9 +1837,6 @@ class NumericConstant extends Expr {
     this.sym = sym;
   }
 }
-const isNumericConsant = (node: ASTNode): node is NumericConstant => (
-  node.kind === nodekind.numeric_constant
-);
 
 function numericConstant(value: number, sym: CoreConstant) {
   return new NumericConstant(value, sym);
@@ -1860,7 +1846,6 @@ class Integer extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.integer(this);
   }
-
   toString(): string {
     return `${this.value}`;
   }
@@ -1873,9 +1858,6 @@ class Integer extends Expr {
     this.value = value;
   }
 }
-const isInteger = (node: ASTNode): node is Integer => (
-  node.kind === nodekind.integer
-);
 
 /**
  * Returns a new {@link Integer|integer node}.
@@ -1900,9 +1882,6 @@ class Float extends Expr {
     this.value = value;
   }
 }
-const isFloat = (node: ASTNode): node is Float => (
-  node.kind === nodekind.float
-);
 
 /**
  * Returns a new {@link Float|float node}.
@@ -2166,30 +2145,6 @@ function relation(left: Expr, op: Token<RelationalOperator>, right: Expr) {
 }
 
 /**
- * Replaces all newline characters with a space.
- */
-function tidy(s: string) {
-  return s.replaceAll("\n", " ");
-}
-
-/**
- * Utility function for zipping lists.
- */
-function zip<A extends any[], B extends any[]>(
-  array1: A,
-  array2: B,
-): ([A[number], B[number]])[] {
-  return (
-    array1.reduce((acc, curr, ind): ([A[number], B[number]])[] => {
-      acc.push([curr, array2[ind]]);
-      return acc;
-    }, [])
-  ).filter(([a, b]: [A[number], B[number]]) =>
-    a !== undefined && b !== undefined
-  );
-}
-
-/**
  * Returns `a rem b` (the signed remainder).
  */
 function rem(a: number, b: number) {
@@ -2307,32 +2262,14 @@ interface ExpressionVisitor<T> {
   sum(node: Sum): T;
   product(node: Product): T;
   quotient(node: Quotient): T;
-  fraction(node: Frac): T;
+  fraction(node: Fraction): T;
   power(node: Power): T;
   difference(node: Difference): T;
   factorial(node: Factorial): T;
   algebraicFn(node: AlgebraicFn): T;
 }
 
-abstract class AlgebraicNode {
-}
-
-abstract class AlgebraicStatement extends AlgebraicNode {
-}
-
-class AlgebraicExpressionStatement extends AlgebraicStatement {
-  expression: AlgebraicExpression;
-  constructor(expression: AlgebraicExpression) {
-    super();
-    this.expression = expression;
-  }
-}
-
-const algebraExprStmt = (expression: AlgebraicExpression) => {
-  return new AlgebraicExpressionStatement(expression);
-};
-
-abstract class AlgebraicExpression extends AlgebraicNode {
+abstract class AlgebraicExpression {
   abstract accept<T>(visitor: ExpressionVisitor<T>): T;
   /**
    * Returns true if this expression is syntactically
@@ -2401,7 +2338,6 @@ abstract class AlgebraicExpression extends AlgebraicNode {
    */
   klass: klass;
   constructor(op: string, klass: klass) {
-    super();
     this.op = op;
     this.klass = klass;
   }
@@ -2987,24 +2923,133 @@ function isQuotient(u: AlgebraicExpression): u is Quotient {
  * A node corresponding to a fraction. Fractions are defined
  * as a pair of integers `[a,b]`, where `b ≠ 0`.
  */
-class Frac extends AlgebraicOp<core.fraction> {
+class Fraction extends AlgebraicOp<core.fraction> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.fraction(this);
+  }
+  asFloat() {
+    return (this.n / this.d);
+  }
+  get n() {
+    return this.numerator.n;
+  }
+  get d() {
+    return this.denominator.n;
+  }
+  asInt() {
+    return floor(this.n / this.d);
+  }
+  static from(numberValue: number | Fraction) {
+    if (!$isNumber(numberValue)) {
+      return numberValue;
+    }
+    if (Number.isInteger(numberValue)) return Fraction.of(numberValue, 1);
+    let eps = 1.0E-15;
+    let h, h1, h2, k, k1, k2, a, x;
+    x = numberValue;
+    a = floor(x);
+    h1 = 1;
+    k1 = 0;
+    h = a;
+    k = 1;
+    while (x - a > eps * k * k) {
+      x = 1 / (x - a);
+      a = floor(x);
+      h2 = h1;
+      h1 = h;
+      k2 = k1;
+      k1 = k;
+      h = h2 + a * h1;
+      k = k2 + a * k1;
+    }
+    return Fraction.of(h, abs(k));
+  }
+  static of(n: number, d: number) {
+    return new Fraction(n, abs(d));
   }
 
   toString(): string {
     const n = this.numerator.n;
     const d = this.denominator.n;
-    return `${n}/${d}`;
+    return `${n}|${d}`;
   }
   op: core.fraction = core.fraction;
   args: [Int, Int];
-  copy(): Frac {
+  copy(): Fraction {
     const n = this.args[0].n;
     const d = this.args[1].n;
     const out = frac(n, d);
     out.parenLevel = this.parenLevel;
     return out;
+  }
+  lt(other: Fraction) {
+    return this.leq(other) && !this.equals(other);
+  }
+  pos() {
+    const n = +this.n;
+    const d = this.d;
+    return new Fraction(n, d);
+  }
+  neg() {
+    const n = -this.n;
+    const d = this.d;
+    return new Fraction(n, d);
+  }
+  gt(other: Fraction) {
+    return !this.leq(other);
+  }
+  geq(other: Fraction) {
+    return this.gt(other) || this.equals(other);
+  }
+  leq(other: Fraction) {
+    const F1 = Fraction.simp(
+      this.n,
+      this.d,
+    );
+    const F2 = Fraction.simp(
+      other.n,
+      other.d,
+    );
+    return F1.n * F2.d <= F2.n * F1.d;
+  }
+  sub(x: Fraction) {
+    return Fraction.simp(
+      this.n * x.d - x.n * this.d,
+      this.d * x.d,
+    );
+  }
+  add(x: Fraction) {
+    return Fraction.simp(
+      this.n * x.d + x.n * this.d,
+      this.d * x.d,
+    );
+  }
+  div(x: Fraction) {
+    return Fraction.simp(
+      this.n * x.d,
+      this.d * x.n,
+    );
+  }
+  times(x: Fraction) {
+    return Fraction.simp(
+      x.n * this.n,
+      x.d * this.d,
+    );
+  }
+  equals(other: Fraction) {
+    const a = Fraction.simp(this.n, this.d);
+    const b = Fraction.simp(other.n, other.d);
+    return (
+      a.n === b.n &&
+      a.d === b.d
+    );
+  }
+  static simp(n: number, d: number) {
+    const sgn = sign(n) * sign(d);
+    const N = abs(n);
+    const D = abs(d);
+    const f = gcd(n, d);
+    return Fraction.of((sgn * N) / f, D / f);
   }
   constructor(numerator: number, denominator: number) {
     const N = int(numerator);
@@ -3053,25 +3098,25 @@ class Frac extends AlgebraicOp<core.fraction> {
 }
 
 /**
- * Type predicate. Returns true if `u` is a {@link Frac|fraction},
+ * Type predicate. Returns true if `u` is a {@link Fraction|fraction},
  * false otherwise. If true, claims that `u` is a fraction.
  */
-function isFrac(u: AlgebraicExpression): u is Frac {
+function isFrac(u: AlgebraicExpression): u is Fraction {
   return !$isNothing(u) && (u.op === core.fraction);
 }
 
 /**
- * Returns a new {@link Frac|fraction}.
+ * Returns a new {@link Fraction|fraction}.
  */
 function frac(numerator: number, denominator: number) {
-  return new Frac(numerator, denominator);
+  return new Fraction(numerator, denominator);
 }
 
 /**
  * Simplifies the given fraction.
  */
-function simplyRational(expression: Frac | Int) {
-  const f = (u: Frac | Int) => {
+function simplyRational(expression: Fraction | Int) {
+  const f = (u: Fraction | Int) => {
     if (isInt(u)) {
       return u;
     } else {
@@ -3093,11 +3138,11 @@ function simplyRational(expression: Frac | Int) {
 }
 
 /**
- * Returns the numerator of the given {@link Frac|fraction}
+ * Returns the numerator of the given {@link Fraction|fraction}
  * or {@link Int|integer}. If an integer is passed, returns a
  * copy of the integer.
  */
-function numeratorOf(u: Frac | Int): number {
+function numeratorOf(u: Fraction | Int): number {
   if (isInt(u)) {
     return u.n;
   } else {
@@ -3106,10 +3151,10 @@ function numeratorOf(u: Frac | Int): number {
 }
 
 /**
- * Returns the denominator of the given {@link Frac|fraction}
+ * Returns the denominator of the given {@link Fraction|fraction}
  * or {@link Int|integer}. If an integer is passed, returns `int(1)`.
  */
-function denominatorOf(u: Frac | Int): number {
+function denominatorOf(u: Fraction | Int): number {
   if (isInt(u)) {
     return 1;
   } else {
@@ -3123,7 +3168,7 @@ function denominatorOf(u: Frac | Int): number {
  * @param a - The left summand.
  * @param b - The right summand.
  */
-function evalSum(a: Int | Frac, b: Int | Frac) {
+function evalSum(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     return int(a.n + b.n);
   } else {
@@ -3144,7 +3189,7 @@ function evalSum(a: Int | Frac, b: Int | Frac) {
  * @param a - The left minuend.
  * @param b - The right minuend.
  */
-function evalDiff(a: Int | Frac, b: Int | Frac) {
+function evalDiff(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     return int(a.n - b.n);
   } else {
@@ -3161,9 +3206,9 @@ function evalDiff(a: Int | Frac, b: Int | Frac) {
 
 /**
  * Returns the reciprocal of the given
- * {@link Int|integer} or {@link Frac|fraction}.
+ * {@link Int|integer} or {@link Fraction|fraction}.
  */
-function reciprocal(a: Int | Frac) {
+function reciprocal(a: Int | Fraction) {
   if (isInt(a)) {
     return frac(1, a.n);
   } else {
@@ -3180,7 +3225,7 @@ function reciprocal(a: Int | Frac) {
  * @param a - The dividend.
  * @param b - The divisor.
  */
-function evalQuot(a: Int | Frac, b: Int | Frac) {
+function evalQuot(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     if (b.isZero) {
       return Undefined();
@@ -3194,8 +3239,8 @@ function evalQuot(a: Int | Frac, b: Int | Frac) {
 /**
  * Evalutes a power.
  */
-function evalPower(base: Int | Frac, exponent: Int) {
-  const f = (v: Int | Frac, n: Int): Frac | Int | UNDEFINED => {
+function evalPower(base: Int | Fraction, exponent: Int) {
+  const f = (v: Int | Fraction, n: Int): Fraction | Int | UNDEFINED => {
     if (numeratorOf(v) !== 0) {
       if (n.n > 0) {
         const s = f(v, int(n.n - 1));
@@ -3230,7 +3275,7 @@ function evalPower(base: Int | Frac, exponent: Int) {
 /**
  * Evaluates a product.
  */
-function evalProduct(a: Int | Frac, b: Int | Frac) {
+function evalProduct(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     return int(a.n * b.n);
   } else {
@@ -3249,7 +3294,7 @@ function evalProduct(a: Int | Frac, b: Int | Frac) {
  * Simplifies a rational number expression.
  */
 function simplify_RNE(expression: AlgebraicExpression) {
-  const f = (u: AlgebraicExpression): Int | Frac | UNDEFINED => {
+  const f = (u: AlgebraicExpression): Int | Fraction | UNDEFINED => {
     if (isInt(u)) {
       return u;
     } else if (isFrac(u)) {
@@ -3660,7 +3705,9 @@ function termOf(u: AlgebraicExpression) {
 /**
  * Returns true if the given expression is a constant.
  */
-function isConst(u: AlgebraicExpression): u is Int | Frac | Constant<number> {
+function isConst(
+  u: AlgebraicExpression,
+): u is Int | Fraction | Constant<number> {
   return (
     !$isNothing(u) && ((u.op === core.int) ||
       (u.op === core.fraction) ||
@@ -3728,7 +3775,7 @@ function exponentOf(u: AlgebraicExpression) {
  * Returns true if `u` is equal to `v`,
  * false otherwise.
  */
-function equals(u: Frac | Int, v: Frac | Int) {
+function equals(u: Fraction | Int, v: Fraction | Int) {
   if (isInt(u) && isInt(v)) {
     return u.n === v.n;
   } else {
@@ -3749,7 +3796,7 @@ function equals(u: Frac | Int, v: Frac | Int) {
  * Returns true if `u` is less than `v`,
  * false otherwise.
  */
-function lt(u: Frac | Int, v: Frac | Int) {
+function lt(u: Fraction | Int, v: Fraction | Int) {
   return lte(u, v) && !equals(u, v);
 }
 
@@ -3757,7 +3804,7 @@ function lt(u: Frac | Int, v: Frac | Int) {
  * Returns true if `u` is greater than `v`,
  * false otherwise.
  */
-function gt(u: Frac | Int, v: Frac | Int) {
+function gt(u: Fraction | Int, v: Fraction | Int) {
   return !lte(u, v);
 }
 
@@ -3765,7 +3812,7 @@ function gt(u: Frac | Int, v: Frac | Int) {
  * Returns true if `u` is greater than or equal to `v`,
  * false otherwise.
  */
-function gte(u: Frac | Int, v: Frac | Int) {
+function gte(u: Fraction | Int, v: Fraction | Int) {
   return gt(u, v) || equals(u, v);
 }
 
@@ -3773,7 +3820,7 @@ function gte(u: Frac | Int, v: Frac | Int) {
  * Returns true if `u` is less than or equal to `v`,
  * false otherwise.
  */
-function lte(u: Frac | Int, v: Frac | Int): boolean {
+function lte(u: Fraction | Int, v: Fraction | Int): boolean {
   if (isInt(u) && isInt(v)) {
     return u.n <= v.n;
   } else {
@@ -3800,10 +3847,10 @@ function isSumlike(u: AlgebraicExpression): u is Sum | Product {
 
 /**
  * __Type Guard__. Returns true if `u` is an
- * {@link Int|integer} or {@link Frac|fraction},
+ * {@link Int|integer} or {@link Fraction|fraction},
  * false otherwise.
  */
-function isNumeric(u: AlgebraicExpression): u is Int | Frac {
+function isNumeric(u: AlgebraicExpression): u is Int | Fraction {
   return isInt(u) || isFrac(u);
 }
 
@@ -3818,7 +3865,7 @@ function precedes(
   /**
    * Numeric ordering.
    */
-  const O1 = (u: Frac | Int, v: Frac | Int) => (lt(u, v));
+  const O1 = (u: Fraction | Int, v: Fraction | Int) => (lt(u, v));
 
   /**
    * Lexicographic ordering.
@@ -4866,7 +4913,8 @@ enum tt {
   dot_star,
   /** Lexeme: `.-` - Vector difference */
   dot_minus,
-  /** Lexeme: `./` - Pairwise division */
+  /** Lexeme: `.^` - Pairwise division */
+  dot_caret,
   /** Lexeme: `@` - Dot product */
   
   // Matrix Operators
@@ -5795,7 +5843,7 @@ function truthy(x: Primitive) {
   if ($isBoolean(x)) return x;
   if ($isArray(x) || $isString(x)) return x.length !== 0;
   if (x === null || x === undefined) return false;
-  if (x instanceof BigRat || x instanceof Fraction) return !x.isZero();
+  if (x instanceof BigRat || x instanceof Fraction) return !x.isZero;
   if (x instanceof Vector) return x.cols !== 0;
   if (x instanceof Matrix) return x.rows !== 0 && x.cols !== 0;
   return (
@@ -6021,6 +6069,148 @@ class Simplifier implements Visitor<AlgebraicExpression> {
   }
 }
 
+const latex = {
+  esc: (s: string | number) => `\\${s}`,
+  text: (s: string | number) => `\\text{${s}}`,
+  texttt: (s: string | number) => `\\texttt{${s}}`,
+  mathbb: (s: string | number) => `\\mathbb{${s}}`,
+  parend: (s: string | number) => `\\left(${s}\\right)`,
+  bracketed: (s: string | number) => `\\left[${s}\\right]`,
+};
+
+class Latexer implements Visitor<string> {
+  latexOf(node: ASTNode) {
+    return node.accept(this);
+  }
+  integer(node: Integer): string {
+    return node.toString();
+  }
+  numericConstant(node: NumericConstant): string {
+    switch (node.sym) {
+      case "Inf":
+        return latex.esc("infty");
+      case "NAN":
+        return latex.text("NAN");
+      case "e":
+        return "e";
+      case "pi":
+        return latex.esc("pi");
+    }
+  }
+  vectorExpr(node: VectorExpr): string {
+    const out = node.elements.map((e) => this.latexOf(e)).join("");
+    return latex.bracketed(out);
+  }
+  vectorBinaryExpr(node: VectorBinaryExpr): string {
+    return node.toString();
+  }
+  matrixExpr(node: MatrixExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  indexingExpr(node: IndexingExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  bigNumber(node: BigNumber): string {
+    throw new Error("Method not implemented.");
+  }
+  fractionExpr(node: FractionExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  bigRational(node: RationalExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  float(node: Float): string {
+    throw new Error("Method not implemented.");
+  }
+  bool(node: Bool): string {
+    throw new Error("Method not implemented.");
+  }
+  tupleExpr(node: TupleExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  getExpr(node: GetExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  setExpr(node: SetExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  superExpr(node: SuperExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  thisExpr(node: ThisExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  string(node: StringLiteral): string {
+    throw new Error("Method not implemented.");
+  }
+  stringBinaryExpr(node: StringBinaryExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  algebraicString(node: AlgebraicString): string {
+    throw new Error("Method not implemented.");
+  }
+  nil(node: Nil): string {
+    throw new Error("Method not implemented.");
+  }
+  variable(node: Variable): string {
+    throw new Error("Method not implemented.");
+  }
+  assignExpr(node: AssignExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  algebraicBinaryExpr(node: AlgebraicBinaryExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  algebraicUnaryExpr(node: AlgebraicUnaryExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  logicalBinaryExpr(node: LogicalBinaryExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  logicalUnaryExpr(node: LogicalUnaryExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  relationalExpr(node: RelationalExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  callExpr(node: CallExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  nativeCall(node: NativeCall): string {
+    throw new Error("Method not implemented.");
+  }
+  groupExpr(node: GroupExpr): string {
+    throw new Error("Method not implemented.");
+  }
+  blockStmt(node: BlockStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  exprStmt(node: ExprStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  fnStmt(node: FnStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  ifStmt(node: IfStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  classStmt(node: ClassStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  printStmt(node: PrintStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  returnStmt(node: ReturnStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  letStmt(node: VariableStmt): string {
+    throw new Error("Method not implemented.");
+  }
+  whileStmt(node: WhileStmt): string {
+    throw new Error("Method not implemented.");
+  }
+}
+
 class Compiler implements Visitor<Primitive> {
   environment: Environment<Primitive>;
   globals: Environment<Primitive>;
@@ -6061,6 +6251,9 @@ class Compiler implements Visitor<Primitive> {
       }
       case tt.dot_star: {
         return left.mul(right);
+      }
+      case tt.dot_caret: {
+        return left.pow(right);
       }
     }
   }
@@ -6887,7 +7080,7 @@ function lexical(input: string) {
     }
     if (atEnd()) return errorTkn(`Infinite string`, "scanning a string");
     tick();
-    const lex = slice().slice(1,-1);
+    const lex = slice().slice(1, -1);
     return tkn(tt.string, lex);
   };
 
@@ -7065,6 +7258,8 @@ function lexical(input: string) {
           return tkn(tt.dot_minus);
         } else if (match('*')) {
           return tkn(tt.dot_star);
+        } else if (match('^')) {
+          return tkn(tt.dot_caret);
         } else {
           return tkn(tt.dot);
         }
@@ -7810,8 +8005,7 @@ function syntax(source: string) {
       );
     });
   };
-  
-  
+
   const string_infix: Parslet = (op, left) => {
     const p = precof(op.type);
     return expr(p).chain((right) => {
@@ -7820,8 +8014,6 @@ function syntax(source: string) {
       );
     });
   };
-  
-  
 
   const algebraic_string: Parslet = (op) => {
     if (op.isAlgebraString()) {
@@ -7898,6 +8090,7 @@ function syntax(source: string) {
     [tt.dot_add]: [___, vector_infix, bp.sum],
     [tt.dot_minus]: [___, vector_infix, bp.sum],
     [tt.dot_star]: [___, vector_infix, bp.product],
+    [tt.dot_caret]: [___, vector_infix, bp.power],
 
     // algebraic expressions
     [tt.plus]: [prefix, infix, bp.sum],
@@ -8443,9 +8636,15 @@ export function engine(source: string) {
 }
 
 const src = `
-let j = 10;
-let k = "j is " & j;
-print k;
+figure {
+  plot f(x) = x^2;
+  f.domain = [-5,5];
+  f.range = [-5,5];
+  f.samples = 200;
+  f.stroke = thick;
+  f.color = blue;
+}
+print figure;
 `;
 const p = engine(src).execute();
 print(p);

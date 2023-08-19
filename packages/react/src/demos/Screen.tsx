@@ -1,5 +1,6 @@
 import { engine } from "./io.js";
 import {
+  CSSProperties,
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -13,7 +14,7 @@ type EnhancedTextAreaProps = {
   spellCheck?: boolean;
   tabSize?: number;
   init: string;
-  height:string|number;
+  height: string | number;
 };
 
 type EnhancedTextAreaRefs = {
@@ -236,10 +237,12 @@ const IDE = forwardRef<
       onChange={handleCodeChange}
       className={className}
       spellCheck={spellCheck}
-      style={{height}}
+      style={{ height }}
     />
   );
 });
+
+
 
 export const Terminal = (
   { source, height = "fit-content" }: {
@@ -251,8 +254,10 @@ export const Terminal = (
   const [code, setCode] = useState(source.trimStart().trimEnd());
   const click = () => {
     const logs = engine(code).log();
-    const result = logs.join("\n");
-    setResult(result);
+    if (logs.type === "ERROR" || logs.type === "OK") {
+      const result = logs.data.join("\n");
+      setResult(result);
+    }
   };
   return (
     <div>
@@ -272,3 +277,6 @@ export const Terminal = (
     </div>
   );
 };
+
+
+

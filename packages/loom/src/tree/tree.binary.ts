@@ -134,5 +134,3 @@ export const bst = <T>(data: T[]) => ({
   ),
 });
 
-// const bst1 = bst([10, 6, 15, 3, 8, 20]).id(d => d);j
-// console.log(bst1);
