@@ -133,7 +133,7 @@ export class Matrix {
    * Adds the matrix provided to this matrix..
    */
   TIMES(matrix: Matrix | number | (number[])[]) {
-    return this.op(matrix, (a, b) => a + b);
+    return this.op(matrix, (a, b) => a * b);
   }
 
   /**

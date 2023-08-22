@@ -360,6 +360,16 @@ export function vector(elements: number[] | Vector) {
 
 const $isVector = (value: any): value is Vector => (value instanceof Vector);
 
+/**
+ * Returns a `translate` string for use with the `g`
+ * element.
+ */
+const shift = (
+  x: number = 0,
+  y: number = 0,
+) => `translate(${x},${y})`;
+
+export const Id = <T>(x: T) => x;
 class Matrix {
   vectors: Vector[];
   rows: number;
@@ -388,6 +398,261 @@ function matrix(vectors: Vector[], cols?: number) {
 }
 
 const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
+
+/** An enum of types mapped to SVG Path command prefixes. */
+// deno-fmt-ignore
+enum pc { M, L, H, V, Q, C, A, }
+
+abstract class PathCommand {
+  readonly type: pc;
+  end: Vector;
+  constructor(type: pc, end: Vector) {
+    this.type = type;
+    this.end = end;
+  }
+  /** Sets the endpoint for this command. */
+  abstract endPoint(x: number, y: number, z?: number): PathCommand;
+  /** Returns the string value for this command. */
+  abstract toString(): string;
+}
+
+class MCommand extends PathCommand {
+  readonly type: pc.M;
+  constructor(x: number, y: number, z: number) {
+    super(pc.M, vector([x, y, z]));
+    this.type = pc.M;
+  }
+  endPoint(x: number, y: number, z: number = 1): MCommand {
+    return new MCommand(x, y, z);
+  }
+  toString() {
+    return `M${this.end.x},${this.end.y}`;
+  }
+}
+
+/** Returns a new {@link MCommand|M-command}. */
+const M = (x: number, y: number, z: number = 1) => (new MCommand(x, y, z));
+
+class LCommand extends PathCommand {
+  readonly type: pc.L;
+  constructor(x: number, y: number, z: number) {
+    super(pc.L, vector([x, y, z]));
+    this.type = pc.L;
+  }
+  endPoint(x: number, y: number, z: number = 1): LCommand {
+    return new LCommand(x, y, z);
+  }
+  toString() {
+    return `L${this.end.x},${this.end.y}`;
+  }
+}
+/** Returns a new {@link LCommand|L-command}. */
+const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
+
+class VCommand extends PathCommand {
+  readonly type: pc.V;
+  constructor(x: number, y: number, z: number) {
+    super(pc.V, vector([x, y, z]));
+    this.type = pc.V;
+  }
+  endPoint(x: number, y: number, z: number = 1): VCommand {
+    return new VCommand(x, y, z);
+  }
+  toString() {
+    return `V${this.end.x},${this.end.y}`;
+  }
+}
+/** Returns a new {@link VCommand|V-command}. */
+const V = (x: number, y: number, z: number = 1) => (new VCommand(x, y, z));
+
+class HCommand extends PathCommand {
+  readonly type: pc.H;
+  constructor(x: number, y: number, z: number) {
+    super(pc.H, vector([x, y, z]));
+    this.type = pc.H;
+  }
+  endPoint(x: number, y: number, z: number = 1): HCommand {
+    return new HCommand(x, y, z);
+  }
+  toString() {
+    return `H${this.end.x},${this.end.y}`;
+  }
+}
+/** Returns a new {@link HCommand|H-command}. */
+const H = (x: number, y: number, z: number = 1) => (new HCommand(x, y, z));
+
+class QCommand extends PathCommand {
+  readonly type: pc.Q = pc.Q;
+  ctrl1: Vector;
+  constructor(x: number, y: number, z: number) {
+    super(pc.Q, vector([x, y, z]));
+    this.ctrl1 = vector([x, y, z]);
+  }
+  ctrlPoint(x: number, y: number, z: number = 1): QCommand {
+    const out = new QCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl1 = vector([x, y, z]);
+    return out;
+  }
+  endPoint(x: number, y: number, z: number = 1): QCommand {
+    return new QCommand(x, y, z);
+  }
+  toString() {
+    return `Q${this.ctrl1.x},${this.ctrl1.y},${this.end.x},${this.end.y}`;
+  }
+}
+
+/** Returns a new {@link QCommand|Q-command}. */
+const Q = (x: number, y: number, z: number = 1) => (new QCommand(x, y, z));
+
+/** A type corresponding to the SVG cubic-bezier-curve command. */
+class CCommand extends PathCommand {
+  type: pc.C = pc.C;
+  ctrl1: Vector = vector([0, 0, 1]);
+  ctrl2: Vector = vector([0, 0, 1]);
+  constructor(x: number, y: number, z: number = 1) {
+    super(pc.C, vector([x, y, z]));
+  }
+  copy() {
+    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl1 = this.ctrl1.copy();
+    out.ctrl2 = this.ctrl2.copy();
+    return out;
+  }
+  /** Sets the second control point for this cubic bezier curve. */
+  ctrlPoint2(x: number, y: number, z: number = 1) {
+    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl2 = vector([x, y, z]);
+    return out;
+  }
+  /** Sets the first control point for this cubic bezier curve. */
+  ctrlPoint1(x: number, y: number, z: number = 1) {
+    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    out.ctrl1 = vector([x, y, z]);
+    return out;
+  }
+  endPoint(x: number, y: number, z: number = 1): CCommand {
+    return new CCommand(x, y, z);
+  }
+  toString() {
+    return `C${this.ctrl1.x},${this.ctrl1.y},${this.ctrl2.x},${this.ctrl2.y},${this.end.x},${this.end.y}`;
+  }
+}
+
+/** Returns a new {@link CCommand|C-command}. */
+const C = (x: number, y: number, z: number = 1) => (new CCommand(x, y, z));
+
+/** An ADT corresponding to the SVG arc-to command. */
+class ACommand extends PathCommand {
+  type: pc.A = pc.A;
+  /** The x-radius of this arc-to command. */
+  rx: number = 1;
+  /** The r-radius of this arc-to command. */
+  ry: number = 1;
+  rotation: number = 0;
+  largeArc: 0 | 1 = 0;
+  sweep: 0 | 1 = 0;
+  constructor(x: number, y: number, z: number = 1) {
+    super(pc.A, vector([x, y, z]));
+  }
+  rotate(value: number) {
+    const out = this.copy();
+    out.rotation = value;
+    return out;
+  }
+  yRadius(value: number) {
+    const out = this.copy();
+    out.ry = value;
+    return out;
+  }
+  xRadius(value: number) {
+    const out = this.copy();
+    out.rx = value;
+    return this;
+  }
+  swept(value: "major" | "minor") {
+    const out = this.copy();
+    out.sweep = value === "major" ? 1 : 0;
+    return out;
+  }
+  arc(value: "large" | "small") {
+    const out = this.copy();
+    out.largeArc = value === "large" ? 1 : 0;
+    return out;
+  }
+  copy(): ACommand {
+    const out = new ACommand(this.end.x, this.end.y, this.end.z);
+    out.rx = this.rx;
+    out.ry = this.ry;
+    out.rotation = this.rotation;
+    out.largeArc = this.largeArc;
+    out.sweep = this.sweep;
+    return out;
+  }
+  endPoint(x: number, y: number, z: number = 1): ACommand {
+    return new ACommand(x, y, z);
+  }
+  toString() {
+    return `A${this.rx},${this.ry},${this.rotation},${this.largeArc},${this.sweep},${this.end.x},${this.end.y}`;
+  }
+}
+
+/** Returns a new {@link ACommand|A-command}. */
+const A = (x: number, y: number, z: number = 1) => (new ACommand(x, y, z));
+
+class Path {
+  /** The SVG commands comprising this path. */
+  private commands: PathCommand[] = [];
+  /** The current endpoint of this path. */
+  cursor: Vector;
+  /** The origin of this path. */
+  origin: Vector;
+  constructor(x: number, y: number, z: number = 1) {
+    this.cursor = vector([x, y, z]);
+    this.origin = vector([0, 0, 0]);
+  }
+  /** Appends the provided list of commands to this Path’s command list. */
+  with(commands:PathCommand[]) {
+    commands.forEach(c => this.commands.push(c))
+    return this;
+  }
+  /** Sets the origin of this path. */
+  at(x: number, y: number, z: number = 1) {
+    this.origin = vector([x, y, z]);
+    return this;
+  }
+  /** Returns the `d` attribute value resulting from this path. */
+  toString(): string {
+    const origin = M(this.origin.x, this.origin.y).toString();
+    const out = this.commands.map((command) => command.toString());
+    return origin + out.join("") + 'Z';
+  }
+  private push(command: PathCommand) {
+    this.commands.push(command);
+    this.cursor = command.end.copy();
+    return this;
+  }
+  /** Appends a `V` command to this path. */
+  V(y: number) {
+    return this.push(L(this.cursor.x, y));
+  }
+  /** Appends an `H` command to this path. */
+  H(x: number) {
+    return this.push(L(x, this.cursor.y));
+  }
+  /** Appends an `M` command to this path. */
+  M(x: number, y: number, z: number = 1) {
+    return this.push(M(x, y, z));
+  }
+  /** Appends an `L` command to this path. */
+  L(x: number, y: number, z: number = 1) {
+    return this.push(L(x, y, z));
+  }
+}
+
+/** Returns a new {@link Path|SVG path}. */
+const path = (originX: number, originY: number, originZ: number = 1) => (
+  new Path(originX, originY, originZ)
+);
 
 class BigRat {
   N: bigint;
@@ -6073,27 +6338,6 @@ class Latexer implements Visitor<string> {
   }
 }
 
-class Camera {
-  width: number;
-  height: number;
-  margins: [number, number, number, number] = [10, 10, 10, 10];
-  constructor(width: number, height: number) {
-    this.width = width;
-    this.height = height;
-  }
-  h(n: number) {
-    this.height = n;
-    return this;
-  }
-  w(n: number) {
-    this.width = n;
-    return this;
-  }
-}
-const camera = (width: number, height: number) => (
-  new Camera(width, height)
-);
-
 class Compiler implements Visitor<Primitive> {
   environment: Environment<Primitive>;
   globals: Environment<Primitive>;
@@ -8492,34 +8736,28 @@ export function engine(source: string) {
       const out = result.unwrap();
       return out;
     },
-    log(): LogData {
+    log() {
       const program = parse();
       if (program.isLeft()) {
         const msg = program.unwrap().report();
-        return { data: [msg], type: "ERROR" };
+        return [msg];
       }
       const statements = program.unwrap();
       const interpreter = new Compiler().setmode("log").loopcap(600);
       const resolved = resolvable(interpreter).resolved(statements);
       if (resolved.isLeft()) {
         const msg = resolved.unwrap().report();
-        return { data: [msg], type: "ERROR" };
+        return [msg];
       }
       const result = interpreter.interpret(statements);
       if (result.isLeft()) {
         const msg = result.unwrap().report();
-        return { data: [msg], type: "ERROR" };
+        return [msg];
       } else {
         const prints = interpreter.prints;
         prints.push("OK");
-        return { data: prints, type: "OK" };
+        return prints;
       }
     },
   };
 }
-
-type PlainData = { data: string[]; type: "ERROR" | "OK" };
-type LogData = PlainData;
-
-
-

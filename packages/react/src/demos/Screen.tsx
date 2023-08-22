@@ -1,6 +1,5 @@
 import { engine } from "./io.js";
 import {
-  CSSProperties,
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -253,11 +252,8 @@ export const Terminal = (
   const [result, setResult] = useState("");
   const [code, setCode] = useState(source.trimStart().trimEnd());
   const click = () => {
-    const logs = engine(code).log();
-    if (logs.type === "ERROR" || logs.type === "OK") {
-      const result = logs.data.join("\n");
-      setResult(result);
-    }
+    const logs = engine(code).log().join('\n');
+    setResult(logs);
   };
   return (
     <div>
