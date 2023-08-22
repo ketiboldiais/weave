@@ -1146,14 +1146,14 @@ class ACommand extends PathCommand {
     out.rx = value;
     return this;
   }
-  swept(value: "major" | "minor") {
+  swept(value: "clockwise" | "counter-clockwise") {
     const out = this.copy();
-    out.sweep = value === "major" ? 1 : 0;
+    out.sweep = value === "clockwise" ? 1 : 0;
     return out;
   }
-  arc(value: "large" | "small") {
+  arc(value: "major" | "minor") {
     const out = this.copy();
-    out.largeArc = value === "large" ? 1 : 0;
+    out.largeArc = value === "major" ? 1 : 0;
     return out;
   }
   copy(): ACommand {
@@ -1217,18 +1217,43 @@ class Path {
     this.cursor = command.end.copy();
     return this;
   }
+
+  A(
+    end: number[],
+    dimensions: number[] | number = [1, 1],
+    arc: "minor" | "major" = "minor",
+    rotation: number = 0,
+    sweep: "clockwise" | "counter-clockwise" = "clockwise",
+  ) {
+    const [RX, RY] = Array.isArray(dimensions)
+      ? dimensions
+      : [dimensions, dimensions];
+    const x = $isNothing(end[0]) ? end[0] : 0;
+    const y = $isNothing(end[1]) ? end[1] : 0;
+    const z = $isNothing(end[2]) ? end[2] : 0;
+    const a = A(x, y, z)
+      .xRadius(RX)
+      .yRadius(RY)
+      .rotate(rotation)
+      .arc(arc)
+      .swept(sweep);
+    return this.push(a);
+  }
   /** Appends a `V` command to this path. */
   V(y: number) {
     return this.push(L(this.cursor.x, y));
   }
+
   /** Appends an `H` command to this path. */
   H(x: number) {
     return this.push(L(x, this.cursor.y));
   }
+
   /** Appends an `M` command to this path. */
   M(x: number, y: number, z: number = 1) {
     return this.push(M(x, y, z));
   }
+
   /** Appends an `L` command to this path. */
   L(x: number, y: number, z: number = 1) {
     return this.push(L(x, y, z));
@@ -1251,14 +1276,6 @@ class Circle {
   origin: Vector;
   constructor(originX: number, originY: number, originZ: number) {
     this.origin = vector([originX, originY, originZ]);
-  }
-  get path() {
-    const p = path(this.origin.x, this.origin.y, this.origin.z);
-    const c1 = p.cursor;
-    p.push(A(c1.x + this.r * 4, c1.y, c1.z));
-    const c2 = p.cursor;
-    p.push(A(c2.x - (this.r * 4), c1.y, c1.z));
-    return p;
   }
   radius(r: number) {
     this.r = r;
