@@ -1,4 +1,4 @@
-import { engine } from "./io.js";
+import { engine, Group, group, line } from "./io.js";
 import {
   forwardRef,
   useEffect,
@@ -241,7 +241,42 @@ const IDE = forwardRef<
   );
 });
 
+export const F1 = () => {
+  const g = group([
+    line([0, 0], [200, 200]),
+  ])
+  return <Figure g={g} />;
+};
 
+export const Figure = ({ g }: { g: Group }) => {
+  const width = g.ctx._width;
+  const height = g.ctx._height;
+  const viewbox = `0 0 ${width} ${height}`;
+  const paddingBottom = `${100 * (height / width)}%`;
+  const boxcss = {
+    display: "inline-block",
+    position: "relative",
+    width: "100%",
+    paddingBottom,
+    overflow: "hidden",
+  } as const;
+  const svgcss = {
+    display: "inline-block",
+    position: "absolute",
+    top: "0",
+    left: "0",
+    right: "0",
+    bottom: "0",
+  } as const;
+  const par = "xMidYMid meet";
+  return (
+    <div style={boxcss}>
+      <svg viewBox={viewbox} preserveAspectRatio={par} style={svgcss}>
+        <path stroke={"black"} d={g.render()} />
+      </svg>
+    </div>
+  );
+};
 
 export const Terminal = (
   { source, height = "fit-content" }: {
@@ -252,7 +287,7 @@ export const Terminal = (
   const [result, setResult] = useState("");
   const [code, setCode] = useState(source.trimStart().trimEnd());
   const click = () => {
-    const logs = engine(code).log().join('\n');
+    const logs = engine(code).log().join("\n");
     setResult(logs);
   };
   return (
@@ -273,6 +308,3 @@ export const Terminal = (
     </div>
   );
 };
-
-
-

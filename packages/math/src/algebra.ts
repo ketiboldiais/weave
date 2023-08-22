@@ -1055,6 +1055,7 @@ class HCommand extends PathCommand {
     return `H${this.end.x},${this.end.y}`;
   }
 }
+
 /** Returns a new {@link HCommand|H-command}. */
 const H = (x: number, y: number, z: number = 1) => (new HCommand(x, y, z));
 
@@ -1078,7 +1079,7 @@ class QCommand extends PathCommand {
   }
 }
 
-/** Returns a new {@link QCommand|Q-command}. */
+/** Returns a new quadratic bezier curve command. */
 const Q = (x: number, y: number, z: number = 1) => (new QCommand(x, y, z));
 
 /** A type corresponding to the SVG cubic-bezier-curve command. */
@@ -1115,7 +1116,7 @@ class CCommand extends PathCommand {
   }
 }
 
-/** Returns a new {@link CCommand|C-command}. */
+/** Returns a new cubic bezier curve command. */
 const C = (x: number, y: number, z: number = 1) => (new CCommand(x, y, z));
 
 /** An ADT corresponding to the SVG arc-to command. */
@@ -1173,7 +1174,7 @@ class ACommand extends PathCommand {
   }
 }
 
-/** Returns a new {@link ACommand|A-command}. */
+/** Returns a new arc-to command. */
 const A = (x: number, y: number, z: number = 1) => (new ACommand(x, y, z));
 
 class Path {
@@ -1218,6 +1219,7 @@ class Path {
     return this;
   }
 
+  /** @param end - The arc’s end point. @param dimensions - Either a pair `(w,h)` where `w` is the width of the arc, and `h` is the height of the arc, or a number. If a number is passed, draws an arc where `w = h` (a circular arc). Defaults to `[1,1]`. @param rotation - The arc’s rotation along its x-axis. If a string is passed, Weave’s parsers will attempt to parse an angle, defaulting to 0 in failure. If a number is passed, assumes the angle unit is in radians. Defaults to `0`. @param arc - Either `minor` (the smaller half of the arc, corresponding to a large arc flag of `0`) or `major` (the larger half of the arc, corresponding to a large arc flag of `1`). Defaults to `minor`. @param sweep - Either `clockwise` (thus drawing the arc clockwise, a sweep flag of 1) or `counter-clockwise` ( thus drawing the arc counter-clockwise, a sweep flag of 0). Defaults to `clockwise`. */
   A(
     end: number[],
     dimensions: number[] | number = [1, 1],
@@ -1239,6 +1241,7 @@ class Path {
       .swept(sweep);
     return this.push(a);
   }
+
   /** Appends a `V` command to this path. */
   V(y: number) {
     return this.push(L(this.cursor.x, y));
@@ -1260,20 +1263,29 @@ class Path {
   }
 }
 
-/** Returns a new {@link Path|SVG path}. */
-function path(originX: number, originY: number, originZ: number = 1) {
+/** Returns a new path. */
+export function path(originX: number, originY: number, originZ: number = 1) {
   return (
     new Path(originX, originY, originZ)
   );
 }
 
-function line(start: [number, number], end: [number, number]) {
+/** Returns a new line. */
+export function line(start: [number, number], end: [number, number]) {
   return path(start[0], start[1]).L(end[0], end[1]);
 }
 
 class Circle {
   r: number = 1;
   origin: Vector;
+  toString() {
+    const p = path(this.origin.x, this.origin.y, this.origin.z);
+    const c1 = p.cursor;
+    p.A([c1.x + this.r * 4, c1.y]);
+    const c2 = p.cursor;
+    p.A([c2.x - (this.r * 4), c2.y]);
+    return p.toString();
+  }
   constructor(originX: number, originY: number, originZ: number) {
     this.origin = vector([originX, originY, originZ]);
   }
@@ -1284,9 +1296,33 @@ class Circle {
 }
 
 /** Returns a new circle. */
-const circle = (x: number, y: number, z: number = 1) => (
-  new Circle(x, y, z)
-);
+export function circle(x: number, y: number, z: number = 1) {
+  return (
+    new Circle(x, y, z)
+  );
+}
+
+export class Group {
+  children: (Circle | Path)[];
+  ctx: Camera = camera(500, 500);
+  d: string = "";
+  constructor(children: (Circle | Path)[]) {
+    this.children = children;
+  }
+  render() {
+    return this.children.map((n) => n.toString()).join("");
+  }
+}
+
+export function group(children: (Circle | Path)[]) {
+  return new Group(children);
+}
+
+const p = group([
+  circle(0, 0),
+  circle(0, 0),
+  circle(0, 0),
+]);
 
 class BigRat {
   N: bigint;
@@ -9257,7 +9293,3 @@ export function engine(source: string) {
     },
   };
 }
-
-const src = `
-
-`;

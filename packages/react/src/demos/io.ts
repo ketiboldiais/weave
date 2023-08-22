@@ -14,9 +14,7 @@ const {
   log2: lg,
   log: ln,
   log10: log,
-  acos: arccos,
   acosh: arccosh,
-  asin: arcsin,
   asinh: arcsinh,
   atan: arctan,
   sign,
@@ -24,47 +22,111 @@ const {
   exp,
   sqrt,
 } = Math;
-
-/** Utility method - Logs to the console. */
-const print = console.log;
-
-/** Typeguard: Returns true if `x` is any string, false otherwise. */
-const $isString = (x: any): x is string => (typeof x === "string");
-
-/** Typeguard: Returns true if `x` is any number, false otherwise. */
-const $isNumber = (x: any): x is number => (typeof x === "number");
-
-/** Typeguard: Returns true if `x` is any array, false otherwise. */
-const $isArray = (x: any): x is any[] => (Array.isArray(x));
-
-/** Typeguard: Returns true if `x` is a boolean, false otherwise. */
-const $isBoolean = (x: any): x is boolean => (typeof x === "boolean");
-
-/** Typeguard: Returns true if `x` is NaN, false otherwise.. */
-const $isNaN = (x: any) => Number.isNaN(x);
-
-/** Typeguard : Returns true if `x` is Undefined or null. */
-const $isNothing = (x: any): x is undefined => (
-  (x === undefined) || (x === null)
-);
-
-/** Typeguard: Returns true if `x` is an integer. */
-const $isInt = (x: number) => Number.isInteger(x);
-
-/** Typeguard: Returns true if `x` is Infinity. */
-const $isInfinity = (x: any) => !(Number.isFinite(x));
-
-/** Typeguard: Returns true if `x` is a big integer. */
-const $isBigInt = (x: any): x is bigint => (typeof x === "bigint");
-
-/** Typeguard: Returns true if `x` is any object. */
-const $isObject = (x: any): x is Object => (typeof x === "object");
-
-/** Typeguard: Returns true `x` is a function. */
-const $isFunction = (x: any): x is Function => (typeof x === "function");
+const HALF_PI = PI / 2;
 
 /** Global maximum integer. */
 const MAX_INT = Number.MAX_SAFE_INTEGER;
+
+/** An object that serves as a coordinate space. The camera is used by the graphics module to scale coordinates according to a given screen (as supplied by the user).*/
+class Camera {
+  /** The figure’s margins. */
+  _margins: [number, number, number, number] = [50, 50, 50, 50];
+
+  /** The camera’s coordinates' x-domain. */
+  _domain: [number, number] = [-10, 10];
+
+  /** Sets the camera’s x-coordinates' bounds. */
+  domain(x: number, y: number) {
+    (x < y) && (this._domain = [x, y]);
+    return this;
+  }
+
+  /** The camera’s coordinates' y-domain. */
+  _range: [number, number] = [-10, 10];
+
+  /** Sets the camera’s y-coordinates' bounds. */
+  range(x: number, y: number) {
+    (x < y) && (this._range = [x, y]);
+    return this;
+  }
+
+  /** The camera’s viewport width. */
+  _width: number;
+
+  /** Sets the camera’s viewport width. */
+  width(value: number) {
+    (value > 1) && (this._width = floor(value));
+    return this;
+  }
+
+  /** The camera’s viewport height. */
+  _height: number;
+
+  /** Sets the cameraks viewport height. */
+  height(value: number) {
+    (value > 1) && (this._height = floor(value));
+    return this;
+  }
+
+  constructor(width: number, height: number) {
+    this._width = width;
+    this._height = height;
+  }
+}
+
+/** Returns a new camera. */
+function camera(width: number, height: number) {
+  return new Camera(width > 0 ? width : 500, height > 0 ? height : 500);
+}
+
+/*
+┌─────────────────────────────────────────────────────────────────────────┐
+│ GEOMETRY FUNCTIONS                                                      │
+│ These are functions related to common computations in Euclidean         │
+│ geometry.                                                               │
+└─────────────────────────────────────────────────────────────────────────┘
+*/
+
+/** Converts the provided number (assumed to be radians) to degrees. */
+function toDegrees(radians: number) {
+  return radians * (180 / Math.PI);
+}
+
+/** Converts the provided number (assumed to be degrees) to radians. */
+function toRadians(degrees: number) {
+  return degrees * (Math.PI / 180);
+}
+
+/** Returns the arccosine of x. */
+function arccos(x: number) {
+  return (x > 1 ? 0 : x < -1 ? PI : Math.acos(x));
+}
+
+/** Returns the arcsine of x. */
+function arcsin(x: number) {
+  return (x >= 1 ? HALF_PI : x <= -1 ? -HALF_PI : Math.asin(x));
+}
+
+/*
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STATISTICAL FUNCTIONS                                                   │
+│ These functions relate to statistics.                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+*/
+
+/** Returns a random integer between the provided minimum and maximum (not including the maximum). */
+function randInt(min: number, max: number) {
+  return (
+    floor(Math.random() * (max - min + 1)) + min
+  );
+}
+
+/** Returns a random floating point number between the provided minimum and maximum (not including the maximum). */
+function randFloat(min: number, max: number) {
+  return (
+    Math.random() * (max - min) + min
+  );
+}
 
 /** Transforms 1-based indices to 0-based indices. */
 function i0(value: number) {
@@ -90,105 +152,335 @@ function avg(...nums: number[]) {
   return sum / nums.length;
 }
 
-/** Returns true if the given string contains digits. */
-function isNumericString(s: string) {
-  return /\d+/.test(s);
-}
-
 /** Returns the a% of b. */
 function percent(a: number, b: number) {
   return (a / 100) * b;
 }
 
-export class Vector<T extends number[] = number[]> {
-  /**
-   * The elements of this vector.
-   */
+/** Returns `a rem b` (the signed remainder). */
+function rem(a: number, b: number) {
+  return (a % b);
+}
+
+/** Returns `a mod b` (the unsigned remainder). */
+function mod(a: number, b: number) {
+  return (
+    ((a % b) + b) % b
+  );
+}
+
+/** Returns the integer quotient of `a` and `b`. */
+function quot(a: number, b: number) {
+  return (floor(a / b));
+}
+
+/** Returns a tuple. */
+function tuple<T extends any[]>(...data: T) {
+  return data;
+}
+
+/** Returns the greatest common divisor of integers `a` and `b`. */
+function gcd(a: number, b: number) {
+  let A = floor(a);
+  let B = floor(b);
+  while (B !== 0) {
+    let R = rem(A, B);
+    A = B;
+    B = R;
+  }
+  return abs(A);
+}
+
+/** Returns the triple of applying the extended Euclidean algorithm. */
+function xgcd(a: number, b: number) {
+  let A = floor(a);
+  let B = floor(b);
+  let mpp = 1;
+  let mp = 0;
+  let npp = 0;
+  let np = 1;
+  while (B !== 0) {
+    let Q = quot(A, B);
+    let R = rem(A, B);
+    A = B;
+    B = R;
+    let m = mpp - Q * mp;
+    let n = npp - Q * np;
+    mpp = mp;
+    mp = m;
+    npp = np;
+    np = n;
+  }
+  if (A >= 0) {
+    return tuple(A, mpp, npp);
+  } else {
+    return tuple(-A, -mpp, -npp);
+  }
+}
+
+/** Returns the clamping of the given input. I.e., if `input` is less than `min`, returns `min`. If `input` is greater than `max`, returns `max`. Otherwise, returns `input`. */
+function clamp(minimum: number, input: number, maximum: number) {
+  return min(max(input, minimum), maximum);
+}
+
+/** Given the number pair `(x1,x2)` returns the value between `x1` and `x2` at `p` percent of the dsitance between `x1` and `x2`. Useful for computations like: “What x-coordinate is 35% between 46 and 182?” Note that the percentage `p` is assumed to be between `0` and `1`. */
+function lerp([x1, x2]: [number, number], p: number) {
+  return (
+    x1 * (1 - p) + x2 * p
+  );
+}
+
+/** Given the number pair `(x,y)`, returns the value at the given decimal point `a`. Used primarily for computations like: How far through this line has this point moved? */
+function inverseLerp([x, y]: [number, number], a: number) {
+  return clamp(0, (a - x) / (y - x), 1);
+}
+
+/** Returns a linear interpolator. The `domain` is the interval of input values – a pair of numbers `(a,b)` where `a` is the smallest possible input and `b` is the largest. The `range` is the interval of scale values - a pair of numbers `(a,b)` where `a` is the smallest possible scaled value and `b` is the largest. */
+function interpolator(domain: [number, number], range: [number, number]) {
+  return (n: number) => (
+    (range[0]) + ((
+      ((range[1]) - (range[0])) / ((domain[1]) - (domain[0]))
+    ) * (n - (domain[0])))
+  );
+}
+
+/** Interpolates the number `n` based on the specified domain and range. */
+function iterpolate(
+  n: number,
+  domain: [number, number],
+  range: [number, number],
+) {
+  return (
+    interpolator(domain, range)(n)
+  );
+}
+
+/** Utility method - Logs to the console. */
+const print = console.log;
+
+/*
+┌─────────────────────────────────────────────────────────────────────────┐
+│ TYPEGUARDS                                                              │
+│ These functions verify and claim that                                   │
+│ their given arguments are of a particular type.                         │
+└─────────────────────────────────────────────────────────────────────────┘
+*/
+
+/** Typeguard: Returns true if `x` is any string, false otherwise. */
+function $isString(x: any): x is string {
+  return (typeof x === "string");
+}
+
+/** Typeguard: Returns true if `x` is any number, false otherwise. */
+function $isNumber(x: any): x is number {
+  return (typeof x === "number");
+}
+
+/** Typeguard: Returns true if `x` is any array, false otherwise. */
+function $isArray(x: any): x is any[] {
+  return (Array.isArray(x));
+}
+
+/** Typeguard: Returns true if `x` is a boolean, false otherwise. */
+function $isBoolean(x: any): x is boolean {
+  return (typeof x === "boolean");
+}
+
+/** Typeguard: Returns true if `x` is NaN, false otherwise.. */
+function $isNaN(x: any) {
+  return Number.isNaN(x);
+}
+
+/** Typeguard : Returns true if `x` is Undefined or null. */
+function $isNothing(x: any): x is undefined | null {
+  return (
+    (x === undefined) || (x === null)
+  );
+}
+
+/** Typeguard: Returns true if `x` is an integer. */
+function $isInt(x: number) {
+  return Number.isInteger(x);
+}
+
+/** Typeguard: Returns true if `x` is Infinity. */
+function $isInfinity(x: any) {
+  return !(Number.isFinite(x));
+}
+
+/** Typeguard: Returns true if `x` is a big integer. */
+function $isBigInt(x: any): x is bigint {
+  return (typeof x === "bigint");
+}
+
+/** Typeguard: Returns true if `x` is any object. */
+function $isObject(x: any): x is Object {
+  return (typeof x === "object");
+}
+
+/** Typeguard: Returns true `x` is a function. */
+function $isFunction(x: any): x is Function {
+  return (typeof x === "function");
+}
+
+/** Returns true if the given string contains digits. */
+function isNumericString(s: string) {
+  return /\d+/.test(s);
+}
+
+// ============================================================ VECTOR DATA TYPE
+
+class Vector<T extends number[] = number[]> {
+  /** The elements of this vector. */
   elements: T;
+
   constructor(elements: T) {
     this.elements = elements;
   }
 
-  /**
-   * @internal Utility method for performing
-   * binary operations.
-   */
+  vxm(matrix: Matrix) {
+    if (this.length !== matrix.C) return this;
+    const vector = new Vector([] as number[]);
+    for (let i = 1; i <= matrix.R; i++) {
+      const v = matrix.row(i);
+      if (v === null) return this;
+      const d = this.dot(v);
+      vector.elements[i - 1] = d;
+    }
+    print(vector);
+    return vector;
+  }
+
+  /** @internal Utility method for performing binary operations. */
   private binop(
     other: Vector | number[] | number,
     op: (a: number, b: number) => number,
   ) {
     const arg = ($isNumber(other))
-      ? homogenousVector(other, this.cols)
+      ? homogenousVector(other, this.length)
       : vector(other);
     const [A, B] = equalen(this, arg);
     return vector(A.elements.map((c, i) => op(c, B.elements[i])));
   }
-  /**
-   * Returns the magnitude of this vector.
-   * @param precision - An optional precision value
-   * may be passed roundingthe magnitude to a specified
-   * number of decimal places.
-   */
+
+  /** Returns the smallest component of this vector. */
+  get min() {
+    let min = Infinity;
+    for (let i = 0; i < this.elements.length; i++) {
+      const elem = this.elements[i];
+      if (elem < min) {
+        min = elem;
+      }
+    }
+    return min;
+  }
+
+  /** Returns the largest component of this vector. */
+  get max() {
+    let max = -Infinity;
+    for (let i = 0; i < this.elements.length; i++) {
+      const elem = this.elements[i];
+      if (elem > max) {
+        max = elem;
+      }
+    }
+    return max;
+  }
+
+  /** Returns this vector as a matrix. */
+  matrix() {
+    const elements = this.elements.map((n) => new Vector([n]));
+    return new Matrix(elements, elements.length, 1);
+  }
+
+  /** Returns the magnitude of this vector.  An optional precision value may be passed roundingthe magnitude to a specified number of decimal places. */
   mag(precision?: number) {
     const out = sqrt(this.elements.reduce((p, c) => (p) + (c ** 2), 0));
     return !$isNothing(precision) ? round(out, floor(precision)) : out;
   }
 
-  /**
-   * Returns the difference between this vector and
-   * the provided argument. If a number is passed,
-   * returns the scalar difference.
-   */
+  /** Returns the difference between this vector and the provided argument. If a number is passed, returns the scalar difference. */
   sub(other: Vector | number[] | number) {
     return this.binop(other, (a, b) => a - b);
   }
 
-  /**
-   * Returns the product between this vector and
-   * the provided argument. If a number is passed,
-   * returns the scalar difference.
-   */
+  /** Returns the product between this vector and the provided argument. If a number is passed, returns the scalar difference. */
   mul(other: Vector | number[] | number) {
     return this.binop(other, (a, b) => a * b);
   }
-  /**
-   * Returns this pair-wise power of this vector to
-   * the provided argument. If a number is passed,
-   * returns the scalar difference.
-   */
+
+  /** Returns this pair-wise power of this vector to the provided argument. If a number is passed, returns the scalar difference. */
   pow(other: Vector | number[] | number) {
     return this.binop(other, (a, b) => a ** b);
   }
 
-  /**
-   * Returns the sum of this vector and the provided
-   * argument. If a number is passed, returns the
-   * scalar difference.
-   */
+  /** Returns the sum of this vector and the provided argument. If a number is passed, returns the scalar difference. */
   add(other: Vector | number[] | number) {
     return this.binop(other, (a, b) => a + b);
   }
 
-  /**
-   * Returns the negation of this vector.
-   */
+  /** Returns the component-wise division of this vector. */
+  div(other: Vector | number[] | number) {
+    return this.binop(other, (a, b) => b === 0 ? a / 0.0001 : a / b);
+  }
+
+  /** Magnifies this vector by the given magnitude. */
+  magnify(magnitude: number) {
+    const mag = this.mag();
+    const ratio = magnitude / mag;
+    return this.mul(ratio);
+  }
+
+  /** Returns this vector with each component squared. */
+  square() {
+    return this.mul(this);
+  }
+
+  /** Returns the negation of this vector. */
   neg() {
     return vector(this.elements.map((c) => -c));
   }
-  /**
-   * Returns true if this vector comprises exactly
-   * two elements.
-   */
+
+  /** Returns this vector with each component set to its absolute value. */
+  abs() {
+    return vector(this.elements.map((c) => Math.abs(c)));
+  }
+
+  /** Returns this vector with each component set to zero */
+  zero() {
+    return vector(this.elements.map((_) => 0));
+  }
+
+  /** Returns true if this vector equals the provided vector. */
+  equals(that: Vector) {
+    if (this.length !== that.length) return false;
+    for (let i = 0; i < this.length; i++) {
+      const e1 = this.elements[i];
+      const e2 = that.elements[i];
+      if (e1 !== e2) return false;
+    }
+    return true;
+  }
+
+  /** Returns true if every component of this vector is zero. */
+  isZero() {
+    for (let i = 0; i < this.length; i++) {
+      if (this.elements[i] !== 0) return false;
+    }
+    return true;
+  }
+
+  /** Returns true if this vector comprises exactly two elements. */
   is2D(): this is Vector<[number, number]> {
     return this.elements.length === 2;
   }
-  /**
-   * Returns true if this vector comprises exactly
-   * three elements.
-   */
+
+  /** Returns true if this vector comprises exactly three elements. */
   is3D(): this is Vector<[number, number, number]> {
     return this.elements.length === 3;
   }
+
+  /** Returns a copy of this vector. */
   copy() {
     const elements = [];
     for (let i = 0; i < this.elements.length; i++) {
@@ -196,9 +488,11 @@ export class Vector<T extends number[] = number[]> {
     }
     return new Vector(elements);
   }
-  pad(by: number, value: number) {
-    if (by < this.length) {
-      const diff = this.length - by;
+
+  /** Appends the given value by the provided number of slots. */
+  pad(slots: number, value: number) {
+    if (slots < this.length) {
+      const diff = this.length - slots;
       const elements = [...this.elements];
       for (let i = 0; i < diff; i++) {
         elements.push(value);
@@ -207,15 +501,8 @@ export class Vector<T extends number[] = number[]> {
     }
     return this.copy();
   }
-  /**
-   * Sets the element at the given position
-   * to the provided value. Indices start
-   * at 1. If the index is greater than
-   * the current size of this vector,
-   * the vector will insert additional zeros
-   * up to the given index to ensure its
-   * elements array is contiguous.
-   */
+
+  /** Sets the element at the given position to the provided value. Indices start at 1. If the index is greater than the current size of this vector, the vector will insert additional zeros up to the given index to ensure its elements array is contiguous. */
   set(index: number, value: number) {
     index = i0(index);
     if (index > this.length) {
@@ -228,82 +515,188 @@ export class Vector<T extends number[] = number[]> {
     copy.elements[index] = value;
     return copy;
   }
-  /**
-   * Sets the first element of this vector to the
-   * provided value.
-   */
+
+  /** Sets the first element of this vector to the provided value. */
   px(value: number) {
     return this.set(1, value);
   }
-  /**
-   * Returns the first element of this vector.
-   */
+
+  /** Returns the first element of this vector. */
   get x() {
     return $isNothing(this.elements[0]) ? 0 : this.elements[0];
   }
-  /**
-   * Sets the second element of this vector to the
-   * provided value.
-   */
+
+  /** Sets the second element of this vector to the provided value. */
   py(value: number) {
     return this.set(2, value);
   }
-  /**
-   * Returns the second element of this vector.
-   */
+
+  /** Returns the second element of this vector. */
   get y() {
     return $isNothing(this.elements[1]) ? 0 : this.elements[1];
   }
-  /**
-   * Sets the third element of this vector to the
-   * provided value.
-   */
+
+  /** Sets the third element of this vector to the provided value. */
   pz(value: number) {
     return this.set(3, value);
   }
-  /**
-   * Returns the third element of this vector.
-   */
+
+  /** Returns the third element of this vector. */
   get z() {
     return $isNothing(this.elements[2]) ? 0 : this.elements[2];
   }
-  /**
-   * Sets the fourt element of this vector to the
-   * provided value.
-   */
+
+  /** Sets the fourt element of this vector to the provided value. */
   pw(value: number) {
     return this.set(4, value);
   }
-  /**
-   * Returns the fourth element of this vector.
-   */
+
+  /** Returns the fourth element of this vector. */
   get w() {
     return $isNothing(this.elements[3]) ? 0 : this.elements[3];
   }
 
+  /** Returns the dot product of this vector and the provided vector. */
+  dot(vector: Vector | number[]) {
+    const other = Vector.from(vector);
+    const order = this.length;
+    if (other.length !== order) return 0;
+    let sum = 0;
+    for (let i = 0; i < order; i++) {
+      const a = this.elements[i];
+      const b = other.elements[i];
+      const p = a * b;
+      sum += p;
+    }
+    return sum;
+  }
+
+  /** Returns the element at the given index (indices start at 1). */
   element(index: number) {
     const out = this.elements[index - 1];
     return (out !== undefined) ? out : null;
   }
+
+  /** Returns the length of this vector. */
   get length() {
     return this.elements.length;
   }
-  get cols() {
-    return this.elements.length;
-  }
+
+  /** Returns the string representation of this vector. */
   toString() {
     const elements = this.elements.map((n) => `${n}`).join(",");
     return `[${elements}]`;
   }
+
+  /** Returns this vector as a number array. */
+  toArray() {
+    return this.elements.map((e) => e);
+  }
+
+  /** Returns a new vector from the given array of numbers or `Vector`. If a `Vector` is passed, returns a copy of that vector. */
+  static from(value: number[] | Vector): Vector {
+    if ($isArray(value)) {
+      return new Vector(value);
+    } else {
+      return value.copy();
+    }
+  }
+
+  /** Returns the angle between the two provided vectors. */
+  theta(other: Vector) {
+    const ab = this.dot(other);
+    const mag = this.mag();
+    const factor = ab / (mag);
+    return Math.acos(factor);
+  }
+
+  /** Returns the angle between (a) the difference vector of this vector and the provided vector, and (b) the x-axis. */
+  gamma(other: Vector) {
+    const dx = this.x - other.x;
+    const dy = this.y - other.y;
+    const gamma = Math.atan2(dy, dx);
+    return gamma;
+  }
+
+  /** Returns the unit vector point from this vector 𝑢 to the provided 𝑣. */
+  normalTo(v: Vector) {
+    const d = this.sub(v);
+    return d.normalize();
+  }
+
+  /** Returns this vector’s normal. */
+  normalize() {
+    if (this.isZero()) return this;
+    return this.div(this.mag());
+  }
+
+  /** Returns the 2D vector normal of this vector. */
+  normal2D() {
+    return vector([-this.y, this.x]);
+  }
+
+  /** Returns the cross product of this vector in-place. The cross product is used primarily to compute the vector perpendicular to two vectors. */
+  cross(other: Vector) {
+    const ax = this.x;
+    const ay = this.y;
+    const az = this.z;
+    const bx = other.x;
+    const by = other.y;
+    const bz = other.z;
+    const cx = (ay * bz) - (az * by);
+    const cy = (az * bx) - (ax * bz);
+    const cz = (ax * by) - (ay * bx);
+    return vector([cx, cy, cz]);
+  }
+
+  /** Returns the 2D distance between this vector and the provided vector. */
+  distance2D(other: Vector) {
+    const dx = other.x - this.x;
+    const dy = other.y - this.y;
+    const dsum = (dx ** 2) + (dy ** 2);
+    return Math.sqrt(dsum);
+  }
+
+  /** Returns the 3D distance between this vector and the provided vector. */
+  distance3D(other: Vector) {
+    const x = other.x - this.x;
+    const y = other.y - this.y;
+    const z = other.z - this.z;
+    const xyz = (x * x) + (y * y) + (z * z);
+    return Math.sqrt(xyz);
+  }
+
+  /** Returns the projection of this vector (𝑏) onto the provided vector (𝑎) (projₐ𝑏). That is, the projection of 𝑏 onto 𝑎. */
+  project(a: Vector): Vector {
+    const b = this.copy();
+    const prod = a.dot(b);
+    const mag = a.mag();
+    const mag2 = mag * mag;
+    const factor = prod / mag2;
+    const res = a.mul(factor);
+    return res;
+  }
+
+  /** Returns a random 2D vector. The `min` argument is the lower bound of the sampling interval. The `max` argument is The upper bound of the sampling interval. The `restrict` argument takes string values `Z` or `R`. If `Z` is passed, random values are restricted to integers. If `R` is passed, random values are either integers or floats. */
+  static random2D(min: number, max: number, restrict: "Z" | "R" = "R") {
+    const rfn = (restrict === "Z") ? randInt : randFloat;
+    const x = rfn(min, max);
+    const y = rfn(min, max);
+    return new Vector([x, y]);
+  }
+
+  /** Returns a random 3D vector. The `min` argument sets the lower bound of the sampling interval. The `max` argument sets the upper bound of the sampling interval. The `restrict` argument takes `Z` or `R`. If `Z` is passed, random values are restricted to integers. If `R` is passed, random values are either integers or floats. */
+  static random3D(min: number, max: number, restrict: "Z" | "R" = "R") {
+    const v = Vector.random2D(min, max, restrict);
+    const x = v.x;
+    const y = v.y;
+    const z = restrict === "Z" ? randInt(min, max) : randFloat(min, max);
+    return new Vector([x, y, z]);
+  }
 }
 
-/**
- * Given `vectorA` and `vectorB`, ensures that `vectorA` and
- * `vectorB` have the same sizes (number of elements).
- * If one is smaller than the other, the shorter is padded with
- * additional zeros to ensure the lengths are the same.
- */
-export function equalen(vectorA: Vector, vectorB: Vector): [Vector, Vector] {
+/** Given `vectorA` and `vectorB`, ensures that `vectorA` and `vectorB` have the same sizes (number of elements). If one is smaller than the other, the shorter is padded with additional zeros to ensure the lengths are the same. */
+function equalen(vectorA: Vector, vectorB: Vector): [Vector, Vector] {
   const A = [];
   const B = [];
   if (vectorA.length > vectorB.length) {
@@ -333,11 +726,8 @@ export function equalen(vectorA: Vector, vectorB: Vector): [Vector, Vector] {
   }
 }
 
-/**
- * Returns a new vector of size `length`,
- * where each element is the given `value`.
- */
-export function homogenousVector(value: number, length: number) {
+/** Returns a new vector of size `length`, where each element is the given `value`.*/
+function homogenousVector(value: number, length: number) {
   const elements = [];
   for (let i = 0; i < length; i++) {
     elements.push(value);
@@ -345,12 +735,8 @@ export function homogenousVector(value: number, length: number) {
   return new Vector(elements);
 }
 
-/**
- * Returns a new vector. If a vector
- * is passed, returns the vector (an
- * identity function).
- */
-export function vector(elements: number[] | Vector) {
+/** Returns a new vector. If a vector is passed, returns the vector (an identity function). */
+function vector(elements: number[] | Vector) {
   if ($isArray(elements)) {
     return new Vector(elements);
   } else {
@@ -360,48 +746,262 @@ export function vector(elements: number[] | Vector) {
 
 const $isVector = (value: any): value is Vector => (value instanceof Vector);
 
-/**
- * Returns a `translate` string for use with the `g`
- * element.
- */
-const shift = (
-  x: number = 0,
-  y: number = 0,
-) => `translate(${x},${y})`;
+// ============================================================ MATRIX DATA TYPE
 
-export const Id = <T>(x: T) => x;
 class Matrix {
   vectors: Vector[];
-  rows: number;
-  cols: number;
+  R: number;
+  C: number;
   constructor(vectors: Vector[], rows: number, cols: number) {
     this.vectors = vectors;
-    this.rows = rows;
-    this.cols = cols;
+    this.R = rows;
+    this.C = cols;
   }
+  /** Returns true if this matrix is a square matrix. */
+  get square() {
+    return this.C === this.R;
+  }
+
+  /** Returns a copy of this matrix. */
+  copy() {
+    const vs = this.vectors.map((v) => v.copy());
+    return new Matrix(vs, this.R, this.C);
+  }
+
+  /** Returns the vector element at the given index (indices start at 1). */
   element(index: number) {
     const out = this.vectors[index - 1];
     return out !== undefined ? out : null;
   }
+  /** Returns the vector element at the given index (indices start at 1). */
+  row(index: number) {
+    return this.element(index);
+  }
+  /** Returns a column vector comprising all the vector elements at the given column. */
+  column(index: number) {
+    if (index > this.C) {
+      const out: number[] = [];
+      for (let i = 0; i < this.C; i++) {
+        out.push(0);
+      }
+      return vector(out);
+    }
+    const out: number[] = [];
+    this.vectors.forEach((vector) => {
+      vector.elements.forEach((n, i) => {
+        if (i === index) out.push(n);
+      });
+    });
+    return vector(out);
+  }
+
+  /** Returns the nth element at the given row index and column index. An optional fallback value (defaulting to 0) may be provided in the event the indices are out of bounds. */
+  n(rowIndex: number, columnIndex: number, fallback: number = 0) {
+    const out = this.row(rowIndex);
+    if (out === null) return fallback;
+    const n = out.element(columnIndex);
+    return $isNumber(n) ? n : fallback;
+  }
+
+  /** Returns the string form of matrix. */
   toString() {
     const out = this.vectors.map((v) => v.toString()).join(",");
     return `[${out}]`;
   }
+
+  /** Sets the element at the given row index and column index. The row and column indices are expected to begin at 1. If no element exists at the provided indices, no change is done. */
+  set(row: number, column: number, value: number) {
+    if (this.vectors[row - 1] === undefined) return this;
+    if (this.vectors[row - 1].elements[column - 1] === undefined) return this;
+    const copy = this.copy();
+    copy.vectors[row - 1].elements[column - 1] = value;
+    return copy;
+  }
+
+  /** Executes the given callback over each element of this matrix. The row and column index provided in the callback begin at 1. */
+  forEach(
+    callback: (element: number, rowIndex: number, columnIndex: number) => void,
+  ) {
+    for (let i = 1; i <= this.R; i++) {
+      for (let j = 1; j <= this.C; j++) {
+        callback(this.n(i, j), i, j);
+      }
+    }
+    return this;
+  }
+
+  /** Returns true if this matrix and the the provided matrix have the same number of rows and the same number of columns. False otherwise. */
+  congruent(matrix: Matrix) {
+    return this.R === matrix.R && this.C === matrix.C;
+  }
+  static fill(rows: number, columns: number, arg: number) {
+    const vectors: Vector[] = [];
+    for (let i = 0; i < rows; i++) {
+      const nums: number[] = [];
+      for (let j = 0; j < columns; j++) {
+        nums.push(arg);
+      }
+      vectors.push(vector(nums));
+    }
+    return matrix(vectors);
+  }
+
+  static from(nums: (number[])[]) {
+    const out = nums.map((ns) => vector(ns));
+    return matrix(out);
+  }
+  static of(
+    rows: number,
+    columns: number,
+    arg: number | (number[])[] | Matrix,
+  ) {
+    return $isNumber(arg)
+      ? Matrix.fill(rows, columns, arg)
+      : $isArray(arg)
+      ? Matrix.from(arg)
+      : arg;
+  }
+
+  /** @internal - Utility method for binary operations on matrices. */
+  private binop(
+    arg: number | (number[])[] | Matrix,
+    op: (a: number, b: number) => number,
+  ) {
+    const other = $isNumber(arg)
+      ? Matrix.fill(this.R, this.C, arg)
+      : $isArray(arg)
+      ? Matrix.from(arg)
+      : arg;
+    if (this.R !== other.R || this.C !== other.C) return this;
+    const vectors: Vector[] = [];
+    for (let i = 0; i < this.R; i++) {
+      const nums: number[] = [];
+      const row = this.vectors[i].elements;
+      for (let j = 0; j < row.length; j++) {
+        const a = row[j];
+        const b = other.vectors[i].elements[j];
+        nums.push(op(a, b));
+      }
+      vectors.push(vector(nums));
+    }
+    return matrix(vectors);
+  }
+
+  /** Returns this matrix minus the provided matrix. */
+  sub(matrix: Matrix | number | (number[])[]) {
+    return this.binop(matrix, (a, b) => a - b);
+  }
+
+  /** Returns this matrix component-wise-multiplied with provided matrix. */
+  times(matrix: Matrix | number | (number[])[]) {
+    return this.binop(matrix, (a, b) => a * b);
+  }
+
+  /** Returns this matrix plus the provided matrix. */
+  add(matrix: Matrix | number | (number[])[]) {
+    return this.binop(matrix, (a, b) => a + b);
+  }
+
+  /** Returns the negation of this matrix.  */
+  neg() {
+    return this.times(-1);
+  }
+
+  /** Returns the transpose of this matrix. */
+  transpose() {
+    const copy: (number[])[] = [];
+    for (let i = 0; i < this.R; ++i) {
+      const vector = this.vectors[i];
+      for (let j = 0; j < this.C; ++j) {
+        const element = vector.elements[j];
+        if ($isNothing(element)) continue;
+        if ($isNothing(copy[j])) {
+          copy[j] = [];
+        }
+        copy[j][i] = element;
+      }
+    }
+    return matrix(copy.map((c) => vector(c)));
+  }
+
+  /** Returns an array of generic K, where K is the result of applying the callback function on each vector of this matrix. */
+  vmap<K>(
+    callback: (vector: Vector, rowIndex: number, matrix: Matrix) => K,
+  ): K[] {
+    const out: K[] = [];
+    const mtx = this.copy();
+    for (let i = 0; i < this.R; i++) {
+      const v = this.vectors[i];
+      const rowIndex = i + 1;
+      const k = callback(v, rowIndex, mtx);
+      out.push(k);
+    }
+    return out;
+  }
+
+  /** Returns the matrix product of this matrix and the provided matrix. */
+  mul(arg: number | Matrix | (number[])[]) {
+    const Ar = this.R;
+    const Ac = this.C;
+    if (arg instanceof Matrix && Ac !== arg.R) {
+      return this;
+    }
+    const B = Matrix.of(Ar, Ac, arg);
+    const Bc = B.C;
+    const result: (number[])[] = [];
+    for (let i = 0; i < Ar; i++) {
+      result[i] = [];
+      for (let j = 0; j < Bc; j++) {
+        let sum = 0;
+        for (let k = 0; k < Ac; k++) {
+          const a = this.vectors[i].elements[k];
+          const b = B.vectors[k].elements[j];
+          sum += a * b;
+        }
+        result[i][j] = sum;
+      }
+    }
+    return matrix(result.map((r) => vector(r)));
+  }
+
+  /** Returns true if this matrix and the provided matrix are equal. */
+  equals(matrix: Matrix) {
+    if (!this.congruent(matrix)) return false;
+    let out = true;
+    this.forEach((n, r, c) => {
+      const m = matrix.n(r, c);
+      if (m !== n) out = false;
+    });
+    return out;
+  }
 }
 
-function matrix(vectors: Vector[], cols?: number) {
+/** Returns a new matrix. */
+function matrix(rows: (Vector[]) | (number[])[], cols?: number) {
+  const vectors = rows.map((v) => $isVector(v) ? v : Vector.from(v));
   return new Matrix(
     vectors,
     vectors.length,
-    cols !== undefined ? cols : vectors[0].cols,
+    cols !== undefined ? cols : vectors[0].length,
   );
 }
 
+/** Returns true if the given value is a matrix. */
 const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 
 /** An enum of types mapped to SVG Path command prefixes. */
 // deno-fmt-ignore
 enum pc { M, L, H, V, Q, C, A, }
+
+interface PathCommandVisitor<T> {
+  M(visitor: MCommand): T;
+  L(visitor: LCommand): T;
+  H(visitor: HCommand): T;
+  V(visitor: VCommand): T;
+  Q(visitor: QCommand): T;
+  C(visitor: CCommand): T;
+  A(visitor: ACommand): T;
+}
 
 abstract class PathCommand {
   readonly type: pc;
@@ -410,13 +1010,19 @@ abstract class PathCommand {
     this.type = type;
     this.end = end;
   }
+  abstract accept<T>(visitor: PathCommandVisitor<T>): T;
+
   /** Sets the endpoint for this command. */
   abstract endPoint(x: number, y: number, z?: number): PathCommand;
+
   /** Returns the string value for this command. */
   abstract toString(): string;
 }
 
 class MCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.M(this);
+  }
   readonly type: pc.M;
   constructor(x: number, y: number, z: number) {
     super(pc.M, vector([x, y, z]));
@@ -434,6 +1040,9 @@ class MCommand extends PathCommand {
 const M = (x: number, y: number, z: number = 1) => (new MCommand(x, y, z));
 
 class LCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.L(this);
+  }
   readonly type: pc.L;
   constructor(x: number, y: number, z: number) {
     super(pc.L, vector([x, y, z]));
@@ -450,6 +1059,9 @@ class LCommand extends PathCommand {
 const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
 
 class VCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.V(this);
+  }
   readonly type: pc.V;
   constructor(x: number, y: number, z: number) {
     super(pc.V, vector([x, y, z]));
@@ -466,6 +1078,9 @@ class VCommand extends PathCommand {
 const V = (x: number, y: number, z: number = 1) => (new VCommand(x, y, z));
 
 class HCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.H(this);
+  }
   readonly type: pc.H;
   constructor(x: number, y: number, z: number) {
     super(pc.H, vector([x, y, z]));
@@ -478,10 +1093,14 @@ class HCommand extends PathCommand {
     return `H${this.end.x},${this.end.y}`;
   }
 }
+
 /** Returns a new {@link HCommand|H-command}. */
 const H = (x: number, y: number, z: number = 1) => (new HCommand(x, y, z));
 
 class QCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.Q(this);
+  }
   readonly type: pc.Q = pc.Q;
   ctrl1: Vector;
   constructor(x: number, y: number, z: number) {
@@ -501,11 +1120,14 @@ class QCommand extends PathCommand {
   }
 }
 
-/** Returns a new {@link QCommand|Q-command}. */
+/** Returns a new quadratic bezier curve command. */
 const Q = (x: number, y: number, z: number = 1) => (new QCommand(x, y, z));
 
 /** A type corresponding to the SVG cubic-bezier-curve command. */
 class CCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.C(this);
+  }
   type: pc.C = pc.C;
   ctrl1: Vector = vector([0, 0, 1]);
   ctrl2: Vector = vector([0, 0, 1]);
@@ -538,11 +1160,14 @@ class CCommand extends PathCommand {
   }
 }
 
-/** Returns a new {@link CCommand|C-command}. */
+/** Returns a new cubic bezier curve command. */
 const C = (x: number, y: number, z: number = 1) => (new CCommand(x, y, z));
 
 /** An ADT corresponding to the SVG arc-to command. */
 class ACommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.A(this);
+  }
   type: pc.A = pc.A;
   /** The x-radius of this arc-to command. */
   rx: number = 1;
@@ -569,14 +1194,14 @@ class ACommand extends PathCommand {
     out.rx = value;
     return this;
   }
-  swept(value: "major" | "minor") {
+  swept(value: "clockwise" | "counter-clockwise") {
     const out = this.copy();
-    out.sweep = value === "major" ? 1 : 0;
+    out.sweep = value === "clockwise" ? 1 : 0;
     return out;
   }
-  arc(value: "large" | "small") {
+  arc(value: "major" | "minor") {
     const out = this.copy();
-    out.largeArc = value === "large" ? 1 : 0;
+    out.largeArc = value === "major" ? 1 : 0;
     return out;
   }
   copy(): ACommand {
@@ -596,63 +1221,178 @@ class ACommand extends PathCommand {
   }
 }
 
-/** Returns a new {@link ACommand|A-command}. */
+/** Returns a new arc-to command. */
 const A = (x: number, y: number, z: number = 1) => (new ACommand(x, y, z));
 
 class Path {
   /** The SVG commands comprising this path. */
-  private commands: PathCommand[] = [];
+  commands: PathCommand[] = [];
   /** The current endpoint of this path. */
   cursor: Vector;
+
   /** The origin of this path. */
   origin: Vector;
-  constructor(x: number, y: number, z: number = 1) {
-    this.cursor = vector([x, y, z]);
-    this.origin = vector([0, 0, 0]);
-  }
-  /** Appends the provided list of commands to this Path’s command list. */
-  with(commands:PathCommand[]) {
-    commands.forEach(c => this.commands.push(c))
+
+  tfm(op: (v: Vector) => Vector) {
+    this.commands = this.commands.map((p) => {
+      const E = op(p.end);
+      // deno-fmt-ignore
+      switch (p.type) {
+        case pc.M: return M(E.x, E.y, E.z);
+        case pc.H:
+        case pc.L:
+        case pc.V: return L(E.x, E.y, E.z);
+        case pc.Q: {
+          const c = op((p as QCommand).ctrl1);
+          return Q(E.x,E.y,E.z).ctrlPoint(c.x,c.y,c.z);
+        }
+        case pc.C: {
+          const c1 = op((p as CCommand).ctrl1);
+          const c2 = op((p as CCommand).ctrl2);
+          return C(E.x,E.y,E.z)
+            .ctrlPoint1(c1.x,c1.y,c1.z)
+            .ctrlPoint2(c2.x,c2.y,c2.z);
+        }
+        case pc.A: {
+          p = p as ACommand;
+          return A(E.x,E.y,E.z)
+        }
+        default:
+          return p;
+      }
+    });
     return this;
   }
+
+  rotateX(angle: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, 0],
+        [0, cos(angle), -sin(angle)],
+        [0, sin(angle), cos(angle)],
+      ]))
+    );
+  }
+
+  scale(x: number, y: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [x, 0, 0],
+        [0, y, 0],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  constructor(x: number, y: number, z: number = 1) {
+    this.origin = vector([0, 0, 0]);
+    this.cursor = vector([x, y, z]);
+    this.commands = [];
+  }
+
+  /** Appends the provided list of commands to this Path’s command list. */
+  with(commands: PathCommand[]) {
+    commands.forEach((c) => this.commands.push(c));
+    return this;
+  }
+
   /** Sets the origin of this path. */
   at(x: number, y: number, z: number = 1) {
     this.origin = vector([x, y, z]);
     return this;
   }
+
   /** Returns the `d` attribute value resulting from this path. */
   toString(): string {
     const origin = M(this.origin.x, this.origin.y).toString();
     const out = this.commands.map((command) => command.toString());
-    return origin + out.join("") + 'Z';
+    return origin + out.join("") + "Z";
   }
-  private push(command: PathCommand) {
+
+  push(command: PathCommand) {
     this.commands.push(command);
     this.cursor = command.end.copy();
     return this;
   }
+
+  /** @param end - The arc’s end point. @param dimensions - Either a pair `(w,h)` where `w` is the width of the arc, and `h` is the height of the arc, or a number. If a number is passed, draws an arc where `w = h` (a circular arc). Defaults to `[1,1]`. @param rotation - The arc’s rotation along its x-axis. If a string is passed, Weave’s parsers will attempt to parse an angle, defaulting to 0 in failure. If a number is passed, assumes the angle unit is in radians. Defaults to `0`. @param arc - Either `minor` (the smaller half of the arc, corresponding to a large arc flag of `0`) or `major` (the larger half of the arc, corresponding to a large arc flag of `1`). Defaults to `minor`. @param sweep - Either `clockwise` (thus drawing the arc clockwise, a sweep flag of 1) or `counter-clockwise` ( thus drawing the arc counter-clockwise, a sweep flag of 0). Defaults to `clockwise`. */
+  A(
+    end: number[],
+    dimensions: number[] | number = [1, 1],
+    arc: "minor" | "major" = "minor",
+    rotation: number = 0,
+    sweep: "clockwise" | "counter-clockwise" = "clockwise",
+  ) {
+    const [RX, RY] = Array.isArray(dimensions)
+      ? dimensions
+      : [dimensions, dimensions];
+    const x = $isNothing(end[0]) ? end[0] : 0;
+    const y = $isNothing(end[1]) ? end[1] : 0;
+    const z = $isNothing(end[2]) ? end[2] : 0;
+    const a = A(x, y, z)
+      .xRadius(RX)
+      .yRadius(RY)
+      .rotate(rotation)
+      .arc(arc)
+      .swept(sweep);
+    return this.push(a);
+  }
+
   /** Appends a `V` command to this path. */
   V(y: number) {
     return this.push(L(this.cursor.x, y));
   }
+
   /** Appends an `H` command to this path. */
   H(x: number) {
     return this.push(L(x, this.cursor.y));
   }
+
   /** Appends an `M` command to this path. */
   M(x: number, y: number, z: number = 1) {
     return this.push(M(x, y, z));
   }
+
   /** Appends an `L` command to this path. */
   L(x: number, y: number, z: number = 1) {
     return this.push(L(x, y, z));
   }
 }
 
-/** Returns a new {@link Path|SVG path}. */
-const path = (originX: number, originY: number, originZ: number = 1) => (
-  new Path(originX, originY, originZ)
-);
+/** Returns a new path. */
+export function path(originX: number, originY: number, originZ: number = 1) {
+  return (
+    new Path(originX, originY, originZ)
+  );
+}
+
+/** Returns a new line. */
+export function line(start: [number, number], end: [number, number]) {
+  return path(start[0], start[1]).L(end[0], end[1]);
+}
+
+export class Group {
+  children: (Path)[];
+  ctx: Camera = camera(500, 500);
+  constructor(children: (Path)[]) {
+    this.children = children;
+  }
+  rotateX(angle:number) {
+    this.children=this.children.map((c) => c.rotateX(angle));
+    return this;
+  }
+  scale(x: number, y: number) {
+    this.children = this.children.map((c) => c.scale(x, y));
+    return this;
+  }
+  render() {
+    return this.children.map((n) => n.toString()).join("");
+  }
+}
+
+export function group(children: (Path)[]) {
+  return new Group(children);
+}
 
 class BigRat {
   N: bigint;
@@ -1986,9 +2726,7 @@ class Integer extends Expr {
   }
 }
 
-/**
- * Returns a new {@link Integer|integer node}.
- */
+/** Returns a new {@link Integer|integer node}. */
 function integer(n: number) {
   return new Integer(n);
 }
@@ -2010,9 +2748,7 @@ class Float extends Expr {
   }
 }
 
-/**
- * Returns a new {@link Float|float node}.
- */
+/** Returns a new {@link Float|float node}. */
 function float(n: number) {
   return new Float(n);
 }
@@ -2035,9 +2771,7 @@ class Bool extends Expr {
   }
 }
 
-/**
- * Returns a new {@link Bool|boolean node}.
- */
+/** Returns a new {@link Bool|boolean node}. */
 function bool(value: boolean) {
   return new Bool(value);
 }
@@ -2060,9 +2794,7 @@ class StringLiteral extends Expr {
   }
 }
 
-/**
- * Returns a new {@link StringLiteral|string literal node}.
- */
+/** Returns a new {@link StringLiteral|string literal node}. */
 function string(value: string) {
   return new StringLiteral(value);
 }
@@ -2088,9 +2820,8 @@ class Variable extends Expr {
 function isVariable(node: ASTNode): node is Variable {
   return node.kind === nodekind.symbol;
 }
-/**
- * Returns a new {@link Variable|variable node}.
- */
+
+/** Returns a new {@link Variable|variable node}. */
 function variable(name: Token<tt.symbol>) {
   return new Variable(name);
 }
@@ -2127,9 +2858,7 @@ class LogicalBinaryExpr extends Expr {
   }
 }
 
-/**
- * Returns a new {@link LogicalBinaryExpr|logical binary expression}.
- */
+/** Returns a new {@link LogicalBinaryExpr|logical binary expression}. */
 function logicalBinex(
   left: Expr,
   op: Token<BinaryLogicalOperator>,
@@ -2264,102 +2993,17 @@ class RelationalExpr extends Expr {
   }
 }
 
-/**
- * Returns a new {@link RelationalExpr|relational expression}.
- */
+/** Returns a new relational expression. See also {@link RelationExpr}. */
 function relation(left: Expr, op: Token<RelationalOperator>, right: Expr) {
   return new RelationalExpr(left, op, right);
 }
 
-/**
- * Returns `a rem b` (the signed remainder).
- */
-function rem(a: number, b: number) {
-  return (a % b);
-}
-
-/**
- * Returns `a mod b` (the unsigned remainder).
- */
-function mod(a: number, b: number) {
-  return (
-    ((a % b) + b) % b
-  );
-}
-
-/**
- * Returns the integer quotient of `a` and `b`.
- */
-function quot(a: number, b: number) {
-  return (floor(a / b));
-}
-
-/**
- * Returns a tuple.k
- */
-function tuple<T extends any[]>(...data: T) {
-  return data;
-}
-
-/**
- * Returns the greatest common divisor of integers
- * `a` and `b`.
- */
-function gcd(a: number, b: number) {
-  let A = floor(a);
-  let B = floor(b);
-  while (B !== 0) {
-    let R = rem(A, B);
-    A = B;
-    B = R;
-  }
-  return abs(A);
-}
-
-/**
- * Returns the resulting triple of applying
- * the extended Euclidean algorithm.
- */
-function xgcd(a: number, b: number) {
-  let A = floor(a);
-  let B = floor(b);
-  let mpp = 1;
-  let mp = 0;
-  let npp = 0;
-  let np = 1;
-  while (B !== 0) {
-    let Q = quot(A, B);
-    let R = rem(A, B);
-    A = B;
-    B = R;
-    let m = mpp - Q * mp;
-    let n = npp - Q * np;
-    mpp = mp;
-    mp = m;
-    npp = np;
-    np = n;
-  }
-  if (A >= 0) {
-    return tuple(A, mpp, npp);
-  } else {
-    return tuple(-A, -mpp, -npp);
-  }
-}
-
-/**
- * Utility method - returns a string wherein
- * the given string or number is surrounded in
- * parentheses.
- */
+/** Utility method - returns a string wherein the given string or number is surrounded in parentheses. */
 const parend = (s: string | number) => (
   `(${s})`
 );
 
-/**
- * The `core` enum is an enumeration of constant strings
- * that ensures the core operation symbols are consistent
- * throughought the code base.
- */
+/** The `core` enum is an enumeration of constant strings that ensures the core operation symbols are consistent throughought the code base. */
 enum core {
   int = "int",
   real = "real",
@@ -2470,10 +3114,7 @@ abstract class AlgebraicExpression {
   }
 }
 
-/**
- * Type predicate. Claims and returns true if the given expression
- * `u` is an {@link Atom|atomic expression}. False otherwise.
- */
+/** Type predicate. Claims and returns true if the given expression `u` is an atomic expression. False otherwise. See also {@link Atom}. */
 function isAtom(u: AlgebraicExpression): u is Atom {
   return u.klass === klass.atom;
 }
@@ -2486,62 +3127,35 @@ function isCompound(u: AlgebraicExpression): u is Compound {
   return u.klass === klass.compound;
 }
 
-/**
- * Type predicate. Claims and returns true if the given expression
- * `u` is an {@link Int|integer}. False otherwise.
- */
+/** Type predicate. Claims and returns true if the given expression `u` is an {@link Int|integer}. False otherwise. */
 function isInt(u: AlgebraicExpression): u is Int {
   return !$isNothing(u) && (u.op === core.int);
 }
 
-/**
- * Type predicate. Claims and returns true if the given expression
- * `u` is a {@link Real|real number}. False otherwise.
- */
+/** Type predicate. Claims and returns true if the given expression `u` is a {@link Real|real number}. False otherwise. */
 function isReal(u: AlgebraicExpression): u is Real {
   return !$isNothing(u) && (u.op === core.real);
 }
 
-/**
- * Type predicate. Claims and returns true if the given expression
- * `u` is a {@link Sym|symbol}. False otherwise. Note that this will
- * return true if `u` is `Undefined`, since `Undefined` is a symbol
- * by definition.
- */
+/** Type predicate. Claims and returns true if the given expression `u` is a {@link Sym|symbol}. False otherwise. Note that this will return true if `u` is `Undefined`, since `Undefined` is a symbol by definition. */
 function isSymbol(u: AlgebraicExpression): u is Sym {
   return !$isNothing(u) && ((u.op === core.symbol) ||
     (u.op === core.undefined));
 }
 
-/**
- * Type predicate. Claims and returns true if the given expression
- * `u` is a {@link Undefined|undefined}. False otherwise. Note
- * that constant `Undefined` maps to the literal null.
- */
+/** Type predicate. Claims and returns true if the given expression `u` is the global symbol Undefined (an instance of `Sym`, not the JavaScript `undefined`). False otherwise. Note that constant `Undefined` maps to the literal null. See {@link Sym}. */
 function isUndefined(
   u: AlgebraicExpression,
 ): u is Constant<null, core.undefined> {
   return !$isNothing(u) && (u.op === core.undefined);
 }
 
-/**
- * Type predicate. Returns true if the given expression is a constant,
- * false otherwise. If true, claims that `u` is a {@link Constant|constant type number}.
- */
+/** Type predicate. Returns true if the given expression is a constant, false otherwise. If true, claims that `u` is a constant. See {@link Constant}. */
 function isConstant(u: AlgebraicExpression): u is Constant<number> {
   return !$isNothing(u) && (u.op === core.constant);
 }
 
-/**
- * An atom is any expression that cannot be reduced further.
- * This includes:
- *
- * 1. {@link Int|integers},
- * 2. {@link Real|reals},
- * 3. {@link Sym|symbols},
- *
- * Atoms are the building blocks of all other expressions.
- */
+/** An atom is any expression that cannot be reduced further. This includes integers, reals, and symbols. */
 abstract class Atom extends AlgebraicExpression {
   klass: klass.atom = klass.atom;
   constructor(op: string) {
@@ -2559,9 +3173,7 @@ abstract class Atom extends AlgebraicExpression {
   }
 }
 
-/**
- * An atomic value corresponding to an integer.
- */
+/** An atomic value corresponding to an integer. */
 class Int extends Atom {
   isAlgebraic(): boolean {
     return true;
@@ -2608,16 +3220,12 @@ class Int extends Atom {
   }
 }
 
-/**
- * Returns a new {@link Int|integer}.
- */
+/** Returns a new `Int`. */
 function int(n: number) {
   return (new Int(n));
 }
 
-/**
- * An atomic value corresponding to a floating point number.
- */
+/** An atomic value corresponding to a floating point number. */
 class Real extends Atom {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.real(this);
@@ -2646,16 +3254,12 @@ class Real extends Atom {
   }
 }
 
-/**
- * Returns a new {@link Real|real}.
- */
+/** Returns a new Real. */
 function real(r: number) {
   return (new Real(r));
 }
 
-/**
- * An atomic value corresponding to a symbol.
- */
+/** An atomic value corresponding to a symbol. */
 class Sym<X extends string = string> extends Atom {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.sym(this);
@@ -2685,9 +3289,7 @@ class Sym<X extends string = string> extends Atom {
   }
 }
 
-/**
- * A node corresponding a numeric constant.
- */
+/** A node corresponding a numeric constant. */
 class Constant<
   P extends (number | null) = (number | null),
   X extends string = string,
@@ -5971,8 +6573,8 @@ function truthy(x: Primitive) {
   if ($isArray(x) || $isString(x)) return x.length !== 0;
   if (x === null || x === undefined) return false;
   if (x instanceof BigRat || x instanceof Fraction) return !x.isZero;
-  if (x instanceof Vector) return x.cols !== 0;
-  if (x instanceof Matrix) return x.rows !== 0 && x.cols !== 0;
+  if (x instanceof Vector) return x.length !== 0;
+  if (x instanceof Matrix) return x.R !== 0 && x.C !== 0;
   return (
     x !== 0 &&
     !Number.isNaN(x) &&
