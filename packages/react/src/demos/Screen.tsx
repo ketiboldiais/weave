@@ -1,256 +1,38 @@
-import { engine, Group, group, line } from "./io.js";
+import { useState } from "react";
+import { IDE } from "./ScreenAUX.js";
 import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
-
-type EnhancedTextAreaProps = {
-  onTextChange?: (text: string) => void;
-  className?: string;
-  spellCheck?: boolean;
-  tabSize?: number;
-  init: string;
-  height: string | number;
-};
-
-type EnhancedTextAreaRefs = {
-  getCodeContent: () => string;
-};
-
-const IDE = forwardRef<
-  EnhancedTextAreaRefs,
-  EnhancedTextAreaProps
->(({
-  onTextChange = undefined,
-  className = undefined,
-  tabSize = 4,
-  init,
-  height,
-  spellCheck = false,
-}: EnhancedTextAreaProps, ref) => {
-  const [text, setText] = useState(init);
-  const [stateSelectionStart, setStateSelectionStart] = useState(0);
-  const [stateSelectionEnd, setStateSelectionEnd] = useState(0);
-
-  const txtInput = useRef<HTMLTextAreaElement>(null);
-
-  useImperativeHandle(ref, () => ({
-    getCodeContent: () => text,
-  }));
-
-  useEffect(() => {
-    const textArea = txtInput.current;
-
-    if (!textArea) {
-      return;
-    }
-
-    if (stateSelectionStart >= 0) {
-      textArea.selectionStart = stateSelectionStart;
-    }
-
-    if (stateSelectionEnd >= 0) {
-      textArea.selectionEnd = stateSelectionEnd;
-    }
-  }, [text, stateSelectionStart, stateSelectionEnd]);
-
-  async function handleCodeChange(
-    e: React.ChangeEvent<HTMLTextAreaElement>,
-  ): Promise<void> {
-    const text = e.target.value;
-
-    setText(text);
-
-    if (onTextChange) {
-      onTextChange(text);
-    }
-  }
-
-  async function handleKeyDown(
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ): Promise<void> {
-    const textArea = e.target as HTMLTextAreaElement;
-
-    const tabString = " ".repeat(tabSize);
-
-    const value = textArea.value;
-    const selectionStart = textArea.selectionStart;
-    const selectionEnd = textArea.selectionEnd;
-
-    if (e.key === "Tab" && !e.shiftKey) {
-      e.preventDefault();
-
-      if (selectionStart !== selectionEnd) {
-        const slices1 = getNewLineSlices(value, selectionStart, selectionEnd);
-        const newValue1 = addTabs(value, slices1, tabString);
-
-        setText(newValue1);
-        setStateSelectionStart(selectionStart + tabSize);
-        setStateSelectionEnd(selectionEnd + (newValue1.length - value.length));
-      } else {
-        const newValue2 = value.substring(0, selectionStart) + tabString +
-          value.substring(selectionEnd);
-
-        setText(newValue2);
-        setStateSelectionStart(
-          selectionEnd + tabSize - (selectionEnd - selectionStart),
-        );
-        setStateSelectionEnd(
-          selectionEnd + tabSize - (selectionEnd - selectionStart),
-        );
-      }
-    } else if (e.key === "Tab" && e.shiftKey) {
-      e.preventDefault();
-
-      const slices2 = getNewLineSlices(value, selectionStart, selectionEnd);
-      const newValue3 = removeTabs(value, slices2, tabSize);
-
-      const diff = value.length - newValue3.length;
-
-      setText(newValue3);
-      setStateSelectionStart(
-        Math.max(0, selectionStart - (diff ? tabSize : 0)),
-      );
-      setStateSelectionEnd(Math.max(0, selectionEnd - diff));
-    } else {
-      setStateSelectionStart(-1);
-      setStateSelectionEnd(-1);
-    }
-  }
-
-  function getNewLineSlices(
-    value: string,
-    selectionStart: number,
-    selectionEnd: number,
-  ): Array<string | null> {
-    const newLineLocations = getAllIndices(value, "\n");
-    const left = findRange(newLineLocations, selectionStart);
-    const split = value.split("\n");
-
-    const arr = [];
-    let count = 0;
-    for (let i = 0; i < split.length; i++) {
-      const line = split[i];
-
-      if (count > left && count <= selectionEnd) {
-        arr.push(line);
-      } else {
-        arr.push(null);
-      }
-
-      count += line.length + 1;
-    }
-
-    return arr;
-  }
-
-  function addTabs(
-    value: string,
-    arr: Array<string | null>,
-    joiner: string,
-  ): string {
-    const split = value.split("\n");
-
-    let ret = "";
-    for (let i = 0; i < split.length; i++) {
-      const val = split[i];
-      const newLineVal = arr[i];
-
-      if (newLineVal === val) {
-        ret += joiner;
-      }
-
-      ret += val;
-      if (i !== split.length - 1) {
-        ret += "\n";
-      }
-    }
-
-    return ret;
-  }
-
-  function removeTabs(
-    value: string,
-    arr: Array<string | null>,
-    tabSize: number,
-  ): string {
-    const split = value.split("\n");
-
-    let ret = "";
-    for (let i = 0; i < split.length; i++) {
-      const val = split[i];
-      const newLineVal = arr[i];
-
-      if (!val.startsWith(" ") || newLineVal !== val) {
-        ret += val;
-        if (i !== split.length - 1) {
-          ret += "\n";
-        }
-
-        continue;
-      }
-
-      let count = 1;
-      while (val[count] === " " && count < tabSize) {
-        count++;
-      }
-
-      ret += val.substring(count);
-      if (i !== split.length - 1) {
-        ret += "\n";
-      }
-    }
-
-    return ret;
-  }
-
-  function getAllIndices(arr: string, val: string): Array<number> {
-    const indices = [];
-    let i = -1;
-
-    while ((i = arr.indexOf(val, i + 1)) !== -1) {
-      indices.push(i);
-    }
-
-    return indices;
-  }
-
-  function findRange(arr: Array<number>, min: number): number {
-    for (let i = 0; i < arr.length; i++) {
-      if (arr[i] >= min) {
-        return i === 0 ? -1 : arr[i - 1];
-      }
-    }
-
-    return arr[arr.length - 1];
-  }
-
-  return (
-    <textarea
-      ref={txtInput}
-      value={text}
-      onKeyDown={handleKeyDown}
-      onChange={handleCodeChange}
-      className={className}
-      spellCheck={spellCheck}
-      style={{ height }}
-    />
-  );
-});
+  Axis,
+  axis,
+  Circle,
+  circle,
+  engine,
+  Fig,
+  fig,
+  Group,
+  group,
+  Line,
+  line,
+  Path,
+  Plot2D,
+  plot2D,
+  Shape,
+} from "./io.js";
 
 export const F1 = () => {
-  const g = group([
-    line([0, 0], [200, 200]),
-  ])
-  return <Figure g={g} />;
+  const data = fig([
+    group([
+      axis("x").opacity(0.4),
+      axis("y").opacity(0.4),
+      plot2D("f(x) = e^-x").stroke("red").domain(-10, 10).range(-10, 10),
+      plot2D("f(x) = ln(x)").stroke("blue").domain(-10, 10).range(-10, 10),
+    ]).interpolate([-10, 10], [-10, 10], [500, 500]),
+  ]);
+  return <Figure of={data} />;
 };
 
-export const Figure = ({ g }: { g: Group }) => {
-  const width = g.ctx._width;
-  const height = g.ctx._height;
+export const Figure = ({ of }: { of: Fig }) => {
+  const width = of._width;
+  const height = of._height;
   const viewbox = `0 0 ${width} ${height}`;
   const paddingBottom = `${100 * (height / width)}%`;
   const boxcss = {
@@ -269,10 +51,108 @@ export const Figure = ({ g }: { g: Group }) => {
     bottom: "0",
   } as const;
   const par = "xMidYMid meet";
+  const GROUP = ({ of }: { of: Group }) => {
+    return (
+      <g
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+      >
+        <SHAPES of={of.children} />
+      </g>
+    );
+  };
+  const LINE = ({ of }: { of: Line }) => {
+    return (
+      <path
+        d={of.toString()}
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+      />
+    );
+  };
+  const CIRCLE = ({ of }: { of: Circle }) => {
+    return (
+      <path
+        d={of.toString()}
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+      />
+    );
+  };
+  const AXIS = ({ of }: { of: Axis }) => {
+    return (
+      <path
+        d={of.toString()}
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+      />
+    );
+  };
+  const PATH = ({ of }: { of: Path }) => {
+    return (
+      <path
+        d={of.toString()}
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+        shapeRendering={'geometricPrecision'}
+      />
+    );
+  };
+  const PLOT2D = ({ of }: { of: Plot2D }) => {
+    return (
+      <path
+        d={of.toString()}
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+      />
+    );
+  };
+  const SHAPES = ({ of }: { of: Shape[] }) => {
+    const F = ({ d }: { d: Shape }) => {
+      if (d instanceof Line) {
+        return <LINE of={d} />;
+      } else if (d instanceof Circle) {
+        return <CIRCLE of={d} />;
+      } else if (d instanceof Path) {
+        return <PATH of={d} />;
+      } else if (d instanceof Plot2D) {
+        return <PLOT2D of={d} />;
+      } else if (d instanceof Group) {
+        return <GROUP of={d} />;
+      } else if (d instanceof Axis) {
+        return <AXIS of={d} />;
+      } else {
+        return null;
+      }
+    };
+    return (
+      <>
+        {of.map((d, i) => <F key={i + "shape"} d={d} />)}
+      </>
+    );
+  };
   return (
     <div style={boxcss}>
       <svg viewBox={viewbox} preserveAspectRatio={par} style={svgcss}>
-        <path stroke={"black"} d={g.render()} />
+        <SHAPES of={of.children} />
       </svg>
     </div>
   );

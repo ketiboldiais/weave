@@ -27,8 +27,8 @@ const HALF_PI = PI / 2;
 /** Global maximum integer. */
 const MAX_INT = Number.MAX_SAFE_INTEGER;
 
-/** An object that serves as a coordinate space. The camera is used by the graphics module to scale coordinates according to a given screen (as supplied by the user).*/
-class Camera {
+/** An object that serves as a coordinate space. The ctx is used by the graphics module to scale coordinates according to a given screen (as supplied by the user).*/
+class Context {
   /** The figure’s margins. */
   _margins: [number, number, number, number] = [50, 50, 50, 50];
 
@@ -74,9 +74,9 @@ class Camera {
   }
 }
 
-/** Returns a new camera. */
-function camera(width: number, height: number) {
-  return new Camera(width > 0 ? width : 500, height > 0 ? height : 500);
+/** Returns a new ctx. */
+export function ctx(width: number, height: number) {
+  return new Context(width > 0 ? width : 500, height > 0 ? height : 500);
 }
 
 /*
@@ -336,6 +336,19 @@ class Vector<T extends number[] = number[]> {
 
   constructor(elements: T) {
     this.elements = elements;
+  }
+
+  vxm(matrix: Matrix) {
+    if (this.length !== matrix.C) return this;
+    const vector = new Vector([] as number[]);
+    for (let i = 1; i <= matrix.R; i++) {
+      const v = matrix.row(i);
+      if (v === null) return this;
+      const d = this.dot(v);
+      vector.elements[i - 1] = d;
+    }
+    print(vector);
+    return vector;
   }
 
   /** @internal Utility method for performing binary operations. */
@@ -980,6 +993,16 @@ const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 // deno-fmt-ignore
 enum pc { M, L, H, V, Q, C, A, }
 
+interface PathCommandVisitor<T> {
+  M(visitor: MCommand): T;
+  L(visitor: LCommand): T;
+  H(visitor: HCommand): T;
+  V(visitor: VCommand): T;
+  Q(visitor: QCommand): T;
+  C(visitor: CCommand): T;
+  A(visitor: ACommand): T;
+}
+
 abstract class PathCommand {
   readonly type: pc;
   end: Vector;
@@ -987,13 +1010,19 @@ abstract class PathCommand {
     this.type = type;
     this.end = end;
   }
+  abstract accept<T>(visitor: PathCommandVisitor<T>): T;
+
   /** Sets the endpoint for this command. */
   abstract endPoint(x: number, y: number, z?: number): PathCommand;
+
   /** Returns the string value for this command. */
   abstract toString(): string;
 }
 
 class MCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.M(this);
+  }
   readonly type: pc.M;
   constructor(x: number, y: number, z: number) {
     super(pc.M, vector([x, y, z]));
@@ -1011,6 +1040,9 @@ class MCommand extends PathCommand {
 const M = (x: number, y: number, z: number = 1) => (new MCommand(x, y, z));
 
 class LCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.L(this);
+  }
   readonly type: pc.L;
   constructor(x: number, y: number, z: number) {
     super(pc.L, vector([x, y, z]));
@@ -1027,6 +1059,9 @@ class LCommand extends PathCommand {
 const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
 
 class VCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.V(this);
+  }
   readonly type: pc.V;
   constructor(x: number, y: number, z: number) {
     super(pc.V, vector([x, y, z]));
@@ -1043,6 +1078,9 @@ class VCommand extends PathCommand {
 const V = (x: number, y: number, z: number = 1) => (new VCommand(x, y, z));
 
 class HCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.H(this);
+  }
   readonly type: pc.H;
   constructor(x: number, y: number, z: number) {
     super(pc.H, vector([x, y, z]));
@@ -1060,6 +1098,9 @@ class HCommand extends PathCommand {
 const H = (x: number, y: number, z: number = 1) => (new HCommand(x, y, z));
 
 class QCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.Q(this);
+  }
   readonly type: pc.Q = pc.Q;
   ctrl1: Vector;
   constructor(x: number, y: number, z: number) {
@@ -1084,6 +1125,9 @@ const Q = (x: number, y: number, z: number = 1) => (new QCommand(x, y, z));
 
 /** A type corresponding to the SVG cubic-bezier-curve command. */
 class CCommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.C(this);
+  }
   type: pc.C = pc.C;
   ctrl1: Vector = vector([0, 0, 1]);
   ctrl2: Vector = vector([0, 0, 1]);
@@ -1121,6 +1165,9 @@ const C = (x: number, y: number, z: number = 1) => (new CCommand(x, y, z));
 
 /** An ADT corresponding to the SVG arc-to command. */
 class ACommand extends PathCommand {
+  accept<T>(visitor: PathCommandVisitor<T>): T {
+    return visitor.A(this);
+  }
   type: pc.A = pc.A;
   /** The x-radius of this arc-to command. */
   rx: number = 1;
@@ -1179,19 +1226,161 @@ const A = (x: number, y: number, z: number = 1) => (new ACommand(x, y, z));
 
 class Path {
   /** The SVG commands comprising this path. */
-  private commands: PathCommand[] = [];
+  commands: PathCommand[] = [];
   /** The current endpoint of this path. */
   cursor: Vector;
 
   /** The origin of this path. */
   origin: Vector;
 
-  constructor(x: number, y: number, z: number = 1) {
-    this.cursor = vector([x, y, z]);
-    this.origin = vector([0, 0, 0]);
+  tfm(op: (v: Vector) => Vector) {
+    this.commands = this.commands.map((p) => {
+      const E = op(p.end);
+      // deno-fmt-ignore
+      switch (p.type) {
+        case pc.M: return M(E.x, E.y, E.z);
+        case pc.H:
+        case pc.L:
+        case pc.V: return L(E.x, E.y, E.z);
+        case pc.Q: {
+          const c = op((p as QCommand).ctrl1);
+          return Q(E.x,E.y,E.z).ctrlPoint(c.x,c.y,c.z);
+        }
+        case pc.C: {
+          const c1 = op((p as CCommand).ctrl1);
+          const c2 = op((p as CCommand).ctrl2);
+          return C(E.x,E.y,E.z)
+            .ctrlPoint1(c1.x,c1.y,c1.z)
+            .ctrlPoint2(c2.x,c2.y,c2.z);
+        }
+        case pc.A: {
+          p = p as ACommand;
+          return A(E.x,E.y,E.z)
+        }
+        default:
+          return p;
+      }
+    });
+    return this;
   }
 
-  transform(op: (v: Vector) => Vector) {
+  rotateZ(angle: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [cos(angle), sin(angle), 0],
+        [-sin(angle), cos(angle), 0],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  rotateY(angle: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [cos(angle), 0, -sin(angle)],
+        [0, 1, 0],
+        [sin(angle), 0, cos(angle)],
+      ]))
+    );
+  }
+
+  rotateX(angle: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, 0],
+        [0, cos(angle), -sin(angle)],
+        [0, sin(angle), cos(angle)],
+      ]))
+    );
+  }
+
+  scale(x: number, y: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [x, 0, 0],
+        [0, y, 0],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  translateZ(z: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, 1],
+        [0, 1, 1],
+        [0, 0, z],
+      ]))
+    );
+  }
+
+  translateY(y: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, 1],
+        [0, 1, y],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  translateX(x: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, x],
+        [0, 1, 1],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  /** Shears along the z-axis. */
+  shearZ(dx: number, dy: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, 0],
+        [0, 1, 0],
+        [dx, dy, 1],
+      ]))
+    );
+  }
+
+  /** Shears along the y-axis. */
+  shearY(dx: number, dz: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, 0],
+        [dx, 1, dz],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  /** Shears along the x-axis. */
+  shearX(dy: number, dz: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, dy, dz],
+        [0, 1, 0],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  translate(x: number, y: number) {
+    return this.tfm((v) =>
+      v.vxm(matrix([
+        [1, 0, x],
+        [0, 1, y],
+        [0, 0, 1],
+      ]))
+    );
+  }
+
+  constructor(x: number, y: number, z: number = 1) {
+    this.origin = vector([0, 0, 0]);
+    this.cursor = vector([x, y, z]);
+    this.commands = [M(x, y, z)];
   }
 
   /** Appends the provided list of commands to this Path’s command list. */
@@ -1215,7 +1404,7 @@ class Path {
 
   push(command: PathCommand) {
     this.commands.push(command);
-    this.cursor = command.end.copy();
+    this.cursor = command.end;
     return this;
   }
 
@@ -1275,54 +1464,119 @@ export function line(start: [number, number], end: [number, number]) {
   return path(start[0], start[1]).L(end[0], end[1]);
 }
 
-class Circle {
-  r: number = 1;
-  origin: Vector;
+class Quad {
+  _width: number;
+  _height: number;
+  origin: Vector = vector([0, 0, 1]);
+  constructor(width: number, height: number) {
+    this._width = width;
+    this._height = height;
+  }
+  get path() {
+    const x = this.origin.x;
+    const y = this.origin.y;
+    return [
+      line([x, y], [x + this._width, y]),
+      line([x + this._width, y], [x + this._width, y + this._height]),
+      line([x + this._width, y + this._height], [x, y + this._height]),
+      line([x, y + this._height], [x, y]),
+    ];
+  }
   toString() {
-    const p = path(this.origin.x, this.origin.y, this.origin.z);
-    const c1 = p.cursor;
-    p.A([c1.x + this.r * 4, c1.y]);
-    const c2 = p.cursor;
-    p.A([c2.x - (this.r * 4), c2.y]);
-    return p.toString();
+    return this.path.map((c) => c.toString()).join("");
   }
-  constructor(originX: number, originY: number, originZ: number) {
-    this.origin = vector([originX, originY, originZ]);
-  }
-  radius(r: number) {
-    this.r = r;
-    return this;
+  at(x: number, y: number, z: number = 1) {
+    this.origin = vector([x, y, z]);
   }
 }
 
-/** Returns a new circle. */
-export function circle(x: number, y: number, z: number = 1) {
-  return (
-    new Circle(x, y, z)
-  );
+export function quad(width: number, height: number) {
+  return new Quad(width, height);
 }
+
+type Renderable = Path | Quad;
 
 export class Group {
-  children: (Circle | Path)[];
-  ctx: Camera = camera(500, 500);
-  d: string = "";
-  constructor(children: (Circle | Path)[]) {
+  children: (Renderable)[];
+  ctx: Context = ctx(500, 500);
+  constructor(children: (Renderable)[]) {
     this.children = children;
   }
+
+  context(context: Context) {
+    this.ctx = context;
+    return this;
+  }
+
+  map(op: (c: Path) => Path) {
+    const cs = [];
+    for (let i = 0; i < this.children.length; i++) {
+      const child = this.children[i];
+      if (child instanceof Path) {
+        cs.push(op(child));
+      }
+      if (child instanceof Quad) {
+        child.path.forEach((c) => {
+          cs.push(op(c));
+        });
+      }
+    }
+    this.children = cs;
+    return this;
+  }
+
+  shearZ(dx: number, dy: number) {
+    return this.map((c) => c.shearZ(dx, dy));
+  }
+
+  shearY(dx: number, dz: number) {
+    return this.map((c) => c.shearY(dx, dz));
+  }
+
+  shearX(dy: number, dz: number) {
+    return this.map((c) => c.shearX(dy, dz));
+  }
+
+  translateZ(z: number) {
+    return this.map((c) => c.translateZ(z));
+  }
+
+  translateY(y: number) {
+    return this.map((c) => c.translateY(y));
+  }
+
+  translateX(x: number) {
+    return this.map((c) => c.translateX(x));
+  }
+
+  translate(x: number, y: number) {
+    return this.map((c) => c.translate(x, y));
+  }
+
+  rotateZ(angle: number) {
+    return this.map((c) => c.rotateZ(angle));
+  }
+
+  rotateY(angle: number) {
+    return this.map((c) => c.rotateY(angle));
+  }
+
+  rotateX(angle: number) {
+    return this.map((c) => c.rotateX(angle));
+  }
+
+  scale(x: number, y: number) {
+    return this.map((c) => c.scale(x, y));
+  }
+
   render() {
     return this.children.map((n) => n.toString()).join("");
   }
 }
 
-export function group(children: (Circle | Path)[]) {
+export function group(children: (Renderable)[]) {
   return new Group(children);
 }
-
-const p = group([
-  circle(0, 0),
-  circle(0, 0),
-  circle(0, 0),
-]);
 
 class BigRat {
   N: bigint;
