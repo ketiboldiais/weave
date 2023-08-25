@@ -8,25 +8,40 @@ import {
   engine,
   Fig,
   fig,
+  forceGraph,
+  graph,
   Group,
   group,
+  interpolator,
   Line,
   line,
   Path,
   Plot2D,
   plot2D,
   Shape,
+  Text,
 } from "./io.js";
+const pi = Math.PI;
 
 export const F1 = () => {
   const data = fig([
     group([
-      axis("x").opacity(0.4),
-      axis("y").opacity(0.4),
-      plot2D("f(x) = e^-x").stroke("red").domain(-10, 10).range(-10, 10),
-      plot2D("f(x) = ln(x)").stroke("blue").domain(-10, 10).range(-10, 10),
-    ]).interpolate([-10, 10], [-10, 10], [500, 500]),
-  ]);
+      axis("x").end(),
+      axis("y").end(),
+      plot2D("f(x) = cos(x)").stroke("blue").end(),
+    ]),
+  ]).domain(-10, 10).range(-10, 10).end();
+  const d = forceGraph(graph({
+    a: ["b", "x", "n"],
+    b: ["c", "d", "g", "n"],
+    c: ["e", "g"],
+    d: ["j", "k", "e"],
+    e: ["k"],
+    j: ["x", "s", "a"],
+    k: ["j", "s"],
+    n: ["g"],
+    s: ["x"],
+  })).nodeColor("tomato").end();
   return <Figure of={data} />;
 };
 
@@ -50,7 +65,9 @@ export const Figure = ({ of }: { of: Fig }) => {
     right: "0",
     bottom: "0",
   } as const;
+
   const par = "xMidYMid meet";
+
   const GROUP = ({ of }: { of: Group }) => {
     return (
       <g
@@ -64,18 +81,23 @@ export const Figure = ({ of }: { of: Fig }) => {
       </g>
     );
   };
+
   const LINE = ({ of }: { of: Line }) => {
     return (
-      <path
-        d={of.toString()}
-        fill={of._fill}
-        stroke={of._stroke}
-        strokeWidth={of._strokeWidth}
-        strokeDasharray={of._dash}
-        opacity={of._opacity}
-      />
+      <>
+        <path
+          d={of.toString()}
+          fill={of._fill}
+          stroke={of._stroke}
+          strokeWidth={of._strokeWidth}
+          strokeDasharray={of._dash}
+          opacity={of._opacity}
+        />
+        {of._label && <TEXT of={of._label} />}
+      </>
     );
   };
+
   const CIRCLE = ({ of }: { of: Circle }) => {
     return (
       <path
@@ -88,18 +110,25 @@ export const Figure = ({ of }: { of: Fig }) => {
       />
     );
   };
+
+  const shift = (x: number, y: number) => `translate(${x},${y})`;
+
   const AXIS = ({ of }: { of: Axis }) => {
     return (
-      <path
-        d={of.toString()}
-        fill={of._fill}
-        stroke={of._stroke}
-        strokeWidth={of._strokeWidth}
-        strokeDasharray={of._dash}
-        opacity={of._opacity}
-      />
+      <g id={of._type}>
+        <path
+          d={of.toString()}
+          fill={of._fill}
+          stroke={of._stroke}
+          strokeWidth={of._strokeWidth}
+          strokeDasharray={of._dash}
+          opacity={of._opacity}
+        />
+        {of._ticks.map((l, i) => <LINE key={`tick-${i}`} of={l} />)}
+      </g>
     );
   };
+
   const PATH = ({ of }: { of: Path }) => {
     return (
       <path
@@ -109,10 +138,11 @@ export const Figure = ({ of }: { of: Fig }) => {
         strokeWidth={of._strokeWidth}
         strokeDasharray={of._dash}
         opacity={of._opacity}
-        shapeRendering={'geometricPrecision'}
+        shapeRendering={"geometricPrecision"}
       />
     );
   };
+
   const PLOT2D = ({ of }: { of: Plot2D }) => {
     return (
       <path
@@ -125,6 +155,25 @@ export const Figure = ({ of }: { of: Fig }) => {
       />
     );
   };
+
+  const TEXT = ({ of }: { of: Text }) => {
+    return (
+      <text
+        dx={of.commands[0].end.x}
+        dy={of.commands[0].end.y}
+        textAnchor={of._textAnchor}
+        stroke={of._fontColor}
+        fontFamily={of._fontFamily}
+        fontSize={of._fontSize}
+        style={{
+          fontWeight: 100,
+        }}
+      >
+        {of._text}
+      </text>
+    );
+  };
+
   const SHAPES = ({ of }: { of: Shape[] }) => {
     const F = ({ d }: { d: Shape }) => {
       if (d instanceof Line) {
@@ -139,20 +188,26 @@ export const Figure = ({ of }: { of: Fig }) => {
         return <GROUP of={d} />;
       } else if (d instanceof Axis) {
         return <AXIS of={d} />;
+      } else if (d instanceof Text) {
+        return <TEXT of={d} />;
       } else {
         return null;
       }
     };
+
     return (
       <>
         {of.map((d, i) => <F key={i + "shape"} d={d} />)}
       </>
     );
   };
+
   return (
     <div style={boxcss}>
       <svg viewBox={viewbox} preserveAspectRatio={par} style={svgcss}>
-        <SHAPES of={of.children} />
+        <g transform={shift(of._mx / 2, of._my / 2)}>
+          <SHAPES of={of._children} />
+        </g>
       </svg>
     </div>
   );

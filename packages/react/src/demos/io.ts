@@ -117,6 +117,13 @@ function mod(a: number, b: number) {
   );
 }
 
+/** Returns an array of numbers running from start (inclusive) to stop (inclusive) */
+function range(start: number, stop: number, step = 1): number[] {
+  return Array(Math.ceil((stop - start) / step)).fill(start).map((x, y) =>
+    x + y * step
+  );
+}
+
 /** Returns the integer quotient of `a` and `b`. */
 function quot(a: number, b: number) {
   return (floor(a / b));
@@ -184,7 +191,10 @@ function inverseLerp([x, y]: [number, number], a: number) {
 }
 
 /** Returns a linear interpolator. The `domain` is the interval of input values – a pair of numbers `(a,b)` where `a` is the smallest possible input and `b` is the largest. The `range` is the interval of scale values - a pair of numbers `(a,b)` where `a` is the smallest possible scaled value and `b` is the largest. */
-function interpolator(domain: [number, number], range: [number, number]) {
+export function interpolator(
+  domain: [number, number],
+  range: [number, number],
+) {
   return (n: number) => (
     (range[0]) + ((
       ((range[1]) - (range[0])) / ((domain[1]) - (domain[0]))
@@ -193,7 +203,7 @@ function interpolator(domain: [number, number], range: [number, number]) {
 }
 
 /** Interpolates the number `n` based on the specified domain and range. */
-function iterpolate(
+export function interpolate(
   n: number,
   domain: [number, number],
   range: [number, number],
@@ -472,6 +482,9 @@ class Vector<T extends number[] = number[]> {
   get x() {
     return $isNothing(this.elements[0]) ? 0 : this.elements[0];
   }
+  set x(n: number) {
+    this.elements[0] = n;
+  }
 
   /** Sets the second element of this vector to the provided value. */
   py(value: number) {
@@ -481,6 +494,9 @@ class Vector<T extends number[] = number[]> {
   /** Returns the second element of this vector. */
   get y() {
     return $isNothing(this.elements[1]) ? 0 : this.elements[1];
+  }
+  set y(n: number) {
+    this.elements[1] = n;
   }
 
   /** Sets the third element of this vector to the provided value. */
@@ -951,6 +967,8 @@ function matrix(rows: (Vector[]) | (number[])[], cols?: number) {
 /** Returns true if the given value is a matrix. */
 const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 
+// ======================================================= BEGIN GRAPHICS MODULE
+
 /** An enum of types mapped to SVG Path command prefixes. */
 // deno-fmt-ignore
 enum pc { M, L, H, V, Q, C, A, }
@@ -1176,14 +1194,34 @@ interface Renderable {
     range: [number, number],
     dimensions: [number, number],
   ): this;
+  get length(): number;
+  get lastCommand(): PathCommand;
+  get firstCommand(): PathCommand;
 }
+
 type Klass<T = {}> = new (...args: any[]) => T;
+
 type And<DataClass, Extender> = DataClass & Klass<Extender>;
 
 function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
   return class extends klass {
     commands: PathCommand[] = [];
     origin: Vector = v3D(0, 0, 1);
+    get length() {
+      return this.commands.length;
+    }
+    get firstCommand() {
+      const out = this.commands[0];
+      if (out === undefined) {
+        return M(this.origin.x, this.origin.y, this.origin.z);
+      } else return out;
+    }
+    get lastCommand() {
+      const out = this.commands[this.length - 1];
+      if (out === undefined) {
+        return M(this.origin.x, this.origin.y, this.origin.z);
+      } else return out;
+    }
     at(x: number, y: number, z: number = 1) {
       this.origin = v3D(x, y, z);
       return this;
@@ -1420,6 +1458,7 @@ function colorable<CLASS extends Klass>(klass: CLASS): And<CLASS, Colorable> {
 }
 
 class BASE {}
+
 const PATH = renderable(colorable(BASE));
 
 export class Path extends PATH {
@@ -1519,6 +1558,29 @@ const LINE = renderable(colorable(BASE));
 
 export class Line extends LINE {
   commands: PathCommand[] = [];
+  _label?: Text;
+  label(txt: string | number | Text, position?: [number, number]) {
+    this._label = $isString(txt) || $isNumber(txt) ? text(txt) : txt;
+    if (position) {
+      this._label.at(position[0], position[1]);
+    } else {
+      this._label.at(this.lastCommand.end.x, this.lastCommand.end.y);
+    }
+    $isNothing(this._label._fontSize) && (
+      this._label._fontSize = 8
+    );
+    $isNothing(this._label._fontFamily) && (
+      this._label._fontFamily = "system-ui"
+    );
+    $isNothing(this._label._textAnchor) && (
+      this._label._textAnchor = "middle"
+    );
+    $isNothing(this._label._fontColor) && (
+      this._label._fontColor = "grey"
+    );
+
+    return this;
+  }
   constructor(start: Vector, end: Vector) {
     super();
     this.commands.push(
@@ -1526,7 +1588,6 @@ export class Line extends LINE {
       L(end.x, end.y, end.z),
     );
   }
-
   start(x: number, y: number, z: number = 1) {
     return new Line(v3D(x, y, z), this.commands[1].end.copy());
   }
@@ -1540,28 +1601,62 @@ const AXIS = renderable(colorable(BASE));
 export class Axis extends AXIS {
   _interval: [number, number];
   _type: "x" | "y";
+  _ticks: Line[] = [];
   constructor(type: "x" | "y", interval: [number, number]) {
     super();
     this._interval = interval;
     this._type = type;
-    this.setCommands();
+    this._stroke = "grey";
   }
-  private setCommands() {
+
+  /** Returns the smallest value of this axis’s interval. */
+  get _min() {
+    return this._interval[0];
+  }
+
+  /** Returns the largest value of this axis’s interval. */
+  get _max() {
+    return this._interval[1];
+  }
+  _tickSep: number = 1;
+  _tickLength: number = 0.2;
+
+  end() {
+    const tickLength = this._tickLength;
+    let xs = range(this._min, this._max + 1, this._tickSep);
     if (this._type === "x") {
-      line([this._interval[0], 0], [this._interval[1], 0]).commands.forEach((
-        d,
-      ) => this.commands.push(d));
+      const L = line([this._interval[0], 0], [this._interval[1], 0]);
+      this.commands.push(...L.commands);
+      xs.forEach((n) => {
+        let l = line([n, -tickLength], [n, tickLength])
+          .stroke(this._stroke);
+        l = l.label(text(n).fontColor(this._stroke), [
+          l.firstCommand.end.x,
+          l.firstCommand.end.y * 4,
+        ]);
+        this._ticks.push(l);
+      });
     } else {
-      line([0, this._interval[0]], [0, this._interval[1]]).commands.forEach((
-        d,
-      ) => this.commands.push(d));
+      const L = line([0, this._interval[0]], [0, this._interval[1]]);
+      this.commands.push(...L.commands);
+      xs.forEach((n) => {
+        let l = line([-tickLength, n], [tickLength, n])
+          .stroke(this._stroke);
+        l = l.label(text(n).fontColor(this._stroke), [
+          l.firstCommand.end.x - 0.4,
+          l.firstCommand.end.y - 0.1,
+        ]);
+        this._ticks.push(l);
+      });
     }
+    return this;
   }
   interval(x: number, y: number) {
     this._interval = [x, y];
     return this;
   }
 }
+
 export function axis(type: "x" | "y", interval: [number, number] = [-10, 10]) {
   return new Axis(type, interval);
 }
@@ -1583,9 +1678,9 @@ export class Circle extends CIRCLE {
     super();
     this.radius = radius;
     this.commands.push(
-      M(this.origin.x, this.origin.y, this.origin.z),
-      A(this.origin.x + radius, this.origin.y - radius),
-      A(this.origin.x, this.origin.y),
+      M(this.origin.x, this.origin.y + radius / 2, this.origin.z),
+      A(this.origin.x, this.origin.y - radius / 2, this.origin.z),
+      A(this.origin.x, this.origin.y + radius / 2, this.origin.z),
     );
   }
   r(x: number) {
@@ -1597,7 +1692,7 @@ export class Circle extends CIRCLE {
     const radius = this.radius;
     out.commands = [
       M(x, y + radius / 2, z),
-      A(x + radius / 2, y - radius / 2),
+      A(x, y - radius / 2),
       A(x, y + radius / 2),
     ];
     return out;
@@ -1608,33 +1703,56 @@ export function circle(r: number) {
   return new Circle(r);
 }
 
+const TEXT = renderable(BASE);
+
+export class Text extends TEXT {
+  _text: string | number;
+  _fontFamily?: string;
+  _fontSize?: string | number;
+  _fontColor?: string;
+  fontColor(color: string) {
+    this._fontColor = color;
+    return this;
+  }
+  _textAnchor?: "start" | "middle" | "end";
+  constructor(text: string | number) {
+    super();
+    this._text = text;
+  }
+  at(x: number, y: number) {
+    this.commands.push(M(x, y));
+    return this;
+  }
+}
+
+export function text(content: string | number) {
+  return (new Text(content));
+}
+
 const PLOT2D = renderable(colorable(BASE));
 
 export class Plot2D extends PLOT2D {
   f: string;
   _samples: number = 500;
-  _domain: [number, number] = [-1, 1];
-  _range: [number, number] = [-1, 1];
+  _domain: [number, number] = [-10, 10];
+  _range: [number, number] = [-10, 10];
   domain(x: number, y: number) {
     this._domain = [x, y];
-    this.setCommands();
     return this;
   }
   range(x: number, y: number) {
     this._range = [x, y];
-    this.setCommands();
     return this;
   }
   constructor(f: string) {
     super();
     this.f = "fn " + f + ";";
-    this.setCommands();
   }
   toString() {
     const out = this.commands.map((x) => x.toString()).join("");
     return out;
   }
-  setCommands() {
+  end() {
     const out: PathCommand[] = [];
     const xmin = this._domain[0];
     const xmax = this._domain[1];
@@ -1643,7 +1761,7 @@ export class Plot2D extends PLOT2D {
     const e = engine(this.f);
     const fn = e.execute();
     if (!(fn instanceof Fn)) {
-      return out;
+      return this;
     }
     const dataset: [number, number][] = [];
     for (let i = -this._samples; i < this._samples; i++) {
@@ -1677,10 +1795,13 @@ export class Plot2D extends PLOT2D {
     return this;
   }
 }
+
 export function plot2D(f: string) {
   return new Plot2D(f);
 }
+
 const GROUP = colorable(BASE);
+
 export class Group extends GROUP {
   children: Shape[];
   constructor(children: Shape[]) {
@@ -1688,7 +1809,26 @@ export class Group extends GROUP {
     this.children = children;
   }
   private tmap(op: (x: Shape) => Shape): Group {
-    this.children = this.children.map(op);
+    this.children = this.children.map((x) => {
+      const out = op(x);
+      if (x instanceof Axis) {
+        x._ticks = x._ticks.map((l) => {
+          const L = op(l);
+          if (L instanceof Line) {
+            if (L._label) {
+              const label = op(L._label);
+              if (label instanceof Text) {
+                L._label = label;
+              }
+            }
+            return L;
+          } else {
+            return l;
+          }
+        });
+      }
+      return out;
+    });
     return this;
   }
   rotateZ(angle: number): Group {
@@ -1737,27 +1877,579 @@ export function group(children: Shape[]) {
   return new Group(children);
 }
 
-export class Fig {
-  children: Shape[];
+interface Contextual {
+  _children: Shape[];
+  _domain: [number, number];
+  domain(x: number, y: number): this;
+  _range: [number, number];
+  range(x: number, y: number): this;
+  _margins: [number, number, number, number];
+  margins(top: number, right: number, bottom?: number, left?: number): this;
+  _width: number;
+  width(w: number): this;
+  _height: number;
+  height(h: number): this;
+  get _my(): number;
+  get _mx(): number;
+  get _vw(): number;
+  get _vh(): number;
+}
+
+function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
+  return class extends klass {
+    _children: Shape[] = [];
+    _domain: [number, number] = [-10, 10];
+    domain(x: number, y: number) {
+      if (x < y) this._domain = [x, y];
+      return this;
+    }
+    _range: [number, number] = [-10, 10];
+    range(x: number, y: number) {
+      if (x < y) this._range = [x, y];
+      return this;
+    }
+    _margins: [number, number, number, number] = [50, 50, 50, 50];
+    margins(
+      top: number,
+      right: number,
+      bottom: number = top,
+      left: number = right,
+    ) {
+      this._margins = [top, right, bottom, left];
+      return this;
+    }
+    get _vw() {
+      return this._width - (this._mx);
+    }
+    get _vh() {
+      return this._height - (this._my);
+    }
+
+    get _my() {
+      return this._margins[0] + this._margins[2];
+    }
+    get _mx() {
+      return this._margins[1] + this._margins[3];
+    }
+    _width: number = 500;
+    width(w: number) {
+      this._width = w;
+      return this;
+    }
+    _height: number = 500;
+    height(h: number) {
+      this._height = h;
+      return this;
+    }
+  };
+}
+const FIG = contextual(BASE);
+
+export class Fig extends FIG {
   constructor(children: Shape[]) {
-    this.children = children;
+    super();
+    this._children = children;
   }
-  _width: number = 500;
-  width(w: number) {
-    this._width = w;
-    return this;
-  }
-  _height: number = 500;
-  height(h: number) {
-    this._height = h;
+  end() {
+    this._children = this._children.map((x) => {
+      const out = x.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+      return out;
+    });
     return this;
   }
 }
+
 export function fig(children: Shape[]) {
   return new Fig(children);
 }
 
-export type Shape = Group | Circle | Line | Path | Plot2D | Axis;
+type EdgeType = "--" | "->";
+
+class Vertex<T = any> {
+  _id: string;
+  _data: T | null;
+  constructor(id: string | number, data: T | null = null) {
+    this._id = `${id}`;
+    this._data = data;
+  }
+  /** Returns a copy of this vertex. */
+  copy() {
+    const out = new Vertex(this._id, this._data);
+    return out;
+  }
+  /** Sets this vertex’s data. */
+  data(data: T) {
+    const out = this.copy();
+    out._data = data;
+    return out;
+  }
+  /** Sets this vertex’s id. */
+  id(value: string | number) {
+    const out = this.copy();
+    out._id = `${value}`;
+    return out;
+  }
+}
+
+export function vtx<T>(id: string | number, data: T | null = null) {
+  return (
+    new Vertex(id, data)
+  );
+}
+
+class Edge<T = any, K = any> {
+  _source: Vertex<T>;
+  _target: Vertex<T>;
+  _direction: EdgeType;
+  _id: string;
+  _meta: K | null;
+  constructor(
+    source: Vertex<T>,
+    target: Vertex<T>,
+    direction: EdgeType,
+    meta: K | null = null,
+  ) {
+    this._source = source;
+    this._target = target;
+    this._direction = direction;
+    this._id = `${source._id}${direction}${target._id}`;
+    this._meta = meta;
+  }
+  /**
+   * Returns true if this edge is equivalent to the other
+   * edge. Where:
+   *
+   * - 𝑆₁ is the source id of this edge,
+   * - 𝑆₂ is the source id of the other edge,
+   * - 𝑇₁ is the target id of this edge, and
+   * - 𝑇₂ is the target id of the other edge,
+   *
+   * the equivalence relation is defined as follows:
+   * 1. If the edges are of different directions (`--` and `->` or vice versa), the
+   *    edges are not equivalent.
+   * 2. If the edges are both directed (`--`), the edges are equivalent
+   *    only if:
+   *    ~~~
+   *    (𝑆₁ = 𝑆₂) AND (𝑇₁ = 𝑇₂).
+   *    ~~~
+   * 3. If the edges are undirected, the edges are equivalent only if:
+   *    ~~~
+   *    ((𝑆₁ = 𝑆₂) AND (𝑇₁ = 𝑇₂))  OR  ((𝑆₁ = 𝑇₂) AND (𝑇₁ = 𝑆₂))
+   *    ~~~
+   * @example
+   * ~~~
+   * // a and b are equivalent since they’re undirected:
+   * // 1--2 and 2--1
+   * const a = edge(1,2)
+   * const b = edge(2,1)
+   *
+   * // c and d are equivalent since 1->2 and 1->2.
+   * // e is not equivalent to either since it’s the directed
+   * // edge 2->1
+   * const c = link(1,2)
+   * const d = link(1,2)
+   * const e = link(2,1)
+   * ~~~
+   */
+  isEquivalent(other: Edge) {
+    const s1 = this._source._id;
+    const t1 = this._target._id;
+    const s2 = other._source._id;
+    const t2 = other._target._id;
+    if (this._direction === "->" && other._direction === "->") {
+      return (s1 === s2) && (t1 === t2);
+    }
+    if (this._direction === "--" && other._direction === "--") {
+      return ((s1 === s2 && t1 === t2) || (s1 === t2 && t1 === s2));
+    }
+    return false;
+  }
+  reverse() {
+    const out = new Edge(this._target, this._source, this._direction);
+    out._meta = this._meta;
+    out._id = `${this._target._id}${this._direction}${this._source._id}`;
+    return out;
+  }
+  metamap<X>(callback: (metadata: K) => X) {
+    const metadata = this._meta;
+    if (metadata === null) {
+      return this as any as Edge<T, X>;
+    }
+    const m = callback(metadata);
+    return new Edge(this._source, this._target, this._direction, m);
+  }
+
+  get isUndirected() {
+    return this._direction === "--";
+  }
+  get isDirected() {
+    return this._direction === "->";
+  }
+  get revid() {
+    return `${this._target._id}${this._direction}${this._source._id}`;
+  }
+  copy() {
+    const out = new Edge(this._source, this._target, this._direction);
+    return out;
+  }
+  undirected() {
+    if (!this.isDirected) return this;
+    return new Edge(this._source, this._target, "--", this._meta);
+  }
+  direct() {
+    if (this.isDirected) return this;
+    return new Edge(this._source, this._target, "->", this._meta);
+  }
+}
+
+export function edge(
+  source: string | number | Vertex,
+  target: string | number | Vertex,
+) {
+  return (
+    new Edge(
+      (typeof source === "string" || typeof source === "number")
+        ? vtx(source)
+        : source,
+      (typeof target === "string" || typeof target === "number")
+        ? vtx(target)
+        : target,
+      "--",
+    )
+  );
+}
+
+export function link(
+  source: string | number | Vertex,
+  target: string | number | Vertex,
+) {
+  return (
+    new Edge(
+      (typeof source === "string" || typeof source === "number")
+        ? vtx(source)
+        : source,
+      (typeof target === "string" || typeof target === "number")
+        ? vtx(target)
+        : target,
+      "->",
+    )
+  );
+}
+
+class Graph<T = any, K = any> {
+  _adjacency: Map<string | number, Vertex<T>[]>;
+  _vertices: Map<string | number, Vertex<T>>;
+  _edges: Map<string, Edge<T, K>>;
+  constructor() {
+    this._adjacency = new Map();
+    this._vertices = new Map();
+    this._edges = new Map();
+  }
+
+  /** Returns all the neighbors of the given vertex. */
+  neighbors(vertex: Vertex) {
+    const out: Vertex[] = [];
+    this._edges.forEach((e) => {
+      if (e._source._id === vertex._id) out.push(e._target);
+      else if (e._target._id === vertex._id) out.push(e._source);
+    });
+    return out;
+  }
+
+  /** Returns true if given source (referred to by id) is adjacent to the given target (by id). The edge type must be provided to ensure a correct result. */
+  adjacent(
+    sourceId: string | number,
+    direction: EdgeType,
+    targetId: string | number,
+  ) {
+    const st = `${sourceId}${direction}${targetId}`;
+    const ts = `${targetId}${direction}${sourceId}`;
+    return (
+      this._edges.has(st) ||
+      this._edges.has(ts)
+    );
+  }
+
+  /** Returns the degree of the given vertex (referred to by id). */
+  deg(id: string | number) {
+    let degree = 0;
+    this._edges.forEach((e) => {
+      const sourceId = e._source._id;
+      if (sourceId === id) {
+        degree++;
+      }
+    });
+    return degree;
+  }
+
+  /** Returns all the edges of this graph as an array. */
+  edgeList() {
+    const out: Edge[] = [];
+    this._edges.forEach((e) => {
+      out.push(e);
+    });
+    return out;
+  }
+
+  /** Returns all the vertices of this graph as an array. */
+  vertexList() {
+    const out: Vertex[] = [];
+    this._vertices.forEach((v) => {
+      out.push(v);
+    });
+    return out;
+  }
+
+  /** Returns true if this graph contains the given vertex (referred to by id). Otherwise, returns false. */
+  hasVertex(vertexID: string | number): boolean {
+    return this._adjacency.has(vertexID);
+  }
+
+  /** Appends the given vertex, alongside its data, to this graph. */
+  vertex<T>(value: string | number | Vertex, data: T | null = null) {
+    const v = typeof value === "string" || typeof value === "number"
+      ? vtx(value, data)
+      : value;
+    if (!this.hasVertex(v._id)) {
+      this._adjacency.set(v._id, []);
+    }
+    this._vertices.set(v._id, v);
+    return v;
+  }
+
+  /** Appends the given edge to this graph. */
+  E(edge: Edge) {
+    const source = this.vertex(edge._source);
+    const target = this.vertex(edge._target);
+    this._adjacency.get(source._id)!.push(this._vertices.get(target._id)!);
+    this._adjacency.get(target._id)!.push(this._vertices.get(source._id)!);
+    this._edges.set(edge._id, edge);
+    const rev = edge.reverse();
+    this._edges.set(rev._id, rev);
+    return this;
+  }
+
+  /** Creates a new edge from the given `sourceID` and `targetID`, then appends the resulting edge to this graph. */
+  edge(sourceID: string | number | Vertex, targetID: string | number | Vertex) {
+    const E = edge(sourceID, targetID);
+    this.E(E);
+    return this;
+  }
+}
+
+/** Returns a new graph. */
+export function graph(adjacencyList?: Record<string, (string | number)[]>) {
+  const G = new Graph();
+  if (adjacencyList) {
+    Object.keys(adjacencyList).forEach((source) => {
+      const targets = adjacencyList[source];
+      const src = vtx(source);
+      targets.forEach((target) => {
+        const tar = vtx(target);
+        const e = edge(src, tar);
+        G.E(e);
+      });
+    });
+  }
+  return G;
+}
+
+class Particle {
+  /** The particle’s position vector. */
+  _p: Vector;
+
+  /** The particle’s velocity vector. */
+  _v: Vector = v2D(0, 0);
+
+  /** The particle’s force vector. */
+  _f: Vector = v2D(0, 0);
+
+  /** The particle’s unique identifier. */
+  _id: string | number;
+
+  /** The particle’s radius. */
+  _r: number = 3;
+  constructor(id: string | number, position: Vector) {
+    this._p = position;
+    this._id = id;
+  }
+}
+
+/** Returns a new particle. */
+function pt(id: string | number, position: Vector) {
+  return new Particle(id, position);
+}
+
+const FORCE_GRAPH = contextual(BASE);
+
+export class ForceGraph extends FORCE_GRAPH {
+  private _particles: Map<(string | number), Particle>;
+  private _graph: Graph;
+  _iterations: number = 200;
+  _epsilon: number = 0.5;
+  _stable: boolean = false;
+  _repulsion: number = 20;
+  _attraction: number = 0.06;
+  _decay: number = 0.9;
+  children: Shape[] = [];
+  constructor(graph: Graph) {
+    super();
+    this._graph = graph;
+    this._particles = new Map();
+  }
+  private forEachPt(callback: (particle: Particle) => void) {
+    this._particles.forEach((p) => callback(p));
+  }
+
+  _domain: [number, number] = [125, 250];
+  _range: [number, number] = [125, 250];
+  private layout() {
+    const MIN_X = this._domain[0];
+    const MAX_X = this._domain[1];
+    const MIN_Y = this._range[0];
+    const MAX_Y = this._range[1];
+    for (let i = 0; i < this._iterations; i++) {
+      this.iterate(MIN_X, MAX_X, MIN_Y, MAX_Y);
+      if (this._stable) break;
+    }
+  }
+
+  private iterate(
+    MIN_X: number,
+    MAX_X: number,
+    MIN_Y: number,
+    MAX_Y: number,
+  ) {
+    const rsq = (v: Vector, u: Vector) => (
+      ((v.x - u.x) ** 2) + ((v.y - u.y) ** 2)
+    );
+    this.forEachPt((v) => {
+      v._f = v2D(0, 0);
+      this.forEachPt((u) => {
+        if (v._id !== u._id) {
+          let d2 = rsq(v._p, u._p);
+          if (d2 === 0) d2 = 0.001;
+          const c = this._repulsion / d2;
+          const f = (v._p.sub(u._p)).mul(c);
+          v._f = v._f.add(f);
+        }
+      });
+    });
+    this._graph._edges.forEach((e) => {
+      const u = this._particles.get(e._source._id);
+      const v = this._particles.get(e._target._id);
+      if (u && v) {
+        const f = (u._p.sub(v._p)).mul(this._attraction);
+        v._f = v._f.add(f);
+      }
+    });
+    let displacement = 0;
+    this.forEachPt((v) => {
+      v._v = (v._v.add(v._f)).mul(this._decay);
+      displacement += (Math.abs(v._v.x)) + Math.abs(v._v.y);
+      v._p = v._p.add(v._v);
+      v._p.x = clamp(MIN_X, v._p.x, MAX_X);
+      v._p.y = clamp(MIN_Y, v._p.y, MAX_Y);
+    });
+    this._stable = displacement < this._epsilon;
+  }
+
+  /** Sets the initial position of all particles. By default, particles are initially placed randomly. */
+  scatter() {
+    this._graph._vertices.forEach((v) => {
+      const x = randInt(-2, 2);
+      const y = randInt(-2, 2);
+      this._particles.set(v._id, pt(v._id, v2D(x, y)));
+    });
+  }
+
+  _styles: {
+    _nodes: Partial<{ _fill: string; _radius: number }>;
+    _edges: Partial<{ _stroke: string }>;
+  } = {
+    _nodes: { _fill: "white", _radius: 5 },
+    _edges: { _stroke: "grey" },
+  };
+
+  get _nodeRadius() {
+    return this._styles._nodes._radius ? this._styles._nodes._radius : 5;
+  }
+
+  get _nodeColor() {
+    return this._styles._nodes._fill ? this._styles._nodes._fill : "white";
+  }
+
+  /** Sets the radius for all nodes in this graph. */
+  nodeRadius(r: number) {
+    this._styles._nodes._radius = r;
+    return this;
+  }
+
+  /** Sets the color for all nodes in this graph. */
+  nodeColor(value: string) {
+    this._styles._nodes._fill = value;
+    return this;
+  }
+
+  /**
+   * Begins drawing the force graph.
+   */
+  end() {
+    this.scatter();
+    this.layout();
+    const ids = new Set<string>();
+    this._graph._edges.forEach((e) => {
+      const source = this._particles.get(e._source._id);
+      const target = this._particles.get(e._target._id);
+      if (source && target && !ids.has(e._id)) {
+        const x1 = source._p.x;
+        const y1 = source._p.y;
+        const x2 = target._p.x;
+        const y2 = target._p.y;
+        const color = this._styles._edges._stroke
+          ? this._styles._edges._stroke
+          : "initial";
+        const l = line([x1, y1], [x2, y2]).stroke(color);
+        this._children.push(l);
+      }
+      ids.add(e._id);
+      ids.add(e.revid);
+    });
+    this._particles.forEach((p) => {
+      const t = p._id;
+      const c = circle(p._r).at(p._p.x, p._p.y).fill(this._nodeColor);
+      this._children.push(c);
+      this._children.push(
+        text(t).at(p._p.x, p._p.y + p._r),
+      );
+    });
+    this._children = this._children.map((x) => {
+      return x.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+    });
+    return this;
+  }
+}
+
+/** Returns a new force layout graph. */
+export function forceGraph(graph: Graph) {
+  return (
+    new ForceGraph(graph)
+  );
+}
+
+export type Parent = Fig | ForceGraph;
+
+export type Shape = Group | Circle | Line | Path | Plot2D | Axis | Text;
+
+// ========================================================= END GRAPHICS MODULE
 
 class BigRat {
   N: bigint;
