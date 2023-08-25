@@ -159,3 +159,16 @@ pre.terminal {
 	font-family: 'Fira Code';
 	background-color: rgb(221, 238, 221);
 }
+.latex-screen {
+	background-color: inherit;
+	color: #2d3748;
+	font-size: 0.9rem;
+	border: solid thin lightgrey;
+	border-radius: 0.3em;
+	margin-bottom: 5px;
+	padding: 0.2em 1em;
+}
+.latex-screen .katex-display {
+	width: fit-content;
+	margin: 1.5em 0;
+}

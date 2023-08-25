@@ -3057,7 +3057,6 @@ class GetExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.getExpr(this);
   }
-
   toString(): string {
     return ``;
   }

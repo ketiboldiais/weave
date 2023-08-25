@@ -91,16 +91,12 @@ print 8 == 8;
 _Vector operators_ are operators over sequentials:
 
 <Terminal source={`
-let v = [1,2,3,4] .+ [7,3,2,4];
-print v;
+print [1,2,3,4] .+ [7,3,2,4];
 
-let w = [2,4,1,2] .- [3,1,5,0];
-print w;
+print [2,4,1,2] .- [3,1,5,0];
 
-let u = [3,5,2,3] .^ [4,3,5,3];
-print u;
-
-`} height={250}/>
+print [3,5,2,3] .^ [4,3,5,3];
+`} height={160}/>
 
 Importantly, these operators are limited to [vectors](#vectors). They are not defined over primitives, nor are they defined over other sequentials.
 
@@ -154,37 +150,26 @@ The set of all Booleans comprises two values, _true_ and _false_:
 <Terminal source={`
 let aye = true;
 let nay = false;
-print k;
-`} height={110}/>
+print aye;
+print nay;
+`} height={130}/>
 
 ### Boolean Operators
 Booleans may be used in logical infix expressions:
 
 <Terminal source={`
 let a = 1 < 5;
+print a;
 let b = 2 < 1;
-
-let not_a = not a;
-print "not a is: " & not_a;
-
-let a_or_b = a or b;
-print "a or b is: " & a_or_b;
-
-let a_and_b = a and b;
-print "a and b is: " & a_and_b;
-
-let a_nand_b = a nand b;
-print "a nand b is: " & a_nand_b;
-
-let a_xor_b = a xor b;
-print "a xor b is: " & a_xor_b;
-
-let a_xnor_b = a xnor b;
-print "a xnor b is: " & a_xnor_b;
-
-let a_nor_b = a nor b;
-print "a nor b is: " & a_nor_b;
-`} height={620}/>
+print b;
+print not a;
+print a or b;
+print a and b;
+print a nand b;
+print a xor b;
+print a xnor b;
+print a nor b;
+`} height={310}/>
 
 ## Nil
 The value _nil_ denotes nothing, or empty. In contrast to some procedural languages, Twine has no notion of a _void function_. All semantics reduce to some atomic type, _nil_ or otherwise.
@@ -227,8 +212,7 @@ print t;
 All sequentials can be accessed via an _indexing expression_:
 
 <Terminal source={`let x = [8,9,1,2];
-let element = x[1];
-print element;`} height={110}/>
+print x[1];`} height={80}/>
 
 Following mathematical convention, Twine uses 1-based indexing. That is, the first element of a sequential has an index of 1, the second element 2, the third 3, ${\ldots,}$ the ${n^{\text{th}}}$ element ${n.}$
 
@@ -342,6 +326,7 @@ In Twine, everything surrounded in single-quotes (`'`) is treated as a _symbolic
 
 <Terminal source={`
 let y = '((2x^2) * (6x^3)) * ((x^2) / (x^3))';
+print y;
 let j = simplify(y);
 print j;
-`} height={110}/>
+`} height={130}/>

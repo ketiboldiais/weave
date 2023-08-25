@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
 import {
   Axis,
@@ -21,7 +21,44 @@ import {
   Shape,
   Text,
 } from "./io.js";
-const pi = Math.PI;
+import katex from "katex";
+type Html = { __html: string };
+const html = (__html: string): Html => ({ __html });
+type TexProps = {
+  d: string;
+  block?: boolean;
+  style?: CSSProperties;
+};
+export const Tex = ({ d, style, block }: TexProps) => {
+  const content = d;
+  const mode = block;
+  const Component = block ? "div" : "span";
+  const displayMode = mode !== undefined;
+  const [state, enstate] = useState(html(""));
+  useEffect(() => {
+    try {
+      const data = katex.renderToString(`${content}`, {
+        displayMode,
+        throwOnError: false,
+        output: "html",
+        errorColor: "tomato",
+      });
+      enstate(html(data));
+    } catch (error) {
+      if (error instanceof Error) {
+        enstate(html(error.message));
+      } else {
+        enstate(html(""));
+      }
+    }
+  }, [mode, content]);
+  return (
+    <Component
+      style={style}
+      dangerouslySetInnerHTML={state}
+    />
+  );
+};
 
 export const F1 = () => {
   const data = fig([
@@ -219,11 +256,28 @@ export const Terminal = (
     height: string | number;
   },
 ) => {
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState<string[]>([]);
+  const [mode, setMode] = useState<"ok" | "error">("ok");
   const [code, setCode] = useState(source.trimStart().trimEnd());
   const click = () => {
-    const logs = engine(code).log().join("\n");
-    setResult(logs);
+    const logs = engine(code).log("latex");
+    if (logs.error) {
+      setMode("error");
+      setResult([logs.error]);
+    } else {
+      setResult(logs.result);
+    }
+  };
+  const Output = () => {
+    if (mode === "error") {
+      return <pre className={'terminal'}>{result.join('')}</pre>;
+    } else {
+      return (
+        <div className={"latex-screen"}>
+          {result.map((s, i) => <Tex key={"code" + i} d={s} block />)}
+        </div>
+      );
+    }
   };
   return (
     <div>
@@ -234,9 +288,8 @@ export const Terminal = (
           onTextChange={(e) => setCode(e)}
           height={height}
         />
-        {/* <textarea style={{ height }} value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} /> */}
       </div>
-      {result && <pre className={"terminal"}>{result}</pre>}
+      {result && (<Output/>)}
       <div>
         <button className={"run-button"} onClick={click}>Run</button>
       </div>
