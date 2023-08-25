@@ -1,5 +1,6 @@
 const latex = {
   esc: (x: string | number) => (`{\\${x}}`),
+  block: (x: string | number) => (`\\${x}`),
   tie: (...xs: (string | number)[]) => (xs.map((x) => `${x}`).join("~")),
   join: (...xs: (string | number)[]) => (xs.map((x) => `${x}`).join("")),
   txt: (x: string) => (`\\text{${x}}`),
@@ -979,7 +980,7 @@ class Matrix {
     return out;
   }
   toLatex() {
-    const open = latex.esc("begin{bmatrix}");
+    const open = latex.block("begin{bmatrix}");
     let body = "";
     const vectors = this.vectors;
     const maxRow = vectors.length - 1;
@@ -996,7 +997,7 @@ class Matrix {
         body += latex.linebreak();
       }
     });
-    const close = latex.esc("end{bmatrix}");
+    const close = latex.block("end{bmatrix}");
     return open + body + close;
   }
 }
@@ -8366,7 +8367,7 @@ class Compiler implements Visitor<Primitive> {
     } else if (this.mode === "log-latex") {
       const expr = latexify(node.expression);
       const reduction = latexify(s);
-      const res = latex.tie(expr, latex.to(), reduction);
+      const res = latex.join(expr, latex.to(), reduction);
       this.prints.push(res);
     } else {
       console.log(out);

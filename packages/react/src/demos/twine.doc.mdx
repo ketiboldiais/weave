@@ -6,6 +6,13 @@ Twine is a scripting language designed specifically for _Loom_. The language sup
 
 <F1/>
 
+## First Program
+Nodding to tradition, here is our first program in Twine. Clicking the “Run” button, we should see `“Hello,world!” = “Hello, world!”`.
+ 
+<Terminal source={`print "Hello, world!";`} height={60}/>
+
+The keyword `print` is a unary operator in Twine for logging. By default, the the `print` operator logs its expression to the console as a plain-text string. Rather than working with the browser’s console directly, this page uses a custom LaTeX module to transform the plain-text strings into LaTeX code. Enter `Cool!` (or some other text) between the double quotes and hit the `Run` button again.
+
 
 ## Comments
 Single-line comments in Twine start with three hyphens-minus (`“-”`) and terminate on the first newline (the character `“\n”`):
@@ -26,12 +33,6 @@ the reader’s attention.
 ============================
 `} height={190}/>
 
-## First Program
-Nodding to tradition, here is our first program in Twine. Clicking the “Run” button, we should see `“Hello, world!”`, followed by an `OK`, beneath the block.
- 
-<Terminal source={`print "Hello, world!";`} height={60}/>
-
-The keyword `print` is a built-in operator in Twine for logging. Try entering something else between the double quotes.
 
 ## Basic Arithmetic
 Twine recognizes a variety of arithmetic operations:
