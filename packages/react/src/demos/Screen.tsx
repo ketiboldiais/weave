@@ -12,12 +12,16 @@ import {
   graph,
   Group,
   group,
+  histogram,
   interpolator,
   Line,
   line,
   Path,
   Plot2D,
   plot2D,
+  Quad,
+  quad,
+  scatterPlot,
   Shape,
   Text,
 } from "./io.js";
@@ -63,10 +67,10 @@ export const Tex = ({ d, style, block }: TexProps) => {
 export const F1 = () => {
   const data = fig([
     group([
-      axis("x").end(),
-      axis("y").end(),
-      plot2D("f(x) = cos(x)").stroke("blue").end(),
-    ]),
+      axis("x"),
+      axis("y"),
+      plot2D("f(x) = tan(x)").stroke("tomato"),
+    ]).end(),
   ]).domain(-10, 10).range(-10, 10).end();
   const d = forceGraph(graph({
     a: ["b", "x", "n"],
@@ -79,7 +83,26 @@ export const F1 = () => {
     n: ["g"],
     s: ["x"],
   })).nodeColor("tomato").end();
-  return <Figure of={data} />;
+  const s = scatterPlot(
+    (d: [number, number]) => d[0],
+    (d: [number, number]) => d[1],
+  ).data([
+    [0.1, 0.2],
+    [0.7, 0.45],
+    [1, 1],
+    [1.4, 2],
+    [1.6, 2.3],
+    [1.8, 2.25],
+    [1.9, 3.2],
+    [2.4, 3.5],
+    [3.1, 3.82],
+  ]).pointStroke("crimson").fill("tomato").stroke("white").end();
+  const h = histogram([1, 1, 3, 1, 1, 2, 2, 3, 2, 1, 4, 4, 2])
+    .margins(100,100)
+    .stroke('white')
+    .barColor('white')
+    .end();
+  return <Figure of={h} />;
 };
 
 export const Figure = ({ of }: { of: Fig }) => {
@@ -180,6 +203,19 @@ export const Figure = ({ of }: { of: Fig }) => {
     );
   };
 
+  const QUAD = ({ of }: { of: Quad }) => {
+    return (
+      <path
+        d={of.toString()}
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+      />
+    );
+  };
+
   const PLOT2D = ({ of }: { of: Plot2D }) => {
     return (
       <path
@@ -199,7 +235,7 @@ export const Figure = ({ of }: { of: Fig }) => {
         dx={of.commands[0].end.x}
         dy={of.commands[0].end.y}
         textAnchor={of._textAnchor}
-        stroke={of._fontColor}
+        fill={of._fontColor}
         fontFamily={of._fontFamily}
         fontSize={of._fontSize}
         style={{
@@ -227,6 +263,8 @@ export const Figure = ({ of }: { of: Fig }) => {
         return <AXIS of={d} />;
       } else if (d instanceof Text) {
         return <TEXT of={d} />;
+      } else if (d instanceof Quad) {
+        return <QUAD of={d} />;
       } else {
         return null;
       }
@@ -270,7 +308,7 @@ export const Terminal = (
   };
   const Output = () => {
     if (mode === "error") {
-      return <pre className={'terminal'}>{result.join('')}</pre>;
+      return <pre className={"terminal"}>{result.join('')}</pre>;
     } else {
       return (
         <div className={"latex-screen"}>
@@ -289,7 +327,7 @@ export const Terminal = (
           height={height}
         />
       </div>
-      {result && (<Output/>)}
+      {result && <Output />}
       <div>
         <button className={"run-button"} onClick={click}>Run</button>
       </div>

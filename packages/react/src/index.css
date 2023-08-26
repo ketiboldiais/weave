@@ -133,14 +133,17 @@ code {
 }
 
 textarea {
+	background-color: inherit;
 	width: 100%;
 	resize: vertical;
 	font-size: 0.9rem;
 	padding: 1em 0.9em;
 	line-height: 2;
 	font-family: 'Fira Code';
-	border: solid thin lightgrey;
 	border-radius: 0.3em;
+	border: none;
+	color: inherit;
+	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
 }
 
 pre.terminal {
@@ -162,11 +165,13 @@ pre.terminal {
 .latex-screen {
 	background-color: inherit;
 	color: #2d3748;
+	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
 	font-size: 0.9rem;
-	border: solid thin lightgrey;
+	border: none;
 	border-radius: 0.3em;
 	margin-bottom: 5px;
-	padding: 0 1em;
+	padding: 0.5em 1em;
+	color: inherit;
 }
 .latex-screen .katex-display {
 	width: fit-content;

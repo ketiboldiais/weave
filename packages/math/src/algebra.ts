@@ -1,3 +1,27 @@
+const latex = {
+  esc: (x: string | number) => (`{\\${x}}`),
+  block: (x: string | number) => (`\\${x}`),
+  tie: (...xs: (string | number)[]) => (xs.map((x) => `${x}`).join("~")),
+  join: (...xs: (string | number)[]) => (xs.map((x) => `${x}`).join("")),
+  txt: (x: string) => (`\\text{${x}}`),
+  linebreak: () => `\\\\`,
+  percent: () => `\\%`,
+  brace: (x: string | number) => (`{${x}}`),
+  frac: (n: string | number, d: string | number) => (`\\dfrac{${n}}{${d}}`),
+  surround: (x: string | number, leftDelim: string, rightDelim: string) => (
+    `\\left${leftDelim}${x}\\right${rightDelim}`
+  ),
+  dquoted: (x: string) => (
+    `\\text{\\textquotedblleft}\\text{${x}}\\text{\\textquotedblright}`
+  ),
+  and: () => `\\land`,
+  nand: () => `\\uparrow`,
+  nor: () => `\\downarrow`,
+  xnor: () => `\\odot`,
+  xor: () => `\\oplus`,
+  or: () => `\\lor`,
+  to: () => `~{=}~`,
+};
 const {
   floor,
   abs,
@@ -26,58 +50,6 @@ const HALF_PI = PI / 2;
 
 /** Global maximum integer. */
 const MAX_INT = Number.MAX_SAFE_INTEGER;
-
-/** An object that serves as a coordinate space. The ctx is used by the graphics module to scale coordinates according to a given screen (as supplied by the user).*/
-class Context {
-  /** The figure’s margins. */
-  _margins: [number, number, number, number] = [50, 50, 50, 50];
-
-  /** The camera’s coordinates' x-domain. */
-  _domain: [number, number] = [-10, 10];
-
-  /** Sets the camera’s x-coordinates' bounds. */
-  domain(x: number, y: number) {
-    (x < y) && (this._domain = [x, y]);
-    return this;
-  }
-
-  /** The camera’s coordinates' y-domain. */
-  _range: [number, number] = [-10, 10];
-
-  /** Sets the camera’s y-coordinates' bounds. */
-  range(x: number, y: number) {
-    (x < y) && (this._range = [x, y]);
-    return this;
-  }
-
-  /** The camera’s viewport width. */
-  _width: number;
-
-  /** Sets the camera’s viewport width. */
-  width(value: number) {
-    (value > 1) && (this._width = floor(value));
-    return this;
-  }
-
-  /** The camera’s viewport height. */
-  _height: number;
-
-  /** Sets the cameraks viewport height. */
-  height(value: number) {
-    (value > 1) && (this._height = floor(value));
-    return this;
-  }
-
-  constructor(width: number, height: number) {
-    this._width = width;
-    this._height = height;
-  }
-}
-
-/** Returns a new ctx. */
-export function ctx(width: number, height: number) {
-  return new Context(width > 0 ? width : 500, height > 0 ? height : 500);
-}
 
 /*
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -169,6 +141,13 @@ function mod(a: number, b: number) {
   );
 }
 
+/** Returns an array of numbers running from start (inclusive) to stop (inclusive) */
+function range(start: number, stop: number, step = 1): number[] {
+  return Array(Math.ceil((stop - start) / step)).fill(start).map((x, y) =>
+    x + y * step
+  );
+}
+
 /** Returns the integer quotient of `a` and `b`. */
 function quot(a: number, b: number) {
   return (floor(a / b));
@@ -236,7 +215,10 @@ function inverseLerp([x, y]: [number, number], a: number) {
 }
 
 /** Returns a linear interpolator. The `domain` is the interval of input values – a pair of numbers `(a,b)` where `a` is the smallest possible input and `b` is the largest. The `range` is the interval of scale values - a pair of numbers `(a,b)` where `a` is the smallest possible scaled value and `b` is the largest. */
-function interpolator(domain: [number, number], range: [number, number]) {
+export function interpolator(
+  domain: [number, number],
+  range: [number, number],
+) {
   return (n: number) => (
     (range[0]) + ((
       ((range[1]) - (range[0])) / ((domain[1]) - (domain[0]))
@@ -245,7 +227,7 @@ function interpolator(domain: [number, number], range: [number, number]) {
 }
 
 /** Interpolates the number `n` based on the specified domain and range. */
-function iterpolate(
+export function interpolate(
   n: number,
   domain: [number, number],
   range: [number, number],
@@ -333,7 +315,10 @@ function isNumericString(s: string) {
 class Vector<T extends number[] = number[]> {
   /** The elements of this vector. */
   elements: T;
-
+  toLatex() {
+    const out = this.elements.map((x) => `${x}`).join(",~");
+    return latex.surround(out, "[", "]");
+  }
   constructor(elements: T) {
     this.elements = elements;
   }
@@ -347,7 +332,6 @@ class Vector<T extends number[] = number[]> {
       const d = this.dot(v);
       vector.elements[i - 1] = d;
     }
-    print(vector);
     return vector;
   }
 
@@ -525,6 +509,9 @@ class Vector<T extends number[] = number[]> {
   get x() {
     return $isNothing(this.elements[0]) ? 0 : this.elements[0];
   }
+  set x(n: number) {
+    this.elements[0] = n;
+  }
 
   /** Sets the second element of this vector to the provided value. */
   py(value: number) {
@@ -534,6 +521,9 @@ class Vector<T extends number[] = number[]> {
   /** Returns the second element of this vector. */
   get y() {
     return $isNothing(this.elements[1]) ? 0 : this.elements[1];
+  }
+  set y(n: number) {
+    this.elements[1] = n;
   }
 
   /** Sets the third element of this vector to the provided value. */
@@ -742,6 +732,21 @@ function vector(elements: number[] | Vector) {
   } else {
     return elements;
   }
+}
+
+/** Returns a new vector. */
+function v(...elements: (number)[]) {
+  return new Vector(elements);
+}
+
+/** Returns a new 2D vector. */
+function v2D(x: number, y: number) {
+  return new Vector([x, y]);
+}
+
+/** Returns a new 3D vector. */
+function v3D(x: number, y: number, z: number) {
+  return new Vector([x, y, z]);
 }
 
 const $isVector = (value: any): value is Vector => (value instanceof Vector);
@@ -974,6 +979,27 @@ class Matrix {
     });
     return out;
   }
+  toLatex() {
+    const open = latex.block("begin{bmatrix}");
+    let body = "";
+    const vectors = this.vectors;
+    const maxRow = vectors.length - 1;
+    vectors.forEach((d, i) => {
+      const maxCol = d.elements.length - 1;
+      d.elements.forEach((e, j) => {
+        const element = `${e}`;
+        body += element;
+        if (j !== maxCol) {
+          body += ` & `;
+        }
+      });
+      if (i !== maxRow) {
+        body += latex.linebreak();
+      }
+    });
+    const close = latex.block("end{bmatrix}");
+    return open + body + close;
+  }
 }
 
 /** Returns a new matrix. */
@@ -989,19 +1015,11 @@ function matrix(rows: (Vector[]) | (number[])[], cols?: number) {
 /** Returns true if the given value is a matrix. */
 const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 
+// ======================================================= BEGIN GRAPHICS MODULE
+
 /** An enum of types mapped to SVG Path command prefixes. */
 // deno-fmt-ignore
 enum pc { M, L, H, V, Q, C, A, }
-
-interface PathCommandVisitor<T> {
-  M(visitor: MCommand): T;
-  L(visitor: LCommand): T;
-  H(visitor: HCommand): T;
-  V(visitor: VCommand): T;
-  Q(visitor: QCommand): T;
-  C(visitor: CCommand): T;
-  A(visitor: ACommand): T;
-}
 
 abstract class PathCommand {
   readonly type: pc;
@@ -1010,7 +1028,6 @@ abstract class PathCommand {
     this.type = type;
     this.end = end;
   }
-  abstract accept<T>(visitor: PathCommandVisitor<T>): T;
 
   /** Sets the endpoint for this command. */
   abstract endPoint(x: number, y: number, z?: number): PathCommand;
@@ -1020,9 +1037,6 @@ abstract class PathCommand {
 }
 
 class MCommand extends PathCommand {
-  accept<T>(visitor: PathCommandVisitor<T>): T {
-    return visitor.M(this);
-  }
   readonly type: pc.M;
   constructor(x: number, y: number, z: number) {
     super(pc.M, vector([x, y, z]));
@@ -1040,9 +1054,6 @@ class MCommand extends PathCommand {
 const M = (x: number, y: number, z: number = 1) => (new MCommand(x, y, z));
 
 class LCommand extends PathCommand {
-  accept<T>(visitor: PathCommandVisitor<T>): T {
-    return visitor.L(this);
-  }
   readonly type: pc.L;
   constructor(x: number, y: number, z: number) {
     super(pc.L, vector([x, y, z]));
@@ -1059,9 +1070,6 @@ class LCommand extends PathCommand {
 const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
 
 class VCommand extends PathCommand {
-  accept<T>(visitor: PathCommandVisitor<T>): T {
-    return visitor.V(this);
-  }
   readonly type: pc.V;
   constructor(x: number, y: number, z: number) {
     super(pc.V, vector([x, y, z]));
@@ -1078,9 +1086,6 @@ class VCommand extends PathCommand {
 const V = (x: number, y: number, z: number = 1) => (new VCommand(x, y, z));
 
 class HCommand extends PathCommand {
-  accept<T>(visitor: PathCommandVisitor<T>): T {
-    return visitor.H(this);
-  }
   readonly type: pc.H;
   constructor(x: number, y: number, z: number) {
     super(pc.H, vector([x, y, z]));
@@ -1098,9 +1103,6 @@ class HCommand extends PathCommand {
 const H = (x: number, y: number, z: number = 1) => (new HCommand(x, y, z));
 
 class QCommand extends PathCommand {
-  accept<T>(visitor: PathCommandVisitor<T>): T {
-    return visitor.Q(this);
-  }
   readonly type: pc.Q = pc.Q;
   ctrl1: Vector;
   constructor(x: number, y: number, z: number) {
@@ -1125,9 +1127,6 @@ const Q = (x: number, y: number, z: number = 1) => (new QCommand(x, y, z));
 
 /** A type corresponding to the SVG cubic-bezier-curve command. */
 class CCommand extends PathCommand {
-  accept<T>(visitor: PathCommandVisitor<T>): T {
-    return visitor.C(this);
-  }
   type: pc.C = pc.C;
   ctrl1: Vector = vector([0, 0, 1]);
   ctrl2: Vector = vector([0, 0, 1]);
@@ -1165,9 +1164,6 @@ const C = (x: number, y: number, z: number = 1) => (new CCommand(x, y, z));
 
 /** An ADT corresponding to the SVG arc-to command. */
 class ACommand extends PathCommand {
-  accept<T>(visitor: PathCommandVisitor<T>): T {
-    return visitor.A(this);
-  }
   type: pc.A = pc.A;
   /** The x-radius of this arc-to command. */
   rx: number = 1;
@@ -1224,164 +1220,311 @@ class ACommand extends PathCommand {
 /** Returns a new arc-to command. */
 const A = (x: number, y: number, z: number = 1) => (new ACommand(x, y, z));
 
-class Path {
+interface Renderable {
+  commands: PathCommand[];
+  origin: Vector;
+  toString(): string;
+  at(x: number, y: number, z?: number): this;
+  tfm(op: (v: Vector) => Vector): this;
+  rotateZ(angle: number): this;
+  rotateY(angle: number): this;
+  rotateX(angle: number): this;
+  scale(x: number, y: number): this;
+  translateZ(z: number): this;
+  translateY(y: number): this;
+  translateX(x: number): this;
+  shearZ(dx: number, dy: number): this;
+  shearY(dx: number, dz: number): this;
+  shearX(dy: number, dz: number): this;
+  translate(x: number, y: number): this;
+  interpolate(
+    domain: [number, number],
+    range: [number, number],
+    dimensions: [number, number],
+  ): this;
+  get length(): number;
+  get lastCommand(): PathCommand;
+  get firstCommand(): PathCommand;
+}
+
+type Klass<T = {}> = new (...args: any[]) => T;
+
+type And<DataClass, Extender> = DataClass & Klass<Extender>;
+
+function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
+  return class extends klass {
+    commands: PathCommand[] = [];
+    origin: Vector = v3D(0, 0, 1);
+    get length() {
+      return this.commands.length;
+    }
+    get firstCommand() {
+      const out = this.commands[0];
+      if (out === undefined) {
+        return M(this.origin.x, this.origin.y, this.origin.z);
+      } else return out;
+    }
+    get lastCommand() {
+      const out = this.commands[this.length - 1];
+      if (out === undefined) {
+        return M(this.origin.x, this.origin.y, this.origin.z);
+      } else return out;
+    }
+    at(x: number, y: number, z: number = 1) {
+      this.origin = v3D(x, y, z);
+      return this;
+    }
+    interpolate(
+      domain: [number, number],
+      range: [number, number],
+      dimensions: [number, number],
+    ) {
+      const X = interpolator(domain, [0, dimensions[0]]);
+      const Y = interpolator(range, [dimensions[1], 0]);
+      this.commands = this.commands.map((p) => {
+        const E = p.end;
+        const [x, y, z] = [X(E.x), Y(E.y), 1];
+        switch (p.type) {
+          case pc.M:
+            return M(x, y, z);
+          case pc.H:
+          case pc.L:
+          case pc.V:
+            return L(x, y, z);
+          case pc.Q: {
+            const c = (p as QCommand).ctrl1;
+            return Q(x, y, z).ctrlPoint(x, y, z);
+          }
+          case pc.C: {
+            const c1 = (p as CCommand).ctrl1;
+            const c2 = (p as CCommand).ctrl2;
+            return C(x, y, z)
+              .ctrlPoint1(X(c1.x), Y(c1.y), c1.z)
+              .ctrlPoint2(X(c2.x), Y(c2.y), c2.z);
+          }
+          case pc.A: {
+            p = p as ACommand;
+            return A(x, y, z);
+          }
+          default:
+            return p;
+        }
+      });
+      return this;
+    }
+    tfm(op: (v: Vector) => Vector) {
+      this.commands = this.commands.map((p) => {
+        const E = op(p.end);
+        switch (p.type) {
+          case pc.M:
+            return M(E.x, E.y, E.z);
+          case pc.H:
+          case pc.L:
+          case pc.V:
+            return L(E.x, E.y, E.z);
+          case pc.Q: {
+            const c = op((p as QCommand).ctrl1);
+            return Q(E.x, E.y, E.z).ctrlPoint(c.x, c.y, c.z);
+          }
+          case pc.C: {
+            const c1 = op((p as CCommand).ctrl1);
+            const c2 = op((p as CCommand).ctrl2);
+            return C(E.x, E.y, E.z)
+              .ctrlPoint1(c1.x, c1.y, c1.z)
+              .ctrlPoint2(c2.x, c2.y, c2.z);
+          }
+          case pc.A: {
+            p = p as ACommand;
+            return A(E.x, E.y, E.z);
+          }
+          default:
+            return p;
+        }
+      });
+      return this;
+    }
+
+    rotateZ(angle: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [cos(angle), sin(angle), 0],
+          [-sin(angle), cos(angle), 0],
+          [0, 0, 1],
+        ]))
+      );
+    }
+
+    rotateY(angle: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [cos(angle), 0, -sin(angle)],
+          [0, 1, 0],
+          [sin(angle), 0, cos(angle)],
+        ]))
+      );
+    }
+
+    rotateX(angle: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, 0, 0],
+          [0, cos(angle), -sin(angle)],
+          [0, sin(angle), cos(angle)],
+        ]))
+      );
+    }
+
+    scale(x: number, y: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [x, 0, 0],
+          [0, y, 0],
+          [0, 0, 1],
+        ]))
+      );
+    }
+
+    translateZ(z: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, 0, 1],
+          [0, 1, 1],
+          [0, 0, z],
+        ]))
+      );
+    }
+
+    translateY(y: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, 0, 1],
+          [0, 1, y],
+          [0, 0, 1],
+        ]))
+      );
+    }
+
+    translateX(x: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, 0, x],
+          [0, 1, 1],
+          [0, 0, 1],
+        ]))
+      );
+    }
+
+    /** Shears along the z-axis. */
+    shearZ(dx: number, dy: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, 0, 0],
+          [0, 1, 0],
+          [dx, dy, 1],
+        ]))
+      );
+    }
+
+    /** Shears along the y-axis. */
+    shearY(dx: number, dz: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, 0, 0],
+          [dx, 1, dz],
+          [0, 0, 1],
+        ]))
+      );
+    }
+
+    /** Shears along the x-axis. */
+    shearX(dy: number, dz: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, dy, dz],
+          [0, 1, 0],
+          [0, 0, 1],
+        ]))
+      );
+    }
+
+    translate(x: number, y: number) {
+      return this.tfm((v) =>
+        v.vxm(matrix([
+          [1, 0, x],
+          [0, 1, y],
+          [0, 0, 1],
+        ]))
+      );
+    }
+    toString() {
+      return this.commands.map((x) => x.toString()).join("") + "Z";
+    }
+  };
+}
+
+interface Colorable {
+  _fill: string;
+  fill(color: string): this;
+  _stroke: string;
+  stroke(color: string): this;
+  _strokeWidth: number;
+  strokeWidth(value: number): this;
+  _dash: number;
+  dash(value: number): this;
+  _opacity: number;
+  opacity(value: number): this;
+}
+
+function colorable<CLASS extends Klass>(klass: CLASS): And<CLASS, Colorable> {
+  return class extends klass {
+    _fill: string = "none";
+    fill(color: string) {
+      this._fill = color;
+      return this;
+    }
+    _stroke: string = "black";
+    stroke(color: string) {
+      this._stroke = color;
+      return this;
+    }
+    _strokeWidth: number = 1;
+    strokeWidth(value: number) {
+      this._strokeWidth = value;
+      return this;
+    }
+    _dash: number = 0;
+    dash(value: number) {
+      this._dash = value;
+      return this;
+    }
+    _opacity: number = 1;
+    opacity(value: number) {
+      this._opacity = value;
+      return this;
+    }
+  };
+}
+
+class BASE {}
+
+const PATH = renderable(colorable(BASE));
+
+export class Path extends PATH {
   /** The SVG commands comprising this path. */
   commands: PathCommand[] = [];
+
+  constructor(x: number, y: number, z: number = 1) {
+    super();
+    this.origin = vector([0, 0, 0]);
+    this.cursor = vector([x, y, z]);
+    this.commands = [M(x, y, z)];
+  }
+
   /** The current endpoint of this path. */
   cursor: Vector;
 
   /** The origin of this path. */
   origin: Vector;
-
-  tfm(op: (v: Vector) => Vector) {
-    this.commands = this.commands.map((p) => {
-      const E = op(p.end);
-      // deno-fmt-ignore
-      switch (p.type) {
-        case pc.M: return M(E.x, E.y, E.z);
-        case pc.H:
-        case pc.L:
-        case pc.V: return L(E.x, E.y, E.z);
-        case pc.Q: {
-          const c = op((p as QCommand).ctrl1);
-          return Q(E.x,E.y,E.z).ctrlPoint(c.x,c.y,c.z);
-        }
-        case pc.C: {
-          const c1 = op((p as CCommand).ctrl1);
-          const c2 = op((p as CCommand).ctrl2);
-          return C(E.x,E.y,E.z)
-            .ctrlPoint1(c1.x,c1.y,c1.z)
-            .ctrlPoint2(c2.x,c2.y,c2.z);
-        }
-        case pc.A: {
-          p = p as ACommand;
-          return A(E.x,E.y,E.z)
-        }
-        default:
-          return p;
-      }
-    });
-    return this;
-  }
-
-  rotateZ(angle: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [cos(angle), sin(angle), 0],
-        [-sin(angle), cos(angle), 0],
-        [0, 0, 1],
-      ]))
-    );
-  }
-
-  rotateY(angle: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [cos(angle), 0, -sin(angle)],
-        [0, 1, 0],
-        [sin(angle), 0, cos(angle)],
-      ]))
-    );
-  }
-
-  rotateX(angle: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, 0, 0],
-        [0, cos(angle), -sin(angle)],
-        [0, sin(angle), cos(angle)],
-      ]))
-    );
-  }
-
-  scale(x: number, y: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [x, 0, 0],
-        [0, y, 0],
-        [0, 0, 1],
-      ]))
-    );
-  }
-
-  translateZ(z: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, 0, 1],
-        [0, 1, 1],
-        [0, 0, z],
-      ]))
-    );
-  }
-
-  translateY(y: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, 0, 1],
-        [0, 1, y],
-        [0, 0, 1],
-      ]))
-    );
-  }
-
-  translateX(x: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, 0, x],
-        [0, 1, 1],
-        [0, 0, 1],
-      ]))
-    );
-  }
-
-  /** Shears along the z-axis. */
-  shearZ(dx: number, dy: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, 0, 0],
-        [0, 1, 0],
-        [dx, dy, 1],
-      ]))
-    );
-  }
-
-  /** Shears along the y-axis. */
-  shearY(dx: number, dz: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, 0, 0],
-        [dx, 1, dz],
-        [0, 0, 1],
-      ]))
-    );
-  }
-
-  /** Shears along the x-axis. */
-  shearX(dy: number, dz: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, dy, dz],
-        [0, 1, 0],
-        [0, 0, 1],
-      ]))
-    );
-  }
-
-  translate(x: number, y: number) {
-    return this.tfm((v) =>
-      v.vxm(matrix([
-        [1, 0, x],
-        [0, 1, y],
-        [0, 0, 1],
-      ]))
-    );
-  }
-
-  constructor(x: number, y: number, z: number = 1) {
-    this.origin = vector([0, 0, 0]);
-    this.cursor = vector([x, y, z]);
-    this.commands = [M(x, y, z)];
-  }
 
   /** Appends the provided list of commands to this Path’s command list. */
   with(commands: PathCommand[]) {
@@ -1459,124 +1602,902 @@ export function path(originX: number, originY: number, originZ: number = 1) {
   );
 }
 
-/** Returns a new line. */
-export function line(start: [number, number], end: [number, number]) {
-  return path(start[0], start[1]).L(end[0], end[1]);
+const LINE = renderable(colorable(BASE));
+
+export class Line extends LINE {
+  commands: PathCommand[] = [];
+  _label?: Text;
+  label(txt: string | number | Text, position?: [number, number]) {
+    this._label = $isString(txt) || $isNumber(txt) ? text(txt) : txt;
+    if (position) {
+      this._label.at(position[0], position[1]);
+    } else {
+      this._label.at(this.lastCommand.end.x, this.lastCommand.end.y);
+    }
+    $isNothing(this._label._fontSize) && (
+      this._label._fontSize = 8
+    );
+    $isNothing(this._label._fontFamily) && (
+      this._label._fontFamily = "system-ui"
+    );
+    $isNothing(this._label._textAnchor) && (
+      this._label._textAnchor = "middle"
+    );
+    $isNothing(this._label._fontColor) && (
+      this._label._fontColor = "grey"
+    );
+
+    return this;
+  }
+  constructor(start: Vector, end: Vector) {
+    super();
+    this.commands.push(
+      M(start.x, start.y, start.z),
+      L(end.x, end.y, end.z),
+    );
+  }
+  start(x: number, y: number, z: number = 1) {
+    return new Line(v3D(x, y, z), this.commands[1].end.copy());
+  }
+  end(x: number, y: number, z: number = 1) {
+    return new Line(this.commands[0].end.copy(), v3D(x, y, z));
+  }
 }
 
-class Quad {
-  _width: number;
-  _height: number;
-  origin: Vector = vector([0, 0, 1]);
-  constructor(width: number, height: number) {
-    this._width = width;
-    this._height = height;
+const AXIS = renderable(colorable(BASE));
+
+export class Axis extends AXIS {
+  _interval: [number, number];
+  _type: "x" | "y";
+  _ticks: Line[] = [];
+  constructor(type: "x" | "y", interval: [number, number]) {
+    super();
+    this._interval = interval;
+    this._type = type;
+    this._stroke = "grey";
   }
-  get path() {
-    const x = this.origin.x;
-    const y = this.origin.y;
-    return [
-      line([x, y], [x + this._width, y]),
-      line([x + this._width, y], [x + this._width, y + this._height]),
-      line([x + this._width, y + this._height], [x, y + this._height]),
-      line([x, y + this._height], [x, y]),
+
+  /** Returns the smallest value of this axis’s interval. */
+  get _min() {
+    return this._interval[0];
+  }
+
+  /** Returns the largest value of this axis’s interval. */
+  get _max() {
+    return this._interval[1];
+  }
+  _tickSep: number = 1;
+  _tickLength: number = 0.2;
+
+  end() {
+    const tickLength = this._tickLength;
+    let xs = range(this._min, this._max + 1, this._tickSep);
+    if (this._type === "x") {
+      const L = line([this._interval[0], 0], [this._interval[1], 0]);
+      this.commands.push(...L.commands);
+      xs.forEach((n) => {
+        let l = line([n, -tickLength], [n, tickLength])
+          .stroke(this._stroke);
+        l = l.label(text(n).fontColor(this._stroke), [
+          l.firstCommand.end.x,
+          l.firstCommand.end.y * 4,
+        ]);
+        this._ticks.push(l);
+      });
+    } else {
+      const L = line([0, this._interval[0]], [0, this._interval[1]]);
+      this.commands.push(...L.commands);
+      xs.forEach((n) => {
+        let l = line([-tickLength, n], [tickLength, n])
+          .stroke(this._stroke);
+        l = l.label(text(n).fontColor(this._stroke), [
+          l.firstCommand.end.x - 0.4,
+          l.firstCommand.end.y - 0.1,
+        ]);
+        this._ticks.push(l);
+      });
+    }
+    return this;
+  }
+  interval(x: number, y: number) {
+    this._interval = [x, y];
+    return this;
+  }
+}
+
+export function axis(type: "x" | "y", interval: [number, number] = [-10, 10]) {
+  return new Axis(type, interval);
+}
+
+/** Returns a new line. */
+export function line(start: Vector | number[], end: Vector | number[]) {
+  start = $isArray(start)
+    ? v3D(start[0] ?? 0, start[1] ?? 0, start[2] ?? 1)
+    : start;
+  end = $isArray(end) ? v3D(end[0] ?? 0, end[1] ?? 0, end[2] ?? 1) : end;
+  return new Line(start, end);
+}
+
+const CIRCLE = renderable(colorable(BASE));
+
+export class Circle extends CIRCLE {
+  radius: number;
+  constructor(radius: number) {
+    super();
+    this.radius = radius;
+    this.commands.push(
+      M(this.origin.x, this.origin.y + radius / 2, this.origin.z),
+      A(this.origin.x, this.origin.y - radius / 2, this.origin.z),
+      A(this.origin.x, this.origin.y + radius / 2, this.origin.z),
+    );
+  }
+  r(x: number) {
+    return new Circle(x);
+  }
+  // @ts-ignore
+  at(x: number, y: number, z: number = 1): Circle {
+    const out = new Circle(this.radius);
+    const radius = this.radius;
+    out.commands = [
+      M(x, y + radius / 2, z),
+      A(x, y - radius / 2),
+      A(x, y + radius / 2),
     ];
+    return out;
+  }
+}
+
+export function circle(r: number) {
+  return new Circle(r);
+}
+
+const TEXT = renderable(BASE);
+
+export class Text extends TEXT {
+  _text: string | number;
+  _fontFamily?: string;
+  _fontSize?: string | number;
+  _fontColor?: string;
+  fontColor(color: string) {
+    this._fontColor = color;
+    return this;
+  }
+  _textAnchor?: "start" | "middle" | "end";
+  constructor(text: string | number) {
+    super();
+    this._text = text;
+  }
+  at(x: number, y: number) {
+    this.commands.push(M(x, y));
+    return this;
+  }
+}
+
+export function text(content: string | number) {
+  return (new Text(content));
+}
+
+const PLOT2D = renderable(colorable(BASE));
+
+export class Plot2D extends PLOT2D {
+  f: string;
+  _samples: number = 500;
+  _domain: [number, number] = [-10, 10];
+  _range: [number, number] = [-10, 10];
+  domain(x: number, y: number) {
+    this._domain = [x, y];
+    return this;
+  }
+  range(x: number, y: number) {
+    this._range = [x, y];
+    return this;
+  }
+  constructor(f: string) {
+    super();
+    this.f = "fn " + f + ";";
   }
   toString() {
-    return this.path.map((c) => c.toString()).join("");
+    const out = this.commands.map((x) => x.toString()).join("");
+    return out;
   }
-  at(x: number, y: number, z: number = 1) {
-    this.origin = vector([x, y, z]);
-  }
-}
-
-export function quad(width: number, height: number) {
-  return new Quad(width, height);
-}
-
-type Renderable = Path | Quad;
-
-export class Group {
-  children: (Renderable)[];
-  ctx: Context = ctx(500, 500);
-  constructor(children: (Renderable)[]) {
-    this.children = children;
-  }
-
-  context(context: Context) {
-    this.ctx = context;
-    return this;
-  }
-
-  map(op: (c: Path) => Path) {
-    const cs = [];
-    for (let i = 0; i < this.children.length; i++) {
-      const child = this.children[i];
-      if (child instanceof Path) {
-        cs.push(op(child));
-      }
-      if (child instanceof Quad) {
-        child.path.forEach((c) => {
-          cs.push(op(c));
-        });
+  end() {
+    const out: PathCommand[] = [];
+    const xmin = this._domain[0];
+    const xmax = this._domain[1];
+    const ymin = this._range[0];
+    const ymax = this._range[1];
+    const e = engine(this.f);
+    const fn = e.execute();
+    if (!(fn instanceof Fn)) {
+      return this;
+    }
+    const dataset: [number, number][] = [];
+    for (let i = -this._samples; i < this._samples; i++) {
+      const x = (i / this._samples) * xmax;
+      const _y = fn.call(e.compiler, [x]);
+      if (typeof _y !== "number") continue;
+      const y = _y;
+      const point: [number, number] = [x, y];
+      if ($isNaN(y) || y < ymin || ymax < y) point[1] = NaN;
+      if (x < xmin || xmax < x) continue;
+      else dataset.push(point);
+    }
+    let moved = false;
+    for (let i = 0; i < dataset.length; i++) {
+      const datum = dataset[i];
+      if (!isNaN(datum[1])) {
+        if (!moved) {
+          out.push(M(datum[0], datum[1], 1));
+          moved = true;
+        } else {
+          out.push(L(datum[0], datum[1], 1));
+        }
+      } else {
+        const next = dataset[i + 1];
+        if (next !== undefined && !isNaN(next[1])) {
+          out.push(M(next[0], next[1], 1));
+        }
       }
     }
-    this.children = cs;
+    this.commands = out;
+    return this;
+  }
+}
+
+export function plot2D(f: string) {
+  return new Plot2D(f);
+}
+
+const GROUP = colorable(BASE);
+
+export class Group extends GROUP {
+  children: Shape[];
+  constructor(children: Shape[]) {
+    super();
+    this.children = children;
+  }
+  private tmap(op: (x: Shape) => Shape): Group {
+    this.children = this.children.map((x) => {
+      const out = op(x);
+      if (x instanceof Axis) {
+        x._ticks = x._ticks.map((l) => {
+          const L = op(l);
+          if (L instanceof Line) {
+            if (L._label) {
+              const label = op(L._label);
+              if (label instanceof Text) {
+                L._label = label;
+              }
+            }
+            return L;
+          } else {
+            return l;
+          }
+        });
+      }
+      return out;
+    });
+    return this;
+  }
+  rotateZ(angle: number): Group {
+    return this.tmap((x) => x.rotateZ(angle));
+  }
+  rotateY(angle: number): Group {
+    return this.tmap((x) => x.rotateY(angle));
+  }
+  rotateX(angle: number): Group {
+    return this.tmap((x) => x.rotateX(angle));
+  }
+  scale(x: number, y: number): Group {
+    return this.tmap((p) => p.scale(x, y));
+  }
+  translateZ(z: number): Group {
+    return this.tmap((p) => p.translateZ(z));
+  }
+  translateY(y: number): Group {
+    return this.tmap((p) => p.translateY(y));
+  }
+  translateX(x: number): Group {
+    return this.tmap((p) => p.translateX(x));
+  }
+  shearZ(dx: number, dy: number): Group {
+    return this.tmap((p) => p.shearZ(dx, dy));
+  }
+  shearX(dx: number, dy: number): Group {
+    return this.tmap((p) => p.shearX(dx, dy));
+  }
+  translate(x: number, y: number): Group {
+    return this.tmap((p) => p.translate(x, y));
+  }
+  interpolate(
+    domain: [number, number],
+    range: [number, number],
+    dimensions: [number, number],
+  ): Group {
+    return this.tmap((p) => p.interpolate(domain, range, dimensions));
+  }
+  toString(): string {
+    return this.children.map((s) => s.toString()).join("");
+  }
+}
+
+export function group(children: Shape[]) {
+  return new Group(children);
+}
+
+interface Contextual {
+  _children: Shape[];
+  _domain: [number, number];
+  domain(x: number, y: number): this;
+  _range: [number, number];
+  range(x: number, y: number): this;
+  _margins: [number, number, number, number];
+  margins(top: number, right: number, bottom?: number, left?: number): this;
+  _width: number;
+  width(w: number): this;
+  _height: number;
+  height(h: number): this;
+  get _my(): number;
+  get _mx(): number;
+  get _vw(): number;
+  get _vh(): number;
+}
+
+function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
+  return class extends klass {
+    _children: Shape[] = [];
+    _domain: [number, number] = [-10, 10];
+    domain(x: number, y: number) {
+      if (x < y) this._domain = [x, y];
+      return this;
+    }
+    _range: [number, number] = [-10, 10];
+    range(x: number, y: number) {
+      if (x < y) this._range = [x, y];
+      return this;
+    }
+    _margins: [number, number, number, number] = [50, 50, 50, 50];
+    margins(
+      top: number,
+      right: number,
+      bottom: number = top,
+      left: number = right,
+    ) {
+      this._margins = [top, right, bottom, left];
+      return this;
+    }
+    get _vw() {
+      return this._width - (this._mx);
+    }
+    get _vh() {
+      return this._height - (this._my);
+    }
+
+    get _my() {
+      return this._margins[0] + this._margins[2];
+    }
+    get _mx() {
+      return this._margins[1] + this._margins[3];
+    }
+    _width: number = 500;
+    width(w: number) {
+      this._width = w;
+      return this;
+    }
+    _height: number = 500;
+    height(h: number) {
+      this._height = h;
+      return this;
+    }
+  };
+}
+const FIG = contextual(BASE);
+
+export class Fig extends FIG {
+  constructor(children: Shape[]) {
+    super();
+    this._children = children;
+  }
+  end() {
+    this._children = this._children.map((x) => {
+      const out = x.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+      return out;
+    });
+    return this;
+  }
+}
+
+export function fig(children: Shape[]) {
+  return new Fig(children);
+}
+
+type EdgeType = "--" | "->";
+
+class Vertex<T = any> {
+  _id: string;
+  _data: T | null;
+  constructor(id: string | number, data: T | null = null) {
+    this._id = `${id}`;
+    this._data = data;
+  }
+  /** Returns a copy of this vertex. */
+  copy() {
+    const out = new Vertex(this._id, this._data);
+    return out;
+  }
+  /** Sets this vertex’s data. */
+  data(data: T) {
+    const out = this.copy();
+    out._data = data;
+    return out;
+  }
+  /** Sets this vertex’s id. */
+  id(value: string | number) {
+    const out = this.copy();
+    out._id = `${value}`;
+    return out;
+  }
+}
+
+export function vtx<T>(id: string | number, data: T | null = null) {
+  return (
+    new Vertex(id, data)
+  );
+}
+
+class Edge<T = any, K = any> {
+  _source: Vertex<T>;
+  _target: Vertex<T>;
+  _direction: EdgeType;
+  _id: string;
+  _meta: K | null;
+  constructor(
+    source: Vertex<T>,
+    target: Vertex<T>,
+    direction: EdgeType,
+    meta: K | null = null,
+  ) {
+    this._source = source;
+    this._target = target;
+    this._direction = direction;
+    this._id = `${source._id}${direction}${target._id}`;
+    this._meta = meta;
+  }
+  /**
+   * Returns true if this edge is equivalent to the other
+   * edge. Where:
+   *
+   * - 𝑆₁ is the source id of this edge,
+   * - 𝑆₂ is the source id of the other edge,
+   * - 𝑇₁ is the target id of this edge, and
+   * - 𝑇₂ is the target id of the other edge,
+   *
+   * the equivalence relation is defined as follows:
+   * 1. If the edges are of different directions (`--` and `->` or vice versa), the
+   *    edges are not equivalent.
+   * 2. If the edges are both directed (`--`), the edges are equivalent
+   *    only if:
+   *    ~~~
+   *    (𝑆₁ = 𝑆₂) AND (𝑇₁ = 𝑇₂).
+   *    ~~~
+   * 3. If the edges are undirected, the edges are equivalent only if:
+   *    ~~~
+   *    ((𝑆₁ = 𝑆₂) AND (𝑇₁ = 𝑇₂))  OR  ((𝑆₁ = 𝑇₂) AND (𝑇₁ = 𝑆₂))
+   *    ~~~
+   * @example
+   * ~~~
+   * // a and b are equivalent since they’re undirected:
+   * // 1--2 and 2--1
+   * const a = edge(1,2)
+   * const b = edge(2,1)
+   *
+   * // c and d are equivalent since 1->2 and 1->2.
+   * // e is not equivalent to either since it’s the directed
+   * // edge 2->1
+   * const c = link(1,2)
+   * const d = link(1,2)
+   * const e = link(2,1)
+   * ~~~
+   */
+  isEquivalent(other: Edge) {
+    const s1 = this._source._id;
+    const t1 = this._target._id;
+    const s2 = other._source._id;
+    const t2 = other._target._id;
+    if (this._direction === "->" && other._direction === "->") {
+      return (s1 === s2) && (t1 === t2);
+    }
+    if (this._direction === "--" && other._direction === "--") {
+      return ((s1 === s2 && t1 === t2) || (s1 === t2 && t1 === s2));
+    }
+    return false;
+  }
+  reverse() {
+    const out = new Edge(this._target, this._source, this._direction);
+    out._meta = this._meta;
+    out._id = `${this._target._id}${this._direction}${this._source._id}`;
+    return out;
+  }
+  metamap<X>(callback: (metadata: K) => X) {
+    const metadata = this._meta;
+    if (metadata === null) {
+      return this as any as Edge<T, X>;
+    }
+    const m = callback(metadata);
+    return new Edge(this._source, this._target, this._direction, m);
+  }
+
+  get isUndirected() {
+    return this._direction === "--";
+  }
+  get isDirected() {
+    return this._direction === "->";
+  }
+  get revid() {
+    return `${this._target._id}${this._direction}${this._source._id}`;
+  }
+  copy() {
+    const out = new Edge(this._source, this._target, this._direction);
+    return out;
+  }
+  undirected() {
+    if (!this.isDirected) return this;
+    return new Edge(this._source, this._target, "--", this._meta);
+  }
+  direct() {
+    if (this.isDirected) return this;
+    return new Edge(this._source, this._target, "->", this._meta);
+  }
+}
+
+export function edge(
+  source: string | number | Vertex,
+  target: string | number | Vertex,
+) {
+  return (
+    new Edge(
+      (typeof source === "string" || typeof source === "number")
+        ? vtx(source)
+        : source,
+      (typeof target === "string" || typeof target === "number")
+        ? vtx(target)
+        : target,
+      "--",
+    )
+  );
+}
+
+export function link(
+  source: string | number | Vertex,
+  target: string | number | Vertex,
+) {
+  return (
+    new Edge(
+      (typeof source === "string" || typeof source === "number")
+        ? vtx(source)
+        : source,
+      (typeof target === "string" || typeof target === "number")
+        ? vtx(target)
+        : target,
+      "->",
+    )
+  );
+}
+
+class Graph<T = any, K = any> {
+  _adjacency: Map<string | number, Vertex<T>[]>;
+  _vertices: Map<string | number, Vertex<T>>;
+  _edges: Map<string, Edge<T, K>>;
+  constructor() {
+    this._adjacency = new Map();
+    this._vertices = new Map();
+    this._edges = new Map();
+  }
+
+  /** Returns all the neighbors of the given vertex. */
+  neighbors(vertex: Vertex) {
+    const out: Vertex[] = [];
+    this._edges.forEach((e) => {
+      if (e._source._id === vertex._id) out.push(e._target);
+      else if (e._target._id === vertex._id) out.push(e._source);
+    });
+    return out;
+  }
+
+  /** Returns true if given source (referred to by id) is adjacent to the given target (by id). The edge type must be provided to ensure a correct result. */
+  adjacent(
+    sourceId: string | number,
+    direction: EdgeType,
+    targetId: string | number,
+  ) {
+    const st = `${sourceId}${direction}${targetId}`;
+    const ts = `${targetId}${direction}${sourceId}`;
+    return (
+      this._edges.has(st) ||
+      this._edges.has(ts)
+    );
+  }
+
+  /** Returns the degree of the given vertex (referred to by id). */
+  deg(id: string | number) {
+    let degree = 0;
+    this._edges.forEach((e) => {
+      const sourceId = e._source._id;
+      if (sourceId === id) {
+        degree++;
+      }
+    });
+    return degree;
+  }
+
+  /** Returns all the edges of this graph as an array. */
+  edgeList() {
+    const out: Edge[] = [];
+    this._edges.forEach((e) => {
+      out.push(e);
+    });
+    return out;
+  }
+
+  /** Returns all the vertices of this graph as an array. */
+  vertexList() {
+    const out: Vertex[] = [];
+    this._vertices.forEach((v) => {
+      out.push(v);
+    });
+    return out;
+  }
+
+  /** Returns true if this graph contains the given vertex (referred to by id). Otherwise, returns false. */
+  hasVertex(vertexID: string | number): boolean {
+    return this._adjacency.has(vertexID);
+  }
+
+  /** Appends the given vertex, alongside its data, to this graph. */
+  vertex<T>(value: string | number | Vertex, data: T | null = null) {
+    const v = typeof value === "string" || typeof value === "number"
+      ? vtx(value, data)
+      : value;
+    if (!this.hasVertex(v._id)) {
+      this._adjacency.set(v._id, []);
+    }
+    this._vertices.set(v._id, v);
+    return v;
+  }
+
+  /** Appends the given edge to this graph. */
+  E(edge: Edge) {
+    const source = this.vertex(edge._source);
+    const target = this.vertex(edge._target);
+    this._adjacency.get(source._id)!.push(this._vertices.get(target._id)!);
+    this._adjacency.get(target._id)!.push(this._vertices.get(source._id)!);
+    this._edges.set(edge._id, edge);
+    const rev = edge.reverse();
+    this._edges.set(rev._id, rev);
     return this;
   }
 
-  shearZ(dx: number, dy: number) {
-    return this.map((c) => c.shearZ(dx, dy));
-  }
-
-  shearY(dx: number, dz: number) {
-    return this.map((c) => c.shearY(dx, dz));
-  }
-
-  shearX(dy: number, dz: number) {
-    return this.map((c) => c.shearX(dy, dz));
-  }
-
-  translateZ(z: number) {
-    return this.map((c) => c.translateZ(z));
-  }
-
-  translateY(y: number) {
-    return this.map((c) => c.translateY(y));
-  }
-
-  translateX(x: number) {
-    return this.map((c) => c.translateX(x));
-  }
-
-  translate(x: number, y: number) {
-    return this.map((c) => c.translate(x, y));
-  }
-
-  rotateZ(angle: number) {
-    return this.map((c) => c.rotateZ(angle));
-  }
-
-  rotateY(angle: number) {
-    return this.map((c) => c.rotateY(angle));
-  }
-
-  rotateX(angle: number) {
-    return this.map((c) => c.rotateX(angle));
-  }
-
-  scale(x: number, y: number) {
-    return this.map((c) => c.scale(x, y));
-  }
-
-  render() {
-    return this.children.map((n) => n.toString()).join("");
+  /** Creates a new edge from the given `sourceID` and `targetID`, then appends the resulting edge to this graph. */
+  edge(sourceID: string | number | Vertex, targetID: string | number | Vertex) {
+    const E = edge(sourceID, targetID);
+    this.E(E);
+    return this;
   }
 }
 
-export function group(children: (Renderable)[]) {
-  return new Group(children);
+/** Returns a new graph. */
+export function graph(adjacencyList?: Record<string, (string | number)[]>) {
+  const G = new Graph();
+  if (adjacencyList) {
+    Object.keys(adjacencyList).forEach((source) => {
+      const targets = adjacencyList[source];
+      const src = vtx(source);
+      targets.forEach((target) => {
+        const tar = vtx(target);
+        const e = edge(src, tar);
+        G.E(e);
+      });
+    });
+  }
+  return G;
 }
+
+class Particle {
+  /** The particle’s position vector. */
+  _p: Vector;
+
+  /** The particle’s velocity vector. */
+  _v: Vector = v2D(0, 0);
+
+  /** The particle’s force vector. */
+  _f: Vector = v2D(0, 0);
+
+  /** The particle’s unique identifier. */
+  _id: string | number;
+
+  /** The particle’s radius. */
+  _r: number = 3;
+  constructor(id: string | number, position: Vector) {
+    this._p = position;
+    this._id = id;
+  }
+}
+
+/** Returns a new particle. */
+function pt(id: string | number, position: Vector) {
+  return new Particle(id, position);
+}
+
+const FORCE_GRAPH = contextual(BASE);
+
+export class ForceGraph extends FORCE_GRAPH {
+  private _particles: Map<(string | number), Particle>;
+  private _graph: Graph;
+  _iterations: number = 200;
+  _epsilon: number = 0.5;
+  _stable: boolean = false;
+  _repulsion: number = 20;
+  _attraction: number = 0.06;
+  _decay: number = 0.9;
+  children: Shape[] = [];
+  constructor(graph: Graph) {
+    super();
+    this._graph = graph;
+    this._particles = new Map();
+  }
+  private forEachPt(callback: (particle: Particle) => void) {
+    this._particles.forEach((p) => callback(p));
+  }
+
+  _domain: [number, number] = [125, 250];
+  _range: [number, number] = [125, 250];
+  private layout() {
+    const MIN_X = this._domain[0];
+    const MAX_X = this._domain[1];
+    const MIN_Y = this._range[0];
+    const MAX_Y = this._range[1];
+    for (let i = 0; i < this._iterations; i++) {
+      this.iterate(MIN_X, MAX_X, MIN_Y, MAX_Y);
+      if (this._stable) break;
+    }
+  }
+
+  private iterate(
+    MIN_X: number,
+    MAX_X: number,
+    MIN_Y: number,
+    MAX_Y: number,
+  ) {
+    const rsq = (v: Vector, u: Vector) => (
+      ((v.x - u.x) ** 2) + ((v.y - u.y) ** 2)
+    );
+    this.forEachPt((v) => {
+      v._f = v2D(0, 0);
+      this.forEachPt((u) => {
+        if (v._id !== u._id) {
+          let d2 = rsq(v._p, u._p);
+          if (d2 === 0) d2 = 0.001;
+          const c = this._repulsion / d2;
+          const f = (v._p.sub(u._p)).mul(c);
+          v._f = v._f.add(f);
+        }
+      });
+    });
+    this._graph._edges.forEach((e) => {
+      const u = this._particles.get(e._source._id);
+      const v = this._particles.get(e._target._id);
+      if (u && v) {
+        const f = (u._p.sub(v._p)).mul(this._attraction);
+        v._f = v._f.add(f);
+      }
+    });
+    let displacement = 0;
+    this.forEachPt((v) => {
+      v._v = (v._v.add(v._f)).mul(this._decay);
+      displacement += (Math.abs(v._v.x)) + Math.abs(v._v.y);
+      v._p = v._p.add(v._v);
+      v._p.x = clamp(MIN_X, v._p.x, MAX_X);
+      v._p.y = clamp(MIN_Y, v._p.y, MAX_Y);
+    });
+    this._stable = displacement < this._epsilon;
+  }
+
+  /** Sets the initial position of all particles. By default, particles are initially placed randomly. */
+  scatter() {
+    this._graph._vertices.forEach((v) => {
+      const x = randInt(-2, 2);
+      const y = randInt(-2, 2);
+      this._particles.set(v._id, pt(v._id, v2D(x, y)));
+    });
+  }
+
+  _styles: {
+    _nodes: Partial<{ _fill: string; _radius: number }>;
+    _edges: Partial<{ _stroke: string }>;
+  } = {
+    _nodes: { _fill: "white", _radius: 5 },
+    _edges: { _stroke: "grey" },
+  };
+
+  get _nodeRadius() {
+    return this._styles._nodes._radius ? this._styles._nodes._radius : 5;
+  }
+
+  get _nodeColor() {
+    return this._styles._nodes._fill ? this._styles._nodes._fill : "white";
+  }
+
+  /** Sets the radius for all nodes in this graph. */
+  nodeRadius(r: number) {
+    this._styles._nodes._radius = r;
+    return this;
+  }
+
+  /** Sets the color for all nodes in this graph. */
+  nodeColor(value: string) {
+    this._styles._nodes._fill = value;
+    return this;
+  }
+
+  /**
+   * Begins drawing the force graph.
+   */
+  end() {
+    this.scatter();
+    this.layout();
+    const ids = new Set<string>();
+    this._graph._edges.forEach((e) => {
+      const source = this._particles.get(e._source._id);
+      const target = this._particles.get(e._target._id);
+      if (source && target && !ids.has(e._id)) {
+        const x1 = source._p.x;
+        const y1 = source._p.y;
+        const x2 = target._p.x;
+        const y2 = target._p.y;
+        const color = this._styles._edges._stroke
+          ? this._styles._edges._stroke
+          : "initial";
+        const l = line([x1, y1], [x2, y2]).stroke(color);
+        this._children.push(l);
+      }
+      ids.add(e._id);
+      ids.add(e.revid);
+    });
+    this._particles.forEach((p) => {
+      const t = p._id;
+      const c = circle(p._r).at(p._p.x, p._p.y).fill(this._nodeColor);
+      this._children.push(c);
+      this._children.push(
+        text(t).at(p._p.x, p._p.y + p._r),
+      );
+    });
+    this._children = this._children.map((x) => {
+      return x.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+    });
+    return this;
+  }
+}
+
+/** Returns a new force layout graph. */
+export function forceGraph(graph: Graph) {
+  return (
+    new ForceGraph(graph)
+  );
+}
+
+export type Parent = Fig | ForceGraph;
+
+export type Shape = Group | Circle | Line | Path | Plot2D | Axis | Text;
+
+// ========================================================= END GRAPHICS MODULE
 
 class BigRat {
   N: bigint;
@@ -1603,29 +2524,6 @@ const $isFraction = (
 
 function ratio(n: number, d: number) {
   return new Fraction(n, d);
-}
-
-function arrayString<T extends any>(array: T[]): string {
-  const out = [];
-  for (let i = 0; i < array.length; i++) {
-    const element = array[i];
-    const index = `[${i}]\n`;
-    out.push(index);
-    if ($isArray(element)) {
-      const es = arrayString(element);
-      out.push(es);
-    } else if ($isObject(element)) {
-      const objstr = objectTree(element);
-      out.push(objstr);
-    } else if ($isFunction(element)) {
-      const f = `${element.name}`;
-      out.push(`𝑓 ${f}`);
-    } else {
-      out.push(`${element}`);
-    }
-    out.push(`\n`);
-  }
-  return out.join("");
 }
 
 /**
@@ -1780,14 +2678,15 @@ const left = <T>(x: T): Left<T> => new Left(x);
 /** Returns a new right. */
 const right = <T>(x: T): Right<T> => new Right(x);
 
+// deno-fmt-ignore
 type ErrorType =
-  | "lexical-error"
-  | "syntax-error"
-  | "type-error"
-  | "runtime-error"
-  | "resolver-error"
-  | "environment-error"
-  | "algebraic-error";
+| "lexical-error"
+| "syntax-error"
+| "type-error"
+| "runtime-error"
+| "resolver-error"
+| "environment-error"
+| "algebraic-error";
 
 /** An object containing an error report. */
 class Err extends Error {
@@ -1966,6 +2865,60 @@ enum nodekind {
   big_rational,
 }
 
+interface Mapper<T> {
+  integer(node: Integer): T;
+  numericConstant(node: NumericConstant): T;
+  vectorExpr(node: VectorExpr): T;
+  vectorBinaryExpr(node: VectorBinaryExpr): T;
+  matrixExpr(node: MatrixExpr): T;
+  indexingExpr(node: IndexingExpr): T;
+  bigNumber(node: BigNumber): T;
+  fractionExpr(node: FractionExpr): T;
+  bigRational(node: RationalExpr): T;
+  float(node: Float): T;
+  bool(node: Bool): T;
+  tupleExpr(node: TupleExpr): T;
+  getExpr(node: GetExpr): T;
+  setExpr(node: SetExpr): T;
+  superExpr(node: SuperExpr): T;
+  thisExpr(node: ThisExpr): T;
+  string(node: StringLiteral): T;
+  stringBinaryExpr(node: StringBinaryExpr): T;
+  algebraicString(node: AlgebraicString): T;
+  nil(node: Nil): T;
+  variable(node: Variable): T;
+  assignExpr(node: AssignExpr): T;
+  algebraicBinaryExpr(node: AlgebraicBinaryExpr): T;
+  algebraicUnaryExpr(node: AlgebraicUnaryExpr): T;
+  logicalBinaryExpr(node: LogicalBinaryExpr): T;
+  logicalUnaryExpr(node: LogicalUnaryExpr): T;
+  relationalExpr(node: RelationalExpr): T;
+  callExpr(node: CallExpr): T;
+  nativeCall(node: NativeCall): T;
+  groupExpr(node: GroupExpr): T;
+  blockStmt(node: BlockStmt): T;
+  exprStmt(node: ExprStmt): T;
+  fnStmt(node: FnStmt): T;
+  ifStmt(node: IfStmt): T;
+  classStmt(node: ClassStmt): T;
+  printStmt(node: PrintStmt): T;
+  returnStmt(node: ReturnStmt): T;
+  letStmt(node: VariableStmt): T;
+  whileStmt(node: WhileStmt): T;
+  int(node: Int): T;
+  real(node: Real): T;
+  sym(node: Sym): T;
+  constant(node: Constant): T;
+  sum(node: Sum): T;
+  product(node: Product): T;
+  quotient(node: Quotient): T;
+  fraction(node: Fraction): T;
+  power(node: Power): T;
+  difference(node: Difference): T;
+  factorial(node: Factorial): T;
+  algebraicFn(node: AlgebraicFn): T;
+}
+
 interface Visitor<T> {
   integer(node: Integer): T;
   numericConstant(node: NumericConstant): T;
@@ -2014,6 +2967,7 @@ abstract class TREENODE {
 
 abstract class ASTNode extends TREENODE {
   abstract accept<T>(visitor: Visitor<T>): T;
+  abstract trust<T>(mapper: Mapper<T>): T;
   abstract toString(): string;
   abstract isStatement(): this is Statement;
   abstract isExpr(): this is Expr;
@@ -2035,6 +2989,9 @@ class ClassStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.classStmt(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.classStmt(this);
+  }
 
   get kind(): nodekind {
     return nodekind.class_statement;
@@ -2055,6 +3012,9 @@ function classStmt(name: Token, methods: FnStmt[]) {
 class BlockStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.blockStmt(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.blockStmt(this);
   }
 
   get kind(): nodekind {
@@ -2079,6 +3039,9 @@ class ExprStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.exprStmt(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.exprStmt(this);
+  }
 
   get kind(): nodekind {
     return nodekind.expression_statement;
@@ -2100,6 +3063,9 @@ class FnStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.fnStmt(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.fnStmt(this);
+  }
 
   get kind(): nodekind {
     return nodekind.function_declaration;
@@ -2119,9 +3085,7 @@ class FnStmt extends Statement {
   }
 }
 
-/**
- * Returns a new {@link FnStmt|function declaration statement}.
- */
+/** Returns a new FnStmt. */
 function functionStmt(
   name: Token<tt.symbol>,
   params: Token<tt.symbol>[],
@@ -2133,6 +3097,9 @@ function functionStmt(
 class IfStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.ifStmt(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.ifStmt(this);
   }
 
   get kind(): nodekind {
@@ -2156,9 +3123,7 @@ class IfStmt extends Statement {
   }
 }
 
-/**
- * Returns a new {@link IfStmt|if-statement}.
- */
+/** Returns a new IfStmt. */
 function ifStmt(
   keyword: Token,
   condition: Expr,
@@ -2171,6 +3136,9 @@ function ifStmt(
 class PrintStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.printStmt(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.printStmt(this);
   }
 
   get kind(): nodekind {
@@ -2185,9 +3153,7 @@ class PrintStmt extends Statement {
   }
 }
 
-/**
- * Returns a new {@link PrintStmt|print-statement}.
- */
+/** Returns a new PrintStmt. */
 function printStmt(keyword: Token, expression: Expr) {
   return new PrintStmt(keyword, expression);
 }
@@ -2195,6 +3161,9 @@ function printStmt(keyword: Token, expression: Expr) {
 class ReturnStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.returnStmt(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.returnStmt(this);
   }
 
   get kind(): nodekind {
@@ -2209,9 +3178,7 @@ class ReturnStmt extends Statement {
   }
 }
 
-/**
- * Returns a new {@link ReturnStmt|return-statement}.
- */
+/** Returns a new ReturnStmt. */
 function returnStmt(value: Expr, keyword: Token) {
   return new ReturnStmt(value, keyword);
 }
@@ -2219,6 +3186,9 @@ function returnStmt(value: Expr, keyword: Token) {
 class VariableStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.letStmt(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.letStmt(this);
   }
 
   get kind(): nodekind {
@@ -2249,6 +3219,9 @@ function letStmt(name: Token<tt.symbol>, value: Expr) {
 class WhileStmt extends Statement {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.whileStmt(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.whileStmt(this);
   }
 
   get kind(): nodekind {
@@ -2285,6 +3258,9 @@ class IndexingExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.indexingExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.indexingExpr(this);
+  }
 
   toString(): string {
     return "";
@@ -2310,6 +3286,9 @@ function indexingExpr(list: Expr, index: Expr, op: Token) {
 class AlgebraicString extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.algebraicString(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.algebraicString(this);
   }
 
   toString(): string {
@@ -2343,6 +3322,9 @@ class TupleExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.tupleExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.tupleExpr(this);
+  }
 
   get kind(): nodekind {
     return nodekind.tuple_expression;
@@ -2361,6 +3343,9 @@ class TupleExpr extends Expr {
 class VectorExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.vectorExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.vectorExpr(this);
   }
 
   get kind(): nodekind {
@@ -2398,6 +3383,9 @@ class MatrixExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.matrixExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.matrixExpr(this);
+  }
 
   toString(): string {
     const vectors = this.vectors.map((v) => v.toString()).join(",");
@@ -2406,11 +3394,11 @@ class MatrixExpr extends Expr {
   get kind(): nodekind {
     return nodekind.matrix_expression;
   }
-  vectors: Expr[];
+  vectors: VectorExpr[];
   rows: number;
   cols: number;
   constructor(
-    vectors: Expr[],
+    vectors: VectorExpr[],
     rows: number,
     columns: number,
   ) {
@@ -2421,7 +3409,7 @@ class MatrixExpr extends Expr {
   }
 }
 
-function matrixExpr(vectors: Expr[], rows: number, columns: number) {
+function matrixExpr(vectors: VectorExpr[], rows: number, columns: number) {
   return new MatrixExpr(vectors, rows, columns);
 }
 
@@ -2434,6 +3422,9 @@ function tupleExpr(elements: Expr[]) {
 class BigNumber extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.bigNumber(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.bigNumber(this);
   }
 
   toString(): string {
@@ -2449,9 +3440,7 @@ class BigNumber extends Expr {
   }
 }
 
-/**
- * Returns a new {@link BigNumber}.
- */
+/** Returns a new BigNumber. */
 function bigNumber(value: bigint) {
   return new BigNumber(value);
 }
@@ -2459,6 +3448,9 @@ function bigNumber(value: bigint) {
 class RationalExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.bigRational(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.bigRational(this);
   }
 
   toString(): string {
@@ -2474,6 +3466,7 @@ class RationalExpr extends Expr {
   }
 }
 
+/** Returns a new RationalExpr */
 function bigRational(N: bigint, D: bigint) {
   return new RationalExpr(N, D);
 }
@@ -2481,6 +3474,9 @@ function bigRational(N: bigint, D: bigint) {
 class AssignExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.assignExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.assignExpr(this);
   }
 
   toString(): string {
@@ -2501,35 +3497,34 @@ class AssignExpr extends Expr {
   }
 }
 
+// deno-fmt-ignore
 type NativeUnary =
-  | "ceil"
-  | "floor"
-  | "sin"
-  | "cos"
-  | "cosh"
-  | "tan"
-  | "lg"
-  | "ln"
-  | "!"
-  | "log"
-  | "arcsin"
-  | "arccos"
-  | "arcsinh"
-  | "arctan"
-  | "exp"
-  | "sinh"
-  | "sqrt"
-  | "tanh"
-  | "gcd"
-  | "avg"
-  | "deriv"
-  | "simplify"
-  | "subex"
-  | "arccosh";
+| "ceil"
+| "floor"
+| "sin"
+| "cos"
+| "cosh"
+| "tan"
+| "lg"
+| "ln"
+| "!"
+| "log"
+| "arcsin"
+| "arccos"
+| "arcsinh"
+| "arctan"
+| "exp"
+| "sinh"
+| "sqrt"
+| "tanh"
+| "gcd"
+| "avg"
+| "deriv"
+| "simplify"
+| "subex"
+| "arccosh";
 
-/**
- * A native function that takes more than 1 argument.
- */
+/** A native function that takes more than 1 argument. */
 type NativePolyAry = "max" | "min";
 
 type NativeFn = NativeUnary | NativePolyAry;
@@ -2537,6 +3532,9 @@ type NativeFn = NativeUnary | NativePolyAry;
 class NativeCall extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.nativeCall(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.nativeCall(this);
   }
 
   toString(): string {
@@ -2583,6 +3581,9 @@ class AlgebraicUnaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.algebraicUnaryExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.algebraicUnaryExpr(this);
+  }
 
   toString(): string {
     return `${this.op.lexeme}${this.arg.toString()}`;
@@ -2612,6 +3613,9 @@ class LogicalUnaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.logicalUnaryExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.logicalUnaryExpr(this);
+  }
 
   toString(): string {
     return `${this.op.lexeme}(${this.arg.toString()})`;
@@ -2636,9 +3640,13 @@ function logicalUnary(op: Token<LogicalUnaryOperator>, arg: Expr) {
 }
 
 type StringBinop = tt.amp;
+
 class StringBinaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.stringBinaryExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.stringBinaryExpr(this);
   }
   toString(): string {
     const left = this.left.toString();
@@ -2659,14 +3667,21 @@ class StringBinaryExpr extends Expr {
     this.right = right;
   }
 }
-const stringBinex = (left: Expr, op: Token<StringBinop>, right: Expr) => (
-  new StringBinaryExpr(left, op, right)
-);
+
+function stringBinex(left: Expr, op: Token<StringBinop>, right: Expr) {
+  return (
+    new StringBinaryExpr(left, op, right)
+  );
+}
 
 type VectorBinaryOP = tt.dot_add | tt.dot_minus | tt.dot_star | tt.dot_caret;
+
 class VectorBinaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.vectorBinaryExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.vectorBinaryExpr(this);
   }
   toString(): string {
     const left = this.left.toString();
@@ -2688,28 +3703,30 @@ class VectorBinaryExpr extends Expr {
   }
 }
 
-const vectorBinaryExpr = (
-  left: Expr,
-  op: Token<VectorBinaryOP>,
-  right: Expr,
-) => (
-  new VectorBinaryExpr(left, op, right)
-);
+function vectorBinaryExpr(left: Expr, op: Token<VectorBinaryOP>, right: Expr) {
+  return (
+    new VectorBinaryExpr(left, op, right)
+  );
+}
 
+// deno-fmt-ignore
 type ArithmeticOperator =
-  | tt.plus
-  | tt.star
-  | tt.caret
-  | tt.slash
-  | tt.minus
-  | tt.rem
-  | tt.mod
-  | tt.percent
-  | tt.div;
+| tt.plus
+| tt.star
+| tt.caret
+| tt.slash
+| tt.minus
+| tt.rem
+| tt.mod
+| tt.percent
+| tt.div;
 
 class AlgebraicBinaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.algebraicBinaryExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.algebraicBinaryExpr(this);
   }
 
   get kind(): nodekind {
@@ -2757,9 +3774,7 @@ class AlgebraicBinaryExpr extends Expr {
   }
 }
 
-/**
- * Returns a new {@link AlgebraicBinaryExpr|binary expression}.
- */
+/** Returns a new AlgebraicBinaryExpr. */
 function binex(left: Expr, op: Token<ArithmeticOperator>, right: Expr) {
   return new AlgebraicBinaryExpr(left, op, right);
 }
@@ -2767,6 +3782,9 @@ function binex(left: Expr, op: Token<ArithmeticOperator>, right: Expr) {
 class CallExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.callExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.callExpr(this);
   }
 
   toString(): string {
@@ -2788,9 +3806,7 @@ class CallExpr extends Expr {
   }
 }
 
-/**
- * Returns a new {@link CallExpr|call expression}.
- */
+/** Returns a new CallExpr. */
 function call(callee: Expr, args: Expr[], paren: Token) {
   return new CallExpr(callee, args, paren);
 }
@@ -2798,6 +3814,9 @@ function call(callee: Expr, args: Expr[], paren: Token) {
 class GroupExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.groupExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.groupExpr(this);
   }
 
   toString(): string {
@@ -2812,9 +3831,10 @@ class GroupExpr extends Expr {
     this.expression = expression;
   }
 }
-const isGroupExpr = (node: ASTNode): node is GroupExpr => (
-  node.kind === nodekind.grouped_expression
-);
+
+function isGroupExpr(node: ASTNode): node is GroupExpr {
+  return node.kind === nodekind.grouped_expression;
+}
 
 /**
  * Returns a new {@link GroupExpr|group expression}.
@@ -2826,6 +3846,9 @@ function grouped(expression: Expr) {
 class Nil extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.nil(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.nil(this);
   }
 
   toString(): string {
@@ -2848,6 +3871,9 @@ function nil() {
 class FractionExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.fractionExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.fractionExpr(this);
   }
 
   toString(): string {
@@ -2873,6 +3899,9 @@ class NumericConstant extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.numericConstant(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.numericConstant(this);
+  }
 
   toString(): string {
     return `${this.sym}`;
@@ -2897,6 +3926,9 @@ class Integer extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.integer(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.integer(this);
+  }
   toString(): string {
     return `${this.value}`;
   }
@@ -2919,6 +3951,9 @@ class Float extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.float(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.float(this);
+  }
   toString(): string {
     return `${this.value}`;
   }
@@ -2940,6 +3975,9 @@ function float(n: number) {
 class Bool extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.bool(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.bool(this);
   }
 
   toString(): string {
@@ -2964,6 +4002,9 @@ class StringLiteral extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.string(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.string(this);
+  }
 
   toString(): string {
     return this.value;
@@ -2978,7 +4019,7 @@ class StringLiteral extends Expr {
   }
 }
 
-/** Returns a new {@link StringLiteral|string literal node}. */
+/** Returns a new StringLiteral. */
 function string(value: string) {
   return new StringLiteral(value);
 }
@@ -2986,6 +4027,9 @@ function string(value: string) {
 class Variable extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.variable(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.variable(this);
   }
 
   toString(): string {
@@ -3005,22 +4049,26 @@ function isVariable(node: ASTNode): node is Variable {
   return node.kind === nodekind.symbol;
 }
 
-/** Returns a new {@link Variable|variable node}. */
+/** Returns a new Variable. */
 function variable(name: Token<tt.symbol>) {
   return new Variable(name);
 }
 
+// deno-fmt-ignore
 type BinaryLogicalOperator =
-  | tt.and
-  | tt.nand
-  | tt.nor
-  | tt.xnor
-  | tt.xor
-  | tt.or;
+| tt.and
+| tt.nand
+| tt.nor
+| tt.xnor
+| tt.xor
+| tt.or;
 
 class LogicalBinaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.logicalBinaryExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.logicalBinaryExpr(this);
   }
 
   toString(): string {
@@ -3057,6 +4105,10 @@ class GetExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.getExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.getExpr(this);
+  }
+
   toString(): string {
     return ``;
   }
@@ -3084,6 +4136,9 @@ class SetExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.setExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.setExpr(this);
+  }
 
   toString(): string {
     return "";
@@ -3110,6 +4165,9 @@ class SuperExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.superExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.superExpr(this);
+  }
 
   toString(): string {
     return "";
@@ -3134,6 +4192,9 @@ class ThisExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.thisExpr(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.thisExpr(this);
+  }
 
   toString(): string {
     return ``;
@@ -3155,6 +4216,9 @@ function thisExpr(keyword: Token) {
 class RelationalExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.relationalExpr(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.relationalExpr(this);
   }
 
   toString(): string {
@@ -3225,6 +4289,7 @@ interface ExpressionVisitor<T> {
 
 abstract class AlgebraicExpression {
   abstract accept<T>(visitor: ExpressionVisitor<T>): T;
+  abstract trust<T>(mapper: Mapper<T>): T;
   /**
    * Returns true if this expression is syntactically
    * equal to the provided expression. Otherwise,
@@ -3297,43 +4362,40 @@ abstract class AlgebraicExpression {
   }
 }
 
-/** Type predicate. Claims and returns true if the given expression `u` is an atomic expression. False otherwise. See also {@link Atom}. */
+/** Returns true if `u` is an atomic expression. Else, false. */
 function isAtom(u: AlgebraicExpression): u is Atom {
   return u.klass === klass.atom;
 }
 
-/**
- * Type predicate. Claims and returns true if the given expression
- * `u` is a {@link Compound|compound expression}. False otherwise.
- */
+/** Returns true if `u` is a Compound. Else, false. */
 function isCompound(u: AlgebraicExpression): u is Compound {
   return u.klass === klass.compound;
 }
 
-/** Type predicate. Claims and returns true if the given expression `u` is an {@link Int|integer}. False otherwise. */
+/** Returns true if the given expression `u` is an Int. Else, false. */
 function isInt(u: AlgebraicExpression): u is Int {
   return !$isNothing(u) && (u.op === core.int);
 }
 
-/** Type predicate. Claims and returns true if the given expression `u` is a {@link Real|real number}. False otherwise. */
+/** Returns true if the given expression `u` is a Real. Else, false. */
 function isReal(u: AlgebraicExpression): u is Real {
   return !$isNothing(u) && (u.op === core.real);
 }
 
-/** Type predicate. Claims and returns true if the given expression `u` is a {@link Sym|symbol}. False otherwise. Note that this will return true if `u` is `Undefined`, since `Undefined` is a symbol by definition. */
+/** Type predicate. Claims and returns true if the given expression `u` is a Sym. False otherwise. Note that this will return true if `u` is `Undefined`, since `Undefined` is a symbol by definition. */
 function isSymbol(u: AlgebraicExpression): u is Sym {
   return !$isNothing(u) && ((u.op === core.symbol) ||
     (u.op === core.undefined));
 }
 
-/** Type predicate. Claims and returns true if the given expression `u` is the global symbol Undefined (an instance of `Sym`, not the JavaScript `undefined`). False otherwise. Note that constant `Undefined` maps to the literal null. See {@link Sym}. */
+/** Claims and returns true if the given expression `u` is the global symbol Undefined (an instance of `Sym`, not the JavaScript `undefined`). False otherwise. Note that constant `Undefined` maps to the literal null. */
 function isUndefined(
   u: AlgebraicExpression,
 ): u is Constant<null, core.undefined> {
   return !$isNothing(u) && (u.op === core.undefined);
 }
 
-/** Type predicate. Returns true if the given expression is a constant, false otherwise. If true, claims that `u` is a constant. See {@link Constant}. */
+/** Returns true if the given expression is a constant, false otherwise.*/
 function isConstant(u: AlgebraicExpression): u is Constant<number> {
   return !$isNothing(u) && (u.op === core.constant);
 }
@@ -3360,6 +4422,9 @@ abstract class Atom extends AlgebraicExpression {
 class Int extends Atom {
   isAlgebraic(): boolean {
     return true;
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.int(this);
   }
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.int(this);
@@ -3413,6 +4478,9 @@ class Real extends Atom {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.real(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.real(this);
+  }
   isAlgebraic(): boolean {
     return true;
   }
@@ -3447,6 +4515,9 @@ class Sym<X extends string = string> extends Atom {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.sym(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.sym(this);
+  }
   isAlgebraic(): boolean {
     return true;
   }
@@ -3479,6 +4550,9 @@ class Constant<
 > extends Atom {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.constant(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.constant(this);
   }
   isAlgebraic(): boolean {
     return true;
@@ -3672,6 +4746,9 @@ class Sum extends AlgebraicOp<core.sum> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.sum(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.sum(this);
+  }
 
   op: core.sum = core.sum;
   copy(): Sum {
@@ -3708,6 +4785,9 @@ function isSum(u: AlgebraicExpression): u is Sum {
 class Product extends AlgebraicOp<core.product> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.product(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.product(this);
   }
 
   op: core.product = core.product;
@@ -3769,6 +4849,9 @@ class Quotient extends AlgebraicOp<core.quotient> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.quotient(this);
   }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.quotient(this);
+  }
 
   op: core.quotient = core.quotient;
   args: [AlgebraicExpression, AlgebraicExpression];
@@ -3823,21 +4906,18 @@ function quotient(dividend: AlgebraicExpression, divisor: AlgebraicExpression) {
   return new Quotient(dividend, divisor);
 }
 
-/**
- * Type predicate. Returns true if `u` is a {@link Quotient|quotient expression},
- * false otherwise. If true, claims that `u` is a {@link Quotient|quotient expression}.
- */
+/** Returns true if `u` is a Quotient, false otherwise. */
 function isQuotient(u: AlgebraicExpression): u is Quotient {
   return !$isNothing(u) && (u.op === core.quotient);
 }
 
-/**
- * A node corresponding to a fraction. Fractions are defined
- * as a pair of integers `[a,b]`, where `b ≠ 0`.
- */
+/** A node corresponding to a fraction. Fractions are defined as a pair of integers `[a,b]`, where `b ≠ 0`. */
 class Fraction extends AlgebraicOp<core.fraction> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.fraction(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.fraction(this);
   }
   asFloat() {
     return (this.n / this.d);
@@ -4009,24 +5089,17 @@ class Fraction extends AlgebraicOp<core.fraction> {
   }
 }
 
-/**
- * Type predicate. Returns true if `u` is a {@link Fraction|fraction},
- * false otherwise. If true, claims that `u` is a fraction.
- */
+/** Returns true if `u` is a Fraction, false otherwise.. */
 function isFrac(u: AlgebraicExpression): u is Fraction {
   return !$isNothing(u) && (u.op === core.fraction);
 }
 
-/**
- * Returns a new {@link Fraction|fraction}.
- */
+/** Returns a new Fraction. */
 function frac(numerator: number, denominator: number) {
   return new Fraction(numerator, denominator);
 }
 
-/**
- * Simplifies the given fraction.
- */
+/** Simplifies the given Fraction or Int. */
 function simplyRational(expression: Fraction | Int) {
   const f = (u: Fraction | Int) => {
     if (isInt(u)) {
@@ -4049,11 +5122,7 @@ function simplyRational(expression: Fraction | Int) {
   return f(expression);
 }
 
-/**
- * Returns the numerator of the given {@link Fraction|fraction}
- * or {@link Int|integer}. If an integer is passed, returns a
- * copy of the integer.
- */
+/** Returns the numerator of the given Fraction or Integer. If an Integer is passed, returns a copy of the Integer. */
 function numeratorOf(u: Fraction | Int): number {
   if (isInt(u)) {
     return u.n;
@@ -4062,10 +5131,7 @@ function numeratorOf(u: Fraction | Int): number {
   }
 }
 
-/**
- * Returns the denominator of the given {@link Fraction|fraction}
- * or {@link Int|integer}. If an integer is passed, returns `int(1)`.
- */
+/** Returns the denominator of the given Fraction or Integer. If an integer is passed, returns `int(1)`.*/
 function denominatorOf(u: Fraction | Int): number {
   if (isInt(u)) {
     return 1;
@@ -4074,12 +5140,7 @@ function denominatorOf(u: Fraction | Int): number {
   }
 }
 
-/**
- * Evaluates a sum.
- *
- * @param a - The left summand.
- * @param b - The right summand.
- */
+/** Evaluates a sum. @param a - The left summand. @param b - The right summand. */
 function evalSum(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     return int(a.n + b.n);
@@ -4095,12 +5156,7 @@ function evalSum(a: Int | Fraction, b: Int | Fraction) {
   }
 }
 
-/**
- * Evaluates a difference.
- *
- * @param a - The left minuend.
- * @param b - The right minuend.
- */
+/** Evaluates a difference. @param a - The left minuend. @param b - The right minuend. */
 function evalDiff(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     return int(a.n - b.n);
@@ -4116,10 +5172,7 @@ function evalDiff(a: Int | Fraction, b: Int | Fraction) {
   }
 }
 
-/**
- * Returns the reciprocal of the given
- * {@link Int|integer} or {@link Fraction|fraction}.
- */
+/** Returns the reciprocal of the given integer or fraction. */
 function reciprocal(a: Int | Fraction) {
   if (isInt(a)) {
     return frac(1, a.n);
@@ -4131,12 +5184,7 @@ function reciprocal(a: Int | Fraction) {
   }
 }
 
-/**
- * Evaluates a quotient.
- *
- * @param a - The dividend.
- * @param b - The divisor.
- */
+/** Evaluates a quotient. @param a - The dividend. @param b - The divisor. */
 function evalQuot(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     if (b.isZero) {
@@ -4148,9 +5196,7 @@ function evalQuot(a: Int | Fraction, b: Int | Fraction) {
   }
 }
 
-/**
- * Evalutes a power.
- */
+/** Evalutes a power. */
 function evalPower(base: Int | Fraction, exponent: Int) {
   const f = (v: Int | Fraction, n: Int): Fraction | Int | UNDEFINED => {
     if (numeratorOf(v) !== 0) {
@@ -4184,9 +5230,7 @@ function evalPower(base: Int | Fraction, exponent: Int) {
   return f(base, exponent);
 }
 
-/**
- * Evaluates a product.
- */
+/** Evaluates a product. */
 function evalProduct(a: Int | Fraction, b: Int | Fraction) {
   if (isInt(a) && isInt(b)) {
     return int(a.n * b.n);
@@ -4202,9 +5246,7 @@ function evalProduct(a: Int | Fraction, b: Int | Fraction) {
   }
 }
 
-/**
- * Simplifies a rational number expression.
- */
+/** Simplifies a rational number expression. */
 function simplify_RNE(expression: AlgebraicExpression) {
   const f = (u: AlgebraicExpression): Int | Fraction | UNDEFINED => {
     if (isInt(u)) {
@@ -4262,14 +5304,14 @@ function simplify_RNE(expression: AlgebraicExpression) {
   return simplyRational(v);
 }
 
-/**
- * An algebraic expression mapping to a power.
- */
+/** An algebraic expression mapping to a power. */
 class Power extends AlgebraicOp<core.power> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.power(this);
   }
-
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.power(this);
+  }
   copy(): Power {
     const b = this.base.copy();
     const e = this.base.copy();
@@ -4314,37 +5356,23 @@ class Power extends AlgebraicOp<core.power> {
   }
 }
 
-/**
- * Returns a new {@link Power|power expression}.
- *
- * @param base - The power expression’s base,
- *               which may be any {@link AlgebraicExpression|algebraic expression}.
- *
- * @param exponent - The power expression’s exponent,
- *                   which may be any
- *                   {@link AlgebraicExpression|algebraic expression}.
- *
- * @example
- * power(int(1), sym('x')) // maps to 1^x
- */
+/** Returns a new power expression. @param base - The power expression’s base, which may be any algebraic expression. @param exponent - The power expression’s exponent, which may be any algebraic expression. */
 function power(base: AlgebraicExpression, exponent: AlgebraicExpression) {
   return new Power(base, exponent);
 }
 
-/**
- * Type guard. Returns true if `u` is a {@link Power|power expression},
- * false otherwise.
- */
+/** Returns true if `u` is a Power expression. */
 function isPower(u: AlgebraicExpression): u is Power {
   return !$isNothing(u) && (u.op === core.power);
 }
 
-/**
- * A node corresponding to a difference.
- */
+/** A node corresponding to a difference. */
 class Difference extends AlgebraicOp<core.difference> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.difference(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.difference(this);
   }
 
   op: core.difference = core.difference;
@@ -4391,44 +5419,28 @@ class Difference extends AlgebraicOp<core.difference> {
   }
 }
 
-/**
- * Returns an expression corresponding to the difference:
- *
- * ~~~ts
- * a - b
- * ~~~
- */
+/** Returns an expression corresponding to the difference. */
 function difference(a: AlgebraicExpression, b: AlgebraicExpression) {
   return new Difference(a, b);
 }
 
-/**
- * __Type Predicate__. Returns true if `u` is {@link Difference|difference expression},
- * false otherwise.
- */
+/** Returns true if `u` is difference, false otherwise. */
 function isDifference(u: AlgebraicExpression): u is Difference {
   return !$isNothing(u) && (u.op === core.difference);
 }
 
-/**
- * Returns the provided algebraic expression `u`,
- * negated. Negation is defined as a product:
- *
- * ~~~ts
- * -1 * u
- * ~~~
- */
+/** Returns the provided algebraic expression `u`, negated. */
 function negate(u: AlgebraicExpression) {
   return product([int(-1), u]).tickParen();
 }
 
-/**
- * A node corresponding to the mathematical factorial.
- * The factorial is always a unary operation.
- */
+/** A node corresponding to the mathematical factorial. The factorial is always a unary operation. */
 class Factorial extends AlgebraicOp<core.factorial> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.factorial(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.factorial(this);
   }
 
   op: core.factorial = core.factorial;
@@ -4456,29 +5468,23 @@ class Factorial extends AlgebraicOp<core.factorial> {
   }
 }
 
-/**
- * Returns a new {@link Factorial|factorial}.
- */
+/** Returns a new factorial expression. */
 function factorial(of: AlgebraicExpression) {
   return new Factorial(of);
 }
 
-/**
- * __Type Predicate__. Returns true if the expression `u`
- * is a {@link Factorial|factorial expression}, false
- * otherwise.
- */
+/** Returns true if the expression `u` is a factorial, false otherwise. */
 function isFactorial(u: AlgebraicExpression): u is Factorial {
   return !$isNothing(u) && (u.op === core.factorial);
 }
 
-/**
- * A node corresponding to any function that takes
- * arguments of type {@link AlgebraicExpression|algebraic expression}.
- */
+/** A node corresponding to any function that takes arguments of type algebraic expression. */
 class AlgebraicFn extends Compound {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.algebraicFn(this);
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    return mapper.algebraicFn(this);
   }
 
   isAlgebraic(): boolean {
@@ -4511,34 +5517,22 @@ class AlgebraicFn extends Compound {
   }
 }
 
-/**
- * Returns a new set.
- */
+/** Returns a new set. */
 function setof<T>(...args: T[]) {
   return new Set(args);
 }
 
-/**
- * Returns a new algebraic function.
- */
+/** Returns a new algebraic function. */
 function fn(name: string, args: AlgebraicExpression[]) {
   return new AlgebraicFn(name, args);
 }
 
-/**
- * Type predicate. Returns true if the given expression `u`
- * is an {@link AlgebraicFn|algebraic function}, false
- * otherwise. If true, claims that `u` is an
- * {@link AlgebraicFn|algebraic function}.
- */
+/** Type predicate. Returns true if the given expression `u` is an algebraic function, false otherwise. */
 function isAlgebraicFn(u: AlgebraicExpression): u is AlgebraicFn {
   return u instanceof AlgebraicFn;
 }
 
-/**
- * Returns all complete subexpressions of the given
- * expression.
- */
+/** Returns all complete subexpressions of the given expression. */
 function subex(expression: AlgebraicExpression) {
   const out: AlgebraicExpression[] = [];
   const set = setof<string>();
@@ -4564,10 +5558,7 @@ function subex(expression: AlgebraicExpression) {
   return out;
 }
 
-/**
- * Returns true if the given `expression` does not contain the given
- * `variable`.
- */
+/** Returns true if the given `expression` does not contain the given `variable`. */
 function freeof(expression: AlgebraicExpression, variable: Sym | string) {
   const t = typeof variable === "string" ? sym(variable) : variable;
   const f = (u: AlgebraicExpression): boolean => {
@@ -4590,9 +5581,7 @@ function freeof(expression: AlgebraicExpression, variable: Sym | string) {
   return f(expression);
 }
 
-/**
- * Returns the term of this expression.
- */
+/** Returns the term of this expression. */
 function termOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isSum(u) || isPower(u) || isFactorial(u) || isAlgebraicFn(u)
@@ -4614,9 +5603,7 @@ function termOf(u: AlgebraicExpression) {
   }
 }
 
-/**
- * Returns true if the given expression is a constant.
- */
+/** Returns true if the given expression is a constant. */
 function isConst(
   u: AlgebraicExpression,
 ): u is Int | Fraction | Constant<number> {
@@ -4630,10 +5617,7 @@ function isConst(
   );
 }
 
-/**
- * Returns the constant of the given
- * expression `u`.
- */
+/** Returns the constant of the given expression `u`. */
 function constantOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isSum(u) || isPower(u) || isFactorial(u) || isAlgebraicFn(u)
@@ -4651,9 +5635,7 @@ function constantOf(u: AlgebraicExpression) {
   }
 }
 
-/**
- * Returns the base of the given expression `u`.
- */
+/** Returns the base of the given expression `u`. */
 function baseOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isProduct(u) || isSum(u) || isFactorial(u) ||
@@ -4667,9 +5649,7 @@ function baseOf(u: AlgebraicExpression) {
   }
 }
 
-/**
- * Returns the exponent of the given expression `u`.
- */
+/** Returns the exponent of the given expression `u`. */
 function exponentOf(u: AlgebraicExpression) {
   if (
     isSymbol(u) || isProduct(u) || isSum(u) || isFactorial(u) ||
@@ -4683,10 +5663,7 @@ function exponentOf(u: AlgebraicExpression) {
   }
 }
 
-/**
- * Returns true if `u` is equal to `v`,
- * false otherwise.
- */
+/** Returns true if `u` is equal to `v`, false otherwise. */
 function equals(u: Fraction | Int, v: Fraction | Int) {
   if (isInt(u) && isInt(v)) {
     return u.n === v.n;
@@ -4704,34 +5681,22 @@ function equals(u: Fraction | Int, v: Fraction | Int) {
   }
 }
 
-/**
- * Returns true if `u` is less than `v`,
- * false otherwise.
- */
+/** Returns true if `u` is less than `v`, false otherwise. */
 function lt(u: Fraction | Int, v: Fraction | Int) {
   return lte(u, v) && !equals(u, v);
 }
 
-/**
- * Returns true if `u` is greater than `v`,
- * false otherwise.
- */
+/** Returns true if `u` is greater than `v`, false otherwise. */
 function gt(u: Fraction | Int, v: Fraction | Int) {
   return !lte(u, v);
 }
 
-/**
- * Returns true if `u` is greater than or equal to `v`,
- * false otherwise.
- */
+/** Returns true if `u` is greater than or equal to `v`, false otherwise. */
 function gte(u: Fraction | Int, v: Fraction | Int) {
   return gt(u, v) || equals(u, v);
 }
 
-/**
- * Returns true if `u` is less than or equal to `v`,
- * false otherwise.
- */
+/** Returns true if `u` is less than or equal to `v`, false otherwise. */
 function lte(u: Fraction | Int, v: Fraction | Int): boolean {
   if (isInt(u) && isInt(v)) {
     return u.n <= v.n;
@@ -4748,28 +5713,17 @@ function lte(u: Fraction | Int, v: Fraction | Int): boolean {
   }
 }
 
-/**
- * __Type Guard__. Returns true if `u` is a
- * {@link Sum|sum} or {@link Product|product},
- * false otherwise.
- */
+/** Returns true if `u` is a Sum or Product, false otherwise. */
 function isSumlike(u: AlgebraicExpression): u is Sum | Product {
   return (isSum(u)) || isProduct(u);
 }
 
-/**
- * __Type Guard__. Returns true if `u` is an
- * {@link Int|integer} or {@link Fraction|fraction},
- * false otherwise.
- */
+/** Returns true if `u` is an integer or fraction, false otherwise. */
 function isNumeric(u: AlgebraicExpression): u is Int | Fraction {
   return isInt(u) || isFrac(u);
 }
 
-/**
- * Returns true if `expression1` precedes `expression2`,
- * false otherwise.
- */
+/** Returns true if `expression1` precedes `expression2`, false otherwise. */
 function precedes(
   expression1: AlgebraicExpression,
   expression2: AlgebraicExpression,
@@ -4906,9 +5860,7 @@ function precedes(
   return order(expression1, expression2);
 }
 
-/**
- * Sorts the given list of algebraic expressions.
- */
+/** Sorts the given list of algebraic expressions. */
 function sortex(expressions: AlgebraicExpression[]) {
   const out: AlgebraicExpression[] = [];
   if (expressions.length === 0) {
@@ -4923,10 +5875,7 @@ function sortex(expressions: AlgebraicExpression[]) {
   return out.sort((a, b) => precedes(a, b) ? -1 : 1);
 }
 
-/**
- * Returns true if the given list of algebraic expressions
- * contains the symbol {@link UNDEFINED|Undefined}.
- */
+/** Returns true if the given list of algebraic expressions contains the symbol `Undefined`.*/
 function hasUndefined(args: AlgebraicExpression[]) {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -4937,10 +5886,7 @@ function hasUndefined(args: AlgebraicExpression[]) {
   return false;
 }
 
-/**
- * Returns true if the given list of algebraic
- * expressions contains the {@link Int|integer} `0`.
- */
+/** Returns true if the given list of algebraic expressions contains the integer `0`.*/
 function hasZero(args: AlgebraicExpression[]) {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -4952,25 +5898,28 @@ function hasZero(args: AlgebraicExpression[]) {
 }
 
 /**
- * Applies the given function `f` to the given `expression`,
- * which is either an {@link AlgebraicOp|algebraic operation}
- * or an {@link AlgebraicFn|algebraic function}.
- *
- * @example
- *
- * // the function 'f'
- * const square = (
- *   expr: AlgebraicExpression
- * ) => power(expr, int(2));
- *
- * // the expression
- * const s = sum([sym("a"), sym("b"), sym("c")]);
- *
- * console.log(s.toString()) // a + b + c
- *
- * const x = argMap(square, s);
- *
- * console.log(x.toString()); // a^2 + b^2 + c^2
+---
+* Applies the given function `f` to the given `expression`,
+* which is either an AlgebraicOp.
+* or an AlgebraicFn.
+*
+* @example
+* ~~~
+* // the function 'f'
+* const square = (
+*   expr: AlgebraicExpression
+* ) => power(expr, int(2));
+*
+* // the expression
+* const s = sum([sym("a"), sym("b"), sym("c")]);
+*
+* console.log(s.toString()) // a + b + c
+*
+* const x = argMap(square, s);
+*
+* console.log(x.toString()); // a^2 + b^2 + c^2
+* ~~~
+---
  */
 function argMap(
   F: (x: AlgebraicExpression) => AlgebraicExpression,
@@ -4982,68 +5931,7 @@ function argMap(
   return op;
 }
 
-/**
- * Applies the given callback `G` to each argument expression of
- * `args`, with the operator `op`.
- *
- * @example
- * const G = (
- *   args: AlgebraicExpression[]
- *  ) => sum([
- *   power(args[0], int(2)),
- *   power(args[1], int(3)),
- *   power(args[2], int(4))
- * ]);
- *
- * const x = opMap(G,
- *  sum([sym("a"), sym("b")]),
- *  [sym("c"), sym("d")]
- * );
- *
- * print(x.toString()); // ((a^2)+(c^3)+(d^4))+((b^2)+(c^3)+(d^4))
- */
-function opMap<T extends (AlgebraicOp | AlgebraicFn)>(
-  G: (args: AlgebraicExpression[]) => AlgebraicExpression,
-  op: T,
-  args: AlgebraicExpression[],
-) {
-  const operands: AlgebraicExpression[] = [];
-  op.args.forEach((arg) => {
-    operands.push(G([arg, ...args]));
-  });
-  switch (op.op) {
-    case core.factorial: {
-      let a = operands[0] !== undefined ? operands[0] : Undefined();
-      return factorial(a) as any as T;
-    }
-    case core.sum:
-      return sum(operands) as any as T;
-    case core.product:
-      return product(operands) as any as T;
-    case core.difference: {
-      let a = operands[0] !== undefined ? operands[0] : Undefined();
-      let b = operands[1] !== undefined ? operands[1] : Undefined();
-      return difference(a, b) as any as T;
-    }
-    case core.power: {
-      let a = operands[0] !== undefined ? operands[0] : Undefined();
-      let b = operands[1] !== undefined ? operands[1] : Undefined();
-      return power(a, b) as any as T;
-    }
-    case core.quotient: {
-      let a = operands[0] !== undefined ? operands[0] : Undefined();
-      let b = operands[1] !== undefined ? operands[1] : Undefined();
-      return quotient(a, b) as any as T;
-    }
-    default: {
-      return fn(op.op, operands) as any as T;
-    }
-  }
-}
-
-/**
- * Returns a new list with `expression` placed at the beginning of `list`.
- */
+/** Returns a new list with `expression` placed at the beginning of `list`. */
 function adjoin(expression: AlgebraicExpression, list: AlgebraicExpression[]) {
   const out: AlgebraicExpression[] = [expression];
   for (let i = 0; i < list.length; i++) {
@@ -5052,10 +5940,7 @@ function adjoin(expression: AlgebraicExpression, list: AlgebraicExpression[]) {
   return out;
 }
 
-/**
- * Returns the given expression list without
- * the first member.
- */
+/** Returns the given expression list without the first member. */
 function rest(expressions: AlgebraicExpression[]): AlgebraicExpression[] {
   const out: AlgebraicExpression[] = [];
   for (let i = 1; i < expressions.length; i++) {
@@ -5064,6 +5949,7 @@ function rest(expressions: AlgebraicExpression[]): AlgebraicExpression[] {
   return out;
 }
 
+/** Returns the factorial of the given number. */
 function factorialize(num: number) {
   if (num === 0 || num === 1) {
     return 1;
@@ -5074,6 +5960,7 @@ function factorialize(num: number) {
   return num;
 }
 
+/** Returns the derivative of a given algebraic expression. */
 function derivative(expression: AlgebraicExpression, variable: string | Sym) {
   const x = $isString(variable) ? sym(variable) : variable;
   const deriv = (u: AlgebraicExpression): AlgebraicExpression => {
@@ -5150,6 +6037,7 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
   return deriv(simplify(expression));
 }
 
+/** Simplifies the given expression. */
 function simplify(expression: AlgebraicExpression) {
   const simplify_function = (expr: AlgebraicFn): AlgebraicExpression => {
     return expr;
@@ -5670,10 +6558,7 @@ function simplify(expression: AlgebraicExpression) {
   return automatic_simplify(expression);
 }
 
-/**
- * Returns true if the given `expression` is a single-variable monomial
- * with respect to the given `variable`.
- */
+/** Returns true if the given `expression` is a single-variable monomial with respect to the given `variable`. */
 function isMonomial1(expression: AlgebraicExpression, variable: string | Sym) {
   const x: Sym = $isString(variable) ? sym(variable) : variable;
   const monomial_sv = (u: AlgebraicExpression): boolean => {
@@ -5703,10 +6588,10 @@ function isMonomial1(expression: AlgebraicExpression, variable: string | Sym) {
   return monomial_sv(exp);
 }
 
-// deno-fmt-ignore
+/** Token types. */
 enum tt {
   // Utility tokens - - - - - - - - - - - - - - - - - - - - - - - -
-  
+
   /** A utility token indicating the end of input. */
   END,
 
@@ -5717,7 +6602,7 @@ enum tt {
   EMPTY,
 
   // Paired Delimiters - - - - - - - - - - - - - - - - - - - - - - -
-  
+
   /** Lexeme: `"("` */
   lparen,
 
@@ -5729,95 +6614,104 @@ enum tt {
 
   /** Lexeme: `"}"` */
   rbrace,
-  
+
   /** Lexeme: `"["` */
   lbracket,
 
   /** Lexeme: `"]"` */
   rbracket,
-  
+
   // Strict Delimiters - - - - - - - - - - - - - - - - - - - - - - -
-  
+
   /** Lexeme: `";"` */
   semicolon,
 
   /** Lexeme: `":"` */
   colon,
-  
+
   /** Lexeme: `"."` */
   dot,
-  
+
   /** Lexeme: `","` */
   comma,
 
   // Operator delimiters - - - - - - - - - - - - - - - - - - - - - -
-  
+
   /** Lexeme: `"+"` */
   plus,
-  
+
   /** Lexeme: `"-"` */
   minus,
 
   /** Lexeme: `"*"` */
   star,
-  
+
   /** Lexeme: `"/"` */
   slash,
-  
+
   /** Lexeme: `"^"` */
   caret,
 
   /** Lexeme: `"%"` */
   percent,
-  
+
   /** Lexeme `"!"`. */
   bang,
-  
+
   /** Lexeme: `"&"` */
   amp,
-  
+
   /** Lexeme: `"~"` */
   tilde,
-  
+
   /** Lexeme: `"|"` */
   vbar,
-  
+
   /** Lexeme: `"="` */
   eq,
-  
+
   /** Lexeme: `"<"` */
   lt,
 
   /** Lexeme: `">"` */
   gt,
-  
+
   // Operative Dipthongs - - - - - - - - - - - - - - - - - - - - - - -
-  
+
   /** Lexeme: `"!="` */
   neq,
-  
+
   /** Lexeme: `"<="` */
   leq,
-  
+
   /** Lexeme: `">="` */
   geq,
-  
+
   /** Lexeme: `"=="` */
   deq,
-  
+
   /** Lexeme: `"++"` */
   plus_plus,
 
   /** Lexeme: `"--"` */
   minus_minus,
-  
+
   // Literals - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  symbol, string, bool,
-  int, float, bignumber, bigfraction,
-  scientific, fraction, nan, inf, nil,
+  symbol,
+  string,
+  bool,
+  int,
+  float,
+  bignumber,
+  bigfraction,
+  scientific,
+  fraction,
+  nan,
+  inf,
+  nil,
   numeric_constant,
   algebra_string,
-  
+
   // Vector operators
   /** Lexeme: `.+` - Vector addition */
   dot_add,
@@ -5828,7 +6722,7 @@ enum tt {
   /** Lexeme: `.^` - Pairwise division */
   dot_caret,
   /** Lexeme: `@` - Dot product */
-  
+
   // Matrix Operators
   /** Lexeme: `#+` - Matrix addition */
   /** Lexeme: `#-` - Matrix subtraction */
@@ -5838,8 +6732,15 @@ enum tt {
   native,
 
   // Keywords - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  and,or,not,nand,xor,xnor,nor, // Logical operators
-  if,else, // predicators
+  and,
+  or,
+  not,
+  nand,
+  xor,
+  xnor,
+  nor, // Logical operators
+  if,
+  else, // predicators
   fn, // function declarative
   let, // variable declarative
   var,
@@ -5859,15 +6760,35 @@ enum tt {
   div,
 }
 
+/** The union of token types corresponding to numeric literals. */
 // deno-fmt-ignore
-type NumberTokenType = | tt.int | tt.float | tt.scientific | tt.bignumber | tt.bigfraction | tt.fraction;
+type NumberTokenType =
+| tt.int
+| tt.float
+| tt.scientific
+| tt.bignumber
+| tt.bigfraction
+| tt.fraction;
 
+/** The union of runtime values.  */
 // deno-fmt-ignore
-type LIT = number | boolean | string | bigint | null | [number, number] | [ bigint, bigint] | Err;
+type LIT =
+| number
+| boolean
+| string
+| bigint
+| null
+| [number, number]
+| [bigint, bigint]
+| Err;
 
+/** An object corresponding to the location of a line of code. */
 type Location = { line: number; column: number };
 
-const location = (line: number, column: number): Location => ({ line, column });
+/** Returns a new Location. */
+function location(line: number, column: number): Location {
+  return ({ line, column });
+}
 
 class Token<T extends tt = tt, L extends LIT = LIT, S extends string = string> {
   /** This token’s {@link tt|type}. */
@@ -6138,9 +7059,7 @@ function isDigit(char: string) {
   return "0" <= char && char <= "9";
 }
 
-/**
- * Returns true if the given character is a greek letter name.
- */
+/** Returns true if the given character is a greek letter name. */
 function isGreekLetterName(c: string) {
   return /^(alpha|beta|gamma|delta|epsilon|zeta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|upsilon|phi|chi|psi|omega)/
     .test(c.toLowerCase());
@@ -6981,159 +7900,17 @@ class Simplifier implements Visitor<AlgebraicExpression> {
   }
 }
 
-const latex = {
-  esc: (s: string | number) => `\\${s}`,
-  text: (s: string | number) => `\\text{${s}}`,
-  texttt: (s: string | number) => `\\texttt{${s}}`,
-  mathbb: (s: string | number) => `\\mathbb{${s}}`,
-  parend: (s: string | number) => `\\left(${s}\\right)`,
-  bracketed: (s: string | number) => `\\left[${s}\\right]`,
-};
-
-class Latexer implements Visitor<string> {
-  latexOf(node: ASTNode) {
-    return node.accept(this);
-  }
-  integer(node: Integer): string {
-    return node.toString();
-  }
-  numericConstant(node: NumericConstant): string {
-    switch (node.sym) {
-      case "Inf":
-        return latex.esc("infty");
-      case "NAN":
-        return latex.text("NAN");
-      case "e":
-        return "e";
-      case "pi":
-        return latex.esc("pi");
-    }
-  }
-  vectorExpr(node: VectorExpr): string {
-    const out = node.elements.map((e) => this.latexOf(e)).join("");
-    return latex.bracketed(out);
-  }
-  vectorBinaryExpr(node: VectorBinaryExpr): string {
-    return node.toString();
-  }
-  matrixExpr(node: MatrixExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  indexingExpr(node: IndexingExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  bigNumber(node: BigNumber): string {
-    throw new Error("Method not implemented.");
-  }
-  fractionExpr(node: FractionExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  bigRational(node: RationalExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  float(node: Float): string {
-    throw new Error("Method not implemented.");
-  }
-  bool(node: Bool): string {
-    throw new Error("Method not implemented.");
-  }
-  tupleExpr(node: TupleExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  getExpr(node: GetExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  setExpr(node: SetExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  superExpr(node: SuperExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  thisExpr(node: ThisExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  string(node: StringLiteral): string {
-    throw new Error("Method not implemented.");
-  }
-  stringBinaryExpr(node: StringBinaryExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  algebraicString(node: AlgebraicString): string {
-    throw new Error("Method not implemented.");
-  }
-  nil(node: Nil): string {
-    throw new Error("Method not implemented.");
-  }
-  variable(node: Variable): string {
-    throw new Error("Method not implemented.");
-  }
-  assignExpr(node: AssignExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  algebraicBinaryExpr(node: AlgebraicBinaryExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  algebraicUnaryExpr(node: AlgebraicUnaryExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  logicalBinaryExpr(node: LogicalBinaryExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  logicalUnaryExpr(node: LogicalUnaryExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  relationalExpr(node: RelationalExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  callExpr(node: CallExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  nativeCall(node: NativeCall): string {
-    throw new Error("Method not implemented.");
-  }
-  groupExpr(node: GroupExpr): string {
-    throw new Error("Method not implemented.");
-  }
-  blockStmt(node: BlockStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  exprStmt(node: ExprStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  fnStmt(node: FnStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  ifStmt(node: IfStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  classStmt(node: ClassStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  printStmt(node: PrintStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  returnStmt(node: ReturnStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  letStmt(node: VariableStmt): string {
-    throw new Error("Method not implemented.");
-  }
-  whileStmt(node: WhileStmt): string {
-    throw new Error("Method not implemented.");
-  }
-}
-
 class Compiler implements Visitor<Primitive> {
   environment: Environment<Primitive>;
   globals: Environment<Primitive>;
   locals: Map<Expr, number>;
-  mode: "log" | "exec" = "exec";
+  mode: "log-plain" | "log-latex" | "exec" = "exec";
   prints: string[] = [];
   simplifier: Simplifier;
   evaluate(node: ASTNode): Primitive {
     return node.accept(this);
   }
-  setmode(mode: "log" | "exec") {
+  setmode(mode: "log-plain" | "log-latex" | "exec") {
     this.mode = mode;
     return this;
   }
@@ -7573,7 +8350,7 @@ class Compiler implements Visitor<Primitive> {
   fnStmt(node: FnStmt): Primitive {
     const f = callable(node, this.environment, false);
     this.environment.define(node.name.lexeme, f, false);
-    return null;
+    return f;
   }
   ifStmt(node: IfStmt): Primitive {
     if (truthy(this.evaluate(node.condition))) {
@@ -7585,8 +8362,13 @@ class Compiler implements Visitor<Primitive> {
   printStmt(node: PrintStmt): Primitive {
     const s = this.evaluate(node.expression);
     const out = stringify(s);
-    if (this.mode === "log") {
+    if (this.mode === "log-plain") {
       this.prints.push(out);
+    } else if (this.mode === "log-latex") {
+      const expr = latexify(node.expression);
+      const reduction = latexify(s);
+      const res = latex.join(expr, latex.to(), reduction);
+      this.prints.push(res);
     } else {
       console.log(out);
     }
@@ -7633,6 +8415,444 @@ class Compiler implements Visitor<Primitive> {
     } catch (error) {
       return left(error as Err);
     }
+  }
+}
+
+class Latexer implements Mapper<string> {
+  reduce(node: ASTNode | AlgebraicExpression) {
+    return node.trust(this);
+  }
+  integer(node: Integer): string {
+    return `${node.value}`;
+  }
+  numericConstant(node: NumericConstant): string {
+    const x = node.sym;
+    switch (x) {
+      case "Inf":
+        return latex.esc("infty");
+      case "NAN":
+        return latex.txt(`NAN`);
+      case "e":
+        return "e";
+      case "pi":
+        return latex.esc("pi");
+    }
+  }
+  vectorExpr(node: VectorExpr): string {
+    return node.toString();
+  }
+  vectorBinaryExpr(node: VectorBinaryExpr): string {
+    const left = this.reduce(node.left);
+    const right = this.reduce(node.right);
+    let op = node.op.type;
+    if (isVectorExpr(node.left) && isVectorExpr(node.right)) {
+      const l = node.left.elements;
+      const r = node.right.elements;
+      if (l.length !== r.length) {
+        throw runtimeError(
+          `Unequal vectors encountered`,
+          "rendering a latex string",
+          node.op,
+        );
+      }
+      const op = node.op.lexeme.slice(1);
+      const out = [];
+      for (let i = 0; i < l.length; i++) {
+        const left = this.reduce(l[i]);
+        const right = this.reduce(r[i]);
+        const L = latex.brace(left);
+        const R = latex.brace(right);
+        const e = latex.join(L,op,R);
+        out.push(e);
+      }
+      return latex.surround(out.join(',~~'), '[', ']');
+    }
+    switch (op) {
+      case tt.dot_add:
+        return latex.join(left, "+", right);
+      case tt.dot_minus:
+        return latex.join(left, "-", right);
+      case tt.dot_star:
+        return latex.join(left, latex.esc("cdot"), right);
+      case tt.dot_caret:
+        return latex.join(left, "^", latex.brace(right));
+    }
+  }
+  matrixExpr(node: MatrixExpr): string {
+    const open = latex.esc("begin{bmatrix}");
+    let body = "";
+    const vectors = node.vectors;
+    const maxRow = vectors.length - 1;
+    vectors.forEach((d, i) => {
+      const maxCol = d.elements.length - 1;
+      d.elements.forEach((e, j) => {
+        const element = this.reduce(e);
+        body += element;
+        if (j !== maxCol) {
+          body += ` & `;
+        }
+      });
+      if (i !== maxRow) {
+        body += latex.linebreak();
+      }
+    });
+    const close = latex.esc("end{bmatrix}");
+    return open + body + close;
+  }
+  indexingExpr(node: IndexingExpr): string {
+    const target = this.reduce(node.list);
+    const index = this.reduce(node.index);
+    return latex.join(target, "_", latex.brace(index));
+  }
+  bigNumber(node: BigNumber): string {
+    return `${node.value}`;
+  }
+  fractionExpr(node: FractionExpr): string {
+    const n = node.value.n;
+    const d = node.value.d;
+    return latex.frac(n, d);
+  }
+  bigRational(node: RationalExpr): string {
+    const n = node.value.N;
+    const d = node.value.D;
+    return latex.frac(n.toString(), d.toString());
+  }
+  float(node: Float): string {
+    return `${node.value}`;
+  }
+  bool(node: Bool): string {
+    return latex.txt(`${node.value}`);
+  }
+  tupleExpr(node: TupleExpr): string {
+    const out = node.elements.map((e) => this.reduce(e)).join(",");
+    return latex.surround(out, "(", ")");
+  }
+  getExpr(node: GetExpr): string {
+    const target = this.reduce(node.object);
+    const prop = latex.txt(node.name.lexeme);
+    return latex.join(target, "_", latex.brace(prop));
+  }
+  setExpr(node: SetExpr): string {
+    const target = this.reduce(node.object);
+    const prop = latex.txt(node.name.lexeme);
+    const value = this.reduce(node.value);
+    return latex.join(target, "_", latex.brace(prop), "=", value);
+  }
+  superExpr(node: SuperExpr): string {
+    return latex.join(latex.txt("super"), "(", ")");
+  }
+  thisExpr(node: ThisExpr): string {
+    return latex.txt("this");
+  }
+  string(node: StringLiteral): string {
+    return latex.dquoted(node.value);
+  }
+  stringBinaryExpr(node: StringBinaryExpr): string {
+    const left = this.reduce(node.left);
+    const right = this.reduce(node.right);
+    const op = node.op.type;
+    switch (op) {
+      case tt.amp:
+        return latex.join(left, latex.esc("&"), right);
+    }
+  }
+  simplifier: Simplifier = new Simplifier(Token.empty);
+  algebraicString(node: AlgebraicString): string {
+    const exp = this.simplifier.place(node.op).reduce(node.expression);
+    return this.reduce(exp);
+  }
+  nil(node: Nil): string {
+    return latex.esc("varnothing");
+  }
+  variable(node: Variable): string {
+    const name = node.name.lexeme;
+    if (isGreekLetterName(name)) {
+      return latex.esc(name);
+    } else {
+      return name;
+    }
+  }
+  assignExpr(node: AssignExpr): string {
+    const left = this.reduce(node.variable);
+    const value = this.reduce(node.value);
+    return latex.tie(left, "=", value);
+  }
+  algebraicBinaryExpr(node: AlgebraicBinaryExpr): string {
+    const left = this.reduce(node.left);
+    const right = this.reduce(node.right);
+    const op = node.op.type;
+    switch (op) {
+      case tt.star:
+        return latex.tie(left, latex.esc("times"), right);
+      case tt.slash:
+        return latex.frac(left, right);
+      case tt.plus:
+        return latex.join(left, "+", right);
+      case tt.minus:
+        return latex.join(left, "-", right);
+      case tt.percent:
+        return latex.join(
+          left + latex.percent(),
+          "~" + latex.txt("of") + "~",
+          right,
+        );
+      case tt.rem:
+        return latex.tie(left, latex.txt("rem"), right);
+      case tt.mod:
+        return latex.tie(left, latex.esc("bmod"), right);
+      case tt.div:
+        return latex.tie(left, latex.txt("div"), right);
+      case tt.caret:
+        return latex.join(left, "^", latex.brace(right));
+    }
+  }
+  algebraicUnaryExpr(node: AlgebraicUnaryExpr): string {
+    const value = this.reduce(node.arg);
+    const op = node.op.type;
+    switch (op) {
+      case tt.plus:
+        return latex.join("+", value);
+      case tt.minus:
+        return latex.join("-", value);
+      case tt.bang:
+        return latex.join(value, "!");
+    }
+  }
+  logicalBinaryExpr(node: LogicalBinaryExpr): string {
+    const left = this.reduce(node.left);
+    const right = this.reduce(node.right);
+    const op = node.op.type;
+    switch (op) {
+      case tt.and:
+        return latex.tie(left, latex.and(), right);
+      case tt.nand:
+        return latex.tie(left, latex.nand(), right);
+      case tt.nor:
+        return latex.tie(left, latex.nor(), right);
+      case tt.xnor:
+        return latex.tie(left, latex.xnor(), right);
+      case tt.xor:
+        return latex.tie(left, latex.xor(), right);
+      case tt.or:
+        return latex.tie(left, latex.or(), right);
+    }
+  }
+  logicalUnaryExpr(node: LogicalUnaryExpr): string {
+    const arg = this.reduce(node.arg);
+    return latex.join(latex.esc("neg"), " ", arg);
+  }
+  relationalExpr(node: RelationalExpr): string {
+    const left = this.reduce(node.left);
+    const right = this.reduce(node.right);
+    const op = node.op.type;
+    switch (op) {
+      case tt.lt:
+        return latex.tie(left, latex.esc("lt "), right);
+      case tt.gt:
+        return latex.tie(left, latex.esc("gt "), right);
+      case tt.deq:
+        return latex.tie(left, latex.esc("equiv"), right);
+      case tt.neq:
+        return latex.tie(left, latex.esc("neq"), right);
+      case tt.geq:
+        return latex.tie(left, latex.esc("geq"), right);
+      case tt.leq:
+        return latex.tie(left, latex.esc("leq"), right);
+    }
+  }
+  callExpr(node: CallExpr): string {
+    const name = this.reduce(node.callee);
+    const args = latex.surround(
+      node.args.map((x) => this.reduce(x)).join(",~"),
+      "(",
+      ")",
+    );
+    return latex.join(name, args);
+  }
+  nativeCall(node: NativeCall): string {
+    const arg = node.args.map((x) => this.reduce(x)).join(",~");
+    const parend = (args: string) => latex.surround(args, "(", ")");
+    const name = node.name.lexeme;
+    switch (name) {
+      case "!":
+        return latex.join(arg, "!");
+      case "arccos":
+      case "arccosh":
+      case "arcsin":
+      case "arcsinh":
+      case "arctan":
+      case "avg":
+      case "cos":
+      case "cosh":
+      case "exp":
+      case "gcd":
+      case "lg":
+      case "ln":
+      case "log":
+      case "max":
+      case "min":
+      case "simplify":
+      case "sin":
+      case "sinh":
+      case "subex":
+      case "tan":
+      case "tanh":
+        return latex.join(latex.txt(name), parend(arg));
+      case "ceil":
+        return latex.surround(arg, latex.esc("lfloor"), latex.esc("rfloor"));
+      case "deriv": {
+        const v = this.reduce(node.args[1]);
+        const d = latex.frac("d", "d" + v);
+        return latex.join(d, arg);
+      }
+      case "sqrt":
+        return latex.join(latex.esc("sqrt"), latex.brace(arg));
+      case "floor":
+        return latex.surround(arg, latex.esc("lceil"), latex.esc("rceil"));
+    }
+  }
+  groupExpr(node: GroupExpr): string {
+    return latex.surround(this.reduce(node.expression), "(", ")");
+  }
+  blockStmt(node: BlockStmt): string {
+    return latex.txt("void");
+  }
+  exprStmt(node: ExprStmt): string {
+    return latex.txt("void");
+  }
+  fnStmt(node: FnStmt): string {
+    return latex.txt("void");
+  }
+  ifStmt(node: IfStmt): string {
+    return latex.txt("void");
+  }
+  classStmt(node: ClassStmt): string {
+    return latex.txt("void");
+  }
+  printStmt(node: PrintStmt): string {
+    return latex.txt("void");
+  }
+  returnStmt(node: ReturnStmt): string {
+    return latex.txt("void");
+  }
+  letStmt(node: VariableStmt): string {
+    return latex.txt("void");
+  }
+  whileStmt(node: WhileStmt): string {
+    return latex.txt("void");
+  }
+  int(node: Int): string {
+    return `${node.n}`;
+  }
+  real(node: Real): string {
+    return `${node.n}`;
+  }
+  sym(node: Sym<string>): string {
+    const name = node.s;
+    if (isGreekLetterName(name)) {
+      return latex.esc(name);
+    } else {
+      return name;
+    }
+  }
+  constant(node: Constant<number | null, string>): string {
+    return `${node.c}`;
+  }
+  sum(node: Sum): string {
+    let expressions = node.args.map((a) => this.reduce(a)).join("+");
+    if (node.parenLevel) {
+      expressions = latex.surround(expressions, "(", ")");
+    }
+    return expressions;
+  }
+  product(node: Product): string {
+    if (node.args.length === 2) {
+      const left = this.reduce(node.args[0]);
+      const right = this.reduce(node.args[1]);
+      if (isInt(node.args[0]) && isSymbol(node.args[1])) {
+        return latex.tie(left, right);
+      }
+    }
+    const out = [];
+    for (let i = 0; i < node.args.length; i++) {
+      const left = node.args[i];
+      out.push(this.reduce(left));
+    }
+    let expr = out.join("");
+    if (node.parenLevel) {
+      expr = latex.surround(expr, "(", ")");
+    }
+    return expr;
+  }
+  quotient(node: Quotient): string {
+    if (node.args.length === 2) {
+      const n = this.reduce(node.args[0]);
+      const d = this.reduce(node.args[1]);
+      return latex.frac(n, d);
+    } else {
+      let expressions = node.args.map((a) => this.reduce(a)).join("/");
+      if (node.parenLevel) {
+        expressions = latex.surround(expressions, "(", ")");
+      }
+      return expressions;
+    }
+  }
+  fraction(node: Fraction): string {
+    return latex.frac(node.n, node.d);
+  }
+  power(node: Power): string {
+    const base = this.reduce(node.base);
+    const exp = this.reduce(node.exponent);
+    let expressions = latex.join(base, '^', latex.brace(exp));
+    if (node.parenLevel) {
+      expressions = latex.surround(expressions, "(", ")");
+    }
+    return expressions;
+  }
+  difference(node: Difference): string {
+    let expressions = node.args.map((a) => this.reduce(a)).join("-");
+    if (node.parenLevel) {
+      expressions = latex.surround(expressions, "(", ")");
+    }
+    return expressions;
+  }
+  factorial(node: Factorial): string {
+    let expressions = node.args.map((a) => this.reduce(a)).join("!");
+    if (node.parenLevel) {
+      expressions = latex.surround(expressions, "(", ")");
+    }
+    return expressions;
+  }
+  algebraicFn(node: AlgebraicFn): string {
+    const name = node.op;
+    const args = node.args.map((x) => this.reduce(x)).join(",~");
+    return latex.tie(name, latex.surround(args, "(", ")"));
+  }
+}
+
+export function latexify(x: ASTNode | AlgebraicExpression | Primitive): string {
+  if (x instanceof ASTNode || x instanceof AlgebraicExpression) {
+    const d = new Latexer();
+    return d.reduce(x);
+  } else if ($isNumber(x) || $isBigInt(x)) {
+    return `${x}`;
+  } else if ($isNothing(x)) {
+    return latex.esc("varnothing");
+  } else if ($isFraction(x)) {
+    return latex.frac(x.n, x.d);
+  } else if ($isBoolean(x)) {
+    return latex.txt(x ? "true" : "false");
+  } else if ($isString(x)) {
+    return latex.dquoted(x);
+  } else if ($isMatrix(x)) {
+    return x.toLatex();
+  } else if ($isVector(x)) {
+    return x.toLatex();
+  } else if ($isArray(x)) {
+    const out = x.map((e) => latexify(e)).join(",~");
+    return latex.surround(out, "(", ")");
+  } else {
+    return latex.txt("ERROR");
   }
 }
 
@@ -9480,6 +10700,7 @@ export function engine(source: string) {
   let settings: EngineSettings = {
     implicitMultiplication: true,
   };
+  const compiler = new Compiler();
 
   /** Parses the source code. */
   const parse = () => syntax(source).statements();
@@ -9490,7 +10711,7 @@ export function engine(source: string) {
       return program;
     }
     const statements = program.unwrap();
-    const interpreter = new Compiler();
+    const interpreter = compiler;
     const resolved = resolvable(interpreter).resolved(statements);
     if (resolved.isLeft()) {
       return resolved;
@@ -9521,28 +10742,40 @@ export function engine(source: string) {
       const out = result.unwrap();
       return out;
     },
-    log() {
+    compiler,
+    log(mode: "latex" | "plain" = "latex"): Result {
       const program = parse();
       if (program.isLeft()) {
-        const msg = program.unwrap().report();
-        return [msg];
+        const error = program.unwrap().report();
+        return res([], error);
       }
       const statements = program.unwrap();
-      const interpreter = new Compiler().setmode("log").loopcap(600);
+      const interpreter = new Compiler().setmode(`log-${mode}`).loopcap(600);
       const resolved = resolvable(interpreter).resolved(statements);
       if (resolved.isLeft()) {
-        const msg = resolved.unwrap().report();
-        return [msg];
+        const error = resolved.unwrap().report();
+        return res([], error);
       }
       const result = interpreter.interpret(statements);
       if (result.isLeft()) {
-        const msg = result.unwrap().report();
-        return [msg];
+        const error = result.unwrap().report();
+        return res([], error);
       } else {
         const prints = interpreter.prints;
-        prints.push("OK");
-        return prints;
+        if (prints.length === 0) {
+          prints.push(
+            mode === "latex" ? latex.txt("OK") : "OK",
+          );
+        }
+        return res(prints);
       }
     },
   };
+}
+type Result = {
+  error?: string;
+  result: string[];
+};
+function res(result: string[], error?: string) {
+  return ({ error, result });
 }
