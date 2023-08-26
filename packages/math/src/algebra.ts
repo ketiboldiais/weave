@@ -1,3 +1,7 @@
+/** Utility method - Logs to the console. */
+const print = console.log;
+
+/** Latex transformers. */
 const latex = {
   esc: (x: string | number) => (`{\\${x}}`),
   block: (x: string | number) => (`\\${x}`),
@@ -22,6 +26,7 @@ const latex = {
   or: () => `\\lor`,
   to: () => `~{=}~`,
 };
+
 const {
   floor,
   abs,
@@ -80,11 +85,119 @@ function arcsin(x: number) {
 }
 
 /*
-┌─────────────────────────────────────────────────────────────────────────┐
-│ STATISTICAL FUNCTIONS                                                   │
-│ These functions relate to statistics.                                   │
-└─────────────────────────────────────────────────────────────────────────┘
+================================================================ stats functions
+The following functions perform statistical computations.
 */
+
+/** Returns the number of decimal places of the given number. */
+function decimalPlacesOf(n: number) {
+  const s = `${n}`;
+  if (!s.includes(".")) return 0;
+  const [a, b] = s.split(".");
+  return b.length;
+}
+
+/**
+---
+* Given an array of numbers, returns the number with
+* the most decimal places. If all the numbers have the
+* same number of decimal places (e.g., all the numbers
+* are integers), returns the smallest number within the
+* array.
+---
+*/
+function mostPrecise(numbers: number[]) {
+  let n = numbers[0];
+  for (let i = 1; i < numbers.length; i++) {
+    const m = numbers[i];
+    if (decimalPlacesOf(n) < decimalPlacesOf(m)) {
+      n = m;
+    }
+  }
+  if ($isInt(n)) {
+    return minimum(numbers);
+  }
+  return n;
+}
+
+/** Returns the maximum value from the given array of numbers. */
+function minimum(numbers: number[]) {
+  let min = Infinity;
+  for (let i = 0; i < numbers.length; i++) {
+    (numbers[i] < min) && (min = numbers[i]);
+  }
+  return min;
+}
+
+/** Returns the maximum value from the given array of numbers. */
+function maximum(numbers: number[]) {
+  let max = -Infinity;
+  for (let i = 0; i < numbers.length; i++) {
+    (numbers[i] > max) && (max = numbers[i]);
+  }
+  return max;
+}
+
+/** Returns a table of intervals from the given array of numbers.*/
+function autoBin(
+  numbers: number[],
+  precision: number = 0.05,
+  intervals?: number,
+): Map<[number, number], number> {
+  intervals === undefined && (intervals = ceil(sqrt(numbers.length)));
+  const mdp = mostPrecise(numbers);
+  const max = maximum(numbers);
+  const min = minimum(numbers);
+  const start = (mdp === min ? mdp : min) - precision;
+  const end = max + precision;
+  const width = ceil((end - start) / intervals);
+  const boundaries = new Map<[number, number], number>();
+  boundaries.set([0, start], 0);
+  let x = start;
+  for (let i = 0; i < intervals; i++) {
+    const prev = x;
+    x = x + width;
+    boundaries.set([prev, x], 0);
+  }
+  return boundaries;
+}
+
+/** Returns a frequency table from the given array of numbers.  */
+function frequencyTable(
+  numbers: number[],
+  precision: number = 0.05,
+  intervals?: number,
+): Map<[number, number], number> {
+  const boundaries = autoBin(numbers, precision, intervals);
+  for (const [key] of boundaries) {
+    for (let i = 0; i < numbers.length; i++) {
+      const num = numbers[i];
+      const [a, b] = key;
+      if (a < num && num < b) {
+        const v = boundaries.get(key)!;
+        boundaries.set(key, v + 1);
+      }
+    }
+  }
+  return boundaries;
+}
+
+// import { heights } from "./test-data.js";
+// print(frequencyTable(heights));
+// print(relativeFrequencyTable(heights));
+
+/** Returns a relative frequency table from the given array of numbers.  */
+function relativeFrequencyTable(
+  numbers: number[],
+  precision: number = 0.05,
+  intervals?: number,
+): Map<[number, number], number> {
+  const boundaries = frequencyTable(numbers, precision, intervals);
+  for (const [key, value] of boundaries) {
+    boundaries.set(key, value / numbers.length);
+  }
+  return boundaries;
+}
 
 /** Returns a random integer between the provided minimum and maximum (not including the maximum). */
 function randInt(min: number, max: number) {
@@ -236,9 +349,6 @@ export function interpolate(
     interpolator(domain, range)(n)
   );
 }
-
-/** Utility method - Logs to the console. */
-const print = console.log;
 
 /*
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -749,6 +859,7 @@ function v3D(x: number, y: number, z: number) {
   return new Vector([x, y, z]);
 }
 
+/** Returns true if the given value is a vector, false otherwise. */
 const $isVector = (value: any): value is Vector => (value instanceof Vector);
 
 // ============================================================ MATRIX DATA TYPE
@@ -1245,6 +1356,7 @@ interface Renderable {
   get length(): number;
   get lastCommand(): PathCommand;
   get firstCommand(): PathCommand;
+  end(): this;
 }
 
 type Klass<T = {}> = new (...args: any[]) => T;
@@ -1255,6 +1367,9 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
   return class extends klass {
     commands: PathCommand[] = [];
     origin: Vector = v3D(0, 0, 1);
+    end() {
+      return this;
+    }
     get length() {
       return this.commands.length;
     }
@@ -1513,6 +1628,10 @@ export class Path extends PATH {
   /** The SVG commands comprising this path. */
   commands: PathCommand[] = [];
 
+  end() {
+    return this;
+  }
+
   constructor(x: number, y: number, z: number = 1) {
     super();
     this.origin = vector([0, 0, 0]);
@@ -1636,12 +1755,6 @@ export class Line extends LINE {
       L(end.x, end.y, end.z),
     );
   }
-  start(x: number, y: number, z: number = 1) {
-    return new Line(v3D(x, y, z), this.commands[1].end.copy());
-  }
-  end(x: number, y: number, z: number = 1) {
-    return new Line(this.commands[0].end.copy(), v3D(x, y, z));
-  }
 }
 
 const AXIS = renderable(colorable(BASE));
@@ -1747,27 +1860,71 @@ export class Circle extends CIRCLE {
   }
 }
 
+/** Returns a new circle. @param r - The circle’s radius. */
 export function circle(r: number) {
   return new Circle(r);
+}
+
+const QUAD = renderable(colorable(BASE));
+export class Quad extends QUAD {
+  _width: number;
+  _height: number;
+  constructor(width: number, height: number) {
+    super();
+    this._width = width;
+    this._height = height;
+  }
+  end() {
+    const o = this.origin;
+    const x = o.x;
+    const y = o.y;
+    const w = this._width;
+    const h = this._height;
+    this.commands.push(M(x, y));
+    this.commands.push(L(x + w, y));
+    this.commands.push(L(x + w, y - h));
+    this.commands.push(L(x, y - h));
+    this.commands.push(L(x, y));
+    return this;
+  }
+  toString() {
+    return this.commands.map((c) => c.toString()).join("") + "Z";
+  }
+}
+export function quad(width: number, height: number) {
+  return new Quad(width, height);
 }
 
 const TEXT = renderable(BASE);
 
 export class Text extends TEXT {
+  end() {
+    return this;
+  }
   _text: string | number;
   _fontFamily?: string;
   _fontSize?: string | number;
+  fontSize(value: number | string) {
+    this._fontSize = value;
+    return this;
+  }
   _fontColor?: string;
   fontColor(color: string) {
     this._fontColor = color;
     return this;
   }
   _textAnchor?: "start" | "middle" | "end";
+  anchor(value: "start" | "middle" | "end") {
+    this._textAnchor = value;
+    return this;
+  }
   constructor(text: string | number) {
     super();
     this._text = text;
+    this.commands.push(M(0, 0));
   }
   at(x: number, y: number) {
+    this.commands = [];
     this.commands.push(M(x, y));
     return this;
   }
@@ -1848,10 +2005,252 @@ export function plot2D(f: string) {
   return new Plot2D(f);
 }
 
+const HISTOGRAM = contextual(colorable(BASE));
+
+type AxisSpec = {
+  xInterval: [number, number];
+  yInterval: [number, number];
+  xLabels: number[];
+  xTickLength?: number;
+  yTickLength?: number;
+  xTickSep?: number;
+  yTickSep?: number;
+  xOffset?: number;
+  yOffset?: number;
+};
+
+const axes = ({
+  xInterval,
+  yInterval,
+  xLabels,
+  xTickLength = 0.005,
+  yTickLength = 0.005,
+  xTickSep = 2,
+  yTickSep = 2,
+  xOffset = 0.01,
+  yOffset = 0.003,
+}: AxisSpec) => {
+  const [x_min, x_max] = xInterval;
+  const [y_min, y_max] = yInterval;
+  const axisX = line([x_min, y_min], [x_max, y_min]);
+  const axisY = line([x_min, y_min], [x_min, y_max]);
+  const xs = range(x_min, x_max, xTickSep);
+  const xTicks: Line[] = [];
+  const x_labels: Text[] = [];
+  let i = 0;
+  xs.forEach((n) => {
+    const t = xLabels[i];
+    const l = line([n, -xTickLength], [n, xTickLength]);
+    if (t !== undefined) {
+      xTicks.push(l);
+      x_labels.push(text(t).at(n, -xTickLength - xOffset).anchor("middle"));
+    }
+    i++;
+  });
+  const ys = range(y_min, y_max, yTickSep);
+  const yTicks: Line[] = [];
+  const y_labels: Text[] = [];
+  const _y = 1;
+  ys.forEach((n) => {
+    const l = line([-yTickLength, n], [yTickLength, n]);
+    yTicks.push(l);
+    y_labels.push(
+      text(n.toPrecision(2)).at(-yTickLength, n - yOffset).anchor("end"),
+    );
+  });
+  return { axisX, axisY, xTicks, yTicks, xLabels: x_labels, yLabels: y_labels };
+};
+
+class Histogram extends HISTOGRAM {
+  _data: Map<[number, number], number> = new Map();
+  constructor(data: number[]) {
+    super();
+    this.data(data);
+  }
+  _barColor: string = "black";
+  barColor(color: string) {
+    this._barColor = color;
+    return this;
+  }
+  _xTickSep: number = 0.5;
+  xTickSep(n: number) {
+    this._xTickSep = n;
+    return this;
+  }
+  _xTickLength: number = 0.004;
+  xTickLength(length: number) {
+    this._xTickLength = length;
+    return this;
+  }
+  _yTickLength: number = 0.8;
+  yTickLength(length: number) {
+    this._yTickLength = length;
+    return this;
+  }
+  _yTickSep: number = 0.05;
+  yTickSep(n: number) {
+    this._yTickSep = n;
+    return this;
+  }
+
+  end() {
+    let i = 0;
+    for (const [key, value] of this._data) {
+      const [a, b] = key;
+      const width = b - a;
+      const barwidth = this._xTickSep / 2;
+      const bar = quad(width * barwidth, -value)
+        .fill(this._barColor)
+        .stroke(this._stroke)
+        .at(i * width * barwidth, 0);
+      (value !== 0) && this._children.push(bar);
+      i++;
+    }
+    const xs: number[] = [];
+    for (const [key, value] of this._data) {
+      xs.push(key[0]);
+    }
+    const { axisX, axisY, xTicks, yTicks, xLabels, yLabels } = axes({
+      xInterval: this._domain,
+      yInterval: this._range,
+      xLabels: xs,
+      xTickLength: this._xTickLength,
+      yTickLength: this._yTickLength,
+      xTickSep: this._xTickSep,
+      yTickSep: this._yTickSep,
+    });
+    this._children.push(axisX.stroke(this._stroke));
+    this._children.push(axisY.stroke(this._stroke));
+    xTicks.forEach((tick) => this._children.push(tick.stroke(this._stroke)));
+    yTicks.forEach((tick) => this._children.push(tick.stroke(this._stroke)));
+    const txt = (t: Text) => {
+      this._children.push(t.fontColor("white").fontSize(10));
+    };
+    xLabels.forEach(txt);
+    yLabels.forEach((t) => txt(t));
+    this._children = this._children.map((e) => e.end());
+    this._children = this._children.map((c) => {
+      const out = c.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+      return out;
+    });
+    return this;
+  }
+  _barCount: number = 5;
+  barCount(n: number) {
+    this._barCount = n;
+    return this;
+  }
+  data(dataset: number[]) {
+    this._data = relativeFrequencyTable(
+      dataset,
+    );
+    const x_min = minimum(dataset);
+    const x_max = maximum(dataset);
+    this._domain = [Math.min(x_min, 0), x_max];
+    const values: number[] = [];
+    for (const [_, value] of this._data) {
+      values.push(value);
+    }
+    const y_min = minimum(values);
+    const y_max = maximum(values);
+    this._range = [Math.min(y_min, 0), y_max];
+    return this;
+  }
+}
+export function histogram(dataset: number[]) {
+  return new Histogram(dataset);
+}
+
+const SCATTER_PLOT = contextual(colorable(BASE));
+class ScatterPlot<T = any> extends SCATTER_PLOT {
+  _data: T[] = [];
+  _x: (d: T) => number;
+  _y: (d: T) => number;
+  _children: Shape[] = [];
+  constructor(x: (d: T) => number, y: (d: T) => number) {
+    super();
+    this._x = x;
+    this._y = y;
+    this._fill = "black";
+    this._pointStroke = "black";
+    this._stroke = "black";
+  }
+  _pointStroke: string;
+  pointStroke(color: string) {
+    this._pointStroke = color;
+    return this;
+  }
+  end() {
+    const xmin = this._domain[0];
+    const xmax = this._domain[1];
+    const ymin = this._range[0];
+    const ymax = this._range[1];
+    this._children.push(line([xmin, 0], [xmax, 0]).stroke(this._stroke));
+    range(xmin, xmax, 0.5).forEach((x) =>
+      this._children.push(text(x).at(x, -0.2).fontColor(this._stroke))
+    );
+    range(ymin, ymax, 0.5).forEach((y) =>
+      this._children.push(text(y).at(-0.2, y).fontColor(this._stroke))
+    );
+    this._children.push(line([0, ymin], [0, ymax]).stroke(this._stroke));
+    this._data.forEach((d) => {
+      const x = this._x(d);
+      const y = this._y(d);
+      this._children.push(
+        circle(0.08).at(x, y).fill(this._fill).stroke(this._pointStroke),
+      );
+    });
+    this._children = this._children.map((x) => x.end());
+    this._children = this._children.map((x) => {
+      const out = x.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+      return out;
+    });
+    return this;
+  }
+  data(d: T[]) {
+    this._data = d;
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < d.length; i++) {
+      const datum = this._x(d[i]);
+      (datum < min) && (min = datum);
+      (datum > max) && (max = datum);
+    }
+    this._domain = [Math.min(0, min), max];
+    min = Infinity;
+    max = -Infinity;
+    for (let i = 0; i < d.length; i++) {
+      const datum = this._y(d[i]);
+      (datum < min) && (min = datum);
+      (datum > max) && (max = datum);
+    }
+    this._range = [Math.min(0, min), max];
+    return this;
+  }
+}
+export function scatterPlot<T>(
+  accessorX: (d: T) => number,
+  accessorY: (d: T) => number,
+) {
+  return new ScatterPlot(accessorX, accessorY);
+}
+
 const GROUP = colorable(BASE);
 
 export class Group extends GROUP {
   children: Shape[];
+  end() {
+    this.children = this.children.map((x) => x.end());
+    return this;
+  }
   constructor(children: Shape[]) {
     super();
     this.children = children;
@@ -2493,9 +2892,9 @@ export function forceGraph(graph: Graph) {
   );
 }
 
-export type Parent = Fig | ForceGraph;
+export type Parent = Fig | ForceGraph | ScatterPlot | Histogram;
 
-export type Shape = Group | Circle | Line | Path | Plot2D | Axis | Text;
+export type Shape = Group | Circle | Line | Path | Plot2D | Axis | Text | Quad;
 
 // ========================================================= END GRAPHICS MODULE
 
@@ -8462,10 +8861,10 @@ class Latexer implements Mapper<string> {
         const right = this.reduce(r[i]);
         const L = latex.brace(left);
         const R = latex.brace(right);
-        const e = latex.join(L,op,R);
+        const e = latex.join(L, op, R);
         out.push(e);
       }
-      return latex.surround(out.join(',~~'), '[', ']');
+      return latex.surround(out.join(",~~"), "[", "]");
     }
     switch (op) {
       case tt.dot_add:
@@ -8803,7 +9202,7 @@ class Latexer implements Mapper<string> {
   power(node: Power): string {
     const base = this.reduce(node.base);
     const exp = this.reduce(node.exponent);
-    let expressions = latex.join(base, '^', latex.brace(exp));
+    let expressions = latex.join(base, "^", latex.brace(exp));
     if (node.parenLevel) {
       expressions = latex.surround(expressions, "(", ")");
     }

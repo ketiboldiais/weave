@@ -138,13 +138,13 @@ function maximum(numbers: number[]) {
   return max;
 }
 
-/** Returns a frequency table from the given array of numbers.  */
-function frequencyTable(
+/** Returns a table of intervals from the given array of numbers.*/
+function autoBin(
   numbers: number[],
   precision: number = 0.05,
   intervals?: number,
 ): Map<[number, number], number> {
-  intervals === undefined && (intervals = ceil(sqrt(numbers.length)))
+  intervals === undefined && (intervals = ceil(sqrt(numbers.length)));
   const mdp = mostPrecise(numbers);
   const max = maximum(numbers);
   const min = minimum(numbers);
@@ -159,6 +159,16 @@ function frequencyTable(
     x = x + width;
     boundaries.set([prev, x], 0);
   }
+  return boundaries;
+}
+
+/** Returns a frequency table from the given array of numbers.  */
+function frequencyTable(
+  numbers: number[],
+  precision: number = 0.05,
+  intervals?: number,
+): Map<[number, number], number> {
+  const boundaries = autoBin(numbers, precision, intervals);
   for (const [key] of boundaries) {
     for (let i = 0; i < numbers.length; i++) {
       const num = numbers[i];
@@ -171,9 +181,10 @@ function frequencyTable(
   }
   return boundaries;
 }
-import { heights } from "./test-data.js";
-print(frequencyTable(heights));
-print(relativeFrequencyTable(heights));
+
+// import { heights } from "./test-data.js";
+// print(frequencyTable(heights));
+// print(relativeFrequencyTable(heights));
 
 /** Returns a relative frequency table from the given array of numbers.  */
 function relativeFrequencyTable(
@@ -181,34 +192,7 @@ function relativeFrequencyTable(
   precision: number = 0.05,
   intervals?: number,
 ): Map<[number, number], number> {
-  if (intervals === undefined) {
-    const s = sqrt(numbers.length);
-    intervals = ceil(s);
-  }
-  const mdp = mostPrecise(numbers);
-  const max = maximum(numbers);
-  const min = minimum(numbers);
-  const start = (mdp === min ? mdp : min) - precision;
-  const end = max + precision;
-  const width = ceil((end - start) / intervals);
-  const boundaries = new Map<[number, number], number>();
-  boundaries.set([0, start], 0);
-  let x = start;
-  for (let i = 0; i < intervals; i++) {
-    const prev = x;
-    x = x + width;
-    boundaries.set([prev, x], 0);
-  }
-  for (const [key, value] of boundaries) {
-    for (let i = 0; i < numbers.length; i++) {
-      const num = numbers[i];
-      const [a, b] = key;
-      if (a < num && num < b) {
-        const v = boundaries.get(key)!;
-        boundaries.set(key, v + 1);
-      }
-    }
-  }
+  const boundaries = frequencyTable(numbers, precision, intervals);
   for (const [key, value] of boundaries) {
     boundaries.set(key, value / numbers.length);
   }
@@ -1920,12 +1904,20 @@ export class Text extends TEXT {
   _text: string | number;
   _fontFamily?: string;
   _fontSize?: string | number;
+  fontSize(value: number | string) {
+    this._fontSize = value;
+    return this;
+  }
   _fontColor?: string;
   fontColor(color: string) {
     this._fontColor = color;
     return this;
   }
   _textAnchor?: "start" | "middle" | "end";
+  anchor(value: "start" | "middle" | "end") {
+    this._textAnchor = value;
+    return this;
+  }
   constructor(text: string | number) {
     super();
     this._text = text;
@@ -2015,8 +2007,62 @@ export function plot2D(f: string) {
 
 const HISTOGRAM = contextual(colorable(BASE));
 
+type AxisSpec = {
+  xInterval: [number, number];
+  yInterval: [number, number];
+  xLabels: number[];
+  xTickLength?: number;
+  yTickLength?: number;
+  xTickSep?: number;
+  yTickSep?: number;
+  xOffset?: number;
+  yOffset?: number;
+};
+
+const axes = ({
+  xInterval,
+  yInterval,
+  xLabels,
+  xTickLength = 0.005,
+  yTickLength = 0.005,
+  xTickSep = 2,
+  yTickSep = 2,
+  xOffset = 0.01,
+  yOffset = 0.003,
+}: AxisSpec) => {
+  const [x_min, x_max] = xInterval;
+  const [y_min, y_max] = yInterval;
+  const axisX = line([x_min, y_min], [x_max, y_min]);
+  const axisY = line([x_min, y_min], [x_min, y_max]);
+  const xs = range(x_min, x_max, xTickSep);
+  const xTicks: Line[] = [];
+  const x_labels: Text[] = [];
+  let i = 0;
+  xs.forEach((n) => {
+    const t = xLabels[i];
+    const l = line([n, -xTickLength], [n, xTickLength]);
+    if (t !== undefined) {
+      xTicks.push(l);
+      x_labels.push(text(t).at(n, -xTickLength - xOffset).anchor("middle"));
+    }
+    i++;
+  });
+  const ys = range(y_min, y_max, yTickSep);
+  const yTicks: Line[] = [];
+  const y_labels: Text[] = [];
+  const _y = 1;
+  ys.forEach((n) => {
+    const l = line([-yTickLength, n], [yTickLength, n]);
+    yTicks.push(l);
+    y_labels.push(
+      text(n.toPrecision(2)).at(-yTickLength, n - yOffset).anchor("end"),
+    );
+  });
+  return { axisX, axisY, xTicks, yTicks, xLabels: x_labels, yLabels: y_labels };
+};
+
 class Histogram extends HISTOGRAM {
-  _data: Map<number, number> = new Map();
+  _data: Map<[number, number], number> = new Map();
   constructor(data: number[]) {
     super();
     this.data(data);
@@ -2026,18 +2072,65 @@ class Histogram extends HISTOGRAM {
     this._barColor = color;
     return this;
   }
+  _xTickSep: number = 0.5;
+  xTickSep(n: number) {
+    this._xTickSep = n;
+    return this;
+  }
+  _xTickLength: number = 0.004;
+  xTickLength(length: number) {
+    this._xTickLength = length;
+    return this;
+  }
+  _yTickLength: number = 0.8;
+  yTickLength(length: number) {
+    this._yTickLength = length;
+    return this;
+  }
+  _yTickSep: number = 0.05;
+  yTickSep(n: number) {
+    this._yTickSep = n;
+    return this;
+  }
+
   end() {
-    const data = this._data.entries();
-    for (const [x, y] of data) {
-      const q = quad(0.5, y)
-        .at(x - 0.25, y)
+    let i = 0;
+    for (const [key, value] of this._data) {
+      const [a, b] = key;
+      const width = b - a;
+      const barwidth = this._xTickSep / 2;
+      const bar = quad(width * barwidth, -value)
+        .fill(this._barColor)
         .stroke(this._stroke)
-        .fill(this._barColor);
-      this._children.push(q);
+        .at(i * width * barwidth, 0);
+      (value !== 0) && this._children.push(bar);
+      i++;
     }
-    this._children = this._children.map((x) => x.end());
-    this._children = this._children.map((x) => {
-      const out = x.interpolate(
+    const xs: number[] = [];
+    for (const [key, value] of this._data) {
+      xs.push(key[0]);
+    }
+    const { axisX, axisY, xTicks, yTicks, xLabels, yLabels } = axes({
+      xInterval: this._domain,
+      yInterval: this._range,
+      xLabels: xs,
+      xTickLength: this._xTickLength,
+      yTickLength: this._yTickLength,
+      xTickSep: this._xTickSep,
+      yTickSep: this._yTickSep,
+    });
+    this._children.push(axisX.stroke(this._stroke));
+    this._children.push(axisY.stroke(this._stroke));
+    xTicks.forEach((tick) => this._children.push(tick.stroke(this._stroke)));
+    yTicks.forEach((tick) => this._children.push(tick.stroke(this._stroke)));
+    const txt = (t: Text) => {
+      this._children.push(t.fontColor("white").fontSize(10));
+    };
+    xLabels.forEach(txt);
+    yLabels.forEach((t) => txt(t));
+    this._children = this._children.map((e) => e.end());
+    this._children = this._children.map((c) => {
+      const out = c.interpolate(
         this._domain,
         this._range,
         [this._vw, this._vh],
@@ -2052,47 +2145,19 @@ class Histogram extends HISTOGRAM {
     return this;
   }
   data(dataset: number[]) {
-    let min = Infinity;
-    let max = -Infinity;
-    let mostDecimalPlaces = dataset[0];
-    dataset.forEach((n) => {
-      const [a, b] = mostDecimalPlaces.toString().split(".");
-      const [c, d] = n.toString().split(".");
-      if (b !== undefined && d !== undefined) {
-        if (d.length > b.length) {
-          mostDecimalPlaces = n;
-        }
-      }
-    });
-    mostDecimalPlaces = mostDecimalPlaces - 0.5;
-    let minvalue = dataset[0];
-    dataset.forEach((d) => {
-      (d < minvalue) && (minvalue = d);
-    });
-    const startingPoint = mostDecimalPlaces < minvalue
-      ? mostDecimalPlaces
-      : minvalue;
-    dataset.forEach((d) => {
-      (d < min) && (min = d);
-      (d > max) && (max = d);
-      if (this._data.has(d)) {
-        const n = this._data.get(d)!;
-        this._data.set(d, n + 1);
-      } else {
-        this._data.set(d, 1);
-      }
-    });
-    // bins
-
-    this._domain = [min, max];
-    min = Infinity;
-    max = -Infinity;
-    this._data.forEach((_, key) => {
-      const d = this._data.get(key)!;
-      (d < min) && (min = d);
-      (d > max) && (max = d);
-    });
-    this._range = [min, max];
+    this._data = relativeFrequencyTable(
+      dataset,
+    );
+    const x_min = minimum(dataset);
+    const x_max = maximum(dataset);
+    this._domain = [Math.min(x_min, 0), x_max];
+    const values: number[] = [];
+    for (const [_, value] of this._data) {
+      values.push(value);
+    }
+    const y_min = minimum(values);
+    const y_max = maximum(values);
+    this._range = [Math.min(y_min, 0), y_max];
     return this;
   }
 }

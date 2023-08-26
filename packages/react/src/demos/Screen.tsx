@@ -1,5 +1,6 @@
 import { CSSProperties, useEffect, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
+import { heights } from "./test-data.js";
 import {
   Axis,
   axis,
@@ -97,11 +98,11 @@ export const F1 = () => {
     [2.4, 3.5],
     [3.1, 3.82],
   ]).pointStroke("crimson").fill("tomato").stroke("white").end();
-  const h = histogram([1, 1, 3, 1, 1, 2, 2, 3, 2, 1, 4, 4, 2])
-    .margins(100,100)
-    .stroke('white')
-    .barColor('white')
-    .end();
+  const h = histogram(heights)
+    .yTickLength(0.6)
+    .xTickSep(8)
+    .barColor("salmon")
+    .stroke("white").end();
   return <Figure of={h} />;
 };
 
