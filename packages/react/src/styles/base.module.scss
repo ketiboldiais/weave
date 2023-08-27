@@ -81,6 +81,6 @@
 }
 
 :global .grid {
-	width: 100% !important;
-	margin: 0;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
 }

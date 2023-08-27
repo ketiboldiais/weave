@@ -2,26 +2,17 @@ import { CSSProperties, useEffect, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
 import { heights } from "./test-data.js";
 import {
-  Axis,
-  axis,
   Circle,
-  circle,
   engine,
   Fig,
-  fig,
   forceGraph,
   graph,
   Group,
-  group,
   histogram,
-  interpolator,
   Line,
-  line,
   Path,
-  Plot2D,
   plot2D,
   Quad,
-  quad,
   scatterPlot,
   Shape,
   Text,
@@ -65,14 +56,7 @@ export const Tex = ({ d, style, block }: TexProps) => {
   );
 };
 
-export const F1 = () => {
-  const data = fig([
-    group([
-      axis("x"),
-      axis("y"),
-      plot2D("f(x) = tan(x)").stroke("tomato"),
-    ]).end(),
-  ]).domain(-10, 10).range(-10, 10).end();
+export const ForceGraph1 = () => {
   const d = forceGraph(graph({
     a: ["b", "x", "n"],
     b: ["c", "d", "g", "n"],
@@ -81,10 +65,39 @@ export const F1 = () => {
     e: ["k"],
     j: ["x", "s", "a"],
     k: ["j", "s"],
-    n: ["g"],
-    s: ["x"],
-  })).nodeColor("tomato").end();
-  const s = scatterPlot(
+    n: ["g", "x"],
+    x: ["s"],
+  })).nodeFontColor("white")
+    .nodeColor("aqua")
+    .nodeRadius(5)
+    .edgeColor("lightblue")
+    .iterations(100)
+    .repulsion(20)
+    .end();
+  return <Figure of={d} />;
+};
+
+export const Plot1 = () => {
+  const data = plot2D("f(x) = tan(x)")
+    .samples(2000)
+    .strokeWidth(2)
+    .axisColor("white")
+    .stroke("gold")
+    .end();
+  return <Figure of={data} />;
+};
+
+export const Histogram1 = () => {
+  const h = histogram(heights)
+    .yTickLength(0.6)
+    .xTickSep(8)
+    .barColor("salmon")
+    .stroke("white").end();
+  return <Figure of={h} />;
+};
+
+export const Scatter1 = () => {
+  const data = scatterPlot(
     (d: [number, number]) => d[0],
     (d: [number, number]) => d[1],
   ).data([
@@ -97,13 +110,8 @@ export const F1 = () => {
     [1.9, 3.2],
     [2.4, 3.5],
     [3.1, 3.82],
-  ]).pointStroke("crimson").fill("tomato").stroke("white").end();
-  const h = histogram(heights)
-    .yTickLength(0.6)
-    .xTickSep(8)
-    .barColor("salmon")
-    .stroke("white").end();
-  return <Figure of={h} />;
+  ]).pointStroke("green").fill("springgreen").stroke("white").end();
+  return <Figure of={data} />;
 };
 
 export const Figure = ({ of }: { of: Fig }) => {
@@ -174,22 +182,6 @@ export const Figure = ({ of }: { of: Fig }) => {
 
   const shift = (x: number, y: number) => `translate(${x},${y})`;
 
-  const AXIS = ({ of }: { of: Axis }) => {
-    return (
-      <g id={of._type}>
-        <path
-          d={of.toString()}
-          fill={of._fill}
-          stroke={of._stroke}
-          strokeWidth={of._strokeWidth}
-          strokeDasharray={of._dash}
-          opacity={of._opacity}
-        />
-        {of._ticks.map((l, i) => <LINE key={`tick-${i}`} of={l} />)}
-      </g>
-    );
-  };
-
   const PATH = ({ of }: { of: Path }) => {
     return (
       <path
@@ -205,19 +197,6 @@ export const Figure = ({ of }: { of: Fig }) => {
   };
 
   const QUAD = ({ of }: { of: Quad }) => {
-    return (
-      <path
-        d={of.toString()}
-        fill={of._fill}
-        stroke={of._stroke}
-        strokeWidth={of._strokeWidth}
-        strokeDasharray={of._dash}
-        opacity={of._opacity}
-      />
-    );
-  };
-
-  const PLOT2D = ({ of }: { of: Plot2D }) => {
     return (
       <path
         d={of.toString()}
@@ -256,12 +235,8 @@ export const Figure = ({ of }: { of: Fig }) => {
         return <CIRCLE of={d} />;
       } else if (d instanceof Path) {
         return <PATH of={d} />;
-      } else if (d instanceof Plot2D) {
-        return <PLOT2D of={d} />;
       } else if (d instanceof Group) {
         return <GROUP of={d} />;
-      } else if (d instanceof Axis) {
-        return <AXIS of={d} />;
       } else if (d instanceof Text) {
         return <TEXT of={d} />;
       } else if (d instanceof Quad) {
@@ -328,7 +303,7 @@ export const Terminal = (
           height={height}
         />
       </div>
-      {result && <Output />}
+      {result.length !== 0 && <Output />}
       <div>
         <button className={"run-button"} onClick={click}>Run</button>
       </div>

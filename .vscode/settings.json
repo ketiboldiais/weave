@@ -4,4 +4,7 @@
 	"editor.fontLigatures": true,
 	"javascript.preferences.quoteStyle": "single",
 	"typescript.preferences.quoteStyle": "single",
+	"search.followSymlinks": false,
+	"javascript.validate.enable": false,
+	"git.enableStatusBarSync": false,
 }
