@@ -841,13 +841,13 @@ function isNumericString(s: string) {
 
 class Vector<T extends number[] = number[]> {
   /** The elements of this vector. */
-  elements: T;
+  _elements: T;
   toLatex() {
-    const out = this.elements.map((x) => `${x}`).join(",~");
+    const out = this._elements.map((x) => `${x}`).join(",~");
     return latex.surround(out, "[", "]");
   }
   constructor(elements: T) {
-    this.elements = elements;
+    this._elements = elements;
   }
 
   vxm(matrix: Matrix) {
@@ -857,13 +857,13 @@ class Vector<T extends number[] = number[]> {
       const v = matrix.row(i);
       if (v === null) return this;
       const d = this.dot(v);
-      vector.elements[i - 1] = d;
+      vector._elements[i - 1] = d;
     }
     return vector;
   }
 
-  /** @internal Utility method for performing binary operations. */
-  private binop(
+  /** Utility method for performing binary operations. */
+  binop(
     other: Vector | number[] | number,
     op: (a: number, b: number) => number,
   ) {
@@ -871,14 +871,14 @@ class Vector<T extends number[] = number[]> {
       ? homogenousVector(other, this.length)
       : vector(other);
     const [A, B] = equalen(this, arg);
-    return vector(A.elements.map((c, i) => op(c, B.elements[i])));
+    return vector(A._elements.map((c, i) => op(c, B._elements[i])));
   }
 
   /** Returns the smallest component of this vector. */
-  get min() {
+  min() {
     let min = Infinity;
-    for (let i = 0; i < this.elements.length; i++) {
-      const elem = this.elements[i];
+    for (let i = 0; i < this._elements.length; i++) {
+      const elem = this._elements[i];
       if (elem < min) {
         min = elem;
       }
@@ -887,10 +887,10 @@ class Vector<T extends number[] = number[]> {
   }
 
   /** Returns the largest component of this vector. */
-  get max() {
+  max() {
     let max = -Infinity;
-    for (let i = 0; i < this.elements.length; i++) {
-      const elem = this.elements[i];
+    for (let i = 0; i < this._elements.length; i++) {
+      const elem = this._elements[i];
       if (elem > max) {
         max = elem;
       }
@@ -900,13 +900,13 @@ class Vector<T extends number[] = number[]> {
 
   /** Returns this vector as a matrix. */
   matrix() {
-    const elements = this.elements.map((n) => new Vector([n]));
+    const elements = this._elements.map((n) => new Vector([n]));
     return new Matrix(elements, elements.length, 1);
   }
 
   /** Returns the magnitude of this vector.  An optional precision value may be passed roundingthe magnitude to a specified number of decimal places. */
   mag(precision?: number) {
-    const out = sqrt(this.elements.reduce((p, c) => (p) + (c ** 2), 0));
+    const out = sqrt(this._elements.reduce((p, c) => (p) + (c ** 2), 0));
     return !$isNothing(precision) ? round(out, floor(precision)) : out;
   }
 
@@ -949,25 +949,25 @@ class Vector<T extends number[] = number[]> {
 
   /** Returns the negation of this vector. */
   neg() {
-    return vector(this.elements.map((c) => -c));
+    return vector(this._elements.map((c) => -c));
   }
 
   /** Returns this vector with each component set to its absolute value. */
   abs() {
-    return vector(this.elements.map((c) => Math.abs(c)));
+    return vector(this._elements.map((c) => Math.abs(c)));
   }
 
   /** Returns this vector with each component set to zero */
   zero() {
-    return vector(this.elements.map((_) => 0));
+    return vector(this._elements.map((_) => 0));
   }
 
   /** Returns true if this vector equals the provided vector. */
   equals(that: Vector) {
     if (this.length !== that.length) return false;
     for (let i = 0; i < this.length; i++) {
-      const e1 = this.elements[i];
-      const e2 = that.elements[i];
+      const e1 = this._elements[i];
+      const e2 = that._elements[i];
       if (e1 !== e2) return false;
     }
     return true;
@@ -976,26 +976,26 @@ class Vector<T extends number[] = number[]> {
   /** Returns true if every component of this vector is zero. */
   isZero() {
     for (let i = 0; i < this.length; i++) {
-      if (this.elements[i] !== 0) return false;
+      if (this._elements[i] !== 0) return false;
     }
     return true;
   }
 
   /** Returns true if this vector comprises exactly two elements. */
   is2D(): this is Vector<[number, number]> {
-    return this.elements.length === 2;
+    return this._elements.length === 2;
   }
 
   /** Returns true if this vector comprises exactly three elements. */
   is3D(): this is Vector<[number, number, number]> {
-    return this.elements.length === 3;
+    return this._elements.length === 3;
   }
 
   /** Returns a copy of this vector. */
   copy() {
     const elements = [];
-    for (let i = 0; i < this.elements.length; i++) {
-      elements.push(this.elements[i]);
+    for (let i = 0; i < this._elements.length; i++) {
+      elements.push(this._elements[i]);
     }
     return new Vector(elements);
   }
@@ -1004,7 +1004,7 @@ class Vector<T extends number[] = number[]> {
   pad(slots: number, value: number) {
     if (slots < this.length) {
       const diff = this.length - slots;
-      const elements = [...this.elements];
+      const elements = [...this._elements];
       for (let i = 0; i < diff; i++) {
         elements.push(value);
       }
@@ -1019,11 +1019,11 @@ class Vector<T extends number[] = number[]> {
     if (index > this.length) {
       const diff = index - this.length;
       const vector = this.pad(diff, 0);
-      vector.elements[index] = value;
+      vector._elements[index] = value;
       return vector;
     }
     const copy = this.copy();
-    copy.elements[index] = value;
+    copy._elements[index] = value;
     return copy;
   }
 
@@ -1033,11 +1033,11 @@ class Vector<T extends number[] = number[]> {
   }
 
   /** Returns the first element of this vector. */
-  get x() {
-    return $isNothing(this.elements[0]) ? 0 : this.elements[0];
+  get _x() {
+    return $isNothing(this._elements[0]) ? 0 : this._elements[0];
   }
-  set x(n: number) {
-    this.elements[0] = n;
+  set _x(n: number) {
+    this._elements[0] = n;
   }
 
   /** Sets the second element of this vector to the provided value. */
@@ -1046,11 +1046,11 @@ class Vector<T extends number[] = number[]> {
   }
 
   /** Returns the second element of this vector. */
-  get y() {
-    return $isNothing(this.elements[1]) ? 0 : this.elements[1];
+  get _y() {
+    return $isNothing(this._elements[1]) ? 0 : this._elements[1];
   }
-  set y(n: number) {
-    this.elements[1] = n;
+  set _y(n: number) {
+    this._elements[1] = n;
   }
 
   /** Sets the third element of this vector to the provided value. */
@@ -1059,8 +1059,11 @@ class Vector<T extends number[] = number[]> {
   }
 
   /** Returns the third element of this vector. */
-  get z() {
-    return $isNothing(this.elements[2]) ? 0 : this.elements[2];
+  get _z() {
+    return $isNothing(this._elements[2]) ? 0 : this._elements[2];
+  }
+  set _z(z:number) {
+    this._elements[2]=z;
   }
 
   /** Sets the fourt element of this vector to the provided value. */
@@ -1069,8 +1072,11 @@ class Vector<T extends number[] = number[]> {
   }
 
   /** Returns the fourth element of this vector. */
-  get w() {
-    return $isNothing(this.elements[3]) ? 0 : this.elements[3];
+  get _w() {
+    return $isNothing(this._elements[3]) ? 0 : this._elements[3];
+  }
+  set _w(w:number) {
+    this._elements[3]=w;
   }
 
   /** Returns the dot product of this vector and the provided vector. */
@@ -1080,8 +1086,8 @@ class Vector<T extends number[] = number[]> {
     if (other.length !== order) return 0;
     let sum = 0;
     for (let i = 0; i < order; i++) {
-      const a = this.elements[i];
-      const b = other.elements[i];
+      const a = this._elements[i];
+      const b = other._elements[i];
       const p = a * b;
       sum += p;
     }
@@ -1090,24 +1096,24 @@ class Vector<T extends number[] = number[]> {
 
   /** Returns the element at the given index (indices start at 1). */
   element(index: number) {
-    const out = this.elements[index - 1];
+    const out = this._elements[index - 1];
     return (out !== undefined) ? out : null;
   }
 
   /** Returns the length of this vector. */
   get length() {
-    return this.elements.length;
+    return this._elements.length;
   }
 
   /** Returns the string representation of this vector. */
   toString() {
-    const elements = this.elements.map((n) => `${n}`).join(",");
+    const elements = this._elements.map((n) => `${n}`).join(",");
     return `[${elements}]`;
   }
 
   /** Returns this vector as a number array. */
   toArray() {
-    return this.elements.map((e) => e);
+    return this._elements.map((e) => e);
   }
 
   /** Returns a new vector from the given array of numbers or `Vector`. If a `Vector` is passed, returns a copy of that vector. */
@@ -1129,8 +1135,8 @@ class Vector<T extends number[] = number[]> {
 
   /** Returns the angle between (a) the difference vector of this vector and the provided vector, and (b) the x-axis. */
   gamma(other: Vector) {
-    const dx = this.x - other.x;
-    const dy = this.y - other.y;
+    const dx = this._x - other._x;
+    const dy = this._y - other._y;
     const gamma = Math.atan2(dy, dx);
     return gamma;
   }
@@ -1149,17 +1155,17 @@ class Vector<T extends number[] = number[]> {
 
   /** Returns the 2D vector normal of this vector. */
   normal2D() {
-    return vector([-this.y, this.x]);
+    return vector([-this._y, this._x]);
   }
 
   /** Returns the cross product of this vector in-place. The cross product is used primarily to compute the vector perpendicular to two vectors. */
   cross(other: Vector) {
-    const ax = this.x;
-    const ay = this.y;
-    const az = this.z;
-    const bx = other.x;
-    const by = other.y;
-    const bz = other.z;
+    const ax = this._x;
+    const ay = this._y;
+    const az = this._z;
+    const bx = other._x;
+    const by = other._y;
+    const bz = other._z;
     const cx = (ay * bz) - (az * by);
     const cy = (az * bx) - (ax * bz);
     const cz = (ax * by) - (ay * bx);
@@ -1168,17 +1174,17 @@ class Vector<T extends number[] = number[]> {
 
   /** Returns the 2D distance between this vector and the provided vector. */
   distance2D(other: Vector) {
-    const dx = other.x - this.x;
-    const dy = other.y - this.y;
+    const dx = other._x - this._x;
+    const dy = other._y - this._y;
     const dsum = (dx ** 2) + (dy ** 2);
     return Math.sqrt(dsum);
   }
 
   /** Returns the 3D distance between this vector and the provided vector. */
   distance3D(other: Vector) {
-    const x = other.x - this.x;
-    const y = other.y - this.y;
-    const z = other.z - this.z;
+    const x = other._x - this._x;
+    const y = other._y - this._y;
+    const z = other._z - this._z;
     const xyz = (x * x) + (y * y) + (z * z);
     return Math.sqrt(xyz);
   }
@@ -1205,8 +1211,8 @@ class Vector<T extends number[] = number[]> {
   /** Returns a random 3D vector. The `min` argument sets the lower bound of the sampling interval. The `max` argument sets the upper bound of the sampling interval. The `restrict` argument takes `Z` or `R`. If `Z` is passed, random values are restricted to integers. If `R` is passed, random values are either integers or floats. */
   static random3D(min: number, max: number, restrict: "Z" | "R" = "R") {
     const v = Vector.random2D(min, max, restrict);
-    const x = v.x;
-    const y = v.y;
+    const x = v._x;
+    const y = v._y;
     const z = restrict === "Z" ? randInt(min, max) : randFloat(min, max);
     return new Vector([x, y, z]);
   }
@@ -1219,8 +1225,8 @@ function equalen(vectorA: Vector, vectorB: Vector): [Vector, Vector] {
   if (vectorA.length > vectorB.length) {
     let i = 0;
     for (i = 0; i < vectorA.length; i++) {
-      A.push(vectorA.elements[i]);
-      B.push($isNothing(vectorB.elements[i]) ? 0 : vectorB.elements[i]);
+      A.push(vectorA._elements[i]);
+      B.push($isNothing(vectorB._elements[i]) ? 0 : vectorB._elements[i]);
     }
     const n = vectorB.length - i;
     for (let j = 0; j < n; j++) {
@@ -1230,8 +1236,8 @@ function equalen(vectorA: Vector, vectorB: Vector): [Vector, Vector] {
   } else if (vectorA.length < vectorB.length) {
     let i = 0;
     for (i = 0; i < vectorB.length; i++) {
-      A.push($isNothing(vectorA.elements[i]) ? 0 : vectorA.elements[i]);
-      B.push(vectorB.elements[i]);
+      A.push($isNothing(vectorA._elements[i]) ? 0 : vectorA._elements[i]);
+      B.push(vectorB._elements[i]);
     }
     const n = vectorB.length - i;
     for (let j = 0; j < n; j++) {
@@ -1259,11 +1265,6 @@ function vector(elements: number[] | Vector) {
   } else {
     return elements;
   }
-}
-
-/** Returns a new vector. */
-function v(...elements: (number)[]) {
-  return new Vector(elements);
 }
 
 /** Returns a new 2D vector. */
@@ -1321,7 +1322,7 @@ class Matrix {
     }
     const out: number[] = [];
     this.vectors.forEach((vector) => {
-      vector.elements.forEach((n, i) => {
+      vector._elements.forEach((n, i) => {
         if (i === index) out.push(n);
       });
     });
@@ -1345,9 +1346,9 @@ class Matrix {
   /** Sets the element at the given row index and column index. The row and column indices are expected to begin at 1. If no element exists at the provided indices, no change is done. */
   set(row: number, column: number, value: number) {
     if (this.vectors[row - 1] === undefined) return this;
-    if (this.vectors[row - 1].elements[column - 1] === undefined) return this;
+    if (this.vectors[row - 1]._elements[column - 1] === undefined) return this;
     const copy = this.copy();
-    copy.vectors[row - 1].elements[column - 1] = value;
+    copy.vectors[row - 1]._elements[column - 1] = value;
     return copy;
   }
 
@@ -1409,10 +1410,10 @@ class Matrix {
     const vectors: Vector[] = [];
     for (let i = 0; i < this.R; i++) {
       const nums: number[] = [];
-      const row = this.vectors[i].elements;
+      const row = this.vectors[i]._elements;
       for (let j = 0; j < row.length; j++) {
         const a = row[j];
-        const b = other.vectors[i].elements[j];
+        const b = other.vectors[i]._elements[j];
         nums.push(op(a, b));
       }
       vectors.push(vector(nums));
@@ -1446,7 +1447,7 @@ class Matrix {
     for (let i = 0; i < this.R; ++i) {
       const vector = this.vectors[i];
       for (let j = 0; j < this.C; ++j) {
-        const element = vector.elements[j];
+        const element = vector._elements[j];
         if ($isNothing(element)) continue;
         if ($isNothing(copy[j])) {
           copy[j] = [];
@@ -1487,8 +1488,8 @@ class Matrix {
       for (let j = 0; j < Bc; j++) {
         let sum = 0;
         for (let k = 0; k < Ac; k++) {
-          const a = this.vectors[i].elements[k];
-          const b = B.vectors[k].elements[j];
+          const a = this.vectors[i]._elements[k];
+          const b = B.vectors[k]._elements[j];
           sum += a * b;
         }
         result[i][j] = sum;
@@ -1513,8 +1514,8 @@ class Matrix {
     const vectors = this.vectors;
     const maxRow = vectors.length - 1;
     vectors.forEach((d, i) => {
-      const maxCol = d.elements.length - 1;
-      d.elements.forEach((e, j) => {
+      const maxCol = d._elements.length - 1;
+      d._elements.forEach((e, j) => {
         const element = `${e}`;
         body += element;
         if (j !== maxCol) {
@@ -1574,7 +1575,7 @@ class MCommand extends PathCommand {
     return new MCommand(x, y, z);
   }
   toString() {
-    return `M${this.end.x},${this.end.y}`;
+    return `M${this.end._x},${this.end._y}`;
   }
 }
 
@@ -1591,7 +1592,7 @@ class LCommand extends PathCommand {
     return new LCommand(x, y, z);
   }
   toString() {
-    return `L${this.end.x},${this.end.y}`;
+    return `L${this.end._x},${this.end._y}`;
   }
 }
 /** Returns a new {@link LCommand|L-command}. */
@@ -1622,7 +1623,7 @@ class VCommand extends PathCommand {
     return new VCommand(x, y, z);
   }
   toString() {
-    return `V${this.end.x},${this.end.y}`;
+    return `V${this.end._x},${this.end._y}`;
   }
 }
 /** Returns a new {@link VCommand|V-command}. */
@@ -1638,7 +1639,7 @@ class HCommand extends PathCommand {
     return new HCommand(x, y, z);
   }
   toString() {
-    return `H${this.end.x},${this.end.y}`;
+    return `H${this.end._x},${this.end._y}`;
   }
 }
 
@@ -1653,7 +1654,7 @@ class QCommand extends PathCommand {
     this.ctrl1 = vector([x, y, z]);
   }
   ctrlPoint(x: number, y: number, z: number = 1): QCommand {
-    const out = new QCommand(this.end.x, this.end.y, this.end.z);
+    const out = new QCommand(this.end._x, this.end._y, this.end._z);
     out.ctrl1 = vector([x, y, z]);
     return out;
   }
@@ -1661,7 +1662,7 @@ class QCommand extends PathCommand {
     return new QCommand(x, y, z);
   }
   toString() {
-    return `Q${this.ctrl1.x},${this.ctrl1.y},${this.end.x},${this.end.y}`;
+    return `Q${this.ctrl1._x},${this.ctrl1._y},${this.end._x},${this.end._y}`;
   }
 }
 
@@ -1677,20 +1678,20 @@ class CCommand extends PathCommand {
     super(pc.C, vector([x, y, z]));
   }
   copy() {
-    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    const out = new CCommand(this.end._x, this.end._y, this.end._z);
     out.ctrl1 = this.ctrl1.copy();
     out.ctrl2 = this.ctrl2.copy();
     return out;
   }
   /** Sets the second control point for this cubic bezier curve. */
   ctrlPoint2(x: number, y: number, z: number = 1) {
-    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    const out = new CCommand(this.end._x, this.end._y, this.end._z);
     out.ctrl2 = vector([x, y, z]);
     return out;
   }
   /** Sets the first control point for this cubic bezier curve. */
   ctrlPoint1(x: number, y: number, z: number = 1) {
-    const out = new CCommand(this.end.x, this.end.y, this.end.z);
+    const out = new CCommand(this.end._x, this.end._y, this.end._z);
     out.ctrl1 = vector([x, y, z]);
     return out;
   }
@@ -1698,7 +1699,7 @@ class CCommand extends PathCommand {
     return new CCommand(x, y, z);
   }
   toString() {
-    return `C${this.ctrl1.x},${this.ctrl1.y},${this.ctrl2.x},${this.ctrl2.y},${this.end.x},${this.end.y}`;
+    return `C${this.ctrl1._x},${this.ctrl1._y},${this.ctrl2._x},${this.ctrl2._y},${this.end._x},${this.end._y}`;
   }
 }
 
@@ -1744,7 +1745,7 @@ class ACommand extends PathCommand {
     return out;
   }
   copy(): ACommand {
-    const out = new ACommand(this.end.x, this.end.y, this.end.z);
+    const out = new ACommand(this.end._x, this.end._y, this.end._z);
     out.rx = this.rx;
     out.ry = this.ry;
     out.rotation = this.rotation;
@@ -1756,7 +1757,7 @@ class ACommand extends PathCommand {
     return new ACommand(x, y, z);
   }
   toString() {
-    return `A${this.rx},${this.ry},${this.rotation},${this.largeArc},${this.sweep},${this.end.x},${this.end.y}`;
+    return `A${this.rx},${this.ry},${this.rotation},${this.largeArc},${this.sweep},${this.end._x},${this.end._y}`;
   }
 }
 
@@ -1808,13 +1809,13 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
     get firstCommand() {
       const out = this.commands[0];
       if (out === undefined) {
-        return M(this.origin.x, this.origin.y, this.origin.z);
+        return M(this.origin._x, this.origin._y, this.origin._z);
       } else return out;
     }
     get lastCommand() {
       const out = this.commands[this.length - 1];
       if (out === undefined) {
-        return M(this.origin.x, this.origin.y, this.origin.z);
+        return M(this.origin._x, this.origin._y, this.origin._z);
       } else return out;
     }
     at(x: number, y: number, z: number = 1) {
@@ -1830,7 +1831,7 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
       const Y = interpolator(range, [dimensions[1], 0]);
       this.commands = this.commands.map((p) => {
         const E = p.end;
-        const [x, y, z] = [X(E.x), Y(E.y), 1];
+        const [x, y, z] = [X(E._x), Y(E._y), 1];
         switch (p.type) {
           case pc.M:
             return M(x, y, z);
@@ -1846,8 +1847,8 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
             const c1 = (p as CCommand).ctrl1;
             const c2 = (p as CCommand).ctrl2;
             return C(x, y, z)
-              .ctrlPoint1(X(c1.x), Y(c1.y), c1.z)
-              .ctrlPoint2(X(c2.x), Y(c2.y), c2.z);
+              .ctrlPoint1(X(c1._x), Y(c1._y), c1._z)
+              .ctrlPoint2(X(c2._x), Y(c2._y), c2._z);
           }
           case pc.A: {
             p = p as ACommand;
@@ -1864,25 +1865,25 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
         const E = op(p.end);
         switch (p.type) {
           case pc.M:
-            return M(E.x, E.y, E.z);
+            return M(E._x, E._y, E._z);
           case pc.H:
           case pc.L:
           case pc.V:
-            return L(E.x, E.y, E.z);
+            return L(E._x, E._y, E._z);
           case pc.Q: {
             const c = op((p as QCommand).ctrl1);
-            return Q(E.x, E.y, E.z).ctrlPoint(c.x, c.y, c.z);
+            return Q(E._x, E._y, E._z).ctrlPoint(c._x, c._y, c._z);
           }
           case pc.C: {
             const c1 = op((p as CCommand).ctrl1);
             const c2 = op((p as CCommand).ctrl2);
-            return C(E.x, E.y, E.z)
-              .ctrlPoint1(c1.x, c1.y, c1.z)
-              .ctrlPoint2(c2.x, c2.y, c2.z);
+            return C(E._x, E._y, E._z)
+              .ctrlPoint1(c1._x, c1._y, c1._z)
+              .ctrlPoint2(c2._x, c2._y, c2._z);
           }
           case pc.A: {
             p = p as ACommand;
-            return A(E.x, E.y, E.z);
+            return A(E._x, E._y, E._z);
           }
           default:
             return p;
@@ -2091,7 +2092,7 @@ export class Path extends PATH {
 
   /** Returns the `d` attribute value resulting from this path. */
   toString(): string {
-    const origin = M(this.origin.x, this.origin.y).toString();
+    const origin = M(this.origin._x, this.origin._y).toString();
     const out = this.commands.map((command) => command.toString());
     return origin + out.join("");
   }
@@ -2127,12 +2128,12 @@ export class Path extends PATH {
 
   /** Appends a `V` command to this path. */
   V(y: number) {
-    return this.push(L(this.cursor.x, y));
+    return this.push(L(this.cursor._x, y));
   }
 
   /** Appends an `H` command to this path. */
   H(x: number) {
-    return this.push(L(x, this.cursor.y));
+    return this.push(L(x, this.cursor._y));
   }
 
   /** Appends an `M` command to this path. */
@@ -2163,7 +2164,7 @@ export class Line extends LINE {
     if (position) {
       this._label.at(position[0], position[1]);
     } else {
-      this._label.at(this.lastCommand.end.x, this.lastCommand.end.y);
+      this._label.at(this.lastCommand.end._x, this.lastCommand.end._y);
     }
     $isNothing(this._label._fontSize) && (
       this._label._fontSize = 8
@@ -2183,8 +2184,8 @@ export class Line extends LINE {
   constructor(start: Vector, end: Vector) {
     super();
     this.commands.push(
-      M(start.x, start.y, start.z),
-      L(end.x, end.y, end.z),
+      M(start._x, start._y, start._z),
+      L(end._x, end._y, end._z),
     );
   }
 }
@@ -2206,9 +2207,9 @@ export class Circle extends CIRCLE {
     super();
     this.radius = radius;
     this.commands.push(
-      M(this.origin.x, this.origin.y + radius / 2, this.origin.z),
-      A(this.origin.x, this.origin.y - radius / 2, this.origin.z),
-      A(this.origin.x, this.origin.y + radius / 2, this.origin.z),
+      M(this.origin._x, this.origin._y + radius / 2, this.origin._z),
+      A(this.origin._x, this.origin._y - radius / 2, this.origin._z),
+      A(this.origin._x, this.origin._y + radius / 2, this.origin._z),
     );
   }
   r(x: number) {
@@ -2243,8 +2244,8 @@ export class Quad extends QUAD {
   }
   end() {
     const o = this.origin;
-    const x = o.x;
-    const y = o.y;
+    const x = o._x;
+    const y = o._y;
     const w = this._width;
     const h = this._height;
     this.commands.push(M(x, y));
@@ -2296,10 +2297,10 @@ export class Text extends TEXT {
     this.commands.push(M(0, 0));
   }
   dy(y: number) {
-    return this.at(this.commands[0].end.x, this.commands[0].end.y + y);
+    return this.at(this.commands[0].end._x, this.commands[0].end._y + y);
   }
   dx(x: number) {
-    return this.at(this.commands[0].end.x + x, this.commands[0].end.y);
+    return this.at(this.commands[0].end._x + x, this.commands[0].end._y);
   }
   at(x: number, y: number) {
     this.commands[0] = M(x, y);
@@ -2330,8 +2331,8 @@ function tickLines(
     ns.forEach((n) => {
       const tick = line([n, -length], [n, length]);
       const txt = label(n, i).at(
-        tick.firstCommand.end.x,
-        tick.firstCommand.end.y,
+        tick.firstCommand.end._x,
+        tick.firstCommand.end._y,
       );
       out.push({ tick, txt });
       i++;
@@ -2340,8 +2341,8 @@ function tickLines(
     ns.forEach((n) => {
       const tick = line([-length, n], [length, n]);
       const txt = label(n, i).at(
-        tick.firstCommand.end.x,
-        tick.firstCommand.end.y,
+        tick.firstCommand.end._x,
+        tick.firstCommand.end._y,
       );
       out.push({ tick, txt });
       i++;
@@ -2461,7 +2462,7 @@ export class Plot2D extends PLOT2D {
         }
       }
     }
-    const p = path(out[0].end.x, out[0].end.y, out[0].end.z)
+    const p = path(out[0].end._x, out[0].end._y, out[0].end._z)
       .stroke(this._stroke)
       .strokeWidth(this._strokeWidth);
     for (let i = 1; i < out.length; i++) {
@@ -3365,7 +3366,7 @@ export class ForceGraph extends FORCE_GRAPH {
     MAX_Y: number,
   ) {
     const rsq = (v: Vector, u: Vector) => (
-      ((v.x - u.x) ** 2) + ((v.y - u.y) ** 2)
+      ((v._x - u._x) ** 2) + ((v._y - u._y) ** 2)
     );
     this.forEachPt((v) => {
       v._f = v2D(0, 0);
@@ -3390,10 +3391,10 @@ export class ForceGraph extends FORCE_GRAPH {
     let displacement = 0;
     this.forEachPt((v) => {
       v._v = (v._v.add(v._f)).mul(this._decay);
-      displacement += (Math.abs(v._v.x)) + Math.abs(v._v.y);
+      displacement += (Math.abs(v._v._x)) + Math.abs(v._v._y);
       v._p = v._p.add(v._v);
-      v._p.x = clamp(MIN_X, v._p.x, MAX_X);
-      v._p.y = clamp(MIN_Y, v._p.y, MAX_Y);
+      v._p._x = clamp(MIN_X, v._p._x, MAX_X);
+      v._p._y = clamp(MIN_Y, v._p._y, MAX_Y);
     });
     this._stable = displacement < this._epsilon;
   }
@@ -3460,10 +3461,10 @@ export class ForceGraph extends FORCE_GRAPH {
       const source = this._particles.get(e._source._id);
       const target = this._particles.get(e._target._id);
       if (source && target && !ids.has(e._id)) {
-        const x1 = source._p.x;
-        const y1 = source._p.y;
-        const x2 = target._p.x;
-        const y2 = target._p.y;
+        const x1 = source._p._x;
+        const y1 = source._p._y;
+        const x2 = target._p._x;
+        const y2 = target._p._y;
         const l = line([x1, y1], [x2, y2]).stroke(this._edgeColor);
         this._children.push(l);
       }
@@ -3472,12 +3473,12 @@ export class ForceGraph extends FORCE_GRAPH {
     });
     this._particles.forEach((p) => {
       const t = p._id;
-      const c = circle(this._nodeRadius).at(p._p.x, p._p.y).fill(
+      const c = circle(this._nodeRadius).at(p._p._x, p._p._y).fill(
         this._nodeColor,
       );
       this._children.push(c);
       this._children.push(
-        text(t).at(p._p.x, p._p.y + p._r).fontColor(this._nodeFontColor),
+        text(t).at(p._p._x, p._p._y + p._r).fontColor(this._nodeFontColor),
       );
     });
     return this.fit();
@@ -3507,13 +3508,13 @@ class TNode extends TNODE {
   _ancestor: Option<Fork>;
   _id: string | number = uid(5);
   get _x() {
-    return this.commands[0].end.x;
+    return this.commands[0].end._x;
   }
   get _y() {
-    return this.commands[0].end.y;
+    return this.commands[0].end._y;
   }
   get _z() {
-    return this.commands[0].end.z;
+    return this.commands[0].end._z;
   }
   set _x(x: number) {
     this.commands = [M(x, this._y, this._z)];

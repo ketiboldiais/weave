@@ -285,8 +285,8 @@ export const Figure = ({ of }: { of: Parent }) => {
   const TEXT = ({ of }: { of: Text }) => {
     return (
       <text
-        dx={of.commands[0].end.x}
-        dy={of.commands[0].end.y}
+        dx={of.commands[0].end._x}
+        dy={of.commands[0].end._y}
         textAnchor={of._textAnchor}
         fill={of._fontColor}
         fontFamily={of._fontFamily}

@@ -2,8 +2,104 @@
 This is the documentation page for _Vector_, the data type representing Loom’s vectors. Vectors are the predominant data type used by Loom for positioning, scaling, transforming, and many other numeric operations.
 
 ## Properties
-### elements __number[ ]__
+Below are various properties defined on all Vectors. Vector property names are always prefixed with an underscore (`_`).
+
+### Vector._elements __number[ ]__
 The literal numbers comprising the vector.
 
 ## Methods
-### Vector.toLatex( ) __: string__
+### Vector.toLatex
+
+:::tbl
+
+| Parameters | Returns |
+| ---------- | ------- |
+|            | string  |
+
+:::
+
+Returns the vector as a string in LaTeX syntax.
+
+### Vector.binop
+
+:::tbl
+
+| Parameters                                       | Returns |
+| ------------------------------------------------ | ------- |
+| ${other:}$ Vector \| number[] \| number          | Vector  |
+| ${op:}$ (${a}$\:number, ${b}$\:number) => number |         |
+
+:::
+
+Performs the binary operation ${op}$ for each element of the Vector and ${other.}$ The callback function ${op}$ takes two numbers: ${a}$ is the element of the Vector and ${b}$ is the element of the other vector.
+
+_Example._ Below, the vector `c` reduces to ${[1+3,~~2+2,~~3+1].}$
+~~~js
+const a = new Vector([1,2,3]);
+const b = new Vector([3,2,1]);
+const c = a.binop(b, (a,b) => a + b);
+~~~
+
+If `other` is a number, the operand vector is a vector of the same length as the Vector, filled with the given number.
+
+_Example._ Below, the vector `v` reduces to ${[1+8,~~2+8,~~3+8].}$
+
+~~~js 
+const u = new Vector([1,2,3]);
+const v = u.binop(8, (a,b) => a + b);
+~~~
+
+### Vector.vxm
+:::tbl
+| Parameters    | Returns |
+| ------------- | ------- |
+| ${M:}$ Matrix | Vector  |
+:::
+Retuns the product of the vector and the given matrix ${M.}$ Mathematically, this is equivalent to multiplying a row vector by a matrix. Some points to keep in mind when using this method:
+
+1. Each element of the resulting vector is the dot product of the original vector with a single row or column of the given matrix ${M.}$
+2. Vector-by-matrix multiplication is distributive over addition. That is, given vectors ${\bf{v}}$ and ${\bf{w}}$ and a matrix ${\bf{M},}$ we have:
+
+$$
+  (\bf{v} + \bf{w})\bf{M} = {\bf{v}}{\bf{M}} + {\bf{w}}{\bf{M}}
+$$
+
+### Vector.min
+:::tbl
+| Parameters | Returns |
+| ---------- | ------- |
+|            | number  |
+:::
+Returns the least element of the Vector.
+
+### Vector.max
+:::tbl
+| Parameters | Returns |
+| ---------- | ------- |
+|            | number  |
+:::
+Returns the greatest element of the Vector.
+
+### Vector.matrix
+:::tbl
+| Parameters | Returns |
+| ---------- | ------- |
+|            | Matrix  |
+:::
+Returns the Vector as a column matrix.
+
+### Vector.mag
+:::tbl
+| Parameters             | Returns |
+| ---------------------- | ------- |
+| ${precision?:}$ number | number  |
+:::
+Returns the magnitude of the Vector. An optional ${precision}$ may be passed to limit the result’s decimal places.
+
+### Vector.sub
+:::tbl
+| Parameters                              | Returns |
+| --------------------------------------- | ------- |
+| ${other:}$ Vector \| number[] \| number | Vector  |
+:::
+Returns the difference of the Vector and the ${other}$ vector.
