@@ -1,16 +1,66 @@
-import {ForceGraph1, Plot1, Histogram1, Scatter1} from "./Screen.tsx";
+import {ForceGraph1, Knuth1, Plot1, Histogram1, Scatter1, WetherellShannon1,HV1, DotPlot1} from "./Screen.tsx";
 
 # Loom
-_Loom_ is a zero-dependency module of various 2D- and 3D-graphics algorithms.
+Loom is a zero-dependency module of various 2D- and 3D-graphics algorithms. Applying basic linear algebra and physics, these algorithms output SVG commands for an SVG engine (e.g., your browser) to draw:
 
-:::grid
+:::::grid
 
-<ForceGraph1/>
-
-<Histogram1/>
-
-<Plot1/>
-
-<Scatter1/>
-
+::::figure
+<Knuth1/>
+:::figcaption
+A binary tree from Knuth’s algorithm.
 :::
+::::
+
+::::figure
+<ForceGraph1/>
+:::figcaption
+A graph from a variation of Eades’s algorithm.
+:::
+::::
+
+::::figure
+<Histogram1/>
+:::figcaption
+A histogram.
+:::
+::::
+
+::::figure
+<Plot1/>
+:::figcaption
+A plot of ${f(x) = \tan(x)}$ in ${\reals^2.}$
+:::
+::::
+
+::::figure
+<HV1/>
+:::figcaption
+An HV tree.
+:::
+::::
+
+::::figure
+<Scatter1/>
+:::figcaption
+A scatter plot.
+:::
+::::
+
+
+::::figure
+<WetherellShannon1/>
+:::figcaption
+An ${n}$-ary tree from the Whetherell-Shannon algorithm.
+:::
+::::
+
+
+::::figure
+<DotPlot1/>
+:::figcaption
+A dot plot.
+:::
+::::
+
+:::::

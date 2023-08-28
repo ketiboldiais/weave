@@ -44,6 +44,13 @@ function none() {
 
 type Option<T> = None | Some<T>;
 
+function exists<T>(opt: Option<T>): opt is Some<T> {
+  return opt._tag === "Some";
+}
+function empty<T>(opt: Option<T>): opt is None {
+  return opt._tag === "None";
+}
+
 function omap<T, S>(f: (a: T) => S, opt: Option<T>): Option<S> {
   if (opt._tag === "None") {
     return opt;
@@ -536,6 +543,20 @@ function maximum(numbers: number[]) {
   return max;
 }
 
+function frequencyTable<T>(data: T[]) {
+  const out = new Map<T, number>();
+  for (let i = 0; i < data.length; i++) {
+    const key = data[i];
+    if (out.has(key)) {
+      const value = out.get(key)!;
+      out.set(key, value + 1);
+    } else {
+      out.set(key, 1);
+    }
+  }
+  return out;
+}
+
 /** Returns a table of intervals from the given array of numbers.*/
 function autoBin(
   numbers: number[],
@@ -561,7 +582,7 @@ function autoBin(
 }
 
 /** Returns a frequency table from the given array of numbers.  */
-function frequencyTable(
+function frequencyIntervalTable(
   numbers: number[],
   precision: number = 0.05,
   intervals?: number,
@@ -580,17 +601,13 @@ function frequencyTable(
   return boundaries;
 }
 
-// import { heights } from "./test-data.js";
-// print(frequencyTable(heights));
-// print(relativeFrequencyTable(heights));
-
 /** Returns a relative frequency table from the given array of numbers.  */
 function relativeFrequencyTable(
   numbers: number[],
   precision: number = 0.05,
   intervals?: number,
 ): Map<[number, number], number> {
-  const boundaries = frequencyTable(numbers, precision, intervals);
+  const boundaries = frequencyIntervalTable(numbers, precision, intervals);
   for (const [key, value] of boundaries) {
     boundaries.set(key, value / numbers.length);
   }
@@ -2479,21 +2496,101 @@ export class Plot2D extends PLOT2D {
   end() {
     this.generateAxes();
     this[this._type](this.f);
-    this._children = this._children.map((p) => {
-      let r = p.end();
-      r = r.interpolate(
-        this._domain,
-        this._range,
-        [this._width, this._height],
-      );
-      return r;
-    });
-    return this;
+    return this.fit();
   }
 }
 
 export function plot2D(f: string) {
   return new Plot2D(f);
+}
+
+function mapKeys<K, V>(x: Map<K, V>) {
+  const out = [];
+  for (const [key] of x) {
+    out.push(key);
+  }
+  return out;
+}
+
+// ==================================================================== DOT PLOT
+const DOT_PLOT = contextual(colorable(BASE));
+class DotPlot<T extends (string | number) = any> extends DOT_PLOT {
+  _data: Map<T, number> = new Map();
+  constructor(data: T[]) {
+    super();
+    this._data = frequencyTable(data);
+  }
+  _xTickLength: number = 0.05;
+  xTickLength(n: number) {
+    this._xTickLength = n;
+    return this;
+  }
+  _xTickSep: number = 1;
+  xTickSep(n: number) {
+    this._xTickSep = n;
+    return this;
+  }
+  _dotSep: number = 0.5;
+  dotSep(n: number) {
+    this._dotSep = n;
+    return this;
+  }
+  _dotFill: string = "initial";
+  dotFill(color: string) {
+    this._dotFill = color;
+    return this;
+  }
+  _dotStroke: string = "initial";
+  dotStroke(color: string) {
+    this._dotStroke = color;
+    return this;
+  }
+  end() {
+    const keycount = this._data.size;
+    const keys = mapKeys(this._data);
+    this._domain = [-1, keycount];
+    let ymax = -Infinity;
+    for (const [_, value] of this._data) {
+      (value > ymax) && (ymax = value);
+    }
+    this._range = [0, ymax];
+    const x_axis = line([this._xmin, this._ymin], [this._xmax, this._ymin])
+      .stroke(this._stroke);
+    this.and(x_axis);
+    const xticks = tickLines(
+      this._xTickLength,
+      this._xmin,
+      this._xmax,
+      this._xTickSep,
+      "x",
+      (_, i) => text(keys[i - 1]).anchor("middle").fontColor(this._stroke),
+    );
+    xticks.forEach((t) =>
+      this.and(t.tick.stroke(this._stroke), t.txt.dy(-this._dotSep / 2))
+    );
+    let i = 0;
+    this._data.forEach((value) => {
+      const k = interpolator([0, 1], [0, this._dotSep]);
+      range(0, value, 1).forEach((n) => {
+        this.and(
+          circle(this._dotRadius).at(i, k(n + this._dotSep))
+            .fill(this._dotFill)
+            .stroke(this._dotStroke),
+        );
+      });
+      i++;
+    });
+    return this.fit();
+  }
+  _dotRadius: number = 0.2;
+  dotRadius(r: number) {
+    this._dotRadius = r;
+    return this;
+  }
+}
+
+export function dotPlot<T extends string | number>(data: T[]) {
+  return new DotPlot(data);
 }
 
 // =================================================================== HISTOGRAM
@@ -2546,7 +2643,7 @@ class Histogram extends HISTOGRAM {
       i++;
     }
     const xs: number[] = [];
-    for (const [key, value] of this._data) {
+    for (const [key] of this._data) {
       xs.push(key[0]);
     }
     const x_axis = line([this._xmin, this._ymin], [this._xmax, this._ymin])
@@ -2591,16 +2688,7 @@ class Histogram extends HISTOGRAM {
           .dy(-0.005),
       )
     );
-    this._children = this._children.map((e) => e.end());
-    this._children = this._children.map((c) => {
-      const out = c.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-      return out;
-    });
-    return this;
+    return this.fit();
   }
   _barCount: number = 5;
   barCount(n: number) {
@@ -2698,16 +2786,7 @@ class ScatterPlot<T = any> extends SCATTER_PLOT {
         t.txt.fontColor(this._stroke).anchor("end").dx(-0.05).dy(-0.05),
       )
     );
-    this._children = this._children.map((x) => x.end());
-    this._children = this._children.map((x) => {
-      const out = x.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-      return out;
-    });
-    return this;
+    return this.fit();
   }
   data(d: T[]) {
     this._data = d;
@@ -2827,6 +2906,7 @@ interface Contextual {
   get _ymin(): number;
   get _ymax(): number;
   and(...shape: Shape[]): this;
+  fit(): this;
 }
 
 function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
@@ -2835,6 +2915,18 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
     _domain: [number, number] = [-10, 10];
     domain(x: number, y: number) {
       if (x < y) this._domain = [x, y];
+      return this;
+    }
+    fit() {
+      this._children = this._children.map((x) => x.end());
+      this._children = this._children.map((x) => {
+        const out = x.interpolate(
+          this._domain,
+          this._range,
+          [this._vw, this._vh],
+        );
+        return out;
+      });
       return this;
     }
     _range: [number, number] = [-10, 10];
@@ -2893,29 +2985,6 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       return this;
     }
   };
-}
-const FIG = contextual(BASE);
-
-export class Fig extends FIG {
-  constructor(children: Shape[]) {
-    super();
-    this._children = children;
-  }
-  end() {
-    this._children = this._children.map((x) => {
-      const out = x.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-      return out;
-    });
-    return this;
-  }
-}
-
-export function fig(children: Shape[]) {
-  return new Fig(children);
 }
 
 type EdgeType = "--" | "->";
@@ -3395,9 +3464,6 @@ export class ForceGraph extends FORCE_GRAPH {
         const y1 = source._p.y;
         const x2 = target._p.x;
         const y2 = target._p.y;
-        const color = this._styles._edges._stroke
-          ? this._styles._edges._stroke
-          : "initial";
         const l = line([x1, y1], [x2, y2]).stroke(this._edgeColor);
         this._children.push(l);
       }
@@ -3414,14 +3480,7 @@ export class ForceGraph extends FORCE_GRAPH {
         text(t).at(p._p.x, p._p.y + p._r).fontColor(this._nodeFontColor),
       );
     });
-    this._children = this._children.map((x) => {
-      return x.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-    });
-    return this;
+    return this.fit();
   }
 }
 
@@ -3435,13 +3494,13 @@ export function forceGraph(graph: Graph) {
 const TNODE = colorable(renderable(BASE));
 
 class TNode extends TNODE {
-  _thread: Option<TNode> = none();
+  _thread: Option<TreeChild> = none();
   _parent: Option<Fork>;
-  _children: TNode[] = [];
+  _children: TreeChild[] = [];
   _index: number = 0;
   _change: number = 0;
   _shift: number = 0;
-  _leftmostSibling: Option<TNode> = none();
+  _leftmostSibling: Option<TreeChild> = none();
   _name: string | number;
   _dx: number = 0;
   _dy: number = 0;
@@ -3481,14 +3540,14 @@ class TNode extends TNODE {
     this._thread = none();
     this._leftmostSibling = none();
   }
-  left(): Option<TNode> {
+  left(): Option<TreeChild> {
     if (this._thread._tag === "Some") {
       return this._thread;
     } else if (this._children.length) {
       return some(this._children[0]);
     } else return none();
   }
-  right(): Option<TNode> {
+  right(): Option<TreeChild> {
     if (this._thread._tag === "Some") {
       return this._thread;
     } else if (this._children.length) {
@@ -3523,53 +3582,66 @@ class Leaf extends TNode {
     super(name, parent);
     this._x = -1;
   }
+  onLastChild(_: (node: TreeChild) => void) {
+    return;
+  }
+  onFirstChild(_: (node: TreeChild) => void) {
+    return;
+  }
   isLeaf(): this is Leaf {
     return true;
   }
   isFork(): this is never {
     return false;
   }
-  nodes(nodes: TNode[]) {
+  nodes(nodes: TreeChild[]) {
     return this;
   }
-  child(child: TNode) {
+  child(child: TreeChild) {
     return this;
   }
-  inorder(f: (node: TNode, index: number) => void) {
+  inorder(f: (node: TreeChild, index: number) => void) {
     return this;
   }
-  preorder(f: (node: TNode, index: number) => void) {
+  preorder(f: (node: TreeChild, index: number) => void) {
     return this;
   }
-  postorder(f: (node: TNode, index: number) => void) {
+  postorder(f: (node: TreeChild, index: number) => void) {
     return this;
   }
-  bfs(f: (node: TNode, level: number) => void) {
+  bfs(f: (node: TreeChild, level: number) => void) {
     return this;
   }
 }
+export function leaf(name: string | number) {
+  return new Leaf(name);
+}
 
 class Fork extends TNode {
-  isLeaf(): this is never {
-    return false;
-  }
-  isFork(): this is Fork {
-    return true;
-  }
-  nodes(nodes: TNode[]) {
+  nodes(nodes: TreeChild[]) {
     nodes.forEach((node) => {
       node._index = this._degree;
       this._children.push(node.childOf(this));
     });
     return this;
   }
-  child(child: TNode) {
+  onLastChild(callback: (node: TreeChild) => void) {
+    const c = this._children[this._children.length - 1];
+    if (c) callback(c);
+    return this;
+  }
+  onFirstChild(callback: (node: TreeChild) => void) {
+    const c = this._children[0];
+    if (c) callback(c);
+    return this;
+  }
+  child(child: TreeChild) {
     this._children.push(child.childOf(this));
     return this;
   }
-  inorder(f: (node: TNode, index: number) => void) {
+  inorder(f: (node: TreeChild, index: number) => void) {
     let i = 0;
-    const t = (tree: TNode) => {
+    const t = (tree: TreeChild) => {
       const [left, right] = arraySplit(tree._children);
       (left.length) && (left.forEach((c) => t(c)));
       f(tree, i++);
@@ -3578,9 +3650,9 @@ class Fork extends TNode {
     t(this);
     return this;
   }
-  preorder(f: (node: TNode, index: number) => void) {
+  preorder(f: (node: TreeChild, index: number) => void) {
     let i = 0;
-    const t = (tree: TNode) => {
+    const t = (tree: TreeChild) => {
       const [left, right] = arraySplit(tree._children);
       f(tree, i++);
       (left.length) && (left.forEach((c) => t(c)));
@@ -3589,9 +3661,9 @@ class Fork extends TNode {
     t(this);
     return this;
   }
-  postorder(f: (node: TNode, index: number) => void) {
+  postorder(f: (node: TreeChild, index: number) => void) {
     let i = 0;
-    const t = (tree: TNode) => {
+    const t = (tree: TreeChild) => {
       const [left, right] = arraySplit(tree._children);
       (left.length) && (left.forEach((c) => t(c)));
       (right.length) && (right.forEach((c) => t(c)));
@@ -3600,8 +3672,8 @@ class Fork extends TNode {
     t(this);
     return this;
   }
-  bfs(f: (node: TNode, level: number) => void) {
-    const queue = linkedList<TNode>(this);
+  bfs(f: (node: TreeChild, level: number) => void) {
+    const queue = linkedList<TreeChild>(this);
     let count = queue.length;
     let level = 0;
     while (queue.length > 0) {
@@ -3619,8 +3691,15 @@ class Fork extends TNode {
     return this;
   }
 }
+type TreeChild = Leaf | Fork;
+function isLeaf(x: any): x is Leaf {
+  return x instanceof Leaf;
+}
+function isFork(x: any): x is Fork {
+  return x instanceof Fork;
+}
 
-function subtree(name: string | number) {
+export function subtree(name: string | number) {
   return new Fork(name);
 }
 
@@ -3637,7 +3716,7 @@ type Traversal =
   | "postorder"
   | "bfs";
 type LinkFunction = (line: Line, source: TNode, target: TNode) => Line;
-const TREE = renderable(colorable(BASE));
+const TREE = contextual(colorable(BASE));
 class Tree extends TREE {
   _tree: Fork;
   _layout: TreeLayout = "knuth";
@@ -3650,16 +3729,229 @@ class Tree extends TREE {
     this._edgenotes[of] = callback;
     return this;
   }
+  private _nodefn: ((n: TreeChild) => TreeChild) | null = null;
+  nodemap(callback: (n: TreeChild) => TreeChild) {
+    this._nodefn = callback;
+    return this;
+  }
+  private _linkmap: ((line: Line) => Line) | null = null;
+  edgemap(callback: (line: Line) => Line) {
+    this._linkmap = callback;
+    return this;
+  }
+  nodes(nodes: TreeChild[]) {
+    nodes.forEach((n) => this._tree.child(n));
+    return this;
+  }
+  private HV() {
+    const largerToRight = (parent: TreeChild) => {
+      const L = parent.left();
+      const R = parent.right();
+      if (empty(L) || empty(R)) return;
+      const sh = 2;
+      const left = L.value;
+      const right = R.value;
+      if (isLeaf(left) && isLeaf(right)) {
+        right._x = parent._x + 1;
+        right._y = parent._y;
+        left._x = parent._x;
+        left._y = parent._y - sh;
+        parent._dx = 1;
+      } else {
+        const L = left._degree;
+        const R = right._degree;
+        if (L > R) {
+          left._x = parent._x + 1 + L;
+          left._y = parent._y;
+          right._x = parent._x;
+          right._y = parent._y - sh;
+          parent._dx += left._x;
+        } else if (L < R) {
+          right._x = parent._x + 1 + R;
+          right._y = parent._y;
+          left._x = parent._x;
+          left._y = parent._y - sh;
+          parent._dx += right._x;
+        }
+      }
+      parent._children.forEach((c) => largerToRight(c));
+    };
+    const xmin = this._xmin;
+    const ymax = this._ymax;
+    this._tree._x = xmin;
+    this._tree._y = ymax;
+    largerToRight(this._tree);
+    return this;
+  }
+  private buccheim() {
+    const executeShifts = (node: TreeChild) => {
+      let shift = 0;
+      let change = 0;
+      for (const child of node._children) {
+        child._x += shift;
+        child._dx += shift;
+        change += child._change;
+        shift += child._shift + change;
+      }
+    };
+    return this;
+  }
+  private knuth() {
+    this._tree.bfs((node, level) => {
+      const y = 0 - level;
+      node._y = y;
+    });
+    this._tree.inorder((node, index) => {
+      node._x = index;
+    });
+    const x = this._tree._x;
+    this._tree.bfs((node) => {
+      node._x -= x;
+    });
+    return this;
+  }
+  private reingoldTilford() {
+    return this;
+  }
+  private wetherellShannon() {
+    const lay = (
+      tree: TreeChild,
+      depth: number,
+      nexts: number[] = [0],
+      offsets: number[] = [0],
+    ) => {
+      tree._children.forEach((c) => {
+        lay(c, depth + 1, nexts, offsets);
+      });
+      tree._y = -depth;
+      if ($isNothing(nexts[depth])) {
+        nexts[depth] = 0;
+      }
+      if ($isNothing(offsets[depth])) {
+        offsets[depth] = 0;
+      }
+      let x = nexts[depth];
+      if (tree._degree === 0) {
+        x = nexts[depth];
+      } else if (tree._degree === 1) {
+        x = tree._children[0]._x + 1;
+      } else {
+        let lx = 0;
+        tree.onFirstChild((n) => {
+          lx = n._x;
+        });
+        let rx = 0;
+        tree.onLastChild((n) => {
+          rx = n._x;
+        });
+        const xpos = lx + rx;
+        x = xpos / 2;
+      }
+      offsets[depth] = max(offsets[depth], nexts[depth] - x);
+      if (tree._degree === 0) {
+        const d = x + offsets[depth];
+        tree._x = d;
+      } else {
+        tree._x = x;
+      }
+      nexts[depth] += 2;
+      tree._dx = offsets[depth];
+    };
+    const addDxs = (tree: TreeChild, sum: number = 0) => {
+      tree._x = tree._x + sum;
+      sum += tree._dx;
+      tree._children.forEach((c) => addDxs(c, sum));
+    };
+    lay(this._tree, 0);
+    addDxs(this._tree);
+    const x = this._tree._x;
+    this._tree.bfs((n) => {
+      n._x -= x;
+    });
+    return this;
+  }
+  private lay() {
+    // deno-fmt-ignore
+    switch (this._layout) {
+      case 'buccheim-unger-leipert': return this.buccheim();
+      case 'hv': return this.HV();
+      case 'knuth': return this.knuth();
+      case 'reingold-tilford': return this.reingoldTilford();
+      case 'wetherell-shannon': return this.wetherellShannon();
+    }
+  }
+  _nodeRadius: number = 0.5;
+  nodeRadius(r: number) {
+    this._nodeRadius = r;
+    return this;
+  }
+  _edgeStroke: string = "black";
+  edgeStroke(color: string) {
+    this._edgeStroke = color;
+    return this;
+  }
+  _nodeFill: string = "black";
+  nodeFill(color: string) {
+    this._nodeFill = color;
+    return this;
+  }
+  end() {
+    this.lay();
+    this._tree.bfs((node) => {
+      const parent = node._parent;
+      omap((p) => {
+        const l = line([p._x, p._y], [node._x, node._y]);
+        this.and(l);
+      }, parent);
+    });
+    this._tree.bfs((node) => {
+      const x = node._x;
+      const y = node._y;
+      this.and(
+        circle(this._nodeRadius)
+          .at(x, y),
+      );
+    });
+    this._children = this._children.map((c) => c.end());
+    this._children = this._children.map((c) => {
+      const o = c.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+      if (o instanceof Circle) {
+        o._fill = this._nodeFill;
+        o._stroke = this._edgeStroke;
+      }
+      if (o instanceof Line) {
+        o._stroke = this._edgeStroke;
+      }
+      return o;
+    });
+    return this;
+  }
   constructor(tree: Fork) {
     super();
     this._tree = tree;
+    const m = 10;
+    this._domain = [-5, 5];
+    this._range = [-5, 5];
+    this._margins = [m, m, m, m];
+    this._width = 300;
+    this._height = 300;
   }
 }
 export function tree(t: Fork) {
   return new Tree(t);
 }
 
-export type Parent = Fig | ForceGraph | ScatterPlot | Histogram | Plot2D;
+export type Parent =
+  | ForceGraph
+  | ScatterPlot
+  | Histogram
+  | Plot2D
+  | Tree
+  | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad;
 

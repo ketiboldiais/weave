@@ -3,19 +3,23 @@ import { IDE } from "./ScreenAUX.js";
 import { heights } from "./test-data.js";
 import {
   Circle,
+  dotPlot,
   engine,
-  Fig,
   forceGraph,
   graph,
   Group,
   histogram,
+  leaf,
   Line,
+  Parent,
   Path,
   plot2D,
   Quad,
   scatterPlot,
   Shape,
+  subtree,
   Text,
+  tree,
 } from "./io.js";
 import katex from "katex";
 type Html = { __html: string };
@@ -87,6 +91,75 @@ export const Plot1 = () => {
   return <Figure of={data} />;
 };
 
+export const Knuth1 = () => {
+  const data = tree(
+    subtree("a").nodes([
+      subtree("b").nodes([
+        leaf("c"),
+        leaf("d"),
+      ]),
+      subtree("e").nodes([
+        leaf("f"),
+        leaf("g"),
+      ]),
+    ]),
+  ).layout("wetherell-shannon").edgeStroke("white").nodeFill("orchid").end();
+  return <Figure of={data} />;
+};
+
+export const DotPlot1 = () => {
+  // deno-fmt-ignore
+  const data = dotPlot([
+    5, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 9, 9, 10,
+  ]).margins(0,10,40,10).height(300).width(300).dotStroke('white').dotFill('#3b4659').stroke('white').end();
+  return <Figure of={data} />;
+};
+
+export const HV1 = () => {
+  const data = tree(
+    subtree("a").nodes([
+      subtree("b").nodes([
+        leaf("f"),
+        leaf("q"),
+      ]),
+      subtree("w").nodes([
+        leaf("l"),
+        leaf("o"),
+      ]),
+      leaf("s"),
+    ]),
+  ).layout("hv")
+    .edgeStroke("azure")
+    .nodeRadius(0.3)
+    .nodeFill("white")
+    .end();
+  return <Figure of={data} />;
+};
+
+export const WetherellShannon1 = () => {
+  const data = tree(
+    subtree("a").nodes([
+      subtree("b").nodes([
+        subtree("d").nodes([
+          leaf("e"),
+          leaf("f"),
+        ]),
+        leaf("g"),
+        leaf("m"),
+      ]),
+      subtree("h").nodes([
+        leaf("i"),
+        leaf("j"),
+      ]),
+      leaf("p"),
+    ]),
+  ).layout("wetherell-shannon")
+    .edgeStroke("goldenrod")
+    .nodeFill("floralwhite")
+    .end();
+  return <Figure of={data} />;
+};
+
 export const Histogram1 = () => {
   const h = histogram(heights)
     .yTickLength(0.6)
@@ -114,7 +187,7 @@ export const Scatter1 = () => {
   return <Figure of={data} />;
 };
 
-export const Figure = ({ of }: { of: Fig }) => {
+export const Figure = ({ of }: { of: Parent }) => {
   const width = of._width;
   const height = of._height;
   const viewbox = `0 0 ${width} ${height}`;

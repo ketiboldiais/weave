@@ -1,6 +1,411 @@
 /** Utility method - Logs to the console. */
 const print = console.log;
 
+const uid = (length: number = 4, base = 36) =>
+  Math.random()
+    .toString(base)
+    .replace(/[^a-z]+/g, "")
+    .substring(0, length + 1);
+
+const arraySplit = <T>(array: T[]) => {
+  const L = array.length;
+  const half = Math.ceil(L / 2);
+  const left = array.slice(0, half);
+  const right = array.slice(half);
+  return [left, right] as [T[], T[]];
+};
+
+class None {
+  _tag: "None" = "None";
+  constructor() {}
+  map(f: (a: never) => unknown): None {
+    return new None();
+  }
+}
+
+class Some<T> {
+  readonly value: T;
+  _tag: "Some" = "Some";
+  constructor(value: T) {
+    this.value = value;
+  }
+  map<S>(f: (a: T) => S): Some<S> {
+    return new Some(f(this.value));
+  }
+}
+
+function some<T>(value: T) {
+  return (new Some<T>(value));
+}
+
+function none() {
+  return (new None());
+}
+
+type Option<T> = None | Some<T>;
+
+function exists<T>(opt: Option<T>): opt is Some<T> {
+  return opt._tag === "Some";
+}
+function empty<T>(opt: Option<T>): opt is None {
+  return opt._tag === "None";
+}
+
+function omap<T, S>(f: (a: T) => S, opt: Option<T>): Option<S> {
+  if (opt._tag === "None") {
+    return opt;
+  } else {
+    return some(f(opt.value));
+  }
+}
+
+class Binode<T> {
+  _data: T | null;
+  private _R: Option<Binode<T>>;
+  private _L: Option<Binode<T>>;
+  constructor(data: T | null) {
+    this._data = data;
+    this._R = none();
+    this._L = none();
+  }
+  /**
+   * Returns a copy of this bnode.
+   */
+  copy() {
+    const out = new Binode(this._data);
+    const left = this._L;
+    const right = this._R;
+    out._L = left;
+    out._R = right;
+    return out;
+  }
+  /**
+   * Flattens this bnode.
+   */
+  flatten(): Binode<T> | T {
+    return this._data === null ? Binode.none<T>() : this._data;
+  }
+  map<K>(callback: (data: T) => K) {
+    if (this._data) {
+      return Binode.some<K>(callback(this._data));
+    } else return Binode.none<K>();
+  }
+  /**
+   * Sets the value of this bnode.
+   */
+  set value(data: T) {
+    this._data = data;
+  }
+
+  do<K>(f: (d: T) => K) {
+    if (this._data !== null) {
+      f(this._data);
+    }
+    return this;
+  }
+  isSomething() {
+    return this._data !== null;
+  }
+  isNothing() {
+    return this._data === null;
+  }
+  static none<T>() {
+    return new Binode<T>(null);
+  }
+  static some<T>(data: T) {
+    return new Binode(data);
+  }
+  get _prev() {
+    if (this._L._tag === "None") {
+      return new Binode<T>(null);
+    } else {
+      return this._L.value;
+    }
+  }
+  set _prev(node: Binode<T>) {
+    this._L = some(node);
+  }
+  get _next() {
+    if (this._R._tag === "None") {
+      return new Binode<T>(null);
+    } else {
+      return this._R.value;
+    }
+  }
+  set _next(node: Binode<T>) {
+    this._R = some(node);
+  }
+  get _left() {
+    return this._prev;
+  }
+  set _left(node: Binode<T>) {
+    this._prev = node;
+  }
+  get _right() {
+    return this._next;
+  }
+  set _right(node: Binode<T>) {
+    this._next = node;
+  }
+}
+
+function binode<T>(data: T | null = null) {
+  return new Binode(data);
+}
+
+class LinkedList<T> {
+  private head: Binode<T>;
+  private tail: Binode<T>;
+  private count: number;
+  cdr() {
+    const list = this.clone();
+    if (list.isEmpty) return list;
+    let previousHead = list.head;
+    if (list.count === 1) {
+      list.head = binode();
+      list.tail = binode();
+    } else {
+      list.head = previousHead._right!;
+      list.head._left = binode();
+      previousHead._right = binode();
+    }
+    list.count--;
+    return list;
+  }
+  car() {
+    if (this.isEmpty) return this;
+    const head = this.head._data!;
+    return new LinkedList<T>().push(head);
+  }
+  clear() {
+    this.head = binode();
+  }
+  get length() {
+    return this.count;
+  }
+  get isEmpty() {
+    return this.count === 0 || this.head.isNothing();
+  }
+  constructor() {
+    this.count = 0;
+    this.head = binode();
+    this.tail = binode();
+  }
+  *[Symbol.iterator](): IterableIterator<T> {
+    let node = this.head;
+    while (node._data !== null) {
+      yield node._data;
+      node = node._right;
+    }
+  }
+  toArray(): T[] {
+    return [...this];
+  }
+  safeIdx(i: number) {
+    return 0 <= i && i < this.count;
+  }
+  set(element: T, at: number) {
+    const node = this.at(at);
+    node._data = element;
+    return this;
+  }
+  private at(index: number) {
+    if (!this.safeIdx(index)) {
+      return binode<T>();
+    } else {
+      let count = 0;
+      let current = this.head;
+      while (count !== index) {
+        let k = current._right;
+        if (k.isNothing()) break;
+        current = k;
+        count++;
+      }
+      return current;
+    }
+  }
+
+  map<K>(f: (data: T, index: number, list: LinkedList<T>) => K) {
+    const list = new LinkedList<K>();
+    this.forEach((d, i, l) => list.push(f(d, i, l)));
+    return list;
+  }
+
+  forEach(
+    f: (data: T, index: number, list: LinkedList<T>) => void,
+  ) {
+    if (this.isEmpty) return this;
+    let node = this.head;
+    let i = 0;
+    while (i < this.count) {
+      node.do((d) => f(d, i, this));
+      node = node._right;
+      i++;
+    }
+  }
+
+  clone() {
+    const list = new LinkedList<T>();
+    this.forEach((d) => list.push(d));
+    return list;
+  }
+  #reduce<X>(
+    from: 0 | 1,
+    reducer: (
+      accumulator: X,
+      currentValue: T,
+      index: number,
+      list: LinkedList<T>,
+    ) => X,
+    initialValue: X,
+  ) {
+    let i = 0;
+    const fn = (list: LinkedList<T>, init: X): X => {
+      if (list.isEmpty) return init;
+      else {
+        const popped = list[from === 0 ? "shift" : "pop"]();
+        if (popped._tag === "None") return init;
+        const updatedValue = reducer(init, popped.value, i++, list);
+        return fn(list, updatedValue);
+      }
+    };
+    return fn(this.clone(), initialValue);
+  }
+  reduceRight<X>(
+    reducer: (
+      accumulator: X,
+      currentValue: T,
+      index: number,
+      list: LinkedList<T>,
+    ) => X,
+    initialValue: X,
+  ): X {
+    return this.#reduce(1, reducer, initialValue);
+  }
+  reduce<X>(
+    reducer: (
+      accumulator: X,
+      currentValue: T,
+      index: number,
+      list: LinkedList<T>,
+    ) => X,
+    initialValue: X,
+  ): X {
+    return this.#reduce(0, reducer, initialValue);
+  }
+  join(separator: string = "") {
+    return [...this].join(separator);
+  }
+  toString(f?: (x: T, index: number) => string) {
+    const out = this.clone();
+    const g = f ? f : (x: T, index: number) => x;
+    return out.map((d, i) => g(d, i)).join();
+  }
+  filter(
+    predicate: (value: T, index: number, list: LinkedList<T>) => boolean,
+  ) {
+    const out = new LinkedList<T>();
+    this.forEach((n, i, list) => predicate(n, i, list) && out.push(n));
+    return out;
+  }
+  reverse() {
+    let current = this.head;
+    let i = 0;
+    while (current.isSomething() && i < this.count) {
+      const right = current._right;
+      current._right = current._left;
+      current._left = right;
+      let k = current._left;
+      if (k.isNothing() || i > this.count) break;
+      current = k;
+      i++;
+    }
+    const tail = this.tail;
+    this.tail = this.head;
+    this.head = tail;
+    return this;
+  }
+
+  item(index: number) {
+    return this.at(index)._data;
+  }
+
+  zip<K>(list: LinkedList<K>) {
+    const out = new LinkedList<[T, K]>();
+    this.forEach((d, i) => {
+      const x = list.item(i);
+      if (x !== null) {
+        const element: [T, K] = [d, x] as [T, K];
+        out.push(element);
+      }
+    });
+    return out;
+  }
+
+  pop(): Option<T> {
+    if (this.isEmpty) return none();
+    let popped = this.tail;
+    if (this.length === 1) {
+      this.head = binode();
+      this.tail = binode();
+    } else {
+      this.tail = popped._left;
+      this.tail._right = binode();
+      popped._left = binode();
+    }
+    this.count--;
+    return popped._data === null ? none() : some(popped._data);
+  }
+  unshift(element: T) {
+    const node = binode(element);
+    if (this.isEmpty) {
+      this.head = node;
+      this.tail = node;
+    } else {
+      this.head._prev = node;
+      node._next = this.head;
+      this.head = node;
+    }
+    this.count++;
+    return this;
+  }
+  shift() {
+    if (this.isEmpty) return none();
+    const previousHead = this.head;
+    if (this.length === 1) {
+      this.head = binode();
+      this.tail = binode();
+    } else {
+      this.head = previousHead._next;
+      this.head._prev = binode();
+      previousHead._prev = binode();
+    }
+    this.count--;
+    return previousHead._data === null ? none() : some(previousHead._data);
+  }
+  push(element: T) {
+    const node = binode(element);
+    if (this.head.isNothing()) {
+      this.head = node;
+      this.tail = node;
+    } else {
+      this.tail._next = node;
+      node._prev = this.tail;
+      this.tail = node;
+    }
+    this.count++;
+    return this;
+  }
+  append(...elements: T[]) {
+    elements.forEach((e) => this.push(e));
+    return this;
+  }
+}
+
+function linkedList<T>(...elements: T[]) {
+  return new LinkedList<T>().append(...elements);
+}
+
 /** Latex transformers. */
 const latex = {
   esc: (x: string | number) => (`{\\${x}}`),
@@ -256,9 +661,11 @@ function mod(a: number, b: number) {
 
 /** Returns an array of numbers running from start (inclusive) to stop (inclusive) */
 function range(start: number, stop: number, step = 1): number[] {
-  return Array(Math.ceil((stop - start) / step)).fill(start).map((x, y) =>
-    x + y * step
-  );
+  const out = [];
+  for (let i = start; i < stop; i += step) {
+    out.push(i);
+  }
+  return out;
 }
 
 /** Returns the integer quotient of `a` and `b`. */
@@ -1126,11 +1533,11 @@ function matrix(rows: (Vector[]) | (number[])[], cols?: number) {
 /** Returns true if the given value is a matrix. */
 const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 
-// ======================================================= BEGIN GRAPHICS MODULE
+// ======================================================= begin graphics module
 
 /** An enum of types mapped to SVG Path command prefixes. */
 // deno-fmt-ignore
-enum pc { M, L, H, V, Q, C, A, }
+enum pc { M, L, H, V, Q, C, A, Z}
 
 abstract class PathCommand {
   readonly type: pc;
@@ -1179,6 +1586,21 @@ class LCommand extends PathCommand {
 }
 /** Returns a new {@link LCommand|L-command}. */
 const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
+
+class ZCommand extends PathCommand {
+  readonly type: pc.Z;
+  constructor() {
+    super(pc.Z, vector([0, 0, 0]));
+    this.type = pc.Z;
+  }
+  endPoint(x: number, y: number, z: number = 1): ZCommand {
+    return this;
+  }
+  toString() {
+    return `Z`;
+  }
+}
+const Z = () => new ZCommand();
 
 class VCommand extends PathCommand {
   readonly type: pc.V;
@@ -1572,7 +1994,7 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
       );
     }
     toString() {
-      return this.commands.map((x) => x.toString()).join("") + "Z";
+      return this.commands.map((x) => x.toString()).join("");
     }
   };
 }
@@ -1661,7 +2083,7 @@ export class Path extends PATH {
   toString(): string {
     const origin = M(this.origin.x, this.origin.y).toString();
     const out = this.commands.map((command) => command.toString());
-    return origin + out.join("") + "Z";
+    return origin + out.join("");
   }
 
   push(command: PathCommand) {
@@ -1757,71 +2179,6 @@ export class Line extends LINE {
   }
 }
 
-const AXIS = renderable(colorable(BASE));
-
-export class Axis extends AXIS {
-  _interval: [number, number];
-  _type: "x" | "y";
-  _ticks: Line[] = [];
-  constructor(type: "x" | "y", interval: [number, number]) {
-    super();
-    this._interval = interval;
-    this._type = type;
-    this._stroke = "grey";
-  }
-
-  /** Returns the smallest value of this axis’s interval. */
-  get _min() {
-    return this._interval[0];
-  }
-
-  /** Returns the largest value of this axis’s interval. */
-  get _max() {
-    return this._interval[1];
-  }
-  _tickSep: number = 1;
-  _tickLength: number = 0.2;
-
-  end() {
-    const tickLength = this._tickLength;
-    let xs = range(this._min, this._max + 1, this._tickSep);
-    if (this._type === "x") {
-      const L = line([this._interval[0], 0], [this._interval[1], 0]);
-      this.commands.push(...L.commands);
-      xs.forEach((n) => {
-        let l = line([n, -tickLength], [n, tickLength])
-          .stroke(this._stroke);
-        l = l.label(text(n).fontColor(this._stroke), [
-          l.firstCommand.end.x,
-          l.firstCommand.end.y * 4,
-        ]);
-        this._ticks.push(l);
-      });
-    } else {
-      const L = line([0, this._interval[0]], [0, this._interval[1]]);
-      this.commands.push(...L.commands);
-      xs.forEach((n) => {
-        let l = line([-tickLength, n], [tickLength, n])
-          .stroke(this._stroke);
-        l = l.label(text(n).fontColor(this._stroke), [
-          l.firstCommand.end.x - 0.4,
-          l.firstCommand.end.y - 0.1,
-        ]);
-        this._ticks.push(l);
-      });
-    }
-    return this;
-  }
-  interval(x: number, y: number) {
-    this._interval = [x, y];
-    return this;
-  }
-}
-
-export function axis(type: "x" | "y", interval: [number, number] = [-10, 10]) {
-  return new Axis(type, interval);
-}
-
 /** Returns a new line. */
 export function line(start: Vector | number[], end: Vector | number[]) {
   start = $isArray(start)
@@ -1885,10 +2242,11 @@ export class Quad extends QUAD {
     this.commands.push(L(x + w, y - h));
     this.commands.push(L(x, y - h));
     this.commands.push(L(x, y));
+    this.commands.push(Z());
     return this;
   }
   toString() {
-    return this.commands.map((c) => c.toString()).join("") + "Z";
+    return this.commands.map((c) => c.toString()).join("");
   }
 }
 export function quad(width: number, height: number) {
@@ -1918,14 +2276,23 @@ export class Text extends TEXT {
     this._textAnchor = value;
     return this;
   }
+  content(t: string | number) {
+    this._text = t;
+    return this;
+  }
   constructor(text: string | number) {
     super();
     this._text = text;
     this.commands.push(M(0, 0));
   }
+  dy(y: number) {
+    return this.at(this.commands[0].end.x, this.commands[0].end.y + y);
+  }
+  dx(x: number) {
+    return this.at(this.commands[0].end.x + x, this.commands[0].end.y);
+  }
   at(x: number, y: number) {
-    this.commands = [];
-    this.commands.push(M(x, y));
+    this.commands[0] = M(x, y);
     return this;
   }
 }
@@ -1934,36 +2301,124 @@ export function text(content: string | number) {
   return (new Text(content));
 }
 
-const PLOT2D = renderable(colorable(BASE));
+// ========================================================= TICK LINE GENERATOR
+
+type Tick = { tick: Line; txt: Text };
+
+function tickLines(
+  length: number,
+  min: number,
+  max: number,
+  step: number,
+  orient: "x" | "y",
+  label: (n: number, i: number) => Text = (n, i) => text(n),
+) {
+  const ns = range(min, max, step);
+  const out: Tick[] = [];
+  let i = 0;
+  if (orient === "x") {
+    ns.forEach((n) => {
+      const tick = line([n, -length], [n, length]);
+      const txt = label(n, i).at(
+        tick.firstCommand.end.x,
+        tick.firstCommand.end.y,
+      );
+      out.push({ tick, txt });
+      i++;
+    });
+  } else {
+    ns.forEach((n) => {
+      const tick = line([-length, n], [length, n]);
+      const txt = label(n, i).at(
+        tick.firstCommand.end.x,
+        tick.firstCommand.end.y,
+      );
+      out.push({ tick, txt });
+      i++;
+    });
+  }
+  return out;
+}
+
+// ============================================================ 2D Function Plot
+
+const PLOT2D = contextual(colorable(BASE));
 
 export class Plot2D extends PLOT2D {
   f: string;
   _samples: number = 500;
-  _domain: [number, number] = [-10, 10];
-  _range: [number, number] = [-10, 10];
-  domain(x: number, y: number) {
-    this._domain = [x, y];
-    return this;
-  }
-  range(x: number, y: number) {
-    this._range = [x, y];
+  samples(value: number) {
+    this._samples = value;
     return this;
   }
   constructor(f: string) {
     super();
     this.f = "fn " + f + ";";
+    this._domain = [-10, 10];
+    this._range = [-10, 10];
+    const d = 400;
+    this._width = d;
+    this._height = d;
+    const m = 10;
+    this._margins = [m, m, m, m];
   }
-  toString() {
-    const out = this.commands.map((x) => x.toString()).join("");
-    return out;
+  _tickLength: number = 0.2;
+  _tickSep: number = 1;
+  _axisColor: string = "black";
+  _tickFontSize: number = 12;
+  tickFontSize(n: number) {
+    this._tickFontSize = n;
+    return this;
   }
-  end() {
+  axisColor(color: string) {
+    this._axisColor = color;
+    return this;
+  }
+  private generateAxes() {
+    const tickLength = this._tickLength;
+    const tickSep = this._tickSep;
+    const xmin = this._domain[0];
+    const xmax = this._domain[1];
+    const ymin = this._range[0];
+    const ymax = this._range[1];
+    // x-axis
+    const xLine = line([xmin, 0], [xmax, 0])
+      .stroke(this._axisColor);
+    this._children.push(xLine);
+    // y-axis
+    const yLine = line([0, ymin], [0, ymax])
+      .stroke(this._axisColor);
+    this._children.push(yLine);
+    const xTickFormat = (n: number) =>
+      text(n)
+        .fontColor(this._axisColor)
+        .anchor("middle");
+    const yTickFormat = (n: number) =>
+      text(n)
+        .fontColor(this._axisColor)
+        .anchor("end");
+    const xticks = tickLines(tickLength, xmin, xmax, tickSep, "x", xTickFormat);
+    xticks.forEach((tick) => {
+      this._children.push(
+        tick.tick.stroke(this._axisColor),
+        tick.txt.translate(0, -0.8).fontSize(this._tickFontSize),
+      );
+    });
+    const yticks = tickLines(tickLength, ymin, ymax, tickSep, "y", yTickFormat);
+    yticks.forEach((tick) => {
+      this._children.push(
+        tick.tick.stroke(this._axisColor),
+        tick.txt.translate(-0.2, -0.2).fontSize(this._tickFontSize),
+      );
+    });
+  }
+  private cartesian(f: string) {
     const out: PathCommand[] = [];
     const xmin = this._domain[0];
     const xmax = this._domain[1];
     const ymin = this._range[0];
     const ymax = this._range[1];
-    const e = engine(this.f);
+    const e = engine(f);
     const fn = e.execute();
     if (!(fn instanceof Fn)) {
       return this;
@@ -1996,8 +2451,42 @@ export class Plot2D extends PLOT2D {
         }
       }
     }
-    this.commands = out;
+    const p = path(out[0].end.x, out[0].end.y, out[0].end.z)
+      .stroke(this._stroke)
+      .strokeWidth(this._strokeWidth);
+    for (let i = 1; i < out.length; i++) {
+      p.commands.push(out[i]);
+    }
+    this._children.push(p);
     return this;
+  }
+  _type: "cartesian" | "polar" = "cartesian";
+  polar(f: string) {
+    const twoPi = 2 * PI;
+    const e = engine(f);
+    const fn = e.execute();
+    if (!(fn instanceof Fn)) {
+      return this;
+    }
+    let p = path(0, 0);
+    for (let i = 0; i < twoPi; i += 0.01) {
+      const r = fn.call(e.compiler, [i]);
+      if (typeof r !== "number") continue;
+      const x = r * cos(i);
+      const y = r * sin(i);
+      p = p.L(x, y);
+    }
+    this._children.push(p.stroke(this._stroke));
+    return this;
+  }
+  asPolar() {
+    this._type = "polar";
+    return this;
+  }
+  end() {
+    this.generateAxes();
+    this[this._type](this.f);
+    return this.fit();
   }
 }
 
@@ -2005,61 +2494,9 @@ export function plot2D(f: string) {
   return new Plot2D(f);
 }
 
+// =================================================================== HISTOGRAM
+
 const HISTOGRAM = contextual(colorable(BASE));
-
-type AxisSpec = {
-  xInterval: [number, number];
-  yInterval: [number, number];
-  xLabels: number[];
-  xTickLength?: number;
-  yTickLength?: number;
-  xTickSep?: number;
-  yTickSep?: number;
-  xOffset?: number;
-  yOffset?: number;
-};
-
-const axes = ({
-  xInterval,
-  yInterval,
-  xLabels,
-  xTickLength = 0.005,
-  yTickLength = 0.005,
-  xTickSep = 2,
-  yTickSep = 2,
-  xOffset = 0.01,
-  yOffset = 0.003,
-}: AxisSpec) => {
-  const [x_min, x_max] = xInterval;
-  const [y_min, y_max] = yInterval;
-  const axisX = line([x_min, y_min], [x_max, y_min]);
-  const axisY = line([x_min, y_min], [x_min, y_max]);
-  const xs = range(x_min, x_max, xTickSep);
-  const xTicks: Line[] = [];
-  const x_labels: Text[] = [];
-  let i = 0;
-  xs.forEach((n) => {
-    const t = xLabels[i];
-    const l = line([n, -xTickLength], [n, xTickLength]);
-    if (t !== undefined) {
-      xTicks.push(l);
-      x_labels.push(text(t).at(n, -xTickLength - xOffset).anchor("middle"));
-    }
-    i++;
-  });
-  const ys = range(y_min, y_max, yTickSep);
-  const yTicks: Line[] = [];
-  const y_labels: Text[] = [];
-  const _y = 1;
-  ys.forEach((n) => {
-    const l = line([-yTickLength, n], [yTickLength, n]);
-    yTicks.push(l);
-    y_labels.push(
-      text(n.toPrecision(2)).at(-yTickLength, n - yOffset).anchor("end"),
-    );
-  });
-  return { axisX, axisY, xTicks, yTicks, xLabels: x_labels, yLabels: y_labels };
-};
 
 class Histogram extends HISTOGRAM {
   _data: Map<[number, number], number> = new Map();
@@ -2110,34 +2547,49 @@ class Histogram extends HISTOGRAM {
     for (const [key, value] of this._data) {
       xs.push(key[0]);
     }
-    const { axisX, axisY, xTicks, yTicks, xLabels, yLabels } = axes({
-      xInterval: this._domain,
-      yInterval: this._range,
-      xLabels: xs,
-      xTickLength: this._xTickLength,
-      yTickLength: this._yTickLength,
-      xTickSep: this._xTickSep,
-      yTickSep: this._yTickSep,
-    });
-    this._children.push(axisX.stroke(this._stroke));
-    this._children.push(axisY.stroke(this._stroke));
-    xTicks.forEach((tick) => this._children.push(tick.stroke(this._stroke)));
-    yTicks.forEach((tick) => this._children.push(tick.stroke(this._stroke)));
-    const txt = (t: Text) => {
-      this._children.push(t.fontColor("white").fontSize(10));
-    };
-    xLabels.forEach(txt);
-    yLabels.forEach((t) => txt(t));
-    this._children = this._children.map((e) => e.end());
-    this._children = this._children.map((c) => {
-      const out = c.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-      return out;
-    });
-    return this;
+    const x_axis = line([this._xmin, this._ymin], [this._xmax, this._ymin])
+      .stroke(this._stroke);
+    const y_axis = line([this._xmin, this._ymin], [this._xmin, this._ymax])
+      .stroke(this._stroke);
+
+    this.and(x_axis, y_axis);
+
+    const xticks = tickLines(
+      this._xTickLength,
+      this._xmin,
+      this._xmax,
+      this._xTickSep,
+      "x",
+      (_, i) => text(xs[i]),
+    );
+    xticks.forEach((t) =>
+      this.and(
+        t.tick.stroke(this._stroke),
+        t.txt
+          .dy(-.015)
+          .fontColor(this._stroke)
+          .anchor("middle"),
+      )
+    );
+    const yticks = tickLines(
+      this._yTickLength,
+      this._ymin,
+      this._ymax,
+      this._yTickSep,
+      "y",
+      (n) => text(n.toPrecision(2)),
+    );
+    yticks.forEach((t) =>
+      this.and(
+        t.tick.stroke(this._stroke),
+        t.txt
+          .fontColor(this._stroke)
+          .anchor("end")
+          .dx(-1)
+          .dy(-0.005),
+      )
+    );
+    return this.fit();
   }
   _barCount: number = 5;
   barCount(n: number) {
@@ -2165,7 +2617,10 @@ export function histogram(dataset: number[]) {
   return new Histogram(dataset);
 }
 
+// ================================================================ SCATTER PLOT
+
 const SCATTER_PLOT = contextual(colorable(BASE));
+
 class ScatterPlot<T = any> extends SCATTER_PLOT {
   _data: T[] = [];
   _x: (d: T) => number;
@@ -2184,19 +2639,15 @@ class ScatterPlot<T = any> extends SCATTER_PLOT {
     this._pointStroke = color;
     return this;
   }
+  _xTickLength: number = 0.05;
+  _yTickLength: number = 0.05;
+  _xTickSep: number = 0.5;
+  _yTickSep: number = 0.5;
   end() {
     const xmin = this._domain[0];
     const xmax = this._domain[1];
     const ymin = this._range[0];
     const ymax = this._range[1];
-    this._children.push(line([xmin, 0], [xmax, 0]).stroke(this._stroke));
-    range(xmin, xmax, 0.5).forEach((x) =>
-      this._children.push(text(x).at(x, -0.2).fontColor(this._stroke))
-    );
-    range(ymin, ymax, 0.5).forEach((y) =>
-      this._children.push(text(y).at(-0.2, y).fontColor(this._stroke))
-    );
-    this._children.push(line([0, ymin], [0, ymax]).stroke(this._stroke));
     this._data.forEach((d) => {
       const x = this._x(d);
       const y = this._y(d);
@@ -2204,16 +2655,39 @@ class ScatterPlot<T = any> extends SCATTER_PLOT {
         circle(0.08).at(x, y).fill(this._fill).stroke(this._pointStroke),
       );
     });
-    this._children = this._children.map((x) => x.end());
-    this._children = this._children.map((x) => {
-      const out = x.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-      return out;
-    });
-    return this;
+    const x_axis = line([this._xmin, this._ymin], [this._xmax, this._ymin])
+      .stroke(this._stroke);
+    this.and(x_axis);
+    const y_axis = line([this._xmin, this._ymin], [this._xmin, this._ymax])
+      .stroke(this._stroke);
+    this.and(y_axis);
+    const xticks = tickLines(
+      this._xTickLength,
+      this._xmin,
+      this._xmax,
+      this._xTickSep,
+      "x",
+    );
+    xticks.forEach((t) =>
+      this.and(
+        t.tick.stroke(this._stroke),
+        t.txt.fontColor(this._stroke).anchor("middle").dy(-0.2),
+      )
+    );
+    const yticks = tickLines(
+      this._yTickLength,
+      this._ymin,
+      this._ymax,
+      this._yTickSep,
+      "y",
+    );
+    yticks.forEach((t) =>
+      this.and(
+        t.tick.stroke(this._stroke),
+        t.txt.fontColor(this._stroke).anchor("end").dx(-0.05).dy(-0.05),
+      )
+    );
+    return this.fit();
   }
   data(d: T[]) {
     this._data = d;
@@ -2243,6 +2717,8 @@ export function scatterPlot<T>(
   return new ScatterPlot(accessorX, accessorY);
 }
 
+// ======================================================================= GROUP
+
 const GROUP = colorable(BASE);
 
 export class Group extends GROUP {
@@ -2258,22 +2734,6 @@ export class Group extends GROUP {
   private tmap(op: (x: Shape) => Shape): Group {
     this.children = this.children.map((x) => {
       const out = op(x);
-      if (x instanceof Axis) {
-        x._ticks = x._ticks.map((l) => {
-          const L = op(l);
-          if (L instanceof Line) {
-            if (L._label) {
-              const label = op(L._label);
-              if (label instanceof Text) {
-                L._label = label;
-              }
-            }
-            return L;
-          } else {
-            return l;
-          }
-        });
-      }
       return out;
     });
     return this;
@@ -2324,6 +2784,8 @@ export function group(children: Shape[]) {
   return new Group(children);
 }
 
+// ================================================================== CONTEXTUAL
+
 interface Contextual {
   _children: Shape[];
   _domain: [number, number];
@@ -2340,6 +2802,12 @@ interface Contextual {
   get _mx(): number;
   get _vw(): number;
   get _vh(): number;
+  get _xmin(): number;
+  get _xmax(): number;
+  get _ymin(): number;
+  get _ymax(): number;
+  and(...shape: Shape[]): this;
+  fit(): this;
 }
 
 function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
@@ -2348,6 +2816,18 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
     _domain: [number, number] = [-10, 10];
     domain(x: number, y: number) {
       if (x < y) this._domain = [x, y];
+      return this;
+    }
+    fit() {
+      this._children = this._children.map((x) => x.end());
+      this._children = this._children.map((x) => {
+        const out = x.interpolate(
+          this._domain,
+          this._range,
+          [this._vw, this._vh],
+        );
+        return out;
+      });
       return this;
     }
     _range: [number, number] = [-10, 10];
@@ -2365,6 +2845,23 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       this._margins = [top, right, bottom, left];
       return this;
     }
+    and(...shapes: Shape[]) {
+      this._children.push(...shapes);
+      return this;
+    }
+    get _xmin() {
+      return this._domain[0];
+    }
+    get _xmax() {
+      return this._domain[1];
+    }
+    get _ymin() {
+      return this._range[0];
+    }
+    get _ymax() {
+      return this._range[1];
+    }
+
     get _vw() {
       return this._width - (this._mx);
     }
@@ -2389,29 +2886,6 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       return this;
     }
   };
-}
-const FIG = contextual(BASE);
-
-export class Fig extends FIG {
-  constructor(children: Shape[]) {
-    super();
-    this._children = children;
-  }
-  end() {
-    this._children = this._children.map((x) => {
-      const out = x.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-      return out;
-    });
-    return this;
-  }
-}
-
-export function fig(children: Shape[]) {
-  return new Fig(children);
 }
 
 type EdgeType = "--" | "->";
@@ -2736,12 +3210,32 @@ const FORCE_GRAPH = contextual(BASE);
 export class ForceGraph extends FORCE_GRAPH {
   private _particles: Map<(string | number), Particle>;
   private _graph: Graph;
-  _iterations: number = 200;
+  _iterations: number = 100;
+  iterations(x: number) {
+    this._iterations = x;
+    return this;
+  }
   _epsilon: number = 0.5;
+  epsilon(e: number) {
+    this._epsilon = e;
+    return this;
+  }
   _stable: boolean = false;
   _repulsion: number = 20;
-  _attraction: number = 0.06;
-  _decay: number = 0.9;
+  repulsion(n: number) {
+    this._repulsion = n;
+    return this;
+  }
+  _attraction: number = 0.04;
+  attraction(n: number) {
+    this._attraction = n;
+    return this;
+  }
+  _decay: number = 0.6;
+  decay(n: number) {
+    this._decay = n;
+    return this;
+  }
   children: Shape[] = [];
   constructor(graph: Graph) {
     super();
@@ -2815,12 +3309,19 @@ export class ForceGraph extends FORCE_GRAPH {
   }
 
   _styles: {
-    _nodes: Partial<{ _fill: string; _radius: number }>;
+    _nodes: Partial<{ _fill: string; _radius: number; _fontColor: string }>;
     _edges: Partial<{ _stroke: string }>;
   } = {
     _nodes: { _fill: "white", _radius: 5 },
     _edges: { _stroke: "grey" },
   };
+  nodeFontColor(color: string) {
+    this._styles._nodes._fontColor = color;
+    return this;
+  }
+  get _nodeFontColor() {
+    return this._styles._nodes._fontColor ?? "initial";
+  }
 
   get _nodeRadius() {
     return this._styles._nodes._radius ? this._styles._nodes._radius : 5;
@@ -2828,6 +3329,13 @@ export class ForceGraph extends FORCE_GRAPH {
 
   get _nodeColor() {
     return this._styles._nodes._fill ? this._styles._nodes._fill : "white";
+  }
+  get _edgeColor() {
+    return this._styles._edges._stroke ?? "grey";
+  }
+  edgeColor(color: string) {
+    this._styles._edges._stroke = color;
+    return this;
   }
 
   /** Sets the radius for all nodes in this graph. */
@@ -2857,10 +3365,7 @@ export class ForceGraph extends FORCE_GRAPH {
         const y1 = source._p.y;
         const x2 = target._p.x;
         const y2 = target._p.y;
-        const color = this._styles._edges._stroke
-          ? this._styles._edges._stroke
-          : "initial";
-        const l = line([x1, y1], [x2, y2]).stroke(color);
+        const l = line([x1, y1], [x2, y2]).stroke(this._edgeColor);
         this._children.push(l);
       }
       ids.add(e._id);
@@ -2868,20 +3373,15 @@ export class ForceGraph extends FORCE_GRAPH {
     });
     this._particles.forEach((p) => {
       const t = p._id;
-      const c = circle(p._r).at(p._p.x, p._p.y).fill(this._nodeColor);
+      const c = circle(this._nodeRadius).at(p._p.x, p._p.y).fill(
+        this._nodeColor,
+      );
       this._children.push(c);
       this._children.push(
-        text(t).at(p._p.x, p._p.y + p._r),
+        text(t).at(p._p.x, p._p.y + p._r).fontColor(this._nodeFontColor),
       );
     });
-    this._children = this._children.map((x) => {
-      return x.interpolate(
-        this._domain,
-        this._range,
-        [this._vw, this._vh],
-      );
-    });
-    return this;
+    return this.fit();
   }
 }
 
@@ -2892,11 +3392,465 @@ export function forceGraph(graph: Graph) {
   );
 }
 
-export type Parent = Fig | ForceGraph | ScatterPlot | Histogram;
+const TNODE = colorable(renderable(BASE));
 
-export type Shape = Group | Circle | Line | Path | Plot2D | Axis | Text | Quad;
+class TNode extends TNODE {
+  _thread: Option<TreeChild> = none();
+  _parent: Option<Fork>;
+  _children: TreeChild[] = [];
+  _index: number = 0;
+  _change: number = 0;
+  _shift: number = 0;
+  _leftmostSibling: Option<TreeChild> = none();
+  _name: string | number;
+  _dx: number = 0;
+  _dy: number = 0;
+  _ancestor: Option<Fork>;
+  _id: string | number = uid(5);
+  get _x() {
+    return this.commands[0].end.x;
+  }
+  get _y() {
+    return this.commands[0].end.y;
+  }
+  get _z() {
+    return this.commands[0].end.z;
+  }
+  set _x(x: number) {
+    this.commands = [M(x, this._y, this._z)];
+  }
+  set _y(y: number) {
+    this.commands = [M(this._x, y, this._z)];
+  }
+  set _z(z: number) {
+    this.commands = [M(this._x, this._y, z)];
+  }
+  constructor(name: string | number, parent?: Fork) {
+    super();
+    this._name = name;
+    this._parent = parent ? some(parent) : none();
+    this.commands = [M(0, 0, 1)];
+    this._ancestor = none();
+  }
+  sketch(depth: number = 0) {
+    this._x = -1;
+    this._y = depth;
+    this._dx = 0;
+    this._change = 0;
+    this._shift = 0;
+    this._thread = none();
+    this._leftmostSibling = none();
+  }
+  left(): Option<TreeChild> {
+    if (this._thread._tag === "Some") {
+      return this._thread;
+    } else if (this._children.length) {
+      return some(this._children[0]);
+    } else return none();
+  }
+  right(): Option<TreeChild> {
+    if (this._thread._tag === "Some") {
+      return this._thread;
+    } else if (this._children.length) {
+      return some(this._children[this._children.length - 1]);
+    } else return none();
+  }
+  get _hasNoChildren() {
+    return this._degree === 0;
+  }
+  get _hasChildren() {
+    return !this._hasNoChildren;
+  }
+  get _degree() {
+    return this._children.length;
+  }
+  hasChild(id: string | number) {
+    if (this._hasNoChildren) return false;
+    for (let i = 0; i < this._degree; i++) {
+      if (this._children[i]._id === id) return true;
+    }
+    return false;
+  }
+  childOf(parent: Fork) {
+    this._parent = some(parent);
+    this._ancestor = parent._ancestor;
+    return this;
+  }
+}
 
-// ========================================================= END GRAPHICS MODULE
+class Leaf extends TNode {
+  constructor(name: string | number, parent?: Fork) {
+    super(name, parent);
+    this._x = -1;
+  }
+  onLastChild(_: (node: TreeChild) => void) {
+    return;
+  }
+  onFirstChild(_: (node: TreeChild) => void) {
+    return;
+  }
+  isLeaf(): this is Leaf {
+    return true;
+  }
+  isFork(): this is never {
+    return false;
+  }
+  nodes(nodes: TreeChild[]) {
+    return this;
+  }
+  child(child: TreeChild) {
+    return this;
+  }
+  inorder(f: (node: TreeChild, index: number) => void) {
+    return this;
+  }
+  preorder(f: (node: TreeChild, index: number) => void) {
+    return this;
+  }
+  postorder(f: (node: TreeChild, index: number) => void) {
+    return this;
+  }
+  bfs(f: (node: TreeChild, level: number) => void) {
+    return this;
+  }
+}
+export function leaf(name: string | number) {
+  return new Leaf(name);
+}
+
+class Fork extends TNode {
+  nodes(nodes: TreeChild[]) {
+    nodes.forEach((node) => {
+      node._index = this._degree;
+      this._children.push(node.childOf(this));
+    });
+    return this;
+  }
+  onLastChild(callback: (node: TreeChild) => void) {
+    const c = this._children[this._children.length - 1];
+    if (c) callback(c);
+    return this;
+  }
+  onFirstChild(callback: (node: TreeChild) => void) {
+    const c = this._children[0];
+    if (c) callback(c);
+    return this;
+  }
+  child(child: TreeChild) {
+    this._children.push(child.childOf(this));
+    return this;
+  }
+  inorder(f: (node: TreeChild, index: number) => void) {
+    let i = 0;
+    const t = (tree: TreeChild) => {
+      const [left, right] = arraySplit(tree._children);
+      (left.length) && (left.forEach((c) => t(c)));
+      f(tree, i++);
+      (right.length) && (right.forEach((c) => t(c)));
+    };
+    t(this);
+    return this;
+  }
+  preorder(f: (node: TreeChild, index: number) => void) {
+    let i = 0;
+    const t = (tree: TreeChild) => {
+      const [left, right] = arraySplit(tree._children);
+      f(tree, i++);
+      (left.length) && (left.forEach((c) => t(c)));
+      (right.length) && (right.forEach((c) => t(c)));
+    };
+    t(this);
+    return this;
+  }
+  postorder(f: (node: TreeChild, index: number) => void) {
+    let i = 0;
+    const t = (tree: TreeChild) => {
+      const [left, right] = arraySplit(tree._children);
+      (left.length) && (left.forEach((c) => t(c)));
+      (right.length) && (right.forEach((c) => t(c)));
+      f(tree, i++);
+    };
+    t(this);
+    return this;
+  }
+  bfs(f: (node: TreeChild, level: number) => void) {
+    const queue = linkedList<TreeChild>(this);
+    let count = queue.length;
+    let level = 0;
+    while (queue.length > 0) {
+      const tree = queue.shift();
+      count--;
+      if (tree._tag === "None") continue;
+      f(tree.value, level);
+      tree.value._children.forEach((c) => queue.push(c));
+      if (count === 0) {
+        level++;
+        count = queue.length;
+      }
+    }
+    queue.clear();
+    return this;
+  }
+}
+type TreeChild = Leaf | Fork;
+function isLeaf(x: any): x is Leaf {
+  return x instanceof Leaf;
+}
+function isFork(x: any): x is Fork {
+  return x instanceof Fork;
+}
+
+export function subtree(name: string | number) {
+  return new Fork(name);
+}
+
+type TreeLayout =
+  | "knuth"
+  | "wetherell-shannon"
+  | "buccheim-unger-leipert"
+  | "hv"
+  | "reingold-tilford";
+
+type Traversal =
+  | "preorder"
+  | "inorder"
+  | "postorder"
+  | "bfs";
+type LinkFunction = (line: Line, source: TNode, target: TNode) => Line;
+const TREE = contextual(colorable(BASE));
+class Tree extends TREE {
+  _tree: Fork;
+  _layout: TreeLayout = "knuth";
+  layout(option: TreeLayout) {
+    this._layout = option;
+    return this;
+  }
+  private _edgenotes: Partial<Record<Traversal, LinkFunction>> = {};
+  edges(of: Traversal, callback: LinkFunction) {
+    this._edgenotes[of] = callback;
+    return this;
+  }
+  private _nodefn: ((n: TreeChild) => TreeChild) | null = null;
+  nodemap(callback: (n: TreeChild) => TreeChild) {
+    this._nodefn = callback;
+    return this;
+  }
+  private _linkmap: ((line: Line) => Line) | null = null;
+  edgemap(callback: (line: Line) => Line) {
+    this._linkmap = callback;
+    return this;
+  }
+  nodes(nodes: TreeChild[]) {
+    nodes.forEach((n) => this._tree.child(n));
+    return this;
+  }
+  private HV() {
+    const largerToRight = (parent: TreeChild) => {
+      const L = parent.left();
+      const R = parent.right();
+      if (empty(L) || empty(R)) return;
+      const sh = 2;
+      const left = L.value;
+      const right = R.value;
+      if (isLeaf(left) && isLeaf(right)) {
+        right._x = parent._x + 1;
+        right._y = parent._y;
+        left._x = parent._x;
+        left._y = parent._y - sh;
+        parent._dx = 1;
+      } else {
+        const L = left._degree;
+        const R = right._degree;
+        if (L > R) {
+          left._x = parent._x + 1 + L;
+          left._y = parent._y;
+          right._x = parent._x;
+          right._y = parent._y - sh;
+          parent._dx += left._x;
+        } else if (L < R) {
+          right._x = parent._x + 1 + R;
+          right._y = parent._y;
+          left._x = parent._x;
+          left._y = parent._y - sh;
+          parent._dx += right._x;
+        }
+      }
+      parent._children.forEach((c) => largerToRight(c));
+    };
+    const xmin = this._xmin;
+    const ymax = this._ymax;
+    this._tree._x = xmin;
+    this._tree._y = ymax;
+    largerToRight(this._tree);
+    return this;
+  }
+  private buccheim() {
+    const executeShifts = (node: TreeChild) => {
+      let shift = 0;
+      let change = 0;
+      for (const child of node._children) {
+        child._x += shift;
+        child._dx += shift;
+        change += child._change;
+        shift += child._shift + change;
+      }
+    };
+    return this;
+  }
+  private knuth() {
+    this._tree.bfs((node, level) => {
+      const y = 0 - level;
+      node._y = y;
+    });
+    this._tree.inorder((node, index) => {
+      node._x = index;
+    });
+    const x = this._tree._x;
+    this._tree.bfs((node) => {
+      node._x -= x;
+    });
+    return this;
+  }
+  private reingoldTilford() {
+    return this;
+  }
+  private wetherellShannon() {
+    const lay = (
+      tree: TreeChild,
+      depth: number,
+      nexts: number[] = [0],
+      offsets: number[] = [0],
+    ) => {
+      tree._children.forEach((c) => {
+        lay(c, depth + 1, nexts, offsets);
+      });
+      tree._y = -depth;
+      if ($isNothing(nexts[depth])) {
+        nexts[depth] = 0;
+      }
+      if ($isNothing(offsets[depth])) {
+        offsets[depth] = 0;
+      }
+      let x = nexts[depth];
+      if (tree._degree === 0) {
+        x = nexts[depth];
+      } else if (tree._degree === 1) {
+        x = tree._children[0]._x + 1;
+      } else {
+        let lx = 0;
+        tree.onFirstChild((n) => {
+          lx = n._x;
+        });
+        let rx = 0;
+        tree.onLastChild((n) => {
+          rx = n._x;
+        });
+        const xpos = lx + rx;
+        x = xpos / 2;
+      }
+      offsets[depth] = max(offsets[depth], nexts[depth] - x);
+      if (tree._degree === 0) {
+        const d = x + offsets[depth];
+        tree._x = d;
+      } else {
+        tree._x = x;
+      }
+      nexts[depth] += 2;
+      tree._dx = offsets[depth];
+    };
+    const addDxs = (tree: TreeChild, sum: number = 0) => {
+      tree._x = tree._x + sum;
+      sum += tree._dx;
+      tree._children.forEach((c) => addDxs(c, sum));
+    };
+    lay(this._tree, 0);
+    addDxs(this._tree);
+    const x = this._tree._x;
+    this._tree.bfs((n) => {
+      n._x -= x;
+    })
+    return this;
+  }
+  private lay() {
+    // deno-fmt-ignore
+    switch (this._layout) {
+      case 'buccheim-unger-leipert': return this.buccheim();
+      case 'hv': return this.HV();
+      case 'knuth': return this.knuth();
+      case 'reingold-tilford': return this.reingoldTilford();
+      case 'wetherell-shannon': return this.wetherellShannon();
+    }
+  }
+  _nodeRadius: number = 0.5;
+  nodeRadius(r: number) {
+    this._nodeRadius = r;
+    return this;
+  }
+  _edgeStroke: string = "black";
+  edgeStroke(color: string) {
+    this._edgeStroke = color;
+    return this;
+  }
+  _nodeFill: string = "black";
+  nodeFill(color: string) {
+    this._nodeFill = color;
+    return this;
+  }
+  end() {
+    this.lay();
+    this._tree.bfs((node) => {
+      const parent = node._parent;
+      omap((p) => {
+        const l = line([p._x, p._y], [node._x, node._y]);
+        this.and(l);
+      }, parent);
+    });
+    this._tree.bfs((node) => {
+      const x = node._x;
+      const y = node._y;
+      this.and(
+        circle(this._nodeRadius)
+          .at(x, y),
+      );
+    });
+    this._children = this._children.map((c) => c.end());
+    this._children = this._children.map((c) => {
+      const o = c.interpolate(
+        this._domain,
+        this._range,
+        [this._vw, this._vh],
+      );
+      if (o instanceof Circle) {
+        o._fill = this._nodeFill;
+        o._stroke = this._edgeStroke;
+      }
+      if (o instanceof Line) {
+        o._stroke = this._edgeStroke;
+      }
+      return o;
+    });
+    return this;
+  }
+  constructor(tree: Fork) {
+    super();
+    this._tree = tree;
+    const m = 10;
+    this._domain = [-5, 5];
+    this._range = [-5, 5];
+    this._margins = [m, m, m, m];
+    this._width = 300;
+    this._height = 300;
+  }
+}
+export function tree(t: Fork) {
+  return new Tree(t);
+}
+
+export type Parent = ForceGraph | ScatterPlot | Histogram | Plot2D | Tree;
+
+export type Shape = Group | Circle | Line | Path | Text | Quad;
+
+// ========================================================= end graphics module
 
 class BigRat {
   N: bigint;
