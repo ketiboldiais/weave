@@ -217,11 +217,10 @@
 		display: flex;
 		justify-content: center;
 		margin-top: 20%;
+		height: 100px;
 		color: rgb(113, 136, 136);
 	}
 	.page{
-		display: grid;
-		grid-template-rows: 9fr 1fr;
 		max-width: 700px;
 		margin: 0 auto;
 		padding-left: 2em;
