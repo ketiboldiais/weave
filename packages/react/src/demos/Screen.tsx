@@ -103,7 +103,10 @@ export const Knuth1 = () => {
         leaf("g"),
       ]),
     ]),
-  ).layout("wetherell-shannon").edgeStroke("white").nodeFill("orchid").end();
+  ).layout('knuth')
+    .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
+    .edgeStroke("white")
+    .nodeFill("orchid").end();
   return <Figure of={data} />;
 };
 
@@ -129,7 +132,8 @@ export const HV1 = () => {
       leaf("s"),
     ]),
   ).layout("hv")
-    .edgeStroke("azure")
+    .textMap((t) => t.fontColor("white").dx(-0.5).fontFamily("KaTeX_Math"))
+    .edgeStroke("tomato")
     .nodeRadius(0.3)
     .nodeFill("white")
     .end();
@@ -154,8 +158,10 @@ export const WetherellShannon1 = () => {
       leaf("p"),
     ]),
   ).layout("wetherell-shannon")
+    .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
+    .nodeRadius(0.3)
     .edgeStroke("goldenrod")
-    .nodeFill("floralwhite")
+    .nodeFill("wheat")
     .end();
   return <Figure of={data} />;
 };

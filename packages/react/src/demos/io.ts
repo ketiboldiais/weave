@@ -1062,8 +1062,8 @@ class Vector<T extends number[] = number[]> {
   get _z() {
     return $isNothing(this._elements[2]) ? 0 : this._elements[2];
   }
-  set _z(z:number) {
-    this._elements[2]=z;
+  set _z(z: number) {
+    this._elements[2] = z;
   }
 
   /** Sets the fourt element of this vector to the provided value. */
@@ -1075,8 +1075,8 @@ class Vector<T extends number[] = number[]> {
   get _w() {
     return $isNothing(this._elements[3]) ? 0 : this._elements[3];
   }
-  set _w(w:number) {
-    this._elements[3]=w;
+  set _w(w: number) {
+    this._elements[3] = w;
   }
 
   /** Returns the dot product of this vector and the provided vector. */
@@ -2272,6 +2272,10 @@ export class Text extends TEXT {
   }
   _text: string | number;
   _fontFamily?: string;
+  fontFamily(family: string) {
+    this._fontFamily = family;
+    return this;
+  }
   _fontSize?: string | number;
   fontSize(value: number | string) {
     this._fontSize = value;
@@ -3730,16 +3734,6 @@ class Tree extends TREE {
     this._edgenotes[of] = callback;
     return this;
   }
-  private _nodefn: ((n: TreeChild) => TreeChild) | null = null;
-  nodemap(callback: (n: TreeChild) => TreeChild) {
-    this._nodefn = callback;
-    return this;
-  }
-  private _linkmap: ((line: Line) => Line) | null = null;
-  edgemap(callback: (line: Line) => Line) {
-    this._linkmap = callback;
-    return this;
-  }
   nodes(nodes: TreeChild[]) {
     nodes.forEach((n) => this._tree.child(n));
     return this;
@@ -3896,6 +3890,21 @@ class Tree extends TREE {
     this._nodeFill = color;
     return this;
   }
+  _textFn?: (t: Text) => Text;
+  textMap(callback: (t: Text) => Text) {
+    this._textFn = callback;
+    return this;
+  }
+  _nodeFn?: (t: TreeChild) => Shape;
+  nodeMap(callback: (t: TreeChild) => Shape) {
+    this._nodeFn = callback;
+    return this;
+  }
+  _edgeFn?: (source: TreeChild, target: TreeChild) => Shape;
+  edgeMap(callback: (source: TreeChild, target: TreeChild) => Shape) {
+    this._edgeFn = callback;
+    return this;
+  }
   end() {
     this.lay();
     this._tree.bfs((node) => {
@@ -3905,14 +3914,21 @@ class Tree extends TREE {
         this.and(l);
       }, parent);
     });
+    const nodes: Shape[] = [];
+    const labels: Text[] = [];
     this._tree.bfs((node) => {
       const x = node._x;
       const y = node._y;
-      this.and(
-        circle(this._nodeRadius)
-          .at(x, y),
-      );
+      let c = this._nodeFn
+        ? (this._nodeFn(node))
+        : circle(this._nodeRadius).at(x, y);
+      nodes.push(c);
+      let t = text(node._name).at(x, y).anchor("middle").dy(this._nodeRadius);
+      (this._textFn) && (t = this._textFn(t));
+      labels.push(t);
     });
+    nodes.forEach((c) => this.and(c));
+    labels.forEach((c) => this.and(c));
     this._children = this._children.map((c) => c.end());
     this._children = this._children.map((c) => {
       const o = c.interpolate(
@@ -3934,7 +3950,7 @@ class Tree extends TREE {
   constructor(tree: Fork) {
     super();
     this._tree = tree;
-    const m = 10;
+    const m = 30;
     this._domain = [-5, 5];
     this._range = [-5, 5];
     this._margins = [m, m, m, m];
