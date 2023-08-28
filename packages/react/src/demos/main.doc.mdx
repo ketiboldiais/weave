@@ -1,4 +1,4 @@
-import {ForceGraph1, Knuth1, Plot1, Histogram1, Scatter1, WetherellShannon1,HV1, DotPlot1} from "./Screen.tsx";
+import {ForceGraph1, Knuth1, Plot1, Histogram1, Scatter1, WetherellShannon1,HV1, DotPlot1, ReingoldTilford1,Buccheim1} from "./Screen.tsx";
 
 # Loom
 Loom is a zero-dependency module of various 2D- and 3D-graphics algorithms. Applying basic linear algebra and physics, these algorithms output SVG commands for an SVG engine (e.g., your browser) to draw:
@@ -47,11 +47,10 @@ A scatter plot.
 :::
 ::::
 
-
 ::::figure
-<WetherellShannon1/>
+<ReingoldTilford1/>
 :::figcaption
-An ${n}$-ary tree from the Wetherell-Shannon algorithm.
+A binary tree from the Reingold-Tilford algorithm.
 :::
 ::::
 
@@ -60,6 +59,14 @@ An ${n}$-ary tree from the Wetherell-Shannon algorithm.
 <DotPlot1/>
 :::figcaption
 A dot plot.
+:::
+::::
+
+
+::::figure
+<Buccheim1/>
+:::figcaption
+An $n$-ary tree drawn from the Buccheim-Unger-Leipert algorithm.
 :::
 ::::
 

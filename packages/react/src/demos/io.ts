@@ -3499,17 +3499,16 @@ export function forceGraph(graph: Graph) {
 const TNODE = colorable(renderable(BASE));
 
 class TNode extends TNODE {
-  _thread: Option<TreeChild> = none();
-  _parent: Option<Fork>;
+  _thread: TreeChild | null = null;
+  _parent: Fork | null = null;
   _children: TreeChild[] = [];
   _index: number = 0;
   _change: number = 0;
   _shift: number = 0;
-  _leftmostSibling: Option<TreeChild> = none();
+  _leftmostSibling: TreeChild | null = null;
   _name: string | number;
   _dx: number = 0;
   _dy: number = 0;
-  _ancestor: Option<Fork>;
   _id: string | number = uid(5);
   get _x() {
     return this.commands[0].end._x;
@@ -3532,9 +3531,8 @@ class TNode extends TNODE {
   constructor(name: string | number, parent?: Fork) {
     super();
     this._name = name;
-    this._parent = parent ? some(parent) : none();
+    this._parent = parent ? (parent) : null;
     this.commands = [M(0, 0, 1)];
-    this._ancestor = none();
   }
   sketch(depth: number = 0) {
     this._x = -1;
@@ -3542,22 +3540,22 @@ class TNode extends TNODE {
     this._dx = 0;
     this._change = 0;
     this._shift = 0;
-    this._thread = none();
-    this._leftmostSibling = none();
+    this._thread = null;
+    this._leftmostSibling = null;
   }
-  left(): Option<TreeChild> {
-    if (this._thread._tag === "Some") {
+  left(): TreeChild | null {
+    if (this._thread) {
       return this._thread;
     } else if (this._children.length) {
-      return some(this._children[0]);
-    } else return none();
+      return this._children[0];
+    } else return null;
   }
-  right(): Option<TreeChild> {
-    if (this._thread._tag === "Some") {
+  right(): TreeChild | null {
+    if (this._thread) {
       return this._thread;
     } else if (this._children.length) {
-      return some(this._children[this._children.length - 1]);
-    } else return none();
+      return (this._children[this._children.length - 1]);
+    } else return null;
   }
   get _hasNoChildren() {
     return this._degree === 0;
@@ -3575,29 +3573,23 @@ class TNode extends TNODE {
     }
     return false;
   }
-  childOf(parent: Fork) {
-    this._parent = some(parent);
-    this._ancestor = parent._ancestor;
-    return this;
-  }
 }
 
 class Leaf extends TNode {
+  _ancestor: TreeChild;
   constructor(name: string | number, parent?: Fork) {
     super(name, parent);
     this._x = -1;
+    this._ancestor = this;
+  }
+  height() {
+    return 1;
   }
   onLastChild(_: (node: TreeChild) => void) {
     return;
   }
   onFirstChild(_: (node: TreeChild) => void) {
     return;
-  }
-  isLeaf(): this is Leaf {
-    return true;
-  }
-  isFork(): this is never {
-    return false;
   }
   nodes(nodes: TreeChild[]) {
     return this;
@@ -3617,12 +3609,32 @@ class Leaf extends TNode {
   bfs(f: (node: TreeChild, level: number) => void) {
     return this;
   }
+
+  childOf(parent: Fork) {
+    this._parent = parent;
+    this._ancestor = parent._ancestor;
+    return this;
+  }
 }
 export function leaf(name: string | number) {
   return new Leaf(name);
 }
 
 class Fork extends TNode {
+  _ancestor: TreeChild;
+  childOf(parent: Fork) {
+    this._parent = parent;
+    this._ancestor = parent._ancestor;
+    return this;
+  }
+  height() {
+    let height = -Infinity;
+    this._children.forEach((c) => {
+      const h = c.height();
+      if (h > height) height = h;
+    });
+    return height + 1;
+  }
   nodes(nodes: TreeChild[]) {
     nodes.forEach((node) => {
       node._index = this._degree;
@@ -3695,6 +3707,10 @@ class Fork extends TNode {
     queue.clear();
     return this;
   }
+  constructor(name: string | number) {
+    super(name);
+    this._ancestor = this;
+  }
 }
 type TreeChild = Leaf | Fork;
 function isLeaf(x: any): x is Leaf {
@@ -3720,6 +3736,7 @@ type Traversal =
   | "inorder"
   | "postorder"
   | "bfs";
+
 type LinkFunction = (line: Line, source: TNode, target: TNode) => Line;
 const TREE = contextual(colorable(BASE));
 class Tree extends TREE {
@@ -3740,12 +3757,10 @@ class Tree extends TREE {
   }
   private HV() {
     const largerToRight = (parent: TreeChild) => {
-      const L = parent.left();
-      const R = parent.right();
-      if (empty(L) || empty(R)) return;
+      const left = parent.left();
+      const right = parent.right();
+      if ((left === null) || (right === null)) return;
       const sh = 2;
-      const left = L.value;
-      const right = R.value;
       if (isLeaf(left) && isLeaf(right)) {
         right._x = parent._x + 1;
         right._y = parent._y;
@@ -3779,16 +3794,187 @@ class Tree extends TREE {
     return this;
   }
   private buccheim() {
-    const executeShifts = (node: TreeChild) => {
+    const leftBrother = (self: TreeChild) => {
+      let n = null;
+      if (self._parent) {
+        for (const node of self._parent._children) {
+          if (node._id === self._id) return n;
+          else n = node;
+        }
+      }
+      return n;
+    };
+    const get_lmost_sibling = (self: TreeChild) => {
+      if (
+        !self._leftmostSibling &&
+        self._parent &&
+        self._id !== self._parent._children[0]._id
+      ) {
+        self._leftmostSibling = self._parent._children[0];
+        return self._parent._children[0];
+      }
+      return self._leftmostSibling;
+    };
+    const movesubtree = (
+      wl: TreeChild,
+      wr: TreeChild,
+      shift: number,
+    ) => {
+      const st = wr._index - wl._index;
+      wr._change -= shift / st;
+      wr._shift += shift;
+      wl._change += shift / st;
+      wr._x += shift;
+      wr._dx += shift;
+    };
+    const ancestor = (
+      vil: TreeChild,
+      v: TreeChild,
+      default_ancestor: TreeChild,
+    ) => {
+      if (v._parent && v._parent.hasChild(vil._id)) {
+        return vil._ancestor;
+      }
+      return default_ancestor;
+    };
+    const apportion = (
+      v: TreeChild,
+      default_ancestor: TreeChild,
+      distance: number,
+    ) => {
+      const w = leftBrother(v);
+      let vol = get_lmost_sibling(v);
+      if (w !== null && vol !== null) {
+        let vir = v;
+        let vor = v;
+        let vil = w;
+        let sir = v._dx;
+        let sor = v._dx;
+        let sil = vil._dx;
+        let sol = vol._dx;
+        let VIL: TreeChild | null = vil;
+        let VIR: TreeChild | null = vir;
+        let VOL: TreeChild | null = vol;
+        let VOR: TreeChild | null = vor;
+        while (VIL?.right() && VIR?.left()) {
+          VIL = vil.right();
+          if (VIL) vil = VIL;
+          VIR = vir.left();
+          if (VIR) vir = VIR;
+          VOL = vol.left();
+          if (VOL) vol = VOL;
+          VOR = vor.right();
+          if (VOR) {
+            vor = VOR;
+            // @ts-ignore
+            vor._ancestor = v;
+          }
+          let shift = (vil._x + sil) - (vir._x + sir) + distance;
+          if (shift > 0) {
+            let a = ancestor(vil, v, default_ancestor);
+            movesubtree(a, v, shift);
+            sir = sir + shift;
+            sor = sor + shift;
+          }
+          sil += vil._dx;
+          sir += vir._dx;
+          sol += vol._dx;
+          sor += vor._dx;
+        }
+        if (vil.right() && !vor.right()) {
+          vor._thread = vil.right();
+          vor._dx += sil - sor;
+        } else {
+          if (vir.left() && !vol.left()) {
+            vol._thread = vir.left();
+            vol._dx += sir - sol;
+          }
+          default_ancestor = v;
+        }
+      }
+      return default_ancestor;
+    };
+    const execShifts = (v: TreeChild) => {
       let shift = 0;
       let change = 0;
-      for (const child of node._children) {
-        child._x += shift;
-        child._dx += shift;
-        change += child._change;
-        shift += child._shift + change;
+      for (const w of v._children) {
+        w._x += shift;
+        w._dx += shift;
+        change += w._change;
+        shift += w._shift + change;
       }
     };
+    const firstwalk = (
+      v: TreeChild,
+      distance: number = 1,
+    ) => {
+      if (v._children.length === 0) {
+        if (v._leftmostSibling) {
+          const lb = leftBrother(v);
+          if (lb) v._x = lb._x + distance;
+        } else v._x = 0;
+      } else {
+        let default_ancestor = v._children[0];
+        for (const w of v._children) {
+          firstwalk(w);
+          default_ancestor = apportion(
+            w,
+            default_ancestor,
+            distance,
+          );
+        }
+        execShifts(v);
+        const L = v._children[0];
+        const R = v._children[v._children.length - 1];
+        let midpoint = (L._x + R._x) / 2;
+        const w = leftBrother(v);
+        if (w) {
+          v._x = w._x + distance;
+          v._dx = v._x - midpoint;
+        } else {
+          v._x = midpoint;
+        }
+      }
+      return v;
+    };
+    const secondwalk = (
+      v: TreeChild,
+      m: number = 0,
+      depth: number = 0,
+      min: number | null = null,
+    ): number => {
+      v._x += m;
+      v._y = -depth;
+      if (min === null || v._x < min) {
+        min = v._x;
+      }
+      for (const w of v._children) {
+        min = secondwalk(w, m + v._dx, depth + 1, min);
+      }
+      return min;
+    };
+    const thirdwalk = (tree: TreeChild, n: number) => {
+      tree._x += n;
+      for (const w of tree._children) {
+        thirdwalk(w, n);
+      }
+    };
+    const buccheim = () => {
+      this._tree.sketch();
+      firstwalk(this._tree);
+      const min = secondwalk(this._tree);
+      if (min < 0) {
+        thirdwalk(this._tree, -min);
+      }
+    };
+    buccheim();
+    buccheim();
+    const x = this._tree._x;
+    const y = this._tree.height() / 2;
+    this._tree.bfs((n) => {
+      n._x -= x;
+      n._y += y;
+    });
     return this;
   }
   private knuth() {
@@ -3806,6 +3992,107 @@ class Tree extends TREE {
     return this;
   }
   private reingoldTilford() {
+    const contour = (
+      left: TreeChild,
+      right: TreeChild,
+      max_offset: number | null = null,
+      left_offset: number = 0,
+      right_offset: number = 0,
+      left_outer: TreeChild | null = null,
+      right_outer: TreeChild | null = null,
+    ): [
+      TreeChild | null,
+      TreeChild | null,
+      number,
+      number,
+      number,
+      TreeChild,
+      TreeChild,
+    ] => {
+      let delta = left._x + left_offset - (right._x + right_offset);
+      if (max_offset === null || delta > max_offset) {
+        max_offset = delta;
+      }
+      if (left_outer === null) left_outer = left;
+      if (right_outer === null) right_outer = right;
+      let lo = left_outer.left();
+      let li = left.right();
+      let ri = right.left();
+      let ro = right_outer.right();
+      if (li && ri) {
+        left_offset += left._dx;
+        right_offset += right._dx;
+        return contour(
+          li,
+          ri,
+          max_offset,
+          left_offset,
+          right_offset,
+          lo,
+          ro,
+        );
+      }
+      const out = tuple(
+        li,
+        ri,
+        max_offset,
+        left_offset,
+        right_offset,
+        left_outer,
+        right_outer,
+      );
+      return out;
+    };
+    const fixSubtrees = (
+      left: TreeChild,
+      right: TreeChild,
+    ) => {
+      let [li, ri, diff, loffset, roffset, lo, ro] = contour(left, right);
+      diff += 1;
+      diff += (right._x + diff + left._x) % 2;
+      right._dx = diff;
+      right._x += diff;
+      if (right._children.length) {
+        roffset += diff;
+      }
+      if (ri && !li) {
+        lo._thread = ri;
+        lo._dx = roffset - loffset;
+      } else if (li && !ri) {
+        ro._thread = li;
+        ro._dx = loffset - roffset;
+      }
+      const out = Math.floor((left._x + right._x) / 2);
+      return out;
+    };
+    const addmods = (tree: TreeChild, mod: number = 0) => {
+      tree._x += mod;
+      tree._children.forEach((c) => addmods(c, mod + tree._dx));
+      return tree;
+    };
+    const setup = (tree: TreeChild, depth: number = 0) => {
+      tree.sketch(-depth);
+      if (tree._children.length === 0) {
+        tree._x = 0;
+        return tree;
+      }
+      if (tree._children.length === 1) {
+        tree._x = setup(tree._children[0], depth + 1)._x;
+        return tree;
+      }
+      const left = setup(tree._children[0], depth + 1);
+      const right = setup(tree._children[1], depth + 1);
+      tree._x = fixSubtrees(left, right);
+      return tree;
+    };
+    setup(this._tree);
+    addmods(this._tree);
+    const x = this._tree._x;
+    const y = this._tree.height()/2;
+    this._tree.bfs((n) => {
+      n._x -= x;
+      n._y += y;
+    });
     return this;
   }
   private wetherellShannon() {
@@ -3908,11 +4195,11 @@ class Tree extends TREE {
   end() {
     this.lay();
     this._tree.bfs((node) => {
-      const parent = node._parent;
-      omap((p) => {
+      const p = node._parent;
+      if (p) {
         const l = line([p._x, p._y], [node._x, node._y]);
         this.and(l);
-      }, parent);
+      }
     });
     const nodes: Shape[] = [];
     const labels: Text[] = [];

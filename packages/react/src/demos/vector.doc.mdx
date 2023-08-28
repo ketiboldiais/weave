@@ -1,6 +1,21 @@
 # Vector
 This is the documentation page for _Vector_, the data type representing Loom’s vectors. Vectors are the predominant data type used by Loom for positioning, scaling, transforming, and many other numeric operations.
 
+Vectors can be constructed with the the `new` keyword:
+
+~~~ts
+const a = new Vector([1,3,2,4]); // The vector [1,3,2,4]
+~~~
+
+Much of Loom’s codebase, however, uses the `v2D`, `v3D`, and `vector` functions:
+
+~~~ts
+const a = v2D(1,2) // a 2D vector [1,2]
+const b = v3D(0,0,1) // a 3D vector [0,0,1]
+const c = vector([1,3,1,5,7]) // the vector [1,3,1,5,7]
+~~~
+
+
 ## Properties
 Below are various properties defined on all Vectors. Vector property names are always prefixed with an underscore (`_`).
 
@@ -103,3 +118,28 @@ Returns the magnitude of the Vector. An optional ${precision}$ may be passed to 
 | ${other:}$ Vector \| number[] \| number | Vector  |
 :::
 Returns the difference of the Vector and the ${other}$ vector.
+
+_Example._ The vector `c` reduces to ${[8,1,10].}$
+~~~js
+const a = new Vector([16,10,13]);
+const b = new Vector([8,9,3]);
+const c = a.sub(b); // [16 - 8, 10 - 9, 13 - 3]
+~~~
+
+
+### Vector.mul
+:::tbl
+| Parameters                              | Returns |
+| --------------------------------------- | ------- |
+| ${other:}$ Vector \| number[] \| number | Vector  |
+:::
+Returns the product of the Vector and the ${other}$ vector.
+
+
+### Vector.pow
+:::tbl
+| Parameters                              | Returns |
+| --------------------------------------- | ------- |
+| ${other:}$ Vector \| number[] \| number | Vector  |
+:::
+Returns the power of the Vector and the ${other}$ vector.

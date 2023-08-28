@@ -103,7 +103,7 @@ export const Knuth1 = () => {
         leaf("g"),
       ]),
     ]),
-  ).layout('knuth')
+  ).layout("knuth")
     .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
     .edgeStroke("white")
     .nodeFill("orchid").end();
@@ -140,6 +140,61 @@ export const HV1 = () => {
   return <Figure of={data} />;
 };
 
+export const ReingoldTilford1 = () => {
+  const data = tree(
+    subtree("a").nodes([
+      subtree("b").nodes([
+        subtree("d").nodes([
+          leaf("e"),
+          leaf("f"),
+        ]),
+        leaf("m"),
+      ]),
+      subtree("h").nodes([
+        leaf("i"),
+        leaf("j"),
+      ]),
+    ]),
+  ).layout("reingold-tilford")
+    .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
+    .nodeRadius(0.3)
+    .edgeStroke("goldenrod")
+    .nodeFill("wheat")
+    .end();
+  return <Figure of={data} />;
+};
+
+export const Buccheim1 = () => {
+  const data = tree(
+    subtree("a").nodes([
+      subtree("b").nodes([
+        subtree("d").nodes([
+          leaf("e"),
+          leaf('u'),
+          leaf("f"),
+        ]),
+        leaf("m"),
+      ]),
+      leaf("x"),
+      subtree("h").nodes([
+        leaf("i"),
+        leaf('k'),
+        leaf("j"),
+      ]),
+    ]),
+  )
+    .margins(10, 60)
+    .height(300)
+    .width(300)
+    .layout("buccheim-unger-leipert")
+    .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
+    .nodeRadius(0.3)
+    .edgeStroke("orangered")
+    .nodeFill("salmon")
+    .end();
+  return <Figure of={data} />;
+};
+
 export const WetherellShannon1 = () => {
   const data = tree(
     subtree("a").nodes([
@@ -148,14 +203,12 @@ export const WetherellShannon1 = () => {
           leaf("e"),
           leaf("f"),
         ]),
-        leaf("g"),
         leaf("m"),
       ]),
       subtree("h").nodes([
         leaf("i"),
         leaf("j"),
       ]),
-      leaf("p"),
     ]),
   ).layout("wetherell-shannon")
     .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
