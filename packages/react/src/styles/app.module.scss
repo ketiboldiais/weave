@@ -1,10 +1,26 @@
 @import './colors.scss';
 
 .app {
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		strong {
+			font-style: normal;
+			font-weight: normal;
+			color: $bluegrey;
+		}
+	}
+
 	figure {
 		display: block;
 		padding: 0;
 		margin: 0;
+
 		figcaption {
 			font-style: italic;
 			font-size: 0.8em;
@@ -12,25 +28,30 @@
 			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 		}
 	}
+
 	background-color: $black;
 	color: $text;
 	font-family: 'KaTeX_Main';
+
 	h1 {
 		text-align: center;
 		margin-bottom: 5rem;
 		margin-top: 5rem;
 	}
+
 	dfn ul {
 		margin-left: 1em;
 		margin-top: 0;
 		font-size: 0.95rem;
 		padding: 0;
 	}
+
 	dfn {
 		display: block;
 		width: 70%;
 		font-style: normal;
 		margin: 1em auto;
+
 		h1,
 		h2,
 		h3,
@@ -38,14 +59,16 @@
 		h5,
 		h6 {
 			font-size: 0.9rem;
-			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
 			width: 100%;
 			margin: 5px 0;
 			padding: 0.2em 0;
 			border-bottom: solid thin $black;
 			border-top: solid thin $black;
 		}
+
 		padding: 0 0.9em;
+
 		section {
 			margin: 0;
 		}
@@ -59,12 +82,18 @@
 		font-family: 'Fira Code', 'KaTeX_Typewriter';
 		font-size: 0.95rem;
 	}
-	
+
 	code {
 		font-family: 'Fira Code';
 		font-size: .95rem;
 	}
-	h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
+
+	h1 code,
+	h2 code,
+	h3 code,
+	h4 code,
+	h5 code,
+	h6 code {
 		font-size: 0.9em;
 	}
 
@@ -73,15 +102,19 @@
 		width: fit-content;
 		margin: 0 auto;
 		font-size: 0.95rem;
+
 		thead {
 			border-bottom: solid thin $ash;
 		}
+
 		tr td:not(:first-child) {
 			border-left: solid thin $ash;
 		}
+
 		td {
 			padding: 0.2em 0.5em;
 		}
+
 		th {
 			padding: 0.2em 0.8em;
 			font-weight: 600;
@@ -89,7 +122,7 @@
 	}
 
 	a {
-		color: #367ccd;
+		color: $grey;
 		text-decoration: none;
 	}
 
@@ -148,12 +181,6 @@
 			color: inherit;
 			font-weight: normal;
 		}
-
-		strong {
-			font-style: italic;
-			font-weight: 500;
-			color: $grey;
-		}
 	}
 
 	nav {
@@ -184,6 +211,7 @@
 			}
 		}
 	}
+
 	.page {
 		max-width: 700px;
 		margin: 0 auto;

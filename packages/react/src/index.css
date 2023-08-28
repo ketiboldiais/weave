@@ -133,7 +133,7 @@ code {
 }
 
 textarea {
-	background-color: inherit;
+	background-color:inherit;
 	width: 100%;
 	resize: vertical;
 	font-size: 0.9rem;
@@ -142,35 +142,35 @@ textarea {
 	font-family: 'Fira Code';
 	border-radius: 0.3em;
 	border: none;
-	color: inherit;
+	color: rgb(144, 237, 255);
 	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
 }
 
 pre.terminal {
 	background-color: inherit;
-	color: #2d3748;
+	color: rgb(252, 130, 114);
 	font-size: 0.9rem;
-	border: solid thin lightgrey;
+	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
 	border-radius: 0.3em;
 	margin-bottom: 5px;
 }
 
 .run-button {
-	border: solid thin rgb(144, 177, 144);
-	color: rgb(37, 117, 37);
+	border: solid thin rgb(159, 241, 159);
+	color: rgb(167, 255, 167);
 	background-color: inherit;
 	font-family: 'Fira Code';
-	background-color: rgb(221, 238, 221);
+	border-radius: 2px;
+	margin-top: 3px;
 }
 .latex-screen {
 	background-color: inherit;
-	color: #2d3748;
 	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
-	font-size: 0.9rem;
+	font-size: 0.8rem;
 	border: none;
 	border-radius: 0.3em;
 	margin-bottom: 5px;
-	padding: 0.5em 1em;
+	padding: 0.1em 1em;
 	color: inherit;
 }
 .latex-screen .katex-display {

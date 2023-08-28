@@ -15,7 +15,7 @@ export const docLinks: Record<string, LinkEntry> = {
   Intro: { path: "/", visible: true },
   Quadrilaterals: { path: "/quad", visible: false },
   Axes: { path: "/axes", visible: false },
-  Vector: { path: "/vector", visible: false },
+  Vector: { path: "/vector", visible: true },
   Twine: { path: "/twine", visible: true },
 };
 
