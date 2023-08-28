@@ -51,9 +51,11 @@ function Page() {
       <nav>
         <ul>
           {Object.entries(docLinks).map(([name, path]) => (
-            path.visible && (<li key={name + path}>
-              <Link to={path.path}>{name}</Link>
-            </li>)
+            path.visible && (
+              <li key={name + path}>
+                <Link to={path.path}>{name}</Link>
+              </li>
+            )
           ))}
         </ul>
       </nav>
@@ -61,6 +63,7 @@ function Page() {
         <BaseComponents>
           <article className={app.page}>
             <Outlet />
+            <footer>&copy; 2023 Ketib Oldiais</footer>
           </article>
         </BaseComponents>
       </main>
