@@ -2598,6 +2598,102 @@ export function dotPlot<T extends string | number>(data: T[]) {
   return new DotPlot(data);
 }
 
+// ==================================================================== BAR PLOT
+const BAR_PLOT = contextual(colorable(BASE));
+
+class BarPlot extends BAR_PLOT {
+  _data: Map<string, number> = new Map();
+  constructor(data: Record<string, number>) {
+    super();
+    Object.entries(data).forEach(([key, value]) => {
+      this._data.set(key, value);
+    });
+  }
+  _barWidth: number = 0.5;
+  barWidth(n: number) {
+    this._barWidth = n;
+    return this;
+  }
+  _xTickLength: number = 0.01;
+  xTickLength(length: number) {
+    this._xTickLength = length;
+    return this;
+  }
+  _yTickLength: number = 0.1;
+  yTickLength(length: number) {
+    this._yTickLength = length;
+    return this;
+  }
+  _barColor: string = "initial";
+  _barStroke: string = "initial";
+  barStroke(color: string) {
+    this._barStroke = color;
+    return this;
+  }
+  barColor(color: string) {
+    this._barColor = color;
+    return this;
+  }
+  end() {
+    const xlabels = mapKeys(this._data);
+    const xmin = 0;
+    const xmax = xlabels.length + this._barWidth;
+    let ymin = Infinity;
+    let ymax = -Infinity;
+    let i = 0;
+    const data: { x: number; y: number; key: string }[] = [];
+    for (const [key, value] of this._data) {
+      (value < ymin) && (ymin = value);
+      (value > ymax) && (ymax = value);
+      const d = { x: i, y: value, key };
+      data.push(d);
+      i++;
+    }
+    this._domain = [xmin, xmax];
+    this._range = [xmin, ymax];
+    const xline = line([this._xmin, this._ymin], [this._xmax, this._ymin]);
+    const yline = line([this._xmin, this._ymin], [this._xmin, this._ymax]);
+    data.forEach((d) => {
+      const r = quad(this._barWidth, d.y)
+        .at(d.x + this._barWidth, d.y)
+        .stroke(this._barStroke)
+        .fill(this._barColor);
+      this.and(r);
+    });
+    this.and(xline.stroke(this._stroke), yline.stroke(this._stroke));
+    const xticks = tickLines(
+      this._xTickLength,
+      xmin,
+      xmax,
+      1,
+      "x",
+      (_, i) => text(xlabels[i]),
+    );
+    xticks.forEach((tick) =>
+      this.and(
+        tick.txt.anchor("end").dx(1).dy(-1).fontColor(this._stroke),
+      )
+    );
+    const yticks = tickLines(
+      this._yTickLength,
+      0,
+      ymax,
+      1,
+      "y",
+    );
+    yticks.forEach((tick) => {
+      this.and(
+        tick.tick.stroke(this._stroke),
+        tick.txt.fontColor(this._stroke).anchor("end").dx(-0.05).dy(-0.2),
+      );
+    });
+    return this.fit();
+  }
+}
+export function barPlot(data: Record<string, number>) {
+  return new BarPlot(data);
+}
+
 // =================================================================== HISTOGRAM
 
 const HISTOGRAM = contextual(colorable(BASE));
@@ -4088,7 +4184,7 @@ class Tree extends TREE {
     setup(this._tree);
     addmods(this._tree);
     const x = this._tree._x;
-    const y = this._tree.height()/2;
+    const y = this._tree.height() / 2;
     this._tree.bfs((n) => {
       n._x -= x;
       n._y += y;
@@ -4255,6 +4351,7 @@ export type Parent =
   | Histogram
   | Plot2D
   | Tree
+  | BarPlot
   | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad;

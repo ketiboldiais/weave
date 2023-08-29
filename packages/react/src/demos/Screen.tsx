@@ -2,6 +2,7 @@ import { CSSProperties, useEffect, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
 import { heights } from "./test-data.js";
 import {
+  barPlot,
   Circle,
   dotPlot,
   engine,
@@ -164,13 +165,27 @@ export const ReingoldTilford1 = () => {
   return <Figure of={data} />;
 };
 
+export const BarPlot1 = () => {
+  const data = barPlot({
+    apple: 12.2,
+    banana: 14.5,
+    melon: 9.8,
+    kiwi: 16.2,
+    durian: 4.8,
+  }).barColor("deepskyblue")
+    .barStroke("none")
+    .stroke("white")
+    .end();
+  return <Figure of={data} />;
+};
+
 export const Buccheim1 = () => {
   const data = tree(
     subtree("a").nodes([
       subtree("b").nodes([
         subtree("d").nodes([
           leaf("e"),
-          leaf('u'),
+          leaf("u"),
           leaf("f"),
         ]),
         leaf("m"),
@@ -178,7 +193,7 @@ export const Buccheim1 = () => {
       leaf("x"),
       subtree("h").nodes([
         leaf("i"),
-        leaf('k'),
+        leaf("k"),
         leaf("j"),
       ]),
     ]),
