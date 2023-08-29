@@ -2367,7 +2367,7 @@ export class Plot2D extends PLOT2D {
   _integralFill?: string;
   _integralOpacity?: number;
   integrate(data: {
-    bounds: [number,number],
+    bounds: [number, number];
     fill?: string;
     opacity?: number;
   }) {
@@ -6326,6 +6326,9 @@ class Int extends Atom {
   isAlgebraic(): boolean {
     return true;
   }
+  toFrac() {
+    return frac(this.n, this.d);
+  }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.int(this);
   }
@@ -6345,6 +6348,9 @@ class Int extends Atom {
     return `${this.n}`;
   }
   n: number;
+  get d() {
+    return 1;
+  }
   constructor(n: number) {
     super(core.int);
     this.n = n;
@@ -6557,7 +6563,9 @@ abstract class Compound extends AlgebraicExpression {
       return false;
     }
     if (this.args.length !== other.args.length) return false;
-    if (this.parenLevel !== other.parenLevel) return false;
+    if (this.parenLevel !== other.parenLevel) {
+      return this.args.reduce((p, c, i) => p && c.equals(other.args[i]), true);
+    }
     for (let i = 0; i < this.args.length; i++) {
       const a = this.args[i];
       const b = other.args[i];
@@ -6818,6 +6826,9 @@ function isQuotient(u: AlgebraicExpression): u is Quotient {
 class Fraction extends AlgebraicOp<core.fraction> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.fraction(this);
+  }
+  toFrac() {
+    return this;
   }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.fraction(this);
@@ -7871,15 +7882,9 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
       return u;
     }
     u = simplify(u);
-    /**
-     * __DERIV-1__.
-     */
     if (u.equals(x)) {
       return int(1);
     }
-    /**
-     * __DERIV-2__
-     */
     if (isPower(u)) {
       const v = u.base;
       const w = u.exponent;
@@ -7900,19 +7905,13 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
       const out = simplify(sum([lhs, rhs]));
       return simplify(out);
     }
-    /**
-     * __DERIV-3__
-     */
     if (isSum(u)) {
       const v = simplify(u.args[0]);
-      const w = simplify(difference(u, v));
+      const w = difference(u, v);
       const lhs = simplify(deriv(v));
       const rhs = simplify(deriv(w));
       return simplify(sum([lhs, rhs]));
     }
-    /**
-     * __DERIV-4__
-     */
     if (isProduct(u)) {
       const v = simplify(u.args[0]);
       const w = simplify(quotient(u, v));
@@ -7922,9 +7921,6 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
       const rhs = simplify(product([v, D2]));
       return simplify(sum([lhs, rhs]));
     }
-    /**
-     * __DERIV-5__.
-     */
     if (isAlgebraicFn(u)) {
       if (u.op === "sin") {
         const lhs = fn("cos", u.args);
@@ -8931,11 +8927,13 @@ class Token<T extends tt = tt, L extends LIT = LIT, S extends string = string> {
 }
 
 /**
- * Returns a new token.
- * @parameter type - The token’s {@link tt|type}.
- * @parameter lexeme - The token’s lexeme.
- * @parameter line - The line where this token was recognized.
- * @parameter column - The column where this token was recognized.
+---
+* Returns a new token.
+* @parameter type - The token’s {@link tt|type}.
+* @parameter lexeme - The token’s lexeme.
+* @parameter line - The line where this token was recognized.
+* @parameter column - The column where this token was recognized.
+---
  */
 function token<X extends tt>(
   type: X,
@@ -9151,14 +9149,14 @@ interface Resolvable<X = any> {
   resolve(expr: Expr, i: number): X;
 }
 
-enum function_type {
+enum functionType {
   none,
   function,
   method,
   initializer,
 }
 
-enum class_type {
+enum classType {
   none,
   class,
 }
@@ -9168,8 +9166,8 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
   private scopesIsEmpty() {
     return this.scopes.length === 0;
   }
-  private currentFunction: function_type = function_type.none;
-  private currentClass: class_type = class_type.none;
+  private currentFunction: functionType = functionType.none;
+  private currentClass: classType = classType.none;
   private beginScope() {
     this.scopes.push(new Map());
   }
@@ -9215,7 +9213,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
     peek.set(name, true);
   }
 
-  private resolveFn(node: FnStmt, type: function_type) {
+  private resolveFn(node: FnStmt, type: functionType) {
     const enclosingFunction = this.currentFunction;
     this.currentFunction = type;
     this.beginScope();
@@ -9242,7 +9240,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
     this.client = client;
   }
   thisExpr(node: ThisExpr): void {
-    if (this.currentClass === class_type.none) {
+    if (this.currentClass === classType.none) {
       throw resolverError(
         `Encountered the keyword “this” outside of a class definition. This syntax has no semantic, since “this” points to nothing.`,
         `resolving “this”`,
@@ -9378,7 +9376,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
   }
   classStmt(node: ClassStmt): void {
     const enclosingClass = this.currentClass;
-    this.currentClass = class_type.class;
+    this.currentClass = classType.class;
     this.declare(node.name);
     this.define(node.name.lexeme);
     this.beginScope();
@@ -9387,9 +9385,9 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
     const methods = node.methods;
     for (let i = 0; i < methods.length; i++) {
       const method = methods[i];
-      let declaration = function_type.method;
+      let declaration = functionType.method;
       if (method.name.lexeme === "init") {
-        declaration = function_type.initializer;
+        declaration = functionType.initializer;
       }
       this.resolveFn(method, declaration);
     }
@@ -9400,7 +9398,7 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
   fnStmt(node: FnStmt): void {
     this.declare(node.name);
     this.define(node.name.lexeme);
-    this.resolveFn(node, function_type.function);
+    this.resolveFn(node, functionType.function);
     return;
   }
   ifStmt(node: IfStmt): void {
@@ -9414,14 +9412,14 @@ class Resolver<T extends Resolvable = Resolvable> implements Visitor<void> {
     return;
   }
   returnStmt(node: ReturnStmt): void {
-    if (this.currentFunction === function_type.none) {
+    if (this.currentFunction === functionType.none) {
       throw resolverError(
         `Encountered the “return” keyword at the top-level. This syntax has no semantic.`,
         `resolving a return-statement`,
         node.keyword,
       );
     }
-    if (this.currentFunction === function_type.initializer) {
+    if (this.currentFunction === functionType.initializer) {
       throw resolverError(
         `Encounterd the “return” keyword within an initializer.`,
         `resolving a return-statement`,
@@ -9548,7 +9546,21 @@ function runtimeEnv(enclosing: Environment<Primitive> | null) {
 }
 
 // deno-fmt-ignore
-type Primitive = | number | boolean | null | string | bigint | Fraction | BigRat | Vector | Matrix | Fn | Class | Obj | Primitive[] | AlgebraicExpression;
+type Primitive =
+| number
+| boolean
+| null
+| string
+| bigint
+| Fraction
+| BigRat
+| Vector
+| Matrix
+| Fn
+| Class
+| Obj
+| Primitive[]
+| AlgebraicExpression;
 
 function stringify(value: Primitive): string {
   if (value === null) {
@@ -12675,10 +12687,12 @@ export function engine(source: string) {
     },
   };
 }
+
 type Result = {
   error?: string;
   result: string[];
 };
+
 function res(result: string[], error?: string) {
   return ({ error, result });
 }
