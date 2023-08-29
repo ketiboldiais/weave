@@ -2,6 +2,7 @@ import { CSSProperties, useEffect, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
 import { heights } from "./test-data.js";
 import {
+  Area2D,
   barPlot,
   Circle,
   dotPlot,
@@ -84,10 +85,31 @@ export const ForceGraph1 = () => {
 
 export const Plot1 = () => {
   const data = plot2D("f(x) = tan(x)")
-    .samples(2000)
+    .samples(500)
     .strokeWidth(2)
     .axisColor("white")
     .stroke("gold")
+    .end();
+  return <Figure of={data} />;
+};
+
+export const Plot2 = () => {
+  const data = plot2D("f(x) = -(x^5) + 4x^3")
+    .samples(300)
+    .integrate({
+      bounds: [-2, 2],
+      fill: "gold",
+      opacity: 0.2,
+    })
+    .domain(-4, 4)
+    .range(-20, 20)
+    .xTickLength(0.5)
+    .yTickLength(0.1)
+    .strokeWidth(2)
+    .yTickSep(5)
+    .axisColor("white")
+    .stroke("sandybrown")
+    .strokeWidth(3)
     .end();
   return <Figure of={data} />;
 };
@@ -298,6 +320,20 @@ export const Figure = ({ of }: { of: Parent }) => {
     );
   };
 
+  const AREA = ({ of }: { of: Area2D }) => {
+    return (
+      <path
+        d={of.toString()}
+        fill={of._fill}
+        stroke={of._stroke}
+        strokeWidth={of._strokeWidth}
+        strokeDasharray={of._dash}
+        opacity={of._opacity}
+        shapeRendering={"geometricPrecision"}
+      />
+    );
+  };
+
   const LINE = ({ of }: { of: Line }) => {
     return (
       <>
@@ -309,7 +345,6 @@ export const Figure = ({ of }: { of: Parent }) => {
           strokeDasharray={of._dash}
           opacity={of._opacity}
         />
-        {of._label && <TEXT of={of._label} />}
       </>
     );
   };
@@ -388,6 +423,8 @@ export const Figure = ({ of }: { of: Parent }) => {
         return <TEXT of={d} />;
       } else if (d instanceof Quad) {
         return <QUAD of={d} />;
+      } else if (d instanceof Area2D) {
+        return <AREA of={d} />;
       } else {
         return null;
       }

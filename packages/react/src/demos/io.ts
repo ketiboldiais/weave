@@ -44,13 +44,6 @@ function none() {
 
 type Option<T> = None | Some<T>;
 
-function exists<T>(opt: Option<T>): opt is Some<T> {
-  return opt._tag === "Some";
-}
-function empty<T>(opt: Option<T>): opt is None {
-  return opt._tag === "None";
-}
-
 function omap<T, S>(f: (a: T) => S, opt: Option<T>): Option<S> {
   if (opt._tag === "None") {
     return opt;
@@ -494,6 +487,10 @@ function arcsin(x: number) {
 The following functions perform statistical computations.
 */
 
+function inRange(min: number, input: number, max: number) {
+  return (min <= input && input <= max);
+}
+
 /** Returns the number of decimal places of the given number. */
 function decimalPlacesOf(n: number) {
   const s = `${n}`;
@@ -931,8 +928,8 @@ class Vector<T extends number[] = number[]> {
   }
 
   /** Returns the component-wise division of this vector. */
-  div(other: Vector | number[] | number) {
-    return this.binop(other, (a, b) => b === 0 ? a / 0.0001 : a / b);
+  div(other: Vector | number[] | number, alt: number = 0.0001) {
+    return this.binop(other, (a, b) => b === 0 ? a / alt : a / b);
   }
 
   /** Magnifies this vector by the given magnitude. */
@@ -2158,29 +2155,6 @@ const LINE = renderable(colorable(BASE));
 
 export class Line extends LINE {
   commands: PathCommand[] = [];
-  _label?: Text;
-  label(txt: string | number | Text, position?: [number, number]) {
-    this._label = $isString(txt) || $isNumber(txt) ? text(txt) : txt;
-    if (position) {
-      this._label.at(position[0], position[1]);
-    } else {
-      this._label.at(this.lastCommand.end._x, this.lastCommand.end._y);
-    }
-    $isNothing(this._label._fontSize) && (
-      this._label._fontSize = 8
-    );
-    $isNothing(this._label._fontFamily) && (
-      this._label._fontFamily = "system-ui"
-    );
-    $isNothing(this._label._textAnchor) && (
-      this._label._textAnchor = "middle"
-    );
-    $isNothing(this._label._fontColor) && (
-      this._label._fontColor = "grey"
-    );
-
-    return this;
-  }
   constructor(start: Vector, end: Vector) {
     super();
     this.commands.push(
@@ -2354,6 +2328,29 @@ function tickLines(
   }
   return out;
 }
+// ======================================================================== Area
+const AREA2D = renderable(colorable(BASE));
+export class Area2D extends AREA2D {
+  constructor() {
+    super();
+    this._fill = "initial";
+    this._opacity = 0.5;
+  }
+  moveTo(x: number, y: number, z: number = 1) {
+    this.origin = v3D(x, y, z);
+  }
+  push(command: PathCommand) {
+    this.commands.push(command);
+    return this;
+  }
+  close() {
+    this.commands.push(Z());
+    return this;
+  }
+}
+function area2D() {
+  return new Area2D();
+}
 
 // ============================================================ 2D Function Plot
 
@@ -2361,9 +2358,22 @@ const PLOT2D = contextual(colorable(BASE));
 
 export class Plot2D extends PLOT2D {
   f: string;
-  _samples: number = 500;
+  _samples: number = 200;
   samples(value: number) {
     this._samples = value;
+    return this;
+  }
+  _integrate?: [number, number];
+  _integralFill?: string;
+  _integralOpacity?: number;
+  integrate(data: {
+    bounds: [number,number],
+    fill?: string;
+    opacity?: number;
+  }) {
+    this._integrate = data.bounds;
+    this._integralFill = data.fill;
+    this._integralOpacity = data.opacity;
     return this;
   }
   constructor(f: string) {
@@ -2377,8 +2387,26 @@ export class Plot2D extends PLOT2D {
     const m = 10;
     this._margins = [m, m, m, m];
   }
-  _tickLength: number = 0.2;
-  _tickSep: number = 1;
+  _xTickLength: number = 0.1;
+  xTickLength(n: number) {
+    this._xTickLength = n;
+    return this;
+  }
+  _yTickLength: number = 0.1;
+  yTickLength(n: number) {
+    this._yTickLength = n;
+    return this;
+  }
+  _xTickSep: number = 1;
+  xTickSep(n: number) {
+    this._xTickSep = n;
+    return this;
+  }
+  _yTickSep: number = 1;
+  yTickSep(n: number) {
+    this._yTickSep = n;
+    return this;
+  }
   _axisColor: string = "black";
   _tickFontSize: number = 12;
   tickFontSize(n: number) {
@@ -2390,8 +2418,6 @@ export class Plot2D extends PLOT2D {
     return this;
   }
   private generateAxes() {
-    const tickLength = this._tickLength;
-    const tickSep = this._tickSep;
     const xmin = this._domain[0];
     const xmax = this._domain[1];
     const ymin = this._range[0];
@@ -2412,14 +2438,28 @@ export class Plot2D extends PLOT2D {
       text(n)
         .fontColor(this._axisColor)
         .anchor("end");
-    const xticks = tickLines(tickLength, xmin, xmax, tickSep, "x", xTickFormat);
+    const xticks = tickLines(
+      this._xTickLength,
+      xmin,
+      xmax + this._xTickSep,
+      this._xTickSep,
+      "x",
+      xTickFormat,
+    );
     xticks.forEach((tick) => {
       this._children.push(
         tick.tick.stroke(this._axisColor),
         tick.txt.translate(0, -0.8).fontSize(this._tickFontSize),
       );
     });
-    const yticks = tickLines(tickLength, ymin, ymax, tickSep, "y", yTickFormat);
+    const yticks = tickLines(
+      this._yTickLength,
+      ymin,
+      ymax + this._yTickSep,
+      this._yTickSep,
+      "y",
+      yTickFormat,
+    );
     yticks.forEach((tick) => {
       this._children.push(
         tick.tick.stroke(this._axisColor),
@@ -2449,6 +2489,33 @@ export class Plot2D extends PLOT2D {
       if (x < xmin || xmax < x) continue;
       else dataset.push(point);
     }
+    if (this._integrate) {
+      const [a, b] = this._integrate;
+      const area = area2D();
+      let moved = false;
+      for (let i = 0; i < dataset.length; i++) {
+        const [x, y] = dataset[i];
+        if (inRange(a, x, b)) {
+          if (!isNaN(y)) {
+            if (!moved) {
+              area.push(M(x, y, 1));
+              moved = true;
+            } else {
+              area.push(L(x, y, 1));
+            }
+          } else {
+            const next = dataset[i + 1];
+            if (next !== undefined && !isNaN(next[1])) {
+              out.push(M(next[0], next[1], 1));
+            }
+          }
+        }
+      }
+      area.close();
+      (this._integralFill) && area.fill(this._integralFill);
+      (this._integralOpacity) && area.opacity(this._integralOpacity);
+      this.and(area);
+    }
     let moved = false;
     for (let i = 0; i < dataset.length; i++) {
       const datum = dataset[i];
@@ -2475,32 +2542,9 @@ export class Plot2D extends PLOT2D {
     this._children.push(p);
     return this;
   }
-  _type: "cartesian" | "polar" = "cartesian";
-  polar(f: string) {
-    const twoPi = 2 * PI;
-    const e = engine(f);
-    const fn = e.execute();
-    if (!(fn instanceof Fn)) {
-      return this;
-    }
-    let p = path(0, 0);
-    for (let i = 0; i < twoPi; i += 0.01) {
-      const r = fn.call(e.compiler, [i]);
-      if (typeof r !== "number") continue;
-      const x = r * cos(i);
-      const y = r * sin(i);
-      p = p.L(x, y);
-    }
-    this._children.push(p.stroke(this._stroke));
-    return this;
-  }
-  asPolar() {
-    this._type = "polar";
-    return this;
-  }
   end() {
     this.generateAxes();
-    this[this._type](this.f);
+    this.cartesian(this.f);
     return this.fit();
   }
 }
@@ -4354,7 +4398,7 @@ export type Parent =
   | BarPlot
   | DotPlot;
 
-export type Shape = Group | Circle | Line | Path | Text | Quad;
+export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;
 
 // ========================================================= end graphics module
 

@@ -1,23 +1,12 @@
 import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router-dom";
 import MainDoc from "./demos/main.doc.mdx";
-import QuadDoc from "./demos/quad.doc.mdx";
-import AxesDoc from "./demos/axes.doc.mdx";
-import TwineDoc from "./demos/twine.doc.mdx";
-import VectorDoc from "./demos/vector.doc.mdx";
+import QUAD from "./demos/quad.doc.mdx";
+import AXES from "./demos/axes.doc.mdx";
+import TWINE from "./demos/twine.doc.mdx";
+import VECTOR from "./demos/vector.doc.mdx";
 import { MainPage } from "./MDXSchema.js";
-
-type LinkEntry = {
-  path: string;
-  visible: boolean;
-};
-
-export const docLinks: Record<string, LinkEntry> = {
-  Intro: { path: "/", visible: true },
-  Quadrilaterals: { path: "/quad", visible: false },
-  Axes: { path: "/axes", visible: false },
-  Vector: { path: "/vector", visible: true },
-  Twine: { path: "/twine", visible: true },
-};
+import { BaseComponents } from "./MDXSchema.js";
+import app from "./styles/app.module.scss";
 
 const MAIN = () => (
   <MainPage>
@@ -25,35 +14,59 @@ const MAIN = () => (
   </MainPage>
 );
 
+const Dropdown = ({ links }: { links: LinkEntry[] }) => {
+  return (
+    <ul className={`dropdown`}>
+    </ul>
+  );
+};
+
+type LinkEntry = {
+  path: string;
+  title: string;
+  visible: boolean;
+  page: JSX.Element;
+  submenu?: LinkEntry[];
+};
+
+export const docLinks: LinkEntry[] = [
+  { title: "Intro", path: "/", visible: true, page: <MAIN /> },
+  { title: "Quadrilaterals", path: "/quad", visible: false, page: <QUAD /> },
+  { title: "Axes", path: "/axes", visible: false, page: <AXES /> },
+  { title: "Vector", path: "/vector", visible: true, page: <VECTOR /> },
+  { title: "Twine", path: "/twine", visible: true, page: <TWINE /> },
+];
+
 export const Main = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Page />}>
-          <Route path={docLinks.Intro.path} element={<MAIN />} />
-          <Route path={docLinks.Quadrilaterals.path} element={<QuadDoc />} />
-          <Route path={docLinks.Axes.path} element={<AxesDoc />} />
-          <Route path={docLinks.Twine.path} element={<TwineDoc />} />
-          <Route path={docLinks.Vector.path} element={<VectorDoc />} />
-          <Route path={"/tangle"} element={<TwineDoc />} />
+          {docLinks.map((link) => (
+            <Route
+              path={link.path}
+              element={link.page}
+              key={link.path}
+            />
+          ))}
+          <Route path={"/tangle"} element={<TWINE />} />
         </Route>
       </Routes>
     </BrowserRouter>
   );
 };
 
-import { BaseComponents } from "./MDXSchema.js";
-import app from "./styles/app.module.scss";
+
 
 function Page() {
   return (
     <div className={app.app}>
       <nav>
         <ul>
-          {Object.entries(docLinks).map(([name, path]) => (
-            path.visible && (
-              <li key={name + path}>
-                <Link to={path.path}>{name}</Link>
+          {(docLinks).map((link) => (
+            link.visible && (
+              <li key={name + link.path}>
+                <Link to={link.path}>{link.title}</Link>
               </li>
             )
           ))}

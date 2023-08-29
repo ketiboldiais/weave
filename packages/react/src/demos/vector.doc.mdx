@@ -87,6 +87,13 @@ $$
 :::
 Returns the least element of the Vector.
 
+_Example._ The variable `vmin` reduces to 1.
+~~~ts
+const v = new Vector([7,3,5,1,6]);
+const vmin = v.min() // 1
+~~~
+
+
 ### Vector.max
 :::tbl
 | Parameters | Returns |
@@ -109,7 +116,16 @@ Returns the Vector as a column matrix.
 | ---------------------- | ------- |
 | ${precision?:}$ number | number  |
 :::
-Returns the magnitude of the Vector. An optional ${precision}$ may be passed to limit the result’s decimal places.
+Returns the magnitude of the Vector. An optional ${precision}$ may be passed to limit the result’s decimal places. Mathematically, this is defined as
+
+$$
+  \begin{aligned}
+    | {\bf{v}} | &= \sqrt{{\bf{v}}_1^2 + {\bf{v}}_2^2 + \ldots + {\bf{v}}_{n-1}^2 + {\bf{v}}_n^2} \\[1em]
+    &= \sqrt{\sum_{i=1}^n {\bf{v}}_i^2}~~~,
+  \end{aligned}
+$$
+
+where $\bf{v}$ is a vector and $|\bf{v}|$ denotes the magnitude of $\bf{v}.$
 
 ### Vector.sub
 :::tbl
@@ -117,7 +133,11 @@ Returns the magnitude of the Vector. An optional ${precision}$ may be passed to 
 | --------------------------------------- | ------- |
 | ${other:}$ Vector \| number[] \| number | Vector  |
 :::
-Returns the difference of the Vector and the ${other}$ vector.
+Returns the difference of the Vector and the ${other}$ vector. I.e., given a vector ${v}$ of length ${n}$ and a vector ${w}$ of length ${m,}$ the expression ${v.\text{sub}(w)}$ reduces to:
+
+$$
+  [v_1 - w_1, v_2 - w_2, \ldots, v_{n-1} - w_{m-1}, v_n - w_m]
+$$
 
 _Example._ The vector `c` reduces to ${[8,1,10].}$
 ~~~js
@@ -133,7 +153,19 @@ const c = a.sub(b); // [16 - 8, 10 - 9, 13 - 3]
 | --------------------------------------- | ------- |
 | ${other:}$ Vector \| number[] \| number | Vector  |
 :::
-Returns the product of the Vector and the ${other}$ vector.
+Returns the product of the Vector and the ${other}$ vector. That is, given a vector ${a}$ of length ${n}$ and a vector ${b}$ of length ${m,}$ the expression ${a.{\text{mul}(b)}}$ reduces to:
+
+$$
+  [a_1 \cdot b_1, a_2 \cdot b_2, \ldots, a_{n-1} \cdot b_{m-1}, a_n \cdot b_m]
+$$
+
+
+_Example._ The vector `c` reduces to ${[24,18,15].}$
+~~~js
+const a = new Vector([3,2,5]);
+const b = new Vector([8,9,3]);
+const c = a.mul(b); // [3 * 8, 2 * 9, 3 * 5]
+~~~
 
 
 ### Vector.pow
