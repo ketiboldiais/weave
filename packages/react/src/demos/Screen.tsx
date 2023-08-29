@@ -88,7 +88,7 @@ export const Plot1 = () => {
     .samples(500)
     .strokeWidth(2)
     .axisColor("white")
-    .stroke("gold")
+    .stroke("hotpink")
     .end();
   return <Figure of={data} />;
 };
@@ -129,7 +129,7 @@ export const Knuth1 = () => {
   ).layout("knuth")
     .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
     .edgeStroke("white")
-    .nodeFill("orchid").end();
+    .nodeFill("lavender").end();
   return <Figure of={data} />;
 };
 
