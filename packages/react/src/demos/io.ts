@@ -2372,6 +2372,23 @@ function area2D() {
 
 const CONTEXT = contextual(colorable(BASE));
 
+// ================================================================== Radar Plot
+export class RadarPlot extends CONTEXT {
+  _data: Map<string | number, number> = new Map();
+  constructor(
+    _data: Record<(string | number), number>,
+  ) {
+    super();
+    const entries = Object.entries(_data);
+    entries.forEach(([key, value]) => {
+      this._data.set(key, value);
+    });
+  }
+}
+export function radarPlot(data: Record<(string | number), number>) {
+  return new RadarPlot(data);
+}
+
 // ================================================================== Polar Plot
 export class PolarPlot2D extends CONTEXT {
   _f: string;
@@ -2440,8 +2457,22 @@ export class PolarPlot2D extends CONTEXT {
       const c = circle(i).stroke(this._axisColor).opacity(this._axisOpacity);
       this.and(c);
     }
+    const axes: Line[] = [];
+    const k = 5;
+    for (let i = 0; i < this._axesCount; i++) {
+      const L = line([0, 0], [cos(i)*k, sin(i)*k])
+        .stroke(this._axisColor)
+        .opacity(this._axisOpacity);
+      axes.push(L);
+    }
+    axes.forEach((l) => this.and(l));
     this.and(p.strokeWidth(this._strokeWidth));
     return this.fit();
+  }
+  _axesCount: number = 6;
+  axesCount(n: number) {
+    this._axesCount = n;
+    return this;
   }
   _tickCount: number = 2.6;
   ringCount(n: number) {

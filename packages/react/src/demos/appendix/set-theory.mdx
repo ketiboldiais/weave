@@ -71,7 +71,7 @@ The _axiom of infinity_ provides that there is _at least one_ infinite set. This
 To help make our future discussions more efficient, let's agree on some basic
 notation and terminology. First, the notion of logical identity.
 
-:::box
+:::dfn
 __Logic Identity__. The expression
 
 $$
@@ -98,7 +98,7 @@ Let's go over these approaches. We denote the notion of set membership with the
 symbol ${\in.}$ This is a variant of the lowercase epsilon (${\epsilon}$), which
 is the first letter of the Greek word ${ἐστί,}$ meaning "is."
 
-:::box
+:::dfn
 __Set Membership__. Let ${A}$ be a set. The notation
 
 $$
@@ -138,3 +138,43 @@ $$
  \{ x \in S \ni P(x) \}, \space \text{or} \\[1em] \{ x \in S \text{ s.t. } P(x)
  \}
 $$
+
+## Subsets
+Some sets are themselves elements of another set. These sets are called
+__subsets__. For example, the set of all Herefords is a
+subset of the set of all cows, and the set of all bonobos is a subset of
+the set of all great apes. More formally:
+
+:::dfn
+
+__Subset__. Suppose ${A}$ and ${B}$ are sets. The set ${A}$ is a
+_subset_ of ${B}$ if, and only if, _every_ element of ${A}$ is also an
+element of ${B.}$ To denote this relationship, we write:
+
+$$
+  A \subseteq B
+$$
+
+If $A$ is not a subset of $B$, then we write:
+
+$$
+  A \nsubseteq B.
+$$
+
+:::
+
+If ${A \subseteq B}$ is true, then we can infer: For every element ${x,}$ if ${x \in A,}$ then ${x \in B.}$ We describe ${A}$ and ${B's}$ relationship with statements such as "${A}$ is contained in $B$" and "${B}$ contains ${A.}$"
+
+$$
+  A \subseteq B \iff \forall x(x \in A \rArr x \in B)
+$$
+
+If $A \nsubseteq B$ is true, then we can infer: There is at least one element $x$ such that $x \in A$ and $x \notin B$. In other words, if $A$ is not a subset of $B$, then there is at least one element in $A$ that is not an element of ${B.}$
+
+From the definition above, if we are asked to prove that ${A}$ is a subset of ${B,}$ we must show that if ${x}$ belongs to ${A,}$ then ${x}$ also belongs to ${B.}$ If we are asked to prove that ${A}$ is _not_ a subset of ${B,}$ we must find a single ${x}$ that belongs to ${A}$ but does not belong to ${B.}$
+
+The definition above implies that the empty set is a subset of all sets, and a given set is a subset of itself. In other words, for the set ${A,}$ the sets ${\varnothing}$ and ${A}$ are subsets of ${A.}$ We say that ${A}$ and ${\varnothing}$ are __trivial subsets__ of ${A.}$
+
+This follows directly from the definition. The proposition ${\varnothing \subseteq A}$ if, for all ${x \in \varnothing,}$ ${x \in A.}$ Because the sufficient condition, ${x \in \varnothing}$ is false, it follows that ${x \in A}$ is true. This is an example of a __vacuous proof__.
+
+The case of ${A \subseteq A}$ straightforward. Given that ${A}$ and ${A}$ are the same sets, every ${x \in A}$ implies that ${x \in A.}$ Because the sufficient condition is true and the necessary condition is true, it follows that ${A \subseteq A}$ by definition.
