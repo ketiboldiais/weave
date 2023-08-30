@@ -6795,6 +6795,9 @@ class Product extends AlgebraicOp<core.product> {
     const args = this.args;
     if (args.length === 2) {
       const [a, b] = args;
+      if (isInt(a) && a.n === -1) {
+        return `-${b.toString()}`;
+      }
       if (
         (isConst(a) && isSymbol(b)) ||
         (isConst(a) && isAlgebraicFn(b))
@@ -8978,8 +8981,8 @@ enum bp {
   sum,
   difference,
   product,
-  imul,
   quotient,
+  imul,
   power,
   postfix,
   call,
@@ -12743,7 +12746,7 @@ function expression(source: string) {
     const RHS = expr(p);
     if (RHS.isLeft()) return RHS;
     const rhs = RHS.unwrap();
-    return node(quotient(rhs, lhs));
+    return node(quotient(lhs, rhs));
   };
 
   const POWER: Parslet<AlgebraicExpression> = (op, lhs) => {
@@ -12779,6 +12782,11 @@ function expression(source: string) {
     }
   };
 
+  const NEGATE: Parslet<AlgebraicExpression> = (op) => {
+    const e = expr(op.type);
+    return e.chain((x) => node(negate(x)));
+  };
+
   const rules: BPTable<AlgebraicExpression> = {
     [tt.END]: [___, ___, ___o],
     [tt.ERROR]: [___, ___, ___o],
@@ -12794,7 +12802,7 @@ function expression(source: string) {
     [tt.dot]: [___, ___, ___o],
     [tt.comma]: [___, ___, ___o],
     [tt.plus]: [___, SUM, bp.sum],
-    [tt.minus]: [___, DIFFERENCE, bp.sum],
+    [tt.minus]: [NEGATE, DIFFERENCE, bp.sum],
     [tt.star]: [___, PRODUCT, bp.product],
     [tt.slash]: [___, QUOTIENT, bp.quotient],
     [tt.caret]: [___, POWER, bp.power],
