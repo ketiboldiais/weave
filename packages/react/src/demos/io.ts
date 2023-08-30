@@ -8918,11 +8918,11 @@ enum bp {
   call,
 }
 
-type Parslet = (current: Token, lastNode: Expr) => Either<Err, Expr>;
+type Parslet<T> = (current: Token, lastNode: T) => Either<Err, T>;
 
-type ParsletEntry = [Parslet, Parslet, bp];
+type ParsletEntry<T> = [Parslet<T>, Parslet<T>, bp];
 
-type BPTable = Record<tt, ParsletEntry>;
+type BPTable<T> = Record<tt, ParsletEntry<T>>;
 
 class RETURN {
   value: Primitive;
@@ -11441,7 +11441,7 @@ function syntax(source: string) {
   const this_expression = (t: Token) => {
     return state.newExpression(thisExpr(t));
   };
-  const number: Parslet = (t) => {
+  const number: Parslet<Expr> = (t) => {
     if (t.isNumber()) {
       const out = t.is(tt.int)
         ? state.newExpression(integer(t.literal))
@@ -11468,11 +11468,11 @@ function syntax(source: string) {
     }
   };
 
-  const string_literal: Parslet = (t) => {
+  const string_literal: Parslet<Expr> = (t) => {
     return state.newExpression(string(t.lexeme));
   };
 
-  const scientific_number: Parslet = (t) => {
+  const scientific_number: Parslet<Expr> = (t) => {
     if (t.isScientific()) {
       const [a, b] = t.literal;
       const lhs = float(a);
@@ -11729,7 +11729,7 @@ function syntax(source: string) {
   /**
    * Parses a {@link NativeCall|native function call}.
    */
-  const native_call: Parslet = (op): Either<Err, NativeCall> => {
+  const native_call: Parslet<Expr> = (op): Either<Err, NativeCall> => {
     const lex = op.lexeme;
     const src = `parsing a native call “${lex}”`;
     if (!state.nextIs(tt.lparen)) {
@@ -11758,13 +11758,13 @@ function syntax(source: string) {
   /**
    * Parses a variable name.
    */
-  const variable_name: Parslet = (op) => {
+  const variable_name: Parslet<Expr> = (op) => {
     if (op.isVariable()) {
       const out = variable(op);
       return state.newExpression(out);
     } else {
       return state.error(
-        `Unexpected variable “${op.lex}”`,
+        `Unexpected variable “${op.lexeme}”`,
         "parsing expression",
       );
     }
@@ -11773,7 +11773,7 @@ function syntax(source: string) {
   /**
    * Parses a logical not expression.
    */
-  const logical_not: Parslet = (op) => {
+  const logical_not: Parslet<Expr> = (op) => {
     const p = precof(op.type);
     return expr(p).chain((arg) =>
       state.newExpression(logicalUnary(op as Token<tt.not>, arg))
@@ -11894,7 +11894,7 @@ function syntax(source: string) {
     return state.newExpression(exp);
   };
 
-  const indexing_expression: Parslet = (op, lhs) => {
+  const indexing_expression: Parslet<Expr> = (op, lhs) => {
     const index = expr();
     if (index.isLeft()) {
       return index;
@@ -11915,7 +11915,7 @@ function syntax(source: string) {
     );
   };
 
-  const implicitMUL: Parslet = (op, left) => {
+  const implicitMUL: Parslet<Expr> = (op, left) => {
     if (op.is(tt.symbol)) {
       const right = variable(op);
       const star = token(tt.star, "*", op.L, op.C);
@@ -11969,7 +11969,7 @@ function syntax(source: string) {
    * If the {@link expr|expression parser} calls this parslet,
    * then the {@link error} variable is set and parsing shall cease.
    */
-  const ___: Parslet = (t) => {
+  const ___: Parslet<Expr> = (t) => {
     if (state.ERROR !== null) {
       return left(state.ERROR);
     } else {
@@ -11977,7 +11977,7 @@ function syntax(source: string) {
     }
   };
 
-  const vector_infix: Parslet = (op, left) => {
+  const vector_infix: Parslet<Expr> = (op, left) => {
     const p = precof(op.type);
     return expr(p).chain((right) => {
       return state.newExpression(
@@ -11986,7 +11986,7 @@ function syntax(source: string) {
     });
   };
 
-  const string_infix: Parslet = (op, left) => {
+  const string_infix: Parslet<Expr> = (op, left) => {
     const p = precof(op.type);
     return expr(p).chain((right) => {
       return state.newExpression(
@@ -11995,7 +11995,7 @@ function syntax(source: string) {
     });
   };
 
-  const algebraic_string: Parslet = (op) => {
+  const algebraic_string: Parslet<Expr> = (op) => {
     if (op.isAlgebraString()) {
       const tkns = op.literal;
       const t = token(tt.algebra_string, "", op.L, op.C);
@@ -12013,7 +12013,7 @@ function syntax(source: string) {
     }
   };
 
-  const prefix: Parslet = (op) => {
+  const prefix: Parslet<Expr> = (op) => {
     const p = precof(op.type);
     return expr(p).chain((arg) => {
       if (op.is(tt.minus)) {
@@ -12043,7 +12043,7 @@ function syntax(source: string) {
    * parsers that handle a single grammar rule), and `B` is a
    * {@link bp|binding power}.
    */
-  const rules: BPTable = {
+  const rules: BPTable<Expr> = {
     [tt.END]: [___, ___, ___o],
     [tt.ERROR]: [___, ___, ___o],
     [tt.EMPTY]: [___, ___, ___o],
@@ -12135,13 +12135,13 @@ function syntax(source: string) {
    * Returns the prefix parsing rule mapped to by the given
    * token type.
    */
-  const prefixRule = (t: tt): Parslet => rules[t][0];
+  const prefixRule = (t: tt): Parslet<Expr> => rules[t][0];
 
   /**
    * Returns the infix parsing rule mapped to by the given
    * token type.
    */
-  const infixRule = (t: tt): Parslet => rules[t][1];
+  const infixRule = (t: tt): Parslet<Expr> => rules[t][1];
 
   /**
    * Returns the {@link bp|precedence} of the given token type.
@@ -12544,7 +12544,257 @@ function syntax(source: string) {
   };
 }
 
+/** Parses an algebraic expression. */
+function expression(source: string) {
+  const lexer = lexical(source);
+  let $peek = Token.empty;
+  let $current = Token.empty;
+  let $error: null | Err = null;
+  let $lastExpression: AlgebraicExpression = Undefined();
+  let $cursor = 0;
+  const error = (message: string, phase: string, token: Token = $current) => {
+    const e = syntaxError(message, phase, token);
+    $error = e;
+    return left(e);
+  };
 
+  const next = () => {
+    $cursor++;
+    $current = $peek;
+    const token = lexer.scan();
+    if (token.isError()) {
+      $error = error(token.lexeme, "scanner", token).unwrap();
+    }
+    $peek = token;
+    return $current;
+  };
+
+  const atEnd = () => (lexer.isDone()) || ($error !== null);
+
+  const node = (of: AlgebraicExpression) => {
+    $lastExpression = of;
+    return right(of);
+  };
+
+  const ___: Parslet<AlgebraicExpression> = (t) => {
+    if ($error !== null) {
+      return left($error);
+    } else {
+      return error(`Unexpected lexeme: ${t.lexeme}`, `algebraic-expression`);
+    }
+  };
+
+  const ___o = bp.nil;
+
+  const NUMBER: Parslet<AlgebraicExpression> = (t) => {
+    if (t.isNumber()) {
+      const n = t.literal;
+      const out = t.is(tt.int) ? int(n) : real(n);
+      return node(out);
+    } else {
+      return error(`Unexpected number “${t.lexeme}”`, "parsing a number", t);
+    }
+  };
+
+  const PRODUCT: Parslet<AlgebraicExpression> = (op, lhs) => {
+    const p = precof(op.type);
+    const RHS = expr(p);
+    if (RHS.isLeft()) return RHS;
+    const rhs = RHS.unwrap();
+    let args: AlgebraicExpression[] = [];
+    if (isProduct(rhs) && isProduct(lhs)) {
+      lhs.args.forEach((x) => args.push(x));
+      rhs.args.forEach((x) => args.push(x));
+      return node(product(args));
+    }
+    if (isProduct(rhs) && !isProduct(lhs)) {
+      args.push(lhs);
+      rhs.args.forEach((x) => args.push(x));
+      return node(product(args));
+    }
+    if (!isProduct(rhs) && isProduct(lhs)) {
+      lhs.args.forEach((x) => args.push(x));
+      args.push(rhs);
+      return node(product(args));
+    }
+    return node(product([lhs, rhs]));
+  };
+
+  const SUM: Parslet<AlgebraicExpression> = (op, lhs) => {
+    const p = precof(op.type);
+    const RHS = expr(p);
+    if (RHS.isLeft()) return RHS;
+    const rhs = RHS.unwrap();
+    let args: AlgebraicExpression[] = [];
+    if (isSum(rhs) && isSum(lhs)) {
+      lhs.args.forEach((x) => args.push(x));
+      rhs.args.forEach((x) => args.push(x));
+      return node(sum(args));
+    }
+    if (isSum(rhs) && !isSum(lhs)) {
+      args.push(lhs);
+      rhs.args.forEach((x) => args.push(x));
+      return node(sum(args));
+    }
+    if (!isSum(rhs) && isSum(lhs)) {
+      lhs.args.forEach((x) => args.push(x));
+      args.push(rhs);
+      return node(sum(args));
+    }
+    return node(sum([lhs, rhs]));
+  };
+
+  const DIFFERENCE: Parslet<AlgebraicExpression> = (op, lhs) => {
+    const p = precof(op.type);
+    const RHS = expr(p);
+    if (RHS.isLeft()) return RHS;
+    const rhs = RHS.unwrap();
+    return node(difference(rhs, lhs));
+  };
+
+  const QUOTIENT: Parslet<AlgebraicExpression> = (op, lhs) => {
+    const p = precof(op.type);
+    const RHS = expr(p);
+    if (RHS.isLeft()) return RHS;
+    const rhs = RHS.unwrap();
+    return node(quotient(rhs, lhs));
+  };
+
+  const POWER: Parslet<AlgebraicExpression> = (op, lhs) => {
+    const RHS = expr();
+    if (RHS.isLeft()) return RHS;
+    const rhs = RHS.unwrap();
+    return node(power(lhs, rhs));
+  };
+
+  const SYMBOL: Parslet<AlgebraicExpression> = (op) => {
+    if (op.isVariable()) {
+      const out = sym(op.lexeme);
+      return node(out);
+    } else {
+      return error(
+        `Unexpected variable “${op.lexeme}”`,
+        "parsing an expression",
+        op,
+      );
+    }
+  };
+
+  const rules: BPTable<AlgebraicExpression> = {
+    [tt.END]: [___, ___, ___o],
+    [tt.ERROR]: [___, ___, ___o],
+    [tt.EMPTY]: [___, ___, ___o],
+    [tt.lparen]: [___, ___, ___o],
+    [tt.rparen]: [___, ___, ___o],
+    [tt.lbrace]: [___, ___, ___o],
+    [tt.rbrace]: [___, ___, ___o],
+    [tt.lbracket]: [___, ___, ___o],
+    [tt.rbracket]: [___, ___, ___o],
+    [tt.semicolon]: [___, ___, ___o],
+    [tt.colon]: [___, ___, ___o],
+    [tt.dot]: [___, ___, ___o],
+    [tt.comma]: [___, ___, ___o],
+    [tt.plus]: [___, SUM, bp.sum],
+    [tt.minus]: [___, DIFFERENCE, bp.sum],
+    [tt.star]: [___, PRODUCT, bp.product],
+    [tt.slash]: [___, QUOTIENT, bp.quotient],
+    [tt.caret]: [___, POWER, bp.power],
+    [tt.percent]: [___, ___, ___o],
+    [tt.bang]: [___, ___, ___o],
+    [tt.amp]: [___, ___, ___o],
+    [tt.tilde]: [___, ___, ___o],
+    [tt.vbar]: [___, ___, ___o],
+    [tt.eq]: [___, ___, ___o],
+    [tt.lt]: [___, ___, ___o],
+    [tt.gt]: [___, ___, ___o],
+    [tt.neq]: [___, ___, ___o],
+    [tt.leq]: [___, ___, ___o],
+    [tt.geq]: [___, ___, ___o],
+    [tt.deq]: [___, ___, ___o],
+    [tt.plus_plus]: [___, ___, ___o],
+    [tt.minus_minus]: [___, ___, ___o],
+    [tt.symbol]: [SYMBOL, ___, ___o],
+    [tt.string]: [___, ___, ___o],
+    [tt.bool]: [___, ___, ___o],
+    [tt.int]: [NUMBER, ___, bp.atom],
+    [tt.float]: [NUMBER, ___, bp.atom],
+    [tt.bignumber]: [___, ___, ___o],
+    [tt.bigfraction]: [___, ___, ___o],
+    [tt.scientific]: [___, ___, ___o],
+    [tt.fraction]: [___, ___, ___o],
+    [tt.nan]: [___, ___, ___o],
+    [tt.inf]: [___, ___, ___o],
+    [tt.nil]: [___, ___, ___o],
+    [tt.numeric_constant]: [___, ___, ___o],
+    [tt.algebra_string]: [___, ___, ___o],
+    [tt.dot_add]: [___, ___, ___o],
+    [tt.dot_star]: [___, ___, ___o],
+    [tt.dot_minus]: [___, ___, ___o],
+    [tt.dot_caret]: [___, ___, ___o],
+    [tt.native]: [___, ___, ___o],
+    [tt.and]: [___, ___, ___o],
+    [tt.or]: [___, ___, ___o],
+    [tt.not]: [___, ___, ___o],
+    [tt.nand]: [___, ___, ___o],
+    [tt.xor]: [___, ___, ___o],
+    [tt.xnor]: [___, ___, ___o],
+    [tt.nor]: [___, ___, ___o],
+    [tt.if]: [___, ___, ___o],
+    [tt.else]: [___, ___, ___o],
+    [tt.fn]: [___, ___, ___o],
+    [tt.let]: [___, ___, ___o],
+    [tt.var]: [___, ___, ___o],
+    [tt.return]: [___, ___, ___o],
+    [tt.while]: [___, ___, ___o],
+    [tt.for]: [___, ___, ___o],
+    [tt.class]: [___, ___, ___o],
+    [tt.print]: [___, ___, ___o],
+    [tt.super]: [___, ___, ___o],
+    [tt.this]: [___, ___, ___o],
+    [tt.rem]: [___, ___, ___o],
+    [tt.mod]: [___, ___, ___o],
+    [tt.div]: [___, ___, ___o],
+  };
+  const prefixRule = (t: tt): Parslet<AlgebraicExpression> => rules[t][0];
+  const infixRule = (t: tt): Parslet<AlgebraicExpression> => rules[t][1];
+  const precof = (t: tt): bp => rules[t][2];
+
+  const expr = (
+    minbp: number = bp.lowest,
+  ): Either<Err, AlgebraicExpression> => {
+    let token = next();
+    const pre = prefixRule(token.type);
+    let lhs = pre(token, Undefined());
+    if (lhs.isLeft()) {
+      return lhs;
+    }
+    while (minbp < precof($peek.type)) {
+      if (atEnd()) {
+        break;
+      }
+      token = next();
+      const r = infixRule(token.type);
+      const rhs = r(token, lhs.unwrap());
+      if (rhs.isLeft()) {
+        return rhs;
+      }
+      lhs = rhs;
+    }
+    return lhs;
+  };
+
+  return {
+    /** Returns the AlgebraicExpression tree corresponding to the expression.*/
+    parse: () => {
+      next();
+      const out = expr();
+      return out;
+    },
+  };
+}
+
+const k = expression(`2xy - 5xy`).parse().unwrap();
+print(k);
 
 export function engine(source: string) {
   let settings: EngineSettings = {
@@ -12631,11 +12881,3 @@ type Result = {
 function res(result: string[], error?: string) {
   return ({ error, result });
 }
-
-const src = `
-let y = '(3x^3) + (2x^2) - 1';
-let j = deriv(y, 'x');
-print j;
-`;
-const k = engine(src).execute();
-print(k);
