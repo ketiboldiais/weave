@@ -6635,16 +6635,20 @@ class ParenthesizedExpression extends Compound {
     super(core.paren, [expression]);
   }
   equals(other: AlgebraicExpression): boolean {
-    return this.innerExpression.equals(other);
+    if (other instanceof ParenthesizedExpression) {
+      return this.innerExpression.equals(other.innerExpression);
+    } else {
+      return this.innerExpression.equals(other);
+    }
   }
   get innerExpression() {
     return this.args[0];
   }
   accept<T>(visitor: ExpressionVisitor<T>): T {
-    throw new Error("Method not implemented.");
+    return visitor.parenthesizedExpression(this);
   }
   trust<T>(mapper: Mapper<T>): T {
-    throw new Error("Method not implemented.");
+    return mapper.parenthesizedExpression(this);
   }
   toString(): string {
     return `(${this.innerExpression.toString()})`;
