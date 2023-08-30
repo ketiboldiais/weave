@@ -2352,11 +2352,18 @@ function area2D() {
   return new Area2D();
 }
 
+const CONTEXT = contextual(colorable(BASE));
+
+// ================================================================== Polar Plot
+export class PolarPlot2D extends CONTEXT {
+  constructor() {
+    super();
+  }
+}
+
 // ============================================================ 2D Function Plot
 
-const PLOT2D = contextual(colorable(BASE));
-
-export class Plot2D extends PLOT2D {
+export class Plot2D extends CONTEXT {
   f: string;
   _samples: number = 200;
   samples(value: number) {
@@ -2562,8 +2569,7 @@ function mapKeys<K, V>(x: Map<K, V>) {
 }
 
 // ==================================================================== DOT PLOT
-const DOT_PLOT = contextual(colorable(BASE));
-class DotPlot<T extends (string | number) = any> extends DOT_PLOT {
+class DotPlot<T extends (string | number) = any> extends CONTEXT {
   _data: Map<T, number> = new Map();
   constructor(data: T[]) {
     super();
@@ -2643,9 +2649,8 @@ export function dotPlot<T extends string | number>(data: T[]) {
 }
 
 // ==================================================================== BAR PLOT
-const BAR_PLOT = contextual(colorable(BASE));
 
-class BarPlot extends BAR_PLOT {
+class BarPlot extends CONTEXT {
   _data: Map<string, number> = new Map();
   constructor(data: Record<string, number>) {
     super();
@@ -2740,9 +2745,7 @@ export function barPlot(data: Record<string, number>) {
 
 // =================================================================== HISTOGRAM
 
-const HISTOGRAM = contextual(colorable(BASE));
-
-class Histogram extends HISTOGRAM {
+class Histogram extends CONTEXT {
   _data: Map<[number, number], number> = new Map();
   constructor(data: number[]) {
     super();
@@ -7230,7 +7233,7 @@ class Power extends AlgebraicOp<core.power> {
   toString(): string {
     const base = this.base.toString();
     let exponent = this.exponent.toString();
-    if (!isInt(this.exponent) && !isSymbol(this.exponent)) {
+    if (!isInt(this.exponent) || !isSymbol(this.exponent)) {
       exponent = `(${exponent})`;
     }
     const out = `${base}^${exponent}`;
@@ -7865,63 +7868,7 @@ function factorialize(num: number) {
 /** Returns the derivative of a given algebraic expression. */
 function derivative(expression: AlgebraicExpression, variable: string | Sym) {
   const x = $isString(variable) ? sym(variable) : variable;
-  const deriv = (u: AlgebraicExpression): AlgebraicExpression => {
-    if (isSymbol(u)) {
-      return u;
-    }
-    u = simplify(u);
-    if (u.equals(x)) {
-      return int(1);
-    }
-    if (isPower(u)) {
-      const v = u.base;
-      const w = u.exponent;
-      if (isConst(w)) {
-        const x = simplify(v);
-        const r_1 = simplify(difference(w, int(1)));
-        const p = simplify(power(x, r_1));
-        return simplify(product([w, p]));
-      }
-      const D1 = simplify(deriv(v));
-      const DIFF = simplify(difference(w, int(1)));
-      const P1 = simplify(power(v, DIFF));
-      const lhs = simplify(product([w, P1, D1]));
-      const D2 = simplify(deriv(w));
-      const P2 = simplify(power(v, w));
-      const LN = fn("ln", [v]);
-      const rhs = simplify(product([D2, P2, LN]));
-      const out = simplify(sum([lhs, rhs]));
-      return simplify(out);
-    }
-    if (isSum(u)) {
-      const v = simplify(u.args[0]);
-      const w = difference(u, v);
-      const lhs = simplify(deriv(v));
-      const rhs = simplify(deriv(w));
-      return simplify(sum([lhs, rhs]));
-    }
-    if (isProduct(u)) {
-      const v = simplify(u.args[0]);
-      const w = simplify(quotient(u, v));
-      const D1 = simplify(deriv(v));
-      const D2 = simplify(deriv(w));
-      const lhs = simplify(product([D1, w]));
-      const rhs = simplify(product([v, D2]));
-      return simplify(sum([lhs, rhs]));
-    }
-    if (isAlgebraicFn(u)) {
-      if (u.op === "sin") {
-        const lhs = fn("cos", u.args);
-        const rhs = simplify(deriv(u.args[0]));
-        return simplify(product([lhs, rhs]));
-      }
-    }
-    if (freeof(u, x)) {
-      return int(0);
-    }
-    return Undefined();
-  };
-  return deriv(simplify(expression));
+  return expression;
 }
 
 /** Simplifies the given expression. */
@@ -7985,7 +7932,9 @@ function simplify(expression: AlgebraicExpression) {
       }
     };
     // deno-fmt-ignore
-    const simplify_sum_rec = (L: AlgebraicExpression[]): AlgebraicExpression[] => {
+    const simplify_sum_rec = (
+      L: AlgebraicExpression[]
+    ): AlgebraicExpression[] => {
       if (L.length === 2 && (!isSum(L[0])) && (!isSum(L[1]))) {
         const u1 = L[0];
         const u2 = L[1];
@@ -8222,9 +8171,9 @@ function simplify(expression: AlgebraicExpression) {
         else {
           return merge_products([u1], u2.args);
         }
-      } /**
-       * __SPRDREC-3__. Case: There are more than two arguments.
-       */
+      }
+
+      // SPRDREC-3 Case: There are more than two arguments.
       else {
         const w = simplify_product_rec(rest(L));
         const u1 = L[0];
@@ -8238,49 +8187,36 @@ function simplify(expression: AlgebraicExpression) {
 
     const sprd = (u: Product) => {
       const L = u.args;
-      /**
-       * __SPRD-1__. `u`’s arguments contain the symbol `Undefined`.
-       */
+
+      // SPRD-1 `u`’s arguments contain the symbol `Undefined`.
       if (hasUndefined(L)) {
         return Undefined();
       }
 
-      /**
-       * __SPRD-2__. `u`’s arguments contain a zero.
-       */
+      // SPRD-2 `u`’s arguments contain a zero.
       if (hasZero(L)) {
         return int(0);
       }
 
-      /**
-       * __SPRD-3__. `u`’s arguments are of length 1.
-       */
+      // SPRD-3 `u`’s arguments are of length 1.
       if (L.length === 1) {
         return L[0];
       }
 
-      /**
-       * __SPRD-4__. None of the first three rules apply.
-       */
+      // SPRD-4 None of the first three rules apply.
       const v = simplify_product_rec(L);
 
-      /**
-       * __SPRD-4.1__. Case: L reduced to a single operand.
-       */
+      // SPRD-4.1 Case: L reduced to a single operand.
       if (v.length === 1) {
         return v[0];
       }
 
-      /**
-       * __SPRD-4.2__. Case: L reduced to at least two operands.
-       */
+      // SPRD-4.2 Case: L reduced to at least two operands.
       if (v.length >= 2) {
         return product(v);
       }
 
-      /**
-       * __SPRD-4.3__. Case: L reduced to zero operands.
-       */
+      // SPRD-4.3 Case: L reduced to zero operands.
       return int(1);
     };
 
@@ -10710,7 +10646,11 @@ class Latexer implements Mapper<string> {
   power(node: Power): string {
     const base = this.reduce(node.base);
     const exp = this.reduce(node.exponent);
-    let expressions = latex.join(base, "^", latex.brace(exp));
+    let expressions = latex.join(
+      base,
+      "^",
+      latex.surround(latex.brace(exp), "(", ")"),
+    );
     if (node.parenLevel) {
       expressions = latex.surround(expressions, "(", ")");
     }
@@ -11492,6 +11432,7 @@ const enstate = <EXPR extends TREENODE, STMT extends TREENODE>(
   emptyStmt: STMT,
 ) => (new ParserState(nil, emptyStmt));
 
+/** Parses the given string. */
 function syntax(source: string) {
   const state = enstate<Expr, Statement>(nil(), exprStmt(nil(), -1))
     .init(
@@ -12603,6 +12544,8 @@ function syntax(source: string) {
   };
 }
 
+
+
 export function engine(source: string) {
   let settings: EngineSettings = {
     implicitMultiplication: true,
@@ -12688,3 +12631,11 @@ type Result = {
 function res(result: string[], error?: string) {
   return ({ error, result });
 }
+
+const src = `
+let y = '(3x^3) + (2x^2) - 1';
+let j = deriv(y, 'x');
+print j;
+`;
+const k = engine(src).execute();
+print(k);

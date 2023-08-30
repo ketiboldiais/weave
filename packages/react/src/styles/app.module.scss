@@ -1,6 +1,25 @@
 @import './colors.scss';
 
 .app {
+	.doc {
+		background-color: white;
+		color: $black;
+		padding: 0.5rem 3rem 10rem 3rem;
+		margin-top: 2em;
+		h1, h2, h3, h4, h5, h6 {
+			color: $black;
+			font-family: 'CMU Serif', 'KaTeX_Main';
+		}
+		font-size: 0.95rem;
+		h1 {font-size: 1.5rem;}
+		h2 {font-size: 1.3rem;}
+		h3 {font-size: 1.1rem;}
+		h4 {font-size: 1rem;}
+		h5 {font-size: 1rem;}
+		h6 {font-size: 1rem;}
+		box-shadow: 1px 15px 20px 0px rgba(0, 0, 0, 0.703);
+		border-radius: 2px;
+	}
 	h1,
 	h2,
 	h3,

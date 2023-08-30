@@ -1,0 +1,140 @@
+# Set Theory
+
+## Axioms
+There are two versions of set theory: (1) __naive set theory__, and (2)
+__axiomatic set theory__. We explore aspects of both theories in the
+materials that follow. What are the differences? Naive set theory is the
+version of set theory as originally constructed by the German mathematician
+Georg Cantor. Axiomatic set theory is the version of set
+theory constructed in response to several paradoxes, the most famous of
+which is _Russell's Paradox_. In this chapter, we focus only on naive set
+theory.
+
+## Foundational Axioms
+In mathematics, a __set__ is a collection of objects. Those objects might
+be dogs, people, trees, numbers, values, variables, or more abstractly,
+propositions. For example, the set of all coins includes nickels, sterling,
+and yen. The set of all countries includes Japan, Palau, and Uruguay. The
+set of all integers includes 1 and -117. We can visualize a set as:
+
+:::box
+:img{src="https://res.cloudinary.com/sublimis/image/upload/v1653358194/math/set_intro_hky0d0.svg" width=140 height=96}
+:::
+
+Sets can be finite (there are only so many countries), or infinite (there
+are infinitely many of numbers). Each object in a set is called a
+_member_ of that set.
+
+### Axiom of Extension
+
+The set $\{ 1, 2, 3 \}$ is the same as the set $\{ 2, 1, 3 \}$, and the same set
+as $\{ 2, 2, 3, 1 \}$. We can draw this conclusion because of the _axiom of
+extension_.
+
+:::definition
+__Axiom of Extension.__ Two sets are equal if and only if they have the same
+elements.
+:::
+
+
+In short, the _axiom of extension_ provides that a set is completely determined
+by what its elements are—it is irrelevant whether the elements are in order, or
+whether an element is listed more than once.
+
+### Axiom of Specification
+The axiom of specification, also referred to as _Aussonderungsaxiom_, provides
+the following:
+
+:::definition
+__Axiom of Specification.__ To every set ${A}$ and to every condition ${S(x),}$
+there exists a set ${B}$ whose elements are exactly the elements ${x}$ of ${A,}$
+for which ${S(x)}$ holds.
+:::
+
+Set theorists introduced the axiom of specification to get around some awkward
+gaps philosophers noticed in the early 1900s. One such gap is Russell's Paradox,
+discussed in a separate chapter. In essence, without the axiom of specification,
+we get the conclusion that _nothing contains everything_.
+
+While we could simply accept this as a kōan, it causes enough discomfort to warrant an axiom. The axiom of specification, in short, establishes that there exists a set we can specify (e.g., tailor) to a set we desire. A set that's “tailored” is said to be _well-defined_. We say that a set is well-defined if, for any given ${x,}$ we can determine whether ${x}$ is a member of the set. For example, the set ${L = \{x \in \reals \mid x > 4\}}$ is a well-defined set. Given any ${x,}$ we can determine whether ${x}$ is a member of ${L}$; ${x}$ must be a real number, and it must be greater than 4.  The set ${G = \{ 1, 4, 3, 9, \pi, \ldots \},}$ however, is not a well-defined set. Is ${3.2}$ a member of ${G?}$ We do not have enough conditions to make a determination.
+
+### Axiom of Infinity
+We state the axiom of infinity as follows:
+
+:::definition
+__Axiom of Infinity.__ There exists a set containing ${0}$ and the successor of each of its elements.
+:::
+
+The _axiom of infinity_ provides that there is _at least one_ infinite set. This may not seem important or interesting at this point, but it proves to be extremely useful at a later juncture. Of note, the axiom of infinity is a hot button issue in mathematics, and a minority of mathematicians question whether it is necessary at all.
+
+## Set Notation
+To help make our future discussions more efficient, let's agree on some basic
+notation and terminology. First, the notion of logical identity.
+
+:::box
+__Logic Identity__. The expression
+
+$$
+  \large a = b
+$$
+
+means: ${a}$ and ${b}$ are symbols for the same object. If ${a}$ and ${b}$ are
+different objects, we write:
+
+$$
+  \large a \neq b.
+$$
+:::
+
+Sets can be expressed in a variety of ways:
+
+- "The set of all integers whose square is between, and includes, one and
+  nine."
+- ${A = \{ x \in \mathbb{Z} : x^2 \leq 9 \}}$
+- ${B = \{ x \in \mathbb{Z} : \lvert x \rvert \leq 3 \}}$
+- ${C = \{ -3, -2, -1, 0, 1, 2, 3 \}}$
+
+Let's go over these approaches. We denote the notion of set membership with the
+symbol ${\in.}$ This is a variant of the lowercase epsilon (${\epsilon}$), which
+is the first letter of the Greek word ${ἐστί,}$ meaning "is."
+
+:::box
+__Set Membership__. Let ${A}$ be a set. The notation
+
+$$
+  a \in A
+$$
+
+means: ${a}$ _is_ an element of ${A.}$ If ${a}$ _is not_ an element of ${A,}$ we
+write:
+
+$$
+  a \notin A.
+$$
+:::
+
+A set may be made more explicit through __set roster notation__. For
+instance, $\{ 0, 1, 2 \}$ is a set containing the elements 0, 1, and 2. If
+the set has too many elements to list, ellipses may be used. For example,
+the set of all integers from 0 to 100 may be written as:
+$\{ 0, 1, 2, \ldots , 100 \}$. Likewise, the set of all positive integers
+may be written as $\{ 1, 2, 3, \ldots \}$.
+
+We can also specify sets in __set builder notation__. Suppose that $S$ is a
+set, and $P(x)$ is a property that elements of $S$ may or may not satisfy.
+We can define a new set that contains all the elements of $S$ such that
+$P(x)$ is true:
+
+$$
+ \{ x \in S \mid P(x) \}
+$$
+
+The pipe character, |, is shorthand for "such that." Thus, above notation
+refers to all the elements of ${S}$ with the property $P(x)$. Note that in
+some mathematical contexts, the phrase "such that" is often abbreviated
+"s.t." or $\ni$. Thus, the above set may appear in some texts as:
+
+$$
+ \{ x \in S \ni P(x) \}, \space \text{or} \\[1em] \{ x \in S \text{ s.t. } P(x)
+ \}
+$$

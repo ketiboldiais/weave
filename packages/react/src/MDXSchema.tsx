@@ -1,23 +1,51 @@
 import { MDXProvider } from "@mdx-js/react";
-import { Children, CSSProperties, HTMLAttributes, ReactNode } from "react";
+import {
+  Children,
+  ComponentProps,
+  CSSProperties,
+  HTMLAttributes,
+  ReactNode,
+} from "react";
 import base from "./styles/base.module.scss";
 type Children = { children: ReactNode };
+import { Link } from "react-router-dom";
 
-export const DocPage = ({children}:Children) => (
-  <div className={'doc-page'}>
+// const isInternalLink =  href && (href.startsWith('/') || href.startsWith('#'));
+type ATAG = ComponentProps<"a">;
+
+const L = (props: ATAG) => {
+  const href = props.href ?? "";
+  console.log(href);
+  if (href.startsWith("./") || href.startsWith('/') || href.startsWith("#")) {
+    return <Link to={href}>{props.children}</Link>;
+  } else {
+    return <a target={"_blank"} {...props}>{props.children}</a>;
+  }
+};
+
+const Box = ({ children }: { children: ReactNode }) => {
+  return (
+    <figure className={"box"}>
+      {children}
+    </figure>
+  );
+};
+
+export const DocPage = ({ children }: Children) => (
+  <div className={"doc-page"}>
     {children}
   </div>
-)
-export const MainPage = ({children}:Children) => (
-  <div className={'main-page'}>
+);
+export const MainPage = ({ children }: Children) => (
+  <div className={"main-page"}>
     {children}
   </div>
-)
-const Col2 = ({children}:Children) => (
+);
+const Col2 = ({ children }: Children) => (
   <div className={base.col2}>
     {children}
   </div>
-)
+);
 
 const Note = (props: Children) => {
   return (
@@ -93,20 +121,13 @@ const Tbl = ({ children }: Children) => {
   );
 };
 
-const Link = (
-  props: HTMLAttributes<HTMLAnchorElement> & { children?: ReactNode },
-) => {
-  const { children, ...rest } = props;
-  return <a {...rest} target={"_blank"}>{children}</a>;
-};
-
-const Grid = ({children}:Children) => {
+const Grid = ({ children }: Children) => {
   return (
     <div className={`grid`}>
       {children}
     </div>
-  )
-}
+  );
+};
 
 const components = {
   grid: Grid,
@@ -120,6 +141,8 @@ const components = {
   hstack: HStack,
   note: Note,
   col2: Col2,
+  box: Box,
+  a: L,
 };
 
 export const BaseComponents = ({ children }: Children) => {

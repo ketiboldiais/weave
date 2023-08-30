@@ -2,17 +2,25 @@ import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router-dom";
 import MainDoc from "./demos/main.doc.mdx";
 import TWINE from "./demos/twine.doc.mdx";
 import VECTOR from "./demos/vector.doc.mdx";
-import BG from "./demos/background/index.mdx";
-import SET_THEORY from './demos/background/set-theory.mdx';
+import BG from "./demos/appendix/index.mdx";
+import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
+import { ReactNode } from "react";
 
 const MAIN = () => (
   <MainPage>
     <MainDoc />
   </MainPage>
 );
+const DOC = ({ children }: { children: ReactNode }) => {
+  return (
+    <div className={app.doc}>
+      {children}
+    </div>
+  );
+};
 
 type LinkEntry = {
   path: string;
@@ -20,6 +28,7 @@ type LinkEntry = {
   visible: boolean;
   page: JSX.Element;
   submenu?: LinkEntry[];
+  doc?: boolean;
 };
 
 // deno-fmt-ignore
@@ -27,8 +36,8 @@ export const docLinks: LinkEntry[] = [
 {title: "Intro", path: "/", visible: true, page: <MAIN/> },
 {title: "Vector", path: "/vector", visible: true, page: <VECTOR/> },
 {title: "Twine", path: "/twine", visible: true, page: <TWINE/> },
-{title: "Background", path: "/background", visible: true, page: <BG/> },
-{title: "Set Theory", path: "/set-theory", visible: false, page: <SET_THEORY/>},
+{title: "Appendix", path: "/appendix", visible: true, page: <BG/> },
+{title: "Set Theory", doc: true, path: "/set-theory", visible: false, page: <SET_THEORY/>},
 ];
 
 export const Main = () => {
@@ -39,7 +48,7 @@ export const Main = () => {
           {docLinks.map((link) => (
             <Route
               path={link.path}
-              element={link.page}
+              element={link.doc ? <DOC>{link.page}</DOC> : link.page}
               key={link.path}
             />
           ))}
