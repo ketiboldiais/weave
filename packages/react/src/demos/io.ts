@@ -2393,6 +2393,11 @@ export class PolarPlot2D extends CONTEXT {
     }
     return this;
   }
+  _axisColor: string = "initial";
+  axisColor(color: string) {
+    this._axisColor = color;
+    return this;
+  }
   end() {
     const out: PathCommand[] = [];
     const e = engine("fn " + this._f + ";");
@@ -2431,8 +2436,24 @@ export class PolarPlot2D extends CONTEXT {
     for (let i = 1; i < out.length; i++) {
       p.commands.push(out[i]);
     }
-    this.and(p);
+    for (let i = 1; i < this._domain[1] * this._tickCount; i++) {
+      const c = circle(i).stroke(this._axisColor).opacity(this._axisOpacity);
+      this.and(c);
+    }
+    this.and(p.strokeWidth(this._strokeWidth));
     return this.fit();
+  }
+  _tickCount: number = 2.6;
+  ringCount(n: number) {
+    if (n > 0) {
+      this._tickCount = n;
+    }
+    return this;
+  }
+  _axisOpacity: number = 0.4;
+  axisOpacity(n: number) {
+    this._axisOpacity = n;
+    return this;
   }
 }
 export function polar2D(f: string) {

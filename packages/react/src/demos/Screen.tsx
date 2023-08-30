@@ -89,6 +89,8 @@ export const Polar1 = () => {
     .cycles(12 * Math.PI)
     .radius(4)
     .stroke("#D67BFF")
+    .strokeWidth(2)
+    .axisColor('lightgrey')
     .end();
   return <Figure of={data} />;
 };
