@@ -286,14 +286,20 @@ class LinkedList<T> {
   ): X {
     return this.#reduce(0, reducer, initialValue);
   }
+
+  /** Returns the string representation of this list, with each element jointed by the given separator (defaults to the empty string). */
   join(separator: string = "") {
     return [...this].join(separator);
   }
+
+  /** Returns th string representation of this list. */
   toString(f?: (x: T, index: number) => string) {
     const out = this.clone();
     const g = f ? f : (x: T, index: number) => x;
     return out.map((d, i) => g(d, i)).join();
   }
+
+  /** Returns a new list whose elements satisfy the given predicate. */
   filter(
     predicate: (value: T, index: number, list: LinkedList<T>) => boolean,
   ) {
@@ -301,6 +307,8 @@ class LinkedList<T> {
     this.forEach((n, i, list) => predicate(n, i, list) && out.push(n));
     return out;
   }
+
+  /** Reverses this list. */
   reverse() {
     let current = this.head;
     let i = 0;
@@ -319,6 +327,7 @@ class LinkedList<T> {
     return this;
   }
 
+  /** Returns the element at the given index. */
   item(index: number) {
     return this.at(index)._data;
   }
@@ -335,6 +344,7 @@ class LinkedList<T> {
     return out;
   }
 
+  /** Removes the last element of this list. */
   pop(): Option<T> {
     if (this.isEmpty) return none();
     let popped = this.tail;
@@ -349,6 +359,8 @@ class LinkedList<T> {
     this.count--;
     return popped._data === null ? none() : some(popped._data);
   }
+
+  /** Inserts the given element at the head of this list.*/
   unshift(element: T) {
     const node = binode(element);
     if (this.isEmpty) {
@@ -362,6 +374,8 @@ class LinkedList<T> {
     this.count++;
     return this;
   }
+
+  /** Removes the first element of this list. */
   shift() {
     if (this.isEmpty) return none();
     const previousHead = this.head;
@@ -376,6 +390,8 @@ class LinkedList<T> {
     this.count--;
     return previousHead._data === null ? none() : some(previousHead._data);
   }
+
+  /** Inserts the given element to this list. */
   push(element: T) {
     const node = binode(element);
     if (this.head.isNothing()) {
@@ -389,6 +405,8 @@ class LinkedList<T> {
     this.count++;
     return this;
   }
+
+  /** Inserts the given elements to this list. */
   append(...elements: T[]) {
     elements.forEach((e) => this.push(e));
     return this;
@@ -2356,9 +2374,69 @@ const CONTEXT = contextual(colorable(BASE));
 
 // ================================================================== Polar Plot
 export class PolarPlot2D extends CONTEXT {
-  constructor() {
+  _f: string;
+  constructor(f: string) {
     super();
+    this._f = f;
+    this._domain = [-1, 1];
+    this._range = [-1, 1];
   }
+  _cycles: number = 2 * PI;
+  cycles(n: number) {
+    this._cycles = n;
+    return this;
+  }
+  radius(r: number) {
+    if (r > 0) {
+      this._domain = [-r, r];
+      this._range = [-r, r];
+    }
+    return this;
+  }
+  end() {
+    const out: PathCommand[] = [];
+    const e = engine("fn " + this._f + ";");
+    const fn = e.execute();
+    if (!(fn instanceof Fn)) {
+      return this;
+    }
+    const dataset: [number, number][] = [];
+    for (let i = 0; i < this._cycles; i += 0.01) {
+      const r = fn.call(e.compiler, [i]);
+      if (typeof r !== "number") continue;
+      const x = r * cos(i);
+      const y = r * sin(i);
+      dataset.push([x, y]);
+    }
+    let moved = false;
+    for (let i = 0; i < dataset.length; i++) {
+      const [x, y] = dataset[i];
+      if (!isNaN(y)) {
+        if (!moved) {
+          out.push(M(x, y, 1));
+          moved = true;
+        } else {
+          out.push(L(x, y, 1));
+        }
+      } else {
+        const next = dataset[i + 1];
+        if (next !== undefined && !isNaN(y)) {
+          out.push(M(x, y, 1));
+        }
+      }
+    }
+    const p = path(out[0].end._x, out[0].end._y, out[0].end._z)
+      .stroke(this._stroke)
+      .strokeWidth(this._strokeWidth);
+    for (let i = 1; i < out.length; i++) {
+      p.commands.push(out[i]);
+    }
+    this.and(p);
+    return this.fit();
+  }
+}
+export function polar2D(f: string) {
+  return new PolarPlot2D(f);
 }
 
 // ============================================================ 2D Function Plot
@@ -4399,6 +4477,7 @@ export type Parent =
   | Plot2D
   | Tree
   | BarPlot
+  | PolarPlot2D
   | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;
@@ -4823,6 +4902,7 @@ interface Mapper<T> {
   difference(node: Difference): T;
   factorial(node: Factorial): T;
   algebraicFn(node: AlgebraicFn): T;
+  parenthesizedExpression(node: ParenthesizedExpression): T;
 }
 
 interface Visitor<T> {
@@ -6174,6 +6254,7 @@ enum core {
   power = "^",
   factorial = "!",
   undefined = "Undefined",
+  paren = "(",
 }
 
 enum klass {
@@ -6194,6 +6275,7 @@ interface ExpressionVisitor<T> {
   difference(node: Difference): T;
   factorial(node: Factorial): T;
   algebraicFn(node: AlgebraicFn): T;
+  parenthesizedExpression(node: ParenthesizedExpression): T;
 }
 
 abstract class AlgebraicExpression {
@@ -6232,31 +6314,6 @@ abstract class AlgebraicExpression {
    * This expressions operator.
    */
   readonly op: string;
-  /**
-   * The parentheses level of this expression.
-   */
-  parenLevel: number = 0;
-  /**
-   * Increments the parentheses level of this expression.
-   * This method should be called if an expression is
-   * surrounded by parentheses.
-   */
-  tickParen() {
-    this.parenLevel += 1;
-    return this;
-  }
-
-  hasParens() {
-    return this.parenLevel !== 0;
-  }
-
-  /**
-   * Returns true if this expression and the provided
-   * expression have the same parentheses level.
-   */
-  sameParenLevel(other: AlgebraicExpression) {
-    return this.parenLevel === other.parenLevel;
-  }
   /**
    * This expression’s overarching class. This is
    * an enum value of {@link klass}. Either:
@@ -6343,12 +6400,11 @@ class Int extends Atom {
   }
   copy(): Int {
     const out = int(this.n);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
     if (!isInt(other)) return false;
-    return (other.n === this.n) && (this.sameParenLevel(other));
+    return (other.n === this.n);
   }
   toString(): string {
     return `${this.n}`;
@@ -6401,14 +6457,13 @@ class Real extends Atom {
   }
   copy(): Real {
     const out = real(this.n);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
     if (!isReal(other)) {
       return false;
     }
-    return (this.n === other.n) && (this.sameParenLevel(other));
+    return (this.n === other.n);
   }
   toString(): string {
     return `${this.n}`;
@@ -6438,14 +6493,13 @@ class Sym<X extends string = string> extends Atom {
   }
   copy(): Sym {
     const out = sym(this.s);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
     if (!isSymbol(other)) {
       return false;
     }
-    return (this.s === other.s) && (this.sameParenLevel(other));
+    return (this.s === other.s);
   }
   toString(): string {
     return `${this.s}`;
@@ -6476,7 +6530,7 @@ class Constant<
     if (!isConstant(other)) {
       return false;
     } else {
-      return this.sameParenLevel(other) && (other.value === this.value);
+      return (other.value === this.value);
     }
   }
   get isNegative() {
@@ -6506,7 +6560,6 @@ class Constant<
   }
   copy() {
     const out = new Constant(this.c, this.value);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   c: X;
@@ -6556,9 +6609,6 @@ abstract class Compound extends AlgebraicExpression {
   toString(): string {
     const op = this.op;
     const args = this.args.map((x) => x.toString()).join(` ${op} `);
-    if (this.parenLevel !== 0) {
-      return parend(args);
-    }
     return args;
   }
   equals(other: AlgebraicExpression): boolean {
@@ -6569,9 +6619,6 @@ abstract class Compound extends AlgebraicExpression {
       return false;
     }
     if (this.args.length !== other.args.length) return false;
-    if (this.parenLevel !== other.parenLevel) {
-      return this.args.reduce((p, c, i) => p && c.equals(other.args[i]), true);
-    }
     for (let i = 0; i < this.args.length; i++) {
       const a = this.args[i];
       const b = other.args[i];
@@ -6581,6 +6628,39 @@ abstract class Compound extends AlgebraicExpression {
     }
     return true;
   }
+}
+
+class ParenthesizedExpression extends Compound {
+  constructor(expression: AlgebraicExpression) {
+    super(core.paren, [expression]);
+  }
+  equals(other: AlgebraicExpression): boolean {
+    return this.innerExpression.equals(other);
+  }
+  get innerExpression() {
+    return this.args[0];
+  }
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    throw new Error("Method not implemented.");
+  }
+  trust<T>(mapper: Mapper<T>): T {
+    throw new Error("Method not implemented.");
+  }
+  toString(): string {
+    return `(${this.innerExpression.toString()})`;
+  }
+  copy(): AlgebraicExpression {
+    return new ParenthesizedExpression(this.innerExpression.copy());
+  }
+  operand(i: number): AlgebraicExpression {
+    return this.innerExpression.operand(i);
+  }
+  isAlgebraic(): boolean {
+    return this.innerExpression.isAlgebraic();
+  }
+}
+function parenthesized(expression: AlgebraicExpression) {
+  return new ParenthesizedExpression(expression);
 }
 
 // deno-fmt-ignore
@@ -6670,7 +6750,6 @@ class Sum extends AlgebraicOp<core.sum> {
   op: core.sum = core.sum;
   copy(): Sum {
     const out = sum(this.argsCopy());
-    out.parenLevel = this.parenLevel;
     return out;
   }
   constructor(args: AlgebraicExpression[]) {
@@ -6706,7 +6785,6 @@ class Product extends AlgebraicOp<core.product> {
   op: core.product = core.product;
   copy(): Product {
     const out = product(this.argsCopy());
-    out.parenLevel = this.parenLevel;
     return out;
   }
   toString(): string {
@@ -6715,7 +6793,6 @@ class Product extends AlgebraicOp<core.product> {
       const [a, b] = args;
       if (
         (isConst(a) && isSymbol(b)) ||
-        (isConst(a) && b.parenLevel !== 0) ||
         (isConst(a) && isAlgebraicFn(b))
       ) {
         return `${a.toString()}${b.toString()}`;
@@ -6727,11 +6804,7 @@ class Product extends AlgebraicOp<core.product> {
       out.push(a.toString());
     }
     const expr = out.join("");
-    if (this.parenLevel !== 0) {
-      return `(${expr})`;
-    } else {
-      return expr;
-    }
+    return expr;
   }
   constructor(args: AlgebraicExpression[]) {
     super(core.product, args);
@@ -6763,7 +6836,6 @@ class Quotient extends AlgebraicOp<core.quotient> {
     const left = this.dividend.copy();
     const right = this.divisor.copy();
     const out = quotient(left, right);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   constructor(dividend: AlgebraicExpression, divisor: AlgebraicExpression) {
@@ -6780,7 +6852,6 @@ class Quotient extends AlgebraicOp<core.quotient> {
     const left = this.divisor.copy();
     const right = power(this.dividend.copy(), int(-1));
     const out = product([left, right]);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   /**
@@ -6876,7 +6947,6 @@ class Fraction extends AlgebraicOp<core.fraction> {
     const n = this.args[0].n;
     const d = this.args[1].n;
     const out = frac(n, d);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   lt(other: Fraction) {
@@ -7221,7 +7291,6 @@ class Power extends AlgebraicOp<core.power> {
     const b = this.base.copy();
     const e = this.base.copy();
     const out = power(b, e);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   op: core.power = core.power;
@@ -7237,11 +7306,7 @@ class Power extends AlgebraicOp<core.power> {
       exponent = `(${exponent})`;
     }
     const out = `${base}^${exponent}`;
-    if (this.parenLevel !== 0) {
-      return parend(out);
-    } else {
-      return out;
-    }
+    return out;
   }
   /**
    * @property The base of this power.
@@ -7286,7 +7351,6 @@ class Difference extends AlgebraicOp<core.difference> {
     const left = this.left.copy();
     const right = this.right.copy();
     const out = difference(left, right);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   constructor(left: AlgebraicExpression, right: AlgebraicExpression) {
@@ -7319,7 +7383,7 @@ class Difference extends AlgebraicOp<core.difference> {
    */
   toSum() {
     const left = this.left;
-    const right = product([int(-1), this.right]).tickParen();
+    const right = parenthesized(product([int(-1), this.right]));
     return sum([left, right]);
   }
 }
@@ -7336,7 +7400,7 @@ function isDifference(u: AlgebraicExpression): u is Difference {
 
 /** Returns the provided algebraic expression `u`, negated. */
 function negate(u: AlgebraicExpression) {
-  return product([int(-1), u]).tickParen();
+  return product([int(-1), u]);
 }
 
 /** A node corresponding to the mathematical factorial. The factorial is always a unary operation. */
@@ -7353,7 +7417,6 @@ class Factorial extends AlgebraicOp<core.factorial> {
   copy(): Factorial {
     const arg = this.arg.copy();
     const out = factorial(arg);
-    out.parenLevel = this.parenLevel;
     return out;
   }
   constructor(arg: AlgebraicExpression) {
@@ -7399,7 +7462,6 @@ class AlgebraicFn extends Compound {
   args: AlgebraicExpression[];
   copy(): AlgebraicFn {
     const out = fn(this.op, this.args.map((c) => c.copy()));
-    out.parenLevel = this.parenLevel;
     return out;
   }
   operand(i: number): AlgebraicExpression {
@@ -8912,6 +8974,7 @@ enum bp {
   sum,
   difference,
   product,
+  imul,
   quotient,
   power,
   postfix,
@@ -9711,7 +9774,6 @@ class Simplifier implements Visitor<AlgebraicExpression> {
   }
   groupExpr(node: GroupExpr): AlgebraicExpression {
     const out = this.reduce(node.expression);
-    out.tickParen();
     return out;
   }
   blockStmt(node: BlockStmt): AlgebraicExpression {
@@ -10603,9 +10665,6 @@ class Latexer implements Mapper<string> {
   }
   sum(node: Sum): string {
     let expressions = node.args.map((a) => this.reduce(a)).join("+");
-    if (node.parenLevel) {
-      expressions = latex.surround(expressions, "(", ")");
-    }
     return expressions;
   }
   product(node: Product): string {
@@ -10622,9 +10681,6 @@ class Latexer implements Mapper<string> {
       out.push(this.reduce(left));
     }
     let expr = out.join("");
-    if (node.parenLevel) {
-      expr = latex.surround(expr, "(", ")");
-    }
     return expr;
   }
   quotient(node: Quotient): string {
@@ -10634,9 +10690,6 @@ class Latexer implements Mapper<string> {
       return latex.frac(n, d);
     } else {
       let expressions = node.args.map((a) => this.reduce(a)).join("/");
-      if (node.parenLevel) {
-        expressions = latex.surround(expressions, "(", ")");
-      }
       return expressions;
     }
   }
@@ -10651,29 +10704,24 @@ class Latexer implements Mapper<string> {
       "^",
       latex.surround(latex.brace(exp), "(", ")"),
     );
-    if (node.parenLevel) {
-      expressions = latex.surround(expressions, "(", ")");
-    }
     return expressions;
   }
   difference(node: Difference): string {
     let expressions = node.args.map((a) => this.reduce(a)).join("-");
-    if (node.parenLevel) {
-      expressions = latex.surround(expressions, "(", ")");
-    }
     return expressions;
   }
   factorial(node: Factorial): string {
     let expressions = node.args.map((a) => this.reduce(a)).join("!");
-    if (node.parenLevel) {
-      expressions = latex.surround(expressions, "(", ")");
-    }
     return expressions;
   }
   algebraicFn(node: AlgebraicFn): string {
     const name = node.op;
     const args = node.args.map((x) => this.reduce(x)).join(",~");
     return latex.tie(name, latex.surround(args, "(", ")"));
+  }
+  parenthesizedExpression(node: ParenthesizedExpression): string {
+    const out = this.reduce(node.innerExpression);
+    return latex.surround(out, "(", ")");
   }
 }
 
@@ -11448,7 +11496,7 @@ function syntax(source: string) {
         : state.newExpression(float(t.literal));
       const peek = state.peek;
       if (peek.is(tt.lparen) || peek.is(tt.native) || peek.is(tt.symbol)) {
-        const r = expr();
+        const r = expr(bp.imul);
         if (r.isLeft()) {
           return r;
         }
@@ -11511,7 +11559,7 @@ function syntax(source: string) {
    * {@link AlgebraicBinaryExpr|algebraic binary expression}.
    */
   const rinfix = (op: Token, lhs: Expr): Either<Err, AlgebraicBinaryExpr> => {
-    return expr().chain((rhs) => {
+    return expr(precof(op.type)).chain((rhs) => {
       const out = binex(lhs, op as Token<ArithmeticOperator>, rhs);
       return state.newExpression(out);
     });
@@ -12590,10 +12638,44 @@ function expression(source: string) {
     if (t.isNumber()) {
       const n = t.literal;
       const out = t.is(tt.int) ? int(n) : real(n);
+      if ($peek.is(tt.lparen) || $peek.is(tt.native) || $peek.is(tt.symbol)) {
+        const r = expr(bp.imul);
+        if (r.isLeft()) return r;
+        const rhs = r.unwrap();
+        const lhs = out;
+        if (isProduct(rhs)) {
+          return node(product([lhs, ...rhs.args]));
+        } else {
+          return node(product([lhs, rhs]));
+        }
+      }
       return node(out);
     } else {
       return error(`Unexpected number “${t.lexeme}”`, "parsing a number", t);
     }
+  };
+  const nextIs = (t: tt) => {
+    if ($peek.is(t)) {
+      next();
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  const PRIMARY: Parslet<AlgebraicExpression> = (op) => {
+    const innerExpr = expr();
+    if (innerExpr.isLeft()) {
+      return innerExpr;
+    }
+    if (!nextIs(tt.rparen)) {
+      return error(
+        `Expected “)” to close the expression`,
+        `parsing an algebraic expression`,
+      );
+    }
+    const out = node(parenthesized(innerExpr.unwrap()));
+    return out;
   };
 
   const PRODUCT: Parslet<AlgebraicExpression> = (op, lhs) => {
@@ -12649,7 +12731,7 @@ function expression(source: string) {
     const RHS = expr(p);
     if (RHS.isLeft()) return RHS;
     const rhs = RHS.unwrap();
-    return node(difference(rhs, lhs));
+    return node(difference(lhs, rhs));
   };
 
   const QUOTIENT: Parslet<AlgebraicExpression> = (op, lhs) => {
@@ -12661,7 +12743,7 @@ function expression(source: string) {
   };
 
   const POWER: Parslet<AlgebraicExpression> = (op, lhs) => {
-    const RHS = expr();
+    const RHS = expr(bp.power);
     if (RHS.isLeft()) return RHS;
     const rhs = RHS.unwrap();
     return node(power(lhs, rhs));
@@ -12680,11 +12762,24 @@ function expression(source: string) {
     }
   };
 
+  const FRACTION: Parslet<AlgebraicExpression> = (op) => {
+    if (op.isFraction()) {
+      const [a, b] = op.literal;
+      return node(frac(a, b));
+    } else {
+      return error(
+        `Unexpected fraction “${op.lexeme}”`,
+        `parsing an expression`,
+        op,
+      );
+    }
+  };
+
   const rules: BPTable<AlgebraicExpression> = {
     [tt.END]: [___, ___, ___o],
     [tt.ERROR]: [___, ___, ___o],
     [tt.EMPTY]: [___, ___, ___o],
-    [tt.lparen]: [___, ___, ___o],
+    [tt.lparen]: [PRIMARY, ___, bp.call],
     [tt.rparen]: [___, ___, ___o],
     [tt.lbrace]: [___, ___, ___o],
     [tt.rbrace]: [___, ___, ___o],
@@ -12713,7 +12808,7 @@ function expression(source: string) {
     [tt.deq]: [___, ___, ___o],
     [tt.plus_plus]: [___, ___, ___o],
     [tt.minus_minus]: [___, ___, ___o],
-    [tt.symbol]: [SYMBOL, ___, ___o],
+    [tt.symbol]: [SYMBOL, ___, bp.atom],
     [tt.string]: [___, ___, ___o],
     [tt.bool]: [___, ___, ___o],
     [tt.int]: [NUMBER, ___, bp.atom],
@@ -12721,7 +12816,7 @@ function expression(source: string) {
     [tt.bignumber]: [___, ___, ___o],
     [tt.bigfraction]: [___, ___, ___o],
     [tt.scientific]: [___, ___, ___o],
-    [tt.fraction]: [___, ___, ___o],
+    [tt.fraction]: [FRACTION, ___, bp.atom],
     [tt.nan]: [___, ___, ___o],
     [tt.inf]: [___, ___, ___o],
     [tt.nil]: [___, ___, ___o],
@@ -12792,9 +12887,6 @@ function expression(source: string) {
     },
   };
 }
-
-const k = expression(`2xy - 5xy`).parse().unwrap();
-print(k);
 
 export function engine(source: string) {
   let settings: EngineSettings = {

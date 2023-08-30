@@ -16,6 +16,7 @@ import {
   Parent,
   Path,
   plot2D,
+  polar2D,
   Quad,
   scatterPlot,
   Shape,
@@ -83,6 +84,15 @@ export const ForceGraph1 = () => {
   return <Figure of={d} />;
 };
 
+export const Polar1 = () => {
+  const data = polar2D("f(x) = e^(sin(x)) - 2cos(4x) + (sin((2x - pi)/24))^5")
+    .cycles(12 * Math.PI)
+    .radius(4)
+    .stroke("#D67BFF")
+    .end();
+  return <Figure of={data} />;
+};
+
 export const Plot1 = () => {
   const data = plot2D("f(x) = tan(x)")
     .samples(500)
@@ -94,7 +104,7 @@ export const Plot1 = () => {
 };
 
 export const Plot2 = () => {
-  const data = plot2D("f(x) = -(x^5) + 4x^3")
+  const data = plot2D("f(x) = -x^5 + 4x^3")
     .samples(300)
     .integrate({
       bounds: [-2, 2],
