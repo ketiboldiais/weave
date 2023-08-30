@@ -1,3 +1,14 @@
+@font-face {
+	font-family: "Fira Code";
+	font-style: normal;
+	font-weight: normal;
+	src: url('./styles/fonts/FiraCode-Regular.ttf');
+}
+
+code {
+	font-family: 'Fira Code';
+}
+
 * {
 	box-sizing: border-box;
 }
