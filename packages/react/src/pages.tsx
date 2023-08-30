@@ -1,9 +1,9 @@
 import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router-dom";
 import MainDoc from "./demos/main.doc.mdx";
-import QUAD from "./demos/quad.doc.mdx";
-import AXES from "./demos/axes.doc.mdx";
 import TWINE from "./demos/twine.doc.mdx";
 import VECTOR from "./demos/vector.doc.mdx";
+import BG from "./demos/background/index.mdx";
+import SET_THEORY from './demos/background/set-theory.mdx';
 import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
@@ -14,13 +14,6 @@ const MAIN = () => (
   </MainPage>
 );
 
-const Dropdown = ({ links }: { links: LinkEntry[] }) => {
-  return (
-    <ul className={`dropdown`}>
-    </ul>
-  );
-};
-
 type LinkEntry = {
   path: string;
   title: string;
@@ -29,12 +22,13 @@ type LinkEntry = {
   submenu?: LinkEntry[];
 };
 
+// deno-fmt-ignore
 export const docLinks: LinkEntry[] = [
-  { title: "Intro", path: "/", visible: true, page: <MAIN /> },
-  { title: "Quadrilaterals", path: "/quad", visible: false, page: <QUAD /> },
-  { title: "Axes", path: "/axes", visible: false, page: <AXES /> },
-  { title: "Vector", path: "/vector", visible: true, page: <VECTOR /> },
-  { title: "Twine", path: "/twine", visible: true, page: <TWINE /> },
+{title: "Intro", path: "/", visible: true, page: <MAIN/> },
+{title: "Vector", path: "/vector", visible: true, page: <VECTOR/> },
+{title: "Twine", path: "/twine", visible: true, page: <TWINE/> },
+{title: "Background", path: "/background", visible: true, page: <BG/> },
+{title: "Set Theory", path: "/set-theory", visible: false, page: <SET_THEORY/>},
 ];
 
 export const Main = () => {
@@ -55,8 +49,6 @@ export const Main = () => {
     </BrowserRouter>
   );
 };
-
-
 
 function Page() {
   return (

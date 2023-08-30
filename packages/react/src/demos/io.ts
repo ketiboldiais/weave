@@ -1,12 +1,20 @@
 /** Utility method - Logs to the console. */
 const print = console.log;
 
+/**
+---
+* A utility method that generates a pseudorandom string.
+* @param length - The max length of the resulting string.
+* @param base - The base from which to draw characters.
+---
+ */
 const uid = (length: number = 4, base = 36) =>
   Math.random()
     .toString(base)
     .replace(/[^a-z]+/g, "")
     .substring(0, length + 1);
 
+/** Given an array of type `T[]`, splits the array in two and returns the two halves as a pair. */
 const arraySplit = <T>(array: T[]) => {
   const L = array.length;
   const half = Math.ceil(L / 2);
@@ -43,14 +51,6 @@ function none() {
 }
 
 type Option<T> = None | Some<T>;
-
-function omap<T, S>(f: (a: T) => S, opt: Option<T>): Option<S> {
-  if (opt._tag === "None") {
-    return opt;
-  } else {
-    return some(f(opt.value));
-  }
-}
 
 class Binode<T> {
   _data: T | null;
@@ -4908,6 +4908,7 @@ class ClassStmt extends Statement {
   }
 }
 
+/** Returns a new ASTNode of type ClassStmt. */
 function classStmt(name: Token, methods: FnStmt[]) {
   return new ClassStmt(name, methods);
 }
@@ -4930,10 +4931,12 @@ class BlockStmt extends Statement {
   }
 }
 
+/** Returns true if the given ASTNode is a BlockStmt. */
 function isBlock(node: ASTNode): node is BlockStmt {
   return node.kind === nodekind.block_statement;
 }
 
+/** Returns an ASTNode of type BlockStmt. */
 function block(statements: Statement[]) {
   return new BlockStmt(statements);
 }
@@ -6688,11 +6691,7 @@ function isSum(u: AlgebraicExpression): u is Sum {
   return !$isNothing(u) && (u.op === core.sum);
 }
 
-/**
- * An algebraic expression corresponding to an n-ary product.
- * @example
- * const x = product([int(1), int(8), int(9)]) // x => 1 * 8 * 9
- */
+/** An algebraic expression corresponding to an n-ary product. */
 class Product extends AlgebraicOp<core.product> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.product(this);
@@ -6736,26 +6735,17 @@ class Product extends AlgebraicOp<core.product> {
   }
 }
 
-/**
- * Returns a new {@link Product|product expression}.
- */
+/** Returns a new product expression. */
 function product(args: AlgebraicExpression[]) {
   return new Product(args);
 }
 
-/**
- * Type predicate. Returns true if `u` is a {@link Product|product expression},
- * false otherwise. If true, claims that `u` is a {@link Product|product expression}.
- */
+/** Returns true if the given algebraic expression is a product, otherwise, false. */
 function isProduct(u: AlgebraicExpression): u is Product {
   return !$isNothing(u) && (u.op === core.product);
 }
 
-/**
- * A node corresponding to a quotient. Quotients
- * are defined as binary expressions with the operator
- * {@link core.quotient|"/"}.
- */
+/** A node corresponding to a quotient. */
 class Quotient extends AlgebraicOp<core.quotient> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.quotient(this);
@@ -6810,9 +6800,7 @@ class Quotient extends AlgebraicOp<core.quotient> {
   }
 }
 
-/**
- * Returns a new {@link Quotient|quotient}.
- */
+/** Returns a new Quotient. */
 function quotient(dividend: AlgebraicExpression, divisor: AlgebraicExpression) {
   return new Quotient(dividend, divisor);
 }
@@ -8944,18 +8932,22 @@ function token<X extends tt>(
   return new Token(type, lexeme, line, column);
 }
 
+/** Returns true if the string `char` is a Latin or Greek character. */
 function isLatinGreek(char: string) {
   return /^[a-zA-Z_$\u00C0-\u02AF\u0370-\u03FF\u2100-\u214F]$/.test(char);
 }
 
+/** Returns true if the given string `char` is within the unicode range `∀-⋿`. Else, returns false. */
 function isMathSymbol(char: string) {
   return /^[∀-⋿]/u.test(char);
 }
 
+/** Returns true if the given string `char` is a Latin/Greek character or a math symbol. Else, returns false. */
 function isValidName(char: string) {
   return (isLatinGreek(char) || isMathSymbol(char));
 }
 
+/** Returns true if the given string `char` is a digit. Else, returns false. */
 function isDigit(char: string) {
   return "0" <= char && char <= "9";
 }

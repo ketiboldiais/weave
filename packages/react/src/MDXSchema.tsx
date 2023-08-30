@@ -119,7 +119,6 @@ const components = {
   tbl: Tbl,
   hstack: HStack,
   note: Note,
-  a: Link,
   col2: Col2,
 };
 
