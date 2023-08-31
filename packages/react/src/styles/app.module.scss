@@ -31,6 +31,7 @@
 			}
 		}
 	}
+
 	main {
 		background-color: rgb(44, 44, 44);
 		font-size: 1.1rem;
@@ -42,8 +43,10 @@
 		padding: 0;
 		width: 100vw;
 	}
+
 	color: $text;
 	font-family: 'KaTeX_Main';
+
 	h1,
 	h2,
 	h3,
@@ -73,7 +76,7 @@
 		}
 	}
 
-	
+
 
 	h1 {
 		text-align: center;
@@ -81,12 +84,7 @@
 		margin-top: 5rem;
 	}
 
-	dfn ul {
-		margin-left: 1em;
-		margin-top: 0;
-		font-size: 0.95rem;
-		padding: 0;
-	}
+
 
 	dfn {
 		display: block;
