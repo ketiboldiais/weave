@@ -178,3 +178,68 @@ The definition above implies that the empty set is a subset of all sets, and a g
 This follows directly from the definition. The proposition ${\varnothing \subseteq A}$ if, for all ${x \in \varnothing,}$ ${x \in A.}$ Because the sufficient condition, ${x \in \varnothing}$ is false, it follows that ${x \in A}$ is true. This is an example of a __vacuous proof__.
 
 The case of ${A \subseteq A}$ straightforward. Given that ${A}$ and ${A}$ are the same sets, every ${x \in A}$ implies that ${x \in A.}$ Because the sufficient condition is true and the necessary condition is true, it follows that ${A \subseteq A}$ by definition.
+
+### Proper Subsets
+If a subset ${B}$ of ${A}$ is such that ${B \neq A}$ and
+${B \neq \varnothing,}$ then we say that ${B}$ is called a proper subset of
+${A.}$ For example, the set of all potatoes is a subset of all root
+vegetables. It certainly isn't empty—you've got Yukon Golds, Russet
+potatoes, Japanese sweet potatoes, LaRette potatoes, and so on. But it also
+doesn't comprise the entire set of all root vegetables either, because
+there are other root vegetables: taro, yams, tapioca, turmeric, ginseng,
+ginger, beets, and so on. Thus, we say that, "Potatoes are a proper subset
+of root vegetables," and write:
+${\text{taro} \subset \text{root vegetables}.}$
+
+$$
+  A \subset B \iff [\forall x(x \in A \rArr x \in B) \land \exists x (x \in B
+  \land x \notin A)]
+$$
+
+A subset is a general concept. When we say that ${A}$ is a "subset" of
+${B,}$ we allow the possibility of ${A}$ and ${B}$ being equal. For
+example, the set of all aardvarks is a subset of all Orycteropodidae, and
+the set of all Orycteropodidae is a subset of all Tubulidentata. However,
+aardvarks comprise all the members of Orycteropodidae, and Orycteropodidae
+comprise all the members of Tubulidentata. Thus, these sets are all equal,
+but are also subsets.
+
+__Remark.__ In biology, a taxon (an instance of a taxonomy level, e.g., kingdom, phylum, class, etc.) with only one superset is called __monotypic__. Aardvarks, the Albany pitcher plant, the hyacinth macaw, among others are all monotypic.
+
+Now, if some extinct species of Orycteropodidae comes back to life or some
+new species is discovered, then the aardvarks would not comprise all of
+Orycteropodidae. In that situation, aardvarks are no longer _just_ a subset
+of Orycteropodidae. We can still refer to aardvarks as a subset of
+Orycteropodidae, but we are now also permitted to more specifically say
+that aardvarks are a _strict subset_ (or _proper subset_) of Orycteropodidae.
+
+:::dfn
+__Strict Subset__. Suppose ${A}$ and ${B}$ are sets. ${A}$ is a _proper
+subset_ of ${B}$ if, and only if, every element of ${A}$ is in ${B,}$
+but there is at least one element in $B$ that is not in $A$. If $A$ is a
+proper subset of $B$, we write:
+
+$$
+  A \subset B
+$$
+:::
+
+If ${A \subset B}$ is true, we can infer: All of the elements of ${A}$ are
+elements of $B$, but there is at least one element of ${B}$ that is not an
+element of ${A.}$ We can also infer that all the elements of ${A}$ have
+some property in common that separate it from other subsets of ${B.}$
+
+A helpful way to distinguish between the two symbols is noticing how they
+share similarities to the symbols ${\leq}$ and ${<.}$ ${\subseteq }$ means
+"subset or equal" and ${\subset}$ means "subset but not equal;" the former
+is more general than the latter.
+
+If $A \subset B$ is false (i.e., $A$ is not a proper subset of $B$), we
+write:
+
+$$
+ A \not\subset B
+$$
+
+If $A \not\subset B$ is true, then either $A \not\subseteq B$ is true, or
+$A \subseteq B$ is true, but no elements in $B$ are not in $A$.

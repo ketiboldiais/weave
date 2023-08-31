@@ -8,6 +8,7 @@ import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
 import { ReactNode } from "react";
+import ScrollToTop from "./hooks/ScrollToTop";
 
 const MAIN = () => (
   <MainPage>
@@ -76,7 +77,7 @@ function Page() {
       <main>
         <BaseComponents>
           <article className={app.page}>
-            <Outlet />
+            <Outlet/>
             <footer>Ketib Oldiais | &copy; 2023</footer>
           </article>
         </BaseComponents>

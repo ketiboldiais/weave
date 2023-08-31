@@ -2453,24 +2453,31 @@ export class PolarPlot2D extends CONTEXT {
     for (let i = 1; i < out.length; i++) {
       p.commands.push(out[i]);
     }
+    const lineLabels: Text[] = [];
     for (let i = 1; i < this._domain[1] * this._tickCount; i++) {
       const c = circle(i).stroke(this._axisColor).opacity(this._axisOpacity);
+      const t = text(i)
+        .at(0, i)
+        .fontColor(this._axisColor)
+        .anchor("middle")
+        .dy(-0.15);
+      lineLabels.push(t);
       this.and(c);
     }
-
     const lineCoords = range(0, 360, 45);
     const axes: Line[] = [];
-    const k = this._domain[1]+1;
+    const k = this._domain[1] + 1;
     lineCoords.forEach((n) => {
       const x = cos(toRadians(n)) * k;
       const y = sin(toRadians(n)) * k;
+
       const L = line([0, 0], [x, y])
         .stroke(this._axisColor)
         .opacity(this._axisOpacity);
       axes.push(L);
     });
     axes.forEach((l) => this.and(l));
-
+    lineLabels.forEach((t) => this.and(t));
     this.and(p.strokeWidth(this._strokeWidth));
     return this.fit();
   }
