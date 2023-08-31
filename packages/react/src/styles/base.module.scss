@@ -53,6 +53,7 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px;
+
 	ul {
 		list-style: none;
 		padding: 0;
@@ -64,6 +65,7 @@
 .tbl {
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 	font-size: 0.95rem;
+
 	table {
 		margin: 2% 0 !important;
 		width: 100%;
@@ -71,22 +73,30 @@
 		border-collapse: collapse;
 		color: $bluegrey;
 		font-family: 'Fira Code';
+
 		td {
 			padding: 0.5em !important;
 			border: solid thin $bluegrey2;
 		}
+
 		th {
 			border: solid thin $bluegrey2;
 		}
+
 		td code {
 			font-size: 1rem !important;
 		}
 	}
+
+
+
 }
 
-:global .grid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 50px;
-}
 
+@media (min-width: 600px) {
+	:global .grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 50px;
+	}
+}
