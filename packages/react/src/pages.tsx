@@ -38,7 +38,7 @@ export const docLinks: LinkEntry[] = [
 {title: "Vector", path: "/vector", visible: true, page: <VECTOR/> },
 {title: "Twine", path: "/twine", visible: true, page: <TWINE/> },
 {title: "Appendix", path: "/appendix", visible: true, page: <BG/> },
-{title: "Set Theory", doc: true, path: "/set-theory", visible: false, page: <SET_THEORY/>},
+{title: "Set Theory", path: "/set-theory", visible: false, page: <SET_THEORY/>},
 ];
 
 export const Main = () => {

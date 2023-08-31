@@ -15,15 +15,7 @@ In mathematics, a __set__ is a collection of objects. Those objects might
 be dogs, people, trees, numbers, values, variables, or more abstractly,
 propositions. For example, the set of all coins includes nickels, sterling,
 and yen. The set of all countries includes Japan, Palau, and Uruguay. The
-set of all integers includes 1 and -117. We can visualize a set as:
-
-:::box
-:img{src="https://res.cloudinary.com/sublimis/image/upload/v1653358194/math/set_intro_hky0d0.svg" width=140 height=96}
-:::
-
-Sets can be finite (there are only so many countries), or infinite (there
-are infinitely many of numbers). Each object in a set is called a
-_member_ of that set.
+set of all integers includes 1 and -117. Sets can be finite (there are only so many countries), or infinite (there are infinitely many of numbers). Each object in a set is called a _member_ of that set.
 
 ### Axiom of Extension
 
@@ -243,3 +235,60 @@ $$
 
 If $A \not\subset B$ is true, then either $A \not\subseteq B$ is true, or
 $A \subseteq B$ is true, but no elements in $B$ are not in $A$.
+
+## The Empty Set
+Some sets have no members. For example, the set of all positive integers greater than their squares is the empty set. If there is even a single element in the set, then the set is not the empty set. Such a set (a set with a single member) is called a __singleton__.
+
+Importantly, we shouldn't confuse the lack of an element with the lack of a subset. The empty set does have a subset—the empty set. But the fact that it has a subset does not imply that it has an element. We will see why this is the case shortly.
+
+Proferred by George Boole, the empty set embodies the concept of _nothingness_. Nothingness is a difficult concept to think about, but as with many things in mathematics, the idea is encapsulated—abstracted away—into a single symbol: ${\varnothing.}$ The abstraction allows us to reason about nothingness differently. Usually, when we think of filling an empty pint with beer, we tend to think that we are somehow negating the glass's emptiness; sort of "removing" the nothingness inside the pint. ${\varnothing,}$ however, is a member of every set except itself. We cannot remove nothingness from the set of all natural numbers—it's always there.
+The empty set is a very useful notion, but it can also be a footgun if we don't use it carefully. To prevent fiascos, we will always denote the empty set with the null symbol: ${\varnothing.}$ At no point do we ever write:
+
+$$
+ \{~~\}
+$$
+
+This is equivalent to a spelling mistake in mathematics. Second, the set containing an empty set is _not_ the same as the empty set:
+
+$$
+ \varnothing \neq \{ \varnothing \}
+$$
+
+Once more, these are two very different things. One is an some object (${\varnothing}$), the other is a box containing a single object (${\{ \varnothing \}}$). The empty set can be thought of as representing an empty folder. If we place an empty folder ${A}$ inside an empty folder ${B,}$ then the folder ${A}$ is no longer empty: It contains a folder. The distinction between elements and subsets is a critical distinction.
+
+### Vacuous Truth
+The empty set offers an opportunity to revisit the notion of **vacuous truth**. Here's the question: Suppose we had a set ${A.}$ Is the empty set a subset of ${A?}$ The tempting answer is "It depends. What's in ${A?}$" Unfortunately, the temptation is wrong—it does not depend. Recall the definition of a subset:
+
+$$
+ B \subseteq A \space \iff \space \forall x(x \in B \rArr x \in A)
+$$
+
+The key point to consider is the condition ${x \in B.}$ Now substitute ${B}$ with ${\varnothing.}$ Is the statement ${x \in \varnothing}$ true? Of course not. The empty set is empty—there's nothing in it. This means that the sufficient condition for the definition of a subset is always false when we consider the empty set as a subset. And what happens when a sufficient condition is false? The conditional proposition is always true! This is a vacuous truth: The empty set is a subset of ${A.}$ In fact, the empty set is a subset of every set, including itself (since the condition is still false if we substitute ${A}$ with ${\varnothing}$).
+
+The notion of vacuous truth may seem strange, but it follows directly from logic. Consider the negation of the definition for a subset:
+
+$$
+ B \nsubseteq A \space \iff \space \exists x(x \in B \land x \notin A)
+$$
+
+In other words, ${B}$ is not a subset of ${A}$ if there's an ${x}$ in ${A}$ that's not in ${B.}$ We know there's nothing in the empty set, so there can never be an ${x}$ in ${B}$ that's not in ${A.}$ There are no ${xs}$ to begin with. This discussion leads to some helpful points regarding proofs concerning
+sets:
+
+1. To prove that ${A \subseteq B,}$ show that ${A}$ and ${B}$ are just trenchcoats: If ${x}$ is inside ${A,}$ then ${x}$ is also inside ${B.}$
+
+2. To prove that ${A \nsubseteq B,}$ find a culprit: There's at least one ${x}$ inside ${A}$ that's not inside ${B.}$
+
+If we think a little more carefully about the definition for subsets, we'd realize that this whole idea of the empty set being a subset of itself extends to a more general conclusion:
+
+:::dfn
+__Theorem__. For every set ${S:}$
+
+$$
+  \begin{aligned}
+      &\varnothing \subseteq S ~~\text{and}
+      &S \subseteq S
+  \end{aligned}
+$$
+:::
+
+Why is this true? Well, we know that since ${\varnothing}$ has no members, the sufficient condition for the definition of a subset is always false, so it follows that ${\varnothing \subseteq S}$ is always true. Next, by the law of identity, every statement implies itself. Thus, ${x \in S \rArr x \in S.}$ This implies that every element of ${S}$ is an element of ${S.}$ And since every element of ${S}$ is an element of ${S,}$ it follows that ${S \subseteq S.}$
