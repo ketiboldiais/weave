@@ -87,7 +87,7 @@ export const ForceGraph1 = () => {
 export const Polar1 = () => {
   const data = polar2D("f(x) = e^(sin(x)) - 2cos(4x) + (sin((2x - pi)/24))^5")
     .cycles(12 * Math.PI)
-    .radius(4)
+    .radius(5)
     .stroke("#D67BFF")
     .strokeWidth(2)
     .axisColor('lightgrey')

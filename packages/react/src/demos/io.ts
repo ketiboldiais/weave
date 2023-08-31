@@ -2457,22 +2457,22 @@ export class PolarPlot2D extends CONTEXT {
       const c = circle(i).stroke(this._axisColor).opacity(this._axisOpacity);
       this.and(c);
     }
+
+    const lineCoords = range(0, 360, 45);
     const axes: Line[] = [];
-    const k = 5;
-    for (let i = 0; i < this._axesCount; i++) {
-      const L = line([0, 0], [cos(i)*k, sin(i)*k])
+    const k = this._domain[1]+1;
+    lineCoords.forEach((n) => {
+      const x = cos(toRadians(n)) * k;
+      const y = sin(toRadians(n)) * k;
+      const L = line([0, 0], [x, y])
         .stroke(this._axisColor)
         .opacity(this._axisOpacity);
       axes.push(L);
-    }
+    });
     axes.forEach((l) => this.and(l));
+
     this.and(p.strokeWidth(this._strokeWidth));
     return this.fit();
-  }
-  _axesCount: number = 6;
-  axesCount(n: number) {
-    this._axesCount = n;
-    return this;
   }
   _tickCount: number = 2.6;
   ringCount(n: number) {
