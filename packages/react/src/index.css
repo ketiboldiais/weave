@@ -34,15 +34,13 @@ body {
 	background-color: #646464;
 }
 
-
-
 ::-webkit-scrollbar-track-piece {
-	background-color: #30383d;
+	background-color: #4c4c4c;
 }
 
 ::-webkit-scrollbar-thumb {
 	height: 50px;
-	background-color: #666;
+	background-color: #949494;
 	border-radius: 1px;
 }
 
@@ -86,7 +84,7 @@ pre {
 	margin: 0;
 	overflow: auto;
 	border-radius: 0.3em;
-	background: #2d3748;
+	background: #212121;
 	color: #f8f8f2;
 	text-align: left;
 	white-space: pre;
@@ -101,6 +99,7 @@ pre {
 	-moz-hyphens: none;
 	-ms-hyphens: none;
 	hyphens: none;
+	/* box-shadow: 0px 3px 2px 0px rgba(0, 0, 0, 0.389); */
 }
 
 pre code .token.comment,
@@ -177,7 +176,7 @@ code {
 }
 
 textarea {
-	background-color: inherit;
+	background: rgb(36, 36, 36);
 	width: 100%;
 	resize: vertical;
 	font-size: 0.9rem;
@@ -186,8 +185,7 @@ textarea {
 	font-family: 'Fira Code';
 	border-radius: 0.3em;
 	border: none;
-	color: rgb(144, 237, 255);
-	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
+	color: rgb(255, 255, 255);
 }
 
 pre.terminal {
@@ -210,7 +208,6 @@ pre.terminal {
 
 .latex-screen {
 	background-color: inherit;
-	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
 	font-size: 0.8rem;
 	border: none;
 	border-radius: 0.3em;

@@ -4,11 +4,11 @@ import TWINE from "./demos/twine.doc.mdx";
 import VECTOR from "./demos/vector.doc.mdx";
 import BG from "./demos/appendix/index.mdx";
 import SET_THEORY from "./demos/appendix/set-theory.mdx";
+import EXPOSITION from "./demos/appendix/exposition.mdx";
 import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
 import { ReactNode } from "react";
-import ScrollToTop from "./hooks/ScrollToTop";
 
 const MAIN = () => (
   <MainPage>
@@ -32,13 +32,23 @@ type LinkEntry = {
   doc?: boolean;
 };
 
-// deno-fmt-ignore
 export const docLinks: LinkEntry[] = [
-{title: "Intro", path: "/", visible: true, page: <MAIN/> },
-{title: "Vector", path: "/vector", visible: true, page: <VECTOR/> },
-{title: "Twine", path: "/twine", visible: true, page: <TWINE/> },
-{title: "Appendix", path: "/appendix", visible: true, page: <BG/> },
-{title: "Set Theory", path: "/set-theory", visible: false, page: <SET_THEORY/>},
+  { title: "Intro", path: "/", visible: true, page: <MAIN /> },
+  { title: "Vector", path: "/vector", visible: true, page: <VECTOR /> },
+  { title: "Twine", path: "/twine", visible: true, page: <TWINE /> },
+  { title: "Appendix", path: "/appendix", visible: true, page: <BG /> },
+  {
+    title: "Set Theory",
+    path: "/set-theory",
+    visible: false,
+    page: <SET_THEORY />,
+  },
+  {
+    title: "Writing Mathematics",
+    path: "/exposition",
+    visible: false,
+    page: <EXPOSITION />,
+  },
 ];
 
 export const Main = () => {
@@ -77,7 +87,7 @@ function Page() {
       <main>
         <BaseComponents>
           <article className={app.page}>
-            <Outlet/>
+            <Outlet />
             <footer>Ketib Oldiais | &copy; 2023</footer>
           </article>
         </BaseComponents>
