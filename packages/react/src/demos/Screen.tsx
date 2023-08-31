@@ -77,6 +77,8 @@ export const ForceGraph1 = () => {
   })).nodeFontColor("white")
     .nodeColor("aqua")
     .nodeRadius(5)
+    .nodeFontFamily("KaTeX_Math")
+    .nodeFontSize(28)
     .edgeColor("lightblue")
     .iterations(100)
     .repulsion(20)
@@ -90,7 +92,7 @@ export const Polar1 = () => {
     .radius(5)
     .stroke("#D67BFF")
     .strokeWidth(2)
-    .axisColor('lightgrey')
+    .axisColor("lightgrey")
     .end();
   return <Figure of={data} />;
 };

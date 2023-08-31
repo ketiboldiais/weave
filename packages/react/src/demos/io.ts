@@ -3626,6 +3626,7 @@ export class ForceGraph extends FORCE_GRAPH {
     this._graph = graph;
     this._particles = new Map();
   }
+
   private forEachPt(callback: (particle: Particle) => void) {
     this._particles.forEach((p) => callback(p));
   }
@@ -3693,18 +3694,44 @@ export class ForceGraph extends FORCE_GRAPH {
   }
 
   _styles: {
-    _nodes: Partial<{ _fill: string; _radius: number; _fontColor: string }>;
+    _nodes: Partial<
+      {
+        _fill: string;
+        _radius: number;
+        _fontColor: string;
+        _fontSize: number;
+        _fontFamily: string;
+      }
+    >;
     _edges: Partial<{ _stroke: string }>;
   } = {
     _nodes: { _fill: "white", _radius: 5 },
     _edges: { _stroke: "grey" },
   };
+
+  get _nodeFontFamily() {
+    return this._styles._nodes._fontFamily ?? "inherit";
+  }
+  nodeFontFamily(font: string) {
+    this._styles._nodes._fontFamily = font;
+    return this;
+  }
+
+  get _nodeFontSize() {
+    return this._styles._nodes._fontSize ?? 12;
+  }
+  nodeFontSize(fontSize: number) {
+    this._styles._nodes._fontSize = fontSize;
+    return this;
+  }
+
+  get _nodeFontColor() {
+    return this._styles._nodes._fontColor ?? "initial";
+  }
+
   nodeFontColor(color: string) {
     this._styles._nodes._fontColor = color;
     return this;
-  }
-  get _nodeFontColor() {
-    return this._styles._nodes._fontColor ?? "initial";
   }
 
   get _nodeRadius() {
@@ -3714,9 +3741,11 @@ export class ForceGraph extends FORCE_GRAPH {
   get _nodeColor() {
     return this._styles._nodes._fill ? this._styles._nodes._fill : "white";
   }
+
   get _edgeColor() {
     return this._styles._edges._stroke ?? "grey";
   }
+
   edgeColor(color: string) {
     this._styles._edges._stroke = color;
     return this;
@@ -3757,13 +3786,16 @@ export class ForceGraph extends FORCE_GRAPH {
     });
     this._particles.forEach((p) => {
       const t = p._id;
-      const c = circle(this._nodeRadius).at(p._p._x, p._p._y).fill(
-        this._nodeColor,
-      );
-      this._children.push(c);
-      this._children.push(
-        text(t).at(p._p._x, p._p._y + p._r).fontColor(this._nodeFontColor),
-      );
+      const c = circle(this._nodeRadius)
+        .at(p._p._x, p._p._y)
+        .fill(this._nodeColor);
+      this.and(c);
+      const label = text(t)
+        .at(p._p._x, p._p._y + p._r)
+        .fontFamily(this._nodeFontFamily)
+        .fontSize(this._nodeFontSize)
+        .fontColor(this._nodeFontColor);
+      this.and(label);
     });
     return this.fit();
   }
@@ -6313,12 +6345,7 @@ enum core {
   power = "^",
   factorial = "!",
   undefined = "Undefined",
-  paren = "(",
-}
-
-enum klass {
-  atom,
-  compound,
+  paren = "()",
 }
 
 interface ExpressionVisitor<T> {
@@ -6340,14 +6367,17 @@ interface ExpressionVisitor<T> {
 abstract class AlgebraicExpression {
   abstract accept<T>(visitor: ExpressionVisitor<T>): T;
   abstract trust<T>(mapper: Mapper<T>): T;
+  abstract argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression;
   /**
    * Returns true if this expression is syntactically
    * equal to the provided expression. Otherwise,
    * returns false.
    */
   abstract equals(other: AlgebraicExpression): boolean;
-  abstract get args(): AlgebraicExpression[];
-  abstract set args(args: AlgebraicExpression[]);
+  abstract get _args(): AlgebraicExpression[];
+  abstract set _args(args: AlgebraicExpression[]);
   /**
    * Returns this expression as a string.
    */
@@ -6367,75 +6397,70 @@ abstract class AlgebraicExpression {
    * If this expression is not a compound expression,
    * returns 0.
    */
-  abstract get numberOfOperands(): number;
+  abstract get _arity(): number;
   abstract isAlgebraic(): boolean;
   /**
    * This expressions operator.
    */
-  readonly op: string;
-  /**
-   * This expression’s overarching class. This is
-   * an enum value of {@link klass}. Either:
-   *
-   * 1. `klass.atom` (corresponding to an atomic expression), or
-   * 2. `klass.compound` (corresponding to a compound expression).
-   */
-  klass: klass;
-  constructor(op: string, klass: klass) {
-    this.op = op;
-    this.klass = klass;
+  readonly _op: string;
+  constructor(op: string) {
+    this._op = op;
   }
 }
 
 /** Returns true if `u` is an atomic expression. Else, false. */
 function isAtom(u: AlgebraicExpression): u is Atom {
-  return u.klass === klass.atom;
+  return u instanceof Atom;
 }
 
 /** Returns true if `u` is a Compound. Else, false. */
 function isCompound(u: AlgebraicExpression): u is Compound {
-  return u.klass === klass.compound;
+  return u instanceof Compound;
 }
 
 /** Returns true if the given expression `u` is an Int. Else, false. */
 function isInt(u: AlgebraicExpression): u is Int {
-  return !$isNothing(u) && (u.op === core.int);
+  return !$isNothing(u) && (u._op === core.int);
 }
 
 /** Returns true if the given expression `u` is a Real. Else, false. */
 function isReal(u: AlgebraicExpression): u is Real {
-  return !$isNothing(u) && (u.op === core.real);
+  return !$isNothing(u) && (u._op === core.real);
 }
 
 /** Type predicate. Claims and returns true if the given expression `u` is a Sym. False otherwise. Note that this will return true if `u` is `Undefined`, since `Undefined` is a symbol by definition. */
 function isSymbol(u: AlgebraicExpression): u is Sym {
-  return !$isNothing(u) && ((u.op === core.symbol) ||
-    (u.op === core.undefined));
+  return !$isNothing(u) && ((u._op === core.symbol) ||
+    (u._op === core.undefined));
 }
 
 /** Claims and returns true if the given expression `u` is the global symbol Undefined (an instance of `Sym`, not the JavaScript `undefined`). False otherwise. Note that constant `Undefined` maps to the literal null. */
 function isUndefined(
   u: AlgebraicExpression,
 ): u is Constant<null, core.undefined> {
-  return !$isNothing(u) && (u.op === core.undefined);
+  return !$isNothing(u) && (u._op === core.undefined);
 }
 
 /** Returns true if the given expression is a constant, false otherwise.*/
 function isConstant(u: AlgebraicExpression): u is Constant<number> {
-  return !$isNothing(u) && (u.op === core.constant);
+  return !$isNothing(u) && (u._op === core.constant);
 }
 
 /** An atom is any expression that cannot be reduced further. This includes integers, reals, and symbols. */
 abstract class Atom extends AlgebraicExpression {
-  klass: klass.atom = klass.atom;
   constructor(op: string) {
-    super(op, klass.atom);
+    super(op);
   }
-  set args(args: AlgebraicExpression[]) {}
-  get args(): AlgebraicExpression[] {
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    return this;
+  }
+  set _args(args: AlgebraicExpression[]) {}
+  get _args(): AlgebraicExpression[] {
     return [];
   }
-  get numberOfOperands(): number {
+  get _arity(): number {
     return 0;
   }
   operand(i: number): UNDEFINED {
@@ -6462,6 +6487,9 @@ class Int extends Atom {
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
+    if (other instanceof ParenthesizedExpression) {
+      return this.equals(other.innerExpression);
+    }
     if (!isInt(other)) return false;
     return (other.n === this.n);
   }
@@ -6519,6 +6547,9 @@ class Real extends Atom {
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
+    if (other instanceof ParenthesizedExpression) {
+      return this.equals(other.innerExpression);
+    }
     if (!isReal(other)) {
       return false;
     }
@@ -6555,6 +6586,9 @@ class Sym<X extends string = string> extends Atom {
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
+    if (other instanceof ParenthesizedExpression) {
+      return this.equals(other.innerExpression);
+    }
     if (!isSymbol(other)) {
       return false;
     }
@@ -6586,6 +6620,9 @@ class Constant<
     return true;
   }
   equals(other: AlgebraicExpression): boolean {
+    if (other instanceof ParenthesizedExpression) {
+      return this.equals(other.innerExpression);
+    }
     if (!isConstant(other)) {
       return false;
     } else {
@@ -6655,32 +6692,34 @@ function sym(s: string) {
 
 abstract class Compound extends AlgebraicExpression {
   op: string;
-  args: AlgebraicExpression[];
-  klass: klass.compound = klass.compound;
+  _args: AlgebraicExpression[];
   constructor(op: string, args: AlgebraicExpression[]) {
-    super(op, klass.compound);
+    super(op);
     this.op = op;
-    this.args = args;
+    this._args = args;
   }
-  get numberOfOperands(): number {
-    return this.args.length;
+  get _arity(): number {
+    return this._args.length;
   }
   toString(): string {
     const op = this.op;
-    const args = this.args.map((x) => x.toString()).join(` ${op} `);
+    const args = this._args.map((x) => x.toString()).join(` ${op} `);
     return args;
   }
   equals(other: AlgebraicExpression): boolean {
+    if (other instanceof ParenthesizedExpression) {
+      return this.equals(other.innerExpression);
+    }
     if (!(other instanceof Compound)) {
       return false;
     }
     if (this.op !== other.op) {
       return false;
     }
-    if (this.args.length !== other.args.length) return false;
-    for (let i = 0; i < this.args.length; i++) {
-      const a = this.args[i];
-      const b = other.args[i];
+    if (this._args.length !== other._args.length) return false;
+    for (let i = 0; i < this._args.length; i++) {
+      const a = this._args[i];
+      const b = other._args[i];
       if (!a.equals(b)) {
         return false;
       }
@@ -6693,6 +6732,12 @@ class ParenthesizedExpression extends Compound {
   constructor(expression: AlgebraicExpression) {
     super(core.paren, [expression]);
   }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const arg = callback(this.innerExpression);
+    return new ParenthesizedExpression(arg);
+  }
   equals(other: AlgebraicExpression): boolean {
     if (other instanceof ParenthesizedExpression) {
       return this.innerExpression.equals(other.innerExpression);
@@ -6701,7 +6746,7 @@ class ParenthesizedExpression extends Compound {
     }
   }
   get innerExpression() {
-    return this.args[0];
+    return this._args[0];
   }
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.parenthesizedExpression(this);
@@ -6806,6 +6851,12 @@ class Sum extends AlgebraicOp<core.sum> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.sum(this);
   }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const args = this._args.map((x) => callback(x));
+    return new Sum(args);
+  }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.sum(this);
   }
@@ -6833,13 +6884,19 @@ function sum(args: AlgebraicExpression[]) {
  * If true, claims that `u` is a {@link Sum|sum expression}.
  */
 function isSum(u: AlgebraicExpression): u is Sum {
-  return !$isNothing(u) && (u.op === core.sum);
+  return !$isNothing(u) && (u._op === core.sum);
 }
 
 /** An algebraic expression corresponding to an n-ary product. */
 class Product extends AlgebraicOp<core.product> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.product(this);
+  }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const args = this._args.map((x) => callback(x));
+    return new Product(args);
   }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.product(this);
@@ -6884,13 +6941,20 @@ function product(args: AlgebraicExpression[]) {
 
 /** Returns true if the given algebraic expression is a product, otherwise, false. */
 function isProduct(u: AlgebraicExpression): u is Product {
-  return !$isNothing(u) && (u.op === core.product);
+  return !$isNothing(u) && (u._op === core.product);
 }
 
 /** A node corresponding to a quotient. */
 class Quotient extends AlgebraicOp<core.quotient> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.quotient(this);
+  }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const left = callback(this.dividend);
+    const right = callback(this.divisor);
+    return new Quotient(left, right);
   }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.quotient(this);
@@ -6947,13 +7011,18 @@ function quotient(dividend: AlgebraicExpression, divisor: AlgebraicExpression) {
 
 /** Returns true if `u` is a Quotient, false otherwise. */
 function isQuotient(u: AlgebraicExpression): u is Quotient {
-  return !$isNothing(u) && (u.op === core.quotient);
+  return !$isNothing(u) && (u._op === core.quotient);
 }
 
 /** A node corresponding to a fraction. Fractions are defined as a pair of integers `[a,b]`, where `b ≠ 0`. */
 class Fraction extends AlgebraicOp<core.fraction> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.fraction(this);
+  }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    return this;
   }
   toFrac() {
     return this;
@@ -7132,7 +7201,7 @@ class Fraction extends AlgebraicOp<core.fraction> {
 
 /** Returns true if `u` is a Fraction, false otherwise.. */
 function isFrac(u: AlgebraicExpression): u is Fraction {
-  return !$isNothing(u) && (u.op === core.fraction);
+  return !$isNothing(u) && (u._op === core.fraction);
 }
 
 /** Returns a new Fraction. */
@@ -7298,7 +7367,7 @@ function simplify_RNE(expression: AlgebraicExpression) {
       } else {
         return u;
       }
-    } else if (u.numberOfOperands === 1) {
+    } else if (u._arity === 1) {
       const v = f(u.operand(1));
       if (isUndefined(v)) {
         return Undefined();
@@ -7307,7 +7376,7 @@ function simplify_RNE(expression: AlgebraicExpression) {
       } else if (isDifference(u)) {
         return evalProduct(int(-1), v);
       }
-    } else if (u.numberOfOperands === 2) {
+    } else if (u._arity === 2) {
       if (isSum(u) || isProduct(u) || isDifference(u) || isQuotient(u)) {
         const v = f(u.operand(1));
         if (isUndefined(v)) {
@@ -7349,6 +7418,13 @@ function simplify_RNE(expression: AlgebraicExpression) {
 class Power extends AlgebraicOp<core.power> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.power(this);
+  }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const base = callback(this.base);
+    const exponent = callback(this.exponent);
+    return new Power(base, exponent);
   }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.power(this);
@@ -7399,11 +7475,18 @@ function power(base: AlgebraicExpression, exponent: AlgebraicExpression) {
 
 /** Returns true if `u` is a Power expression. */
 function isPower(u: AlgebraicExpression): u is Power {
-  return !$isNothing(u) && (u.op === core.power);
+  return !$isNothing(u) && (u._op === core.power);
 }
 
 /** A node corresponding to a difference. */
 class Difference extends AlgebraicOp<core.difference> {
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const left = callback(this.left);
+    const right = callback(this.right);
+    return new Difference(left, right);
+  }
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.difference(this);
   }
@@ -7461,7 +7544,7 @@ function difference(a: AlgebraicExpression, b: AlgebraicExpression) {
 
 /** Returns true if `u` is difference, false otherwise. */
 function isDifference(u: AlgebraicExpression): u is Difference {
-  return !$isNothing(u) && (u.op === core.difference);
+  return !$isNothing(u) && (u._op === core.difference);
 }
 
 /** Returns the provided algebraic expression `u`, negated. */
@@ -7473,6 +7556,12 @@ function negate(u: AlgebraicExpression) {
 class Factorial extends AlgebraicOp<core.factorial> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.factorial(this);
+  }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const out = callback(this.arg);
+    return new Factorial(out);
   }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.factorial(this);
@@ -7509,13 +7598,19 @@ function factorial(of: AlgebraicExpression) {
 
 /** Returns true if the expression `u` is a factorial, false otherwise. */
 function isFactorial(u: AlgebraicExpression): u is Factorial {
-  return !$isNothing(u) && (u.op === core.factorial);
+  return !$isNothing(u) && (u._op === core.factorial);
 }
 
 /** A node corresponding to any function that takes arguments of type algebraic expression. */
 class AlgebraicFn extends Compound {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.algebraicFn(this);
+  }
+  argmap(
+    callback: (x: AlgebraicExpression) => AlgebraicExpression,
+  ): AlgebraicExpression {
+    const out = this.args.map((x) => callback(x));
+    return new AlgebraicFn(this.op, out);
   }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.algebraicFn(this);
@@ -7581,7 +7676,7 @@ function subex(expression: AlgebraicExpression) {
       const s = u.toString();
       if (!set.has(s)) {
         out.push(u);
-        u.args.forEach((x) => f(x));
+        u._args.forEach((x) => f(x));
         set.add(s);
       }
       return null;
@@ -7601,7 +7696,7 @@ function freeof(expression: AlgebraicExpression, variable: Sym | string) {
       return true;
     } else {
       let i = 1;
-      while (i <= u.numberOfOperands) {
+      while (i <= u._arity) {
         const x = f(u.operand(i));
         if (!x) {
           return false;
@@ -7641,9 +7736,9 @@ function isConst(
   u: AlgebraicExpression,
 ): u is Int | Fraction | Constant<number> {
   return (
-    !$isNothing(u) && ((u.op === core.int) ||
-      (u.op === core.fraction) ||
-      (u.op === core.constant)) &&
+    !$isNothing(u) && ((u._op === core.int) ||
+      (u._op === core.fraction) ||
+      (u._op === core.constant)) &&
     (
       !isUndefined(u)
     )
@@ -7778,8 +7873,8 @@ function precedes(
     if (!(u.last().equals(v.last()))) {
       return order(u.last(), v.last());
     }
-    const m = u.numberOfOperands;
-    const n = v.numberOfOperands;
+    const m = u._arity;
+    const n = v._arity;
     const k = min(n, m) - 1;
     if (1 <= k) {
       for (let j = 0; j <= k; j++) {
@@ -7830,8 +7925,8 @@ function precedes(
         return order(uOp1, uOp2);
       }
     }
-    const m = u.numberOfOperands;
-    const n = v.numberOfOperands;
+    const m = u._arity;
+    const n = v._arity;
     const k = min(n, m) - 1;
     if (1 <= k) {
       for (let j = 0; j <= k - 1; j++) {
@@ -7958,9 +8053,9 @@ function argMap(
   F: (x: AlgebraicExpression) => AlgebraicExpression,
   expression: AlgebraicExpression,
 ) {
-  const out = expression.args.map(F);
+  const out = expression._args.map(F);
   const op = expression.copy();
-  op.args = out;
+  op._args = out;
   return op;
 }
 
@@ -8131,7 +8226,7 @@ function simplify(expression: AlgebraicExpression) {
           return merge_sums(u1.args, [u2]);
         }
         else {
-          return merge_sums([u1], u2.args);
+          return merge_sums([u1], u2._args);
         }
       }
       else {
@@ -8297,7 +8392,7 @@ function simplify(expression: AlgebraicExpression) {
          * __SPRDREC-2.3__. `u2` is a product and `u1` is not a product
          */
         else {
-          return merge_products([u1], u2.args);
+          return merge_products([u1], u2._args);
         }
       }
 
@@ -8402,7 +8497,7 @@ function simplify(expression: AlgebraicExpression) {
       if (isProduct(v)) {
         const args: AlgebraicExpression[] = [];
 
-        for (let i = 0; i < v.numberOfOperands; i++) {
+        for (let i = 0; i < v._arity; i++) {
           const r_i = simplify_integer_power(v.args[i], n);
           args.push(r_i);
         }
@@ -8524,7 +8619,7 @@ function isMonomial1(expression: AlgebraicExpression, variable: string | Sym) {
         return true;
       }
     } else if (isProduct(u)) {
-      const has_two_operands = u.numberOfOperands === 2;
+      const has_two_operands = u._arity === 2;
       const operand1_is_monomial = monomial_sv(u.operand(1));
       const operand2_is_monomial = monomial_sv(u.operand(2));
       return (
@@ -13034,6 +13129,26 @@ export function engine(source: string) {
       }
     },
   };
+}
+
+function autoSimplify(u: AlgebraicExpression) {
+  const simplifyRational = (x: Fraction) => {
+    return x;
+  };
+  const $ = (x: AlgebraicExpression): AlgebraicExpression => {
+    if (isAtom(x)) {
+      if (isFrac(x)) {
+        return simplifyRational(x);
+      } else {
+        return x;
+      }
+    } else {
+      const v = x.argmap($);
+      const w = v;
+      return w;
+    }
+  };
+  return $(u);
 }
 
 type Result = {

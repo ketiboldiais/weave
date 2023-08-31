@@ -140,7 +140,6 @@
 		border-collapse: collapse;
 		width: fit-content;
 		margin: 0 auto;
-		font-size: 0.95rem;
 
 		thead {
 			border-bottom: solid thin $ash;
@@ -148,6 +147,9 @@
 
 		tr td:not(:first-child) {
 			border-left: solid thin $ash;
+		}
+		tr:not(:last-child) {
+			border-bottom: solid thin $ash;
 		}
 
 		td {

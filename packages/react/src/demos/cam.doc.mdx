@@ -1,0 +1,45 @@
+# Computer Algebra Module
+This is the documentation page for _Loom_’s CAM (Computer Algebra Module) package. CAM implements various algorithms related to symbolic computation.
+
+## Types
+All abstract data types in CAM are instances of the abstract class _AlgebraicExpression_.
+
+### AlgebraicExpression
+An _AlgebraicExpression_ is either an instance of _Atom_ or an instance of _Compound_. All _AlgebraicExpressions_ have the following properties and methods.
+
+#### Properties
+The following properties are defined on all _AlgebraicExpressions_.
+
+##### _op __readonly string__
+A string literal corresponding to the expression’s operator.
+
+##### _arity __readonly number__
+The number of operands comprising the expression. _Atoms_ always have an arity of 0.
+
+##### _args __AlgebraicExpression[ ]__  
+The algebraic expression’s array of operands. This is a computed property – _Atoms_ always return an empty array of operands, and setting an _Atom_’s `_args` property has no effect.
+
+#### Methods 
+The following methods are defined on all _AlgebraicExpressions_.
+
+##### _AlgebraicExpression_.equals(__other__)
+
+:::tbl
+| Parameters                     | Returns |
+| ------------------------------ | ------- |
+| ${other:}$ AlgebraicExpression | boolean |
+:::
+
+Returns true if the _AlgebraicExpression_ is __structurally equal__ to the ${other}$ _AlgebraicExpression_. That is, given _AlgebraicExpressions_ ${u}$ and ${v,}$ the relation ${u.\texttt{equals}(v)}$ reduces to _true_ if, and only if, ${u}$ and ${v}$ have the same abstract syntax tree. Structural equality is defined as follows: 
+
+| _callee_                  | _arg_                 | Test                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Int_                     | _AlgebraicExpression_ | If _arg_ is a _ParenthesizedExpression_, returns _true_ only if _callee_ is structurally equal to _arg_’s _innerExpression_. If _arg_ is not an _Int_, false. Otherwise, true only if the _n_ property of _callee_ is equal to the _n_ property of _arg_.                                                                                                                                                                                                                                                                                             |
+| _Real_                    | _AlgebraicExpression_ | If _arg_ is a _ParenthesizedExpression_, returns _true_ only if _callee_ is structurally equal to _arg_’s _innerExpression_.  If _arg_ is not a _Real_, false. Othewise, true only if the _n_ property of _callee_ equals the _n_ property of _arg_.                                                                                                                                                                                                                                                                                                  |
+| _Sym_                     | _AlgebraicExpression_ | If _arg_ is a _ParenthesizedExpression_, returns _true_ only if _callee_ is structurally equal to _arg_’s _innerExpression_. If _arg_ is not a _Sym_, false. Otherwise, true only if the _s_ property of _callee_ equals the _s_ property of _arg_.                                                                                                                                                                                                                                                                                                   |
+| _Constant_                | _AlgebraicExpression_ | If _arg_ is a _ParenthesizedExpression_, returns _true_ only if _callee_ is structurally equal to _arg_’s _innerExpression_.  If _arg_ is not a _Constant_, false. Otherwise, true only if the _value_ property of _callee_ equals the _value_ property of _arg_.                                                                                                                                                                                                                                                                                     |
+| _Compound_                | _AlgebraicExpression_ | All _Compounds_ follow the same test: (1) If _arg_ is not a compound, returns false. (2) If _arg_ is an instance of _ParenthesizedExpression_, return true only if _callee_ is structurally equal to _arg_’s `innerExpression` property. (3) If the number of operands of _callee_ is not equal to the number of operands of _arg_, returns false. (4) If the _callee_’s `_op` property is not equal to the _arg_’s `_op` property, returns false. (5) Return true only if every operand of _callee_ is structurally equal to every operand of _arg_. |
+| _ParenthesizedExpression_ | _AlgebraicExpression_ | Returns true only if _callee_’s inner expression is equal to _arg_. If _arg_ is a _ParenthesizedExpression_, returns true only if _callee_’s inner expression is equal to _arg_’s inner expression. Otherwise, returns false.                                                                                                                                                                                                                                                                                                                         |
+
+_ParenthesizedExpressions_ deviate slightly from the other rules. This is purely because parentheses are superfluous from a symbolic computation perspective – they serve purely to aid the reader and writer, much like comments in code.
+

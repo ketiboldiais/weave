@@ -5,6 +5,7 @@ import VECTOR from "./demos/vector.doc.mdx";
 import BG from "./demos/appendix/index.mdx";
 import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
+import CAM from './demos/cam.doc.mdx';
 import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
@@ -34,6 +35,7 @@ type LinkEntry = {
 
 export const docLinks: LinkEntry[] = [
   { title: "Intro", path: "/", visible: true, page: <MAIN /> },
+  { title: "Computer Algebra", path: "/cam", visible: true, page: <CAM/> },
   { title: "Vector", path: "/vector", visible: true, page: <VECTOR /> },
   { title: "Twine", path: "/twine", visible: true, page: <TWINE /> },
   { title: "Appendix", path: "/appendix", visible: true, page: <BG /> },
