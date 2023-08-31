@@ -77,7 +77,7 @@ function Page() {
         <BaseComponents>
           <article className={app.page}>
             <Outlet />
-            <footer>&copy; 2023 Ketib Oldiais</footer>
+            <footer>Ketib Oldiais | &copy; 2023</footer>
           </article>
         </BaseComponents>
       </main>
