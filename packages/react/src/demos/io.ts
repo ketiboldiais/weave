@@ -1626,7 +1626,7 @@ class ZCommand extends PathCommand {
     return `Z`;
   }
 }
-const Z = () => new ZCommand();
+const Z = (): ZCommand => new ZCommand();
 
 class VCommand extends PathCommand {
   readonly type: pc.V;
@@ -1735,29 +1735,24 @@ class ACommand extends PathCommand {
     super(pc.A, vector([x, y, z]));
   }
   rotate(value: number) {
-    const out = this.copy();
-    out.rotation = value;
-    return out;
-  }
-  yRadius(value: number) {
-    const out = this.copy();
-    out.ry = value;
-    return out;
-  }
-  xRadius(value: number) {
-    const out = this.copy();
-    out.rx = value;
+    this.rotation = value;
     return this;
   }
-  swept(value: "clockwise" | "counter-clockwise") {
-    const out = this.copy();
-    out.sweep = value === "clockwise" ? 1 : 0;
-    return out;
+  yRadius(value: number) {
+    this.ry = value;
+    return this;
   }
-  arc(value: "major" | "minor") {
-    const out = this.copy();
-    out.largeArc = value === "major" ? 1 : 0;
-    return out;
+  xRadius(value: number) {
+    this.rx = value;
+    return this;
+  }
+  swept(value: 0 | 1) {
+    this.sweep = value;
+    return this;
+  }
+  arc(value: 1 | 0) {
+    this.largeArc = value;
+    return this;
   }
   copy(): ACommand {
     const out = new ACommand(this.end._x, this.end._y, this.end._z);
@@ -1769,10 +1764,20 @@ class ACommand extends PathCommand {
     return out;
   }
   endPoint(x: number, y: number, z: number = 1): ACommand {
-    return new ACommand(x, y, z);
+    this.end = vector([x, y, z]);
+    return this;
   }
   toString() {
-    return `A${this.rx},${this.ry},${this.rotation},${this.largeArc},${this.sweep},${this.end._x},${this.end._y}`;
+    const out = [
+      this.rx,
+      this.ry,
+      this.rotation,
+      this.largeArc,
+      this.sweep,
+      this.end._x,
+      this.end._y,
+    ].join(",");
+    return "A" + out;
   }
 }
 
@@ -1866,8 +1871,13 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
               .ctrlPoint2(X(c2._x), Y(c2._y), c2._z);
           }
           case pc.A: {
-            p = p as ACommand;
-            return A(x, y, z);
+            const j = p as ACommand;
+            return A(x, y, z)
+              .xRadius(j.rx)
+              .yRadius(j.ry)
+              .rotate(j.rotation)
+              .arc(j.largeArc)
+              .swept(j.sweep);
           }
           default:
             return p;
@@ -2120,21 +2130,15 @@ export class Path extends PATH {
 
   /** @param end - The arc’s end point. @param dimensions - Either a pair `(w,h)` where `w` is the width of the arc, and `h` is the height of the arc, or a number. If a number is passed, draws an arc where `w = h` (a circular arc). Defaults to `[1,1]`. @param rotation - The arc’s rotation along its x-axis. If a string is passed, Weave’s parsers will attempt to parse an angle, defaulting to 0 in failure. If a number is passed, assumes the angle unit is in radians. Defaults to `0`. @param arc - Either `minor` (the smaller half of the arc, corresponding to a large arc flag of `0`) or `major` (the larger half of the arc, corresponding to a large arc flag of `1`). Defaults to `minor`. @param sweep - Either `clockwise` (thus drawing the arc clockwise, a sweep flag of 1) or `counter-clockwise` ( thus drawing the arc counter-clockwise, a sweep flag of 0). Defaults to `clockwise`. */
   A(
-    end: number[],
-    dimensions: number[] | number = [1, 1],
-    arc: "minor" | "major" = "minor",
-    rotation: number = 0,
-    sweep: "clockwise" | "counter-clockwise" = "clockwise",
+    end: [number, number],
+    dimensions: [number, number] = [1, 1],
+    rotation: number,
+    arc: 0 | 1,
+    sweep: 1 | 0,
   ) {
-    const [RX, RY] = Array.isArray(dimensions)
-      ? dimensions
-      : [dimensions, dimensions];
-    const x = $isNothing(end[0]) ? end[0] : 0;
-    const y = $isNothing(end[1]) ? end[1] : 0;
-    const z = $isNothing(end[2]) ? end[2] : 0;
-    const a = A(x, y, z)
-      .xRadius(RX)
-      .yRadius(RY)
+    const a = A(end[0], end[1], 1)
+      .xRadius(dimensions[0])
+      .yRadius(dimensions[1])
       .rotate(rotation)
       .arc(arc)
       .swept(sweep);
@@ -2159,6 +2163,9 @@ export class Path extends PATH {
   /** Appends an `L` command to this path. */
   L(x: number, y: number, z: number = 1) {
     return this.push(L(x, y, z));
+  }
+  Z() {
+    return this.push(Z());
   }
 }
 
@@ -3001,6 +3008,39 @@ export function histogram(dataset: number[]) {
   return new Histogram(dataset);
 }
 
+class PieChart2D extends CONTEXT {
+  _data: Map<(string | number), number> = new Map();
+  constructor(data: Record<string | number, number>) {
+    super();
+    Object.entries(data).forEach(([key, value]) => {
+      this._data.set(key, value);
+    });
+  }
+  _radius: number = 20;
+  radius(r: number) {
+    this._radius = r;
+    return this;
+  }
+  end() {
+    const circ = circle(this._radius).stroke(this._stroke);
+    this.and(circ);
+    const a = polarize2D(this._radius, toRadians(-45));
+    const p = path(0, 0)
+      .L(0, 10)
+      .A([a._x, a._y], [1, 1], 1, 1, 0);
+    this.and(p.stroke("tomato"));
+    return this.fit();
+  }
+}
+
+function polarize2D(radius: number, angle: number) {
+  return new Vector([radius * cos(angle), radius * sin(angle), 1]);
+}
+
+export function pieChart2D(data: Record<(string | number), number>) {
+  return new PieChart2D(data);
+}
+
 // ================================================================ SCATTER PLOT
 
 const SCATTER_PLOT = contextual(colorable(BASE));
@@ -3028,10 +3068,6 @@ class ScatterPlot<T = any> extends SCATTER_PLOT {
   _xTickSep: number = 0.5;
   _yTickSep: number = 0.5;
   end() {
-    const xmin = this._domain[0];
-    const xmax = this._domain[1];
-    const ymin = this._range[0];
-    const ymax = this._range[1];
     this._data.forEach((d) => {
       const x = this._x(d);
       const y = this._y(d);
@@ -4569,6 +4605,7 @@ export type Parent =
   | Tree
   | BarPlot
   | PolarPlot2D
+  | PieChart2D
   | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;

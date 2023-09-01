@@ -15,6 +15,7 @@ import {
   Line,
   Parent,
   Path,
+  pieChart2D,
   plot2D,
   polar2D,
   Quad,
@@ -61,6 +62,17 @@ export const Tex = ({ d, style, block }: TexProps) => {
       dangerouslySetInnerHTML={state}
     />
   );
+};
+
+export const PieChart1 = () => {
+  const data = pieChart2D({
+    compliance: 10,
+    marketing: 12,
+    accounting: 3,
+    sales: 50,
+    engineering: 25,
+  }).stroke('white').end();
+  return <Figure of={data}/>
 };
 
 export const ForceGraph1 = () => {
