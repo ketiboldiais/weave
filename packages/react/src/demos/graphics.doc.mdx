@@ -1,0 +1,21 @@
+# Graphics
+
+This is the documentation page for the various graphics submodules comprising
+_Loom_.
+
+## PathCommands
+
+Loom operates by applying matrix transformations to SVG path commands. These
+commands are represented by the abstract data type _PathCommand_, the atomic
+data type for all graphics entities. There are eight subtypes of _PathCommand_:
+
+| Type       | Corresponding SVG Command              |
+| ---------- | -------------------------------------- |
+| _MCommand_ | M (move-to) command.                   |
+| _LCommand_ | L (line-to) command.                   |
+| _HCommand_ | H (horizontal-line-to) command.        |
+| _VCommand_ | V (vertical-line-to) command.          |
+| _QCommand_ | Q (quadratic-bezier-curve-to) command. |
+| _CCommand_ | Q (cubic-bezier-curve-to) command.     |
+| _ACommand_ | A (arc-to) command.                    |
+| _ZCommand_ | Z (close-path) command.                |
