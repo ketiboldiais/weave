@@ -866,9 +866,9 @@ class Vector<T extends number[] = number[]> {
   }
 
   vxm(matrix: Matrix) {
-    if (this.length !== matrix.C) return this;
+    if (this.length !== matrix._C) return this;
     const vector = new Vector([] as number[]);
-    for (let i = 1; i <= matrix.R; i++) {
+    for (let i = 1; i <= matrix._R; i++) {
       const v = matrix.row(i);
       if (v === null) return this;
       const d = this.dot(v);
@@ -1298,45 +1298,47 @@ const $isVector = (value: any): value is Vector => (value instanceof Vector);
 // ============================================================ MATRIX DATA TYPE
 
 class Matrix {
-  vectors: Vector[];
-  R: number;
-  C: number;
+  _vectors: Vector[];
+  _R: number;
+  _C: number;
   constructor(vectors: Vector[], rows: number, cols: number) {
-    this.vectors = vectors;
-    this.R = rows;
-    this.C = cols;
+    this._vectors = vectors;
+    this._R = rows;
+    this._C = cols;
   }
   /** Returns true if this matrix is a square matrix. */
-  get square() {
-    return this.C === this.R;
+  get _square() {
+    return this._C === this._R;
   }
 
   /** Returns a copy of this matrix. */
   copy() {
-    const vs = this.vectors.map((v) => v.copy());
-    return new Matrix(vs, this.R, this.C);
+    const vs = this._vectors.map((v) => v.copy());
+    return new Matrix(vs, this._R, this._C);
   }
 
   /** Returns the vector element at the given index (indices start at 1). */
   element(index: number) {
-    const out = this.vectors[index - 1];
+    const out = this._vectors[index - 1];
     return out !== undefined ? out : null;
   }
+  
   /** Returns the vector element at the given index (indices start at 1). */
   row(index: number) {
     return this.element(index);
   }
+  
   /** Returns a column vector comprising all the vector elements at the given column. */
   column(index: number) {
-    if (index > this.C) {
+    if (index > this._C) {
       const out: number[] = [];
-      for (let i = 0; i < this.C; i++) {
+      for (let i = 0; i < this._C; i++) {
         out.push(0);
       }
       return vector(out);
     }
     const out: number[] = [];
-    this.vectors.forEach((vector) => {
+    this._vectors.forEach((vector) => {
       vector._elements.forEach((n, i) => {
         if (i === index) out.push(n);
       });
@@ -1354,16 +1356,16 @@ class Matrix {
 
   /** Returns the string form of matrix. */
   toString() {
-    const out = this.vectors.map((v) => v.toString()).join(",");
+    const out = this._vectors.map((v) => v.toString()).join(",");
     return `[${out}]`;
   }
 
   /** Sets the element at the given row index and column index. The row and column indices are expected to begin at 1. If no element exists at the provided indices, no change is done. */
   set(row: number, column: number, value: number) {
-    if (this.vectors[row - 1] === undefined) return this;
-    if (this.vectors[row - 1]._elements[column - 1] === undefined) return this;
+    if (this._vectors[row - 1] === undefined) return this;
+    if (this._vectors[row - 1]._elements[column - 1] === undefined) return this;
     const copy = this.copy();
-    copy.vectors[row - 1]._elements[column - 1] = value;
+    copy._vectors[row - 1]._elements[column - 1] = value;
     return copy;
   }
 
@@ -1371,8 +1373,8 @@ class Matrix {
   forEach(
     callback: (element: number, rowIndex: number, columnIndex: number) => void,
   ) {
-    for (let i = 1; i <= this.R; i++) {
-      for (let j = 1; j <= this.C; j++) {
+    for (let i = 1; i <= this._R; i++) {
+      for (let j = 1; j <= this._C; j++) {
         callback(this.n(i, j), i, j);
       }
     }
@@ -1381,8 +1383,9 @@ class Matrix {
 
   /** Returns true if this matrix and the the provided matrix have the same number of rows and the same number of columns. False otherwise. */
   congruent(matrix: Matrix) {
-    return this.R === matrix.R && this.C === matrix.C;
+    return this._R === matrix._R && this._C === matrix._C;
   }
+
   static fill(rows: number, columns: number, arg: number) {
     const vectors: Vector[] = [];
     for (let i = 0; i < rows; i++) {
@@ -1399,6 +1402,7 @@ class Matrix {
     const out = nums.map((ns) => vector(ns));
     return matrix(out);
   }
+
   static of(
     rows: number,
     columns: number,
@@ -1417,18 +1421,18 @@ class Matrix {
     op: (a: number, b: number) => number,
   ) {
     const other = $isNumber(arg)
-      ? Matrix.fill(this.R, this.C, arg)
+      ? Matrix.fill(this._R, this._C, arg)
       : $isArray(arg)
       ? Matrix.from(arg)
       : arg;
-    if (this.R !== other.R || this.C !== other.C) return this;
+    if (this._R !== other._R || this._C !== other._C) return this;
     const vectors: Vector[] = [];
-    for (let i = 0; i < this.R; i++) {
+    for (let i = 0; i < this._R; i++) {
       const nums: number[] = [];
-      const row = this.vectors[i]._elements;
+      const row = this._vectors[i]._elements;
       for (let j = 0; j < row.length; j++) {
         const a = row[j];
-        const b = other.vectors[i]._elements[j];
+        const b = other._vectors[i]._elements[j];
         nums.push(op(a, b));
       }
       vectors.push(vector(nums));
@@ -1459,9 +1463,9 @@ class Matrix {
   /** Returns the transpose of this matrix. */
   transpose() {
     const copy: (number[])[] = [];
-    for (let i = 0; i < this.R; ++i) {
-      const vector = this.vectors[i];
-      for (let j = 0; j < this.C; ++j) {
+    for (let i = 0; i < this._R; ++i) {
+      const vector = this._vectors[i];
+      for (let j = 0; j < this._C; ++j) {
         const element = vector._elements[j];
         if ($isNothing(element)) continue;
         if ($isNothing(copy[j])) {
@@ -1473,38 +1477,23 @@ class Matrix {
     return matrix(copy.map((c) => vector(c)));
   }
 
-  /** Returns an array of generic K, where K is the result of applying the callback function on each vector of this matrix. */
-  vmap<K>(
-    callback: (vector: Vector, rowIndex: number, matrix: Matrix) => K,
-  ): K[] {
-    const out: K[] = [];
-    const mtx = this.copy();
-    for (let i = 0; i < this.R; i++) {
-      const v = this.vectors[i];
-      const rowIndex = i + 1;
-      const k = callback(v, rowIndex, mtx);
-      out.push(k);
-    }
-    return out;
-  }
-
   /** Returns the matrix product of this matrix and the provided matrix. */
   mul(arg: number | Matrix | (number[])[]) {
-    const Ar = this.R;
-    const Ac = this.C;
-    if (arg instanceof Matrix && Ac !== arg.R) {
+    const Ar = this._R;
+    const Ac = this._C;
+    if (arg instanceof Matrix && Ac !== arg._R) {
       return this;
     }
     const B = Matrix.of(Ar, Ac, arg);
-    const Bc = B.C;
+    const Bc = B._C;
     const result: (number[])[] = [];
     for (let i = 0; i < Ar; i++) {
       result[i] = [];
       for (let j = 0; j < Bc; j++) {
         let sum = 0;
         for (let k = 0; k < Ac; k++) {
-          const a = this.vectors[i]._elements[k];
-          const b = B.vectors[k]._elements[j];
+          const a = this._vectors[i]._elements[k];
+          const b = B._vectors[k]._elements[j];
           sum += a * b;
         }
         result[i][j] = sum;
@@ -1526,7 +1515,7 @@ class Matrix {
   toLatex() {
     const open = latex.block("begin{bmatrix}");
     let body = "";
-    const vectors = this.vectors;
+    const vectors = this._vectors;
     const maxRow = vectors.length - 1;
     vectors.forEach((d, i) => {
       const maxCol = d._elements.length - 1;
@@ -9780,7 +9769,7 @@ function truthy(x: Primitive) {
   if (x === null || x === undefined) return false;
   if (x instanceof BigRat || x instanceof Fraction) return !x.isZero;
   if (x instanceof Vector) return x.length !== 0;
-  if (x instanceof Matrix) return x.R !== 0 && x.C !== 0;
+  if (x instanceof Matrix) return x._R !== 0 && x._C !== 0;
   return (
     x !== 0 &&
     !Number.isNaN(x) &&
