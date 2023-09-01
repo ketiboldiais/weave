@@ -1322,12 +1322,12 @@ class Matrix {
     const out = this._vectors[index - 1];
     return out !== undefined ? out : null;
   }
-  
+
   /** Returns the vector element at the given index (indices start at 1). */
   row(index: number) {
     return this.element(index);
   }
-  
+
   /** Returns a column vector comprising all the vector elements at the given column. */
   column(index: number) {
     if (index > this._C) {
@@ -2492,6 +2492,31 @@ export class PolarPlot2D extends CONTEXT {
 }
 export function polar2D(f: string) {
   return new PolarPlot2D(f);
+}
+
+export class Plane extends CONTEXT {
+  constructor(domain: [number, number], range: [number, number]) {
+    super();
+    this._domain = domain;
+    this._range = range;
+  }
+  end() {
+    return this.fit();
+  }
+  point(x: number, y: number) {
+    this.and(circle(0.5).at(x, y).fill(this._fill).stroke(this._stroke));
+    return this;
+  }
+  line(start: [number, number], end: [number, number]) {
+    this.and(line(start, end).stroke(this._stroke));
+    return this;
+  }
+}
+export function plane(
+  domain: [number, number] = [-10, 10],
+  range: [number, number] = [-10, 10],
+) {
+  return new Plane(domain, range);
 }
 
 // ============================================================ 2D Function Plot
@@ -4595,6 +4620,7 @@ export type Parent =
   | BarPlot
   | PolarPlot2D
   | PieChart2D
+  | Plane
   | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;

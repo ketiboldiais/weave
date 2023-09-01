@@ -5,6 +5,7 @@ import {
   Area2D,
   barPlot,
   Circle,
+  circle,
   dotPlot,
   engine,
   forceGraph,
@@ -13,9 +14,11 @@ import {
   histogram,
   leaf,
   Line,
+  line,
   Parent,
   Path,
   pieChart2D,
+  plane,
   plot2D,
   polar2D,
   Quad,
@@ -71,8 +74,8 @@ export const PieChart1 = () => {
     accounting: 3,
     sales: 50,
     engineering: 25,
-  }).stroke('white').end();
-  return <Figure of={data}/>
+  }).stroke("white").end();
+  return <Figure of={data} />;
 };
 
 export const ForceGraph1 = () => {
