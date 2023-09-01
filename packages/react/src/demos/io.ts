@@ -3153,71 +3153,6 @@ export function scatterPlot<T>(
 
 // ======================================================================= GROUP
 
-const GROUP = colorable(BASE);
-
-export class Group extends GROUP {
-  children: Shape[];
-  end() {
-    this.children = this.children.map((x) => x.end());
-    return this;
-  }
-  constructor(children: Shape[]) {
-    super();
-    this.children = children;
-  }
-  private tmap(op: (x: Shape) => Shape): Group {
-    this.children = this.children.map((x) => {
-      const out = op(x);
-      return out;
-    });
-    return this;
-  }
-  rotateZ(angle: number): Group {
-    return this.tmap((x) => x.rotateZ(angle));
-  }
-  rotateY(angle: number): Group {
-    return this.tmap((x) => x.rotateY(angle));
-  }
-  rotateX(angle: number): Group {
-    return this.tmap((x) => x.rotateX(angle));
-  }
-  scale(x: number, y: number): Group {
-    return this.tmap((p) => p.scale(x, y));
-  }
-  translateZ(z: number): Group {
-    return this.tmap((p) => p.translateZ(z));
-  }
-  translateY(y: number): Group {
-    return this.tmap((p) => p.translateY(y));
-  }
-  translateX(x: number): Group {
-    return this.tmap((p) => p.translateX(x));
-  }
-  shearZ(dx: number, dy: number): Group {
-    return this.tmap((p) => p.shearZ(dx, dy));
-  }
-  shearX(dx: number, dy: number): Group {
-    return this.tmap((p) => p.shearX(dx, dy));
-  }
-  translate(x: number, y: number): Group {
-    return this.tmap((p) => p.translate(x, y));
-  }
-  interpolate(
-    domain: [number, number],
-    range: [number, number],
-    dimensions: [number, number],
-  ): Group {
-    return this.tmap((p) => p.interpolate(domain, range, dimensions));
-  }
-  toString(): string {
-    return this.children.map((s) => s.toString()).join("");
-  }
-}
-
-export function group(children: Shape[]) {
-  return new Group(children);
-}
-
 // ================================================================== CONTEXTUAL
 
 interface Contextual {
@@ -4623,7 +4558,7 @@ export type Parent =
   | Plane
   | DotPlot;
 
-export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;
+export type Shape = Path | Line | Circle | Text | Quad | Area2D;
 
 // ========================================================= end graphics module
 

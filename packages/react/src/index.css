@@ -8,6 +8,9 @@
 code {
 	font-family: 'Fira Code';
 }
+.katex .texttt {
+	font-family: 'Fira Code';
+}
 
 * {
 	box-sizing: border-box;

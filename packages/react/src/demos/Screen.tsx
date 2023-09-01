@@ -10,7 +10,6 @@ import {
   engine,
   forceGraph,
   graph,
-  Group,
   histogram,
   leaf,
   Line,
@@ -335,20 +334,6 @@ export const Figure = ({ of }: { of: Parent }) => {
 
   const par = "xMidYMid meet";
 
-  const GROUP = ({ of }: { of: Group }) => {
-    return (
-      <g
-        fill={of._fill}
-        stroke={of._stroke}
-        strokeWidth={of._strokeWidth}
-        strokeDasharray={of._dash}
-        opacity={of._opacity}
-      >
-        <SHAPES of={of.children} />
-      </g>
-    );
-  };
-
   const AREA = ({ of }: { of: Area2D }) => {
     return (
       <path
@@ -446,8 +431,6 @@ export const Figure = ({ of }: { of: Parent }) => {
         return <CIRCLE of={d} />;
       } else if (d instanceof Path) {
         return <PATH of={d} />;
-      } else if (d instanceof Group) {
-        return <GROUP of={d} />;
       } else if (d instanceof Text) {
         return <TEXT of={d} />;
       } else if (d instanceof Quad) {
