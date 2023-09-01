@@ -25,10 +25,10 @@ The following properties are defined on all _Matrix_ instances.
 ### _Matrix_._vectors __Vector[ ]__
 The array of vectors comprising the _Matrix_.
 
-### _Matrix_._R __number__
+### _Matrix_._R __readonly number__
 The number of rows comprising the _Matrix_.
 
-### _Matrix_._C __number__
+### _Matrix_._C __readonly number__
 The number of columns comprising the _Matrix_.
 
 ### _Matrix_._square __readonly boolean__
@@ -41,5 +41,7 @@ The following methods are defined on all _Matrix_ instances.
 Returns a copy of the callee _Matrix_.
 
 ### _Matrix_.element(_index_) __Matrix__
-Returns the vector element at the row _index_. Following mathematical convention, row indices start at 1.
+Returns the _Vector_ at row _index_. Following mathematical convention, row indices start at 1.
 
+### _Matrix_.column(_index_) __Vector__
+Returns a vector comprising all the vector elements at the given column.
