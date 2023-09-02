@@ -26,7 +26,7 @@ import {
   subtree,
   Text,
   tree,
-} from "./io.js";
+} from "../loom/index.js";
 import katex from "katex";
 type Html = { __html: string };
 const html = (__html: string): Html => ({ __html });

@@ -6757,21 +6757,20 @@ abstract class Compound extends AlgebraicExpression {
   equals(other: AlgebraicExpression): boolean {
     if (!(other instanceof Compound)) {
       return false;
-    }
-    if (this._op !== other._op) {
+    } else if (this._op !== other._op) {
       return false;
-    }
-    if (this._args.length !== other._args.length) {
+    } else if (this._args.length !== other._args.length) {
       return false;
-    }
-    for (let i = 0; i < this._args.length; i++) {
-      const a = this._args[i];
-      const b = other._args[i];
-      if (!a.equals(b)) {
-        return false;
+    } else {
+      for (let i = 0; i < this._args.length; i++) {
+        const a = this._args[i];
+        const b = other._args[i];
+        if (!a.equals(b)) {
+          return false;
+        }
       }
+      return true;
     }
-    return true;
   }
 }
 
