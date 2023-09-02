@@ -1,6 +1,10 @@
 @import './colors.scss';
 
 .app {
+	:global .hstack {
+		display: flex;
+	}
+
 	table {
 		border-collapse: collapse;
 		width: fit-content;
@@ -123,6 +127,7 @@
 		max-width: 70%;
 		font-style: normal;
 		margin: 1em auto;
+
 		del {
 			font-style: normal;
 			text-decoration: underline;

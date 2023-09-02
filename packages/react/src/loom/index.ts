@@ -2192,14 +2192,13 @@ export class Circle extends SHAPE {
   }
   // @ts-ignore
   at(x: number, y: number, z: number = 1): Circle {
-    const out = new Circle(this.radius);
     const radius = this.radius;
-    out.commands = [
+    this.commands = [
       M(x, y + radius / 2, z),
       A(x, y - radius / 2),
       A(x, y + radius / 2),
     ];
-    return out;
+    return this;
   }
 }
 
@@ -2494,6 +2493,7 @@ export function polar2D(f: string) {
   return new PolarPlot2D(f);
 }
 
+// ===================================================================== Plane2D
 export class Plane extends CONTEXT {
   constructor(domain: [number, number], range: [number, number]) {
     super();
@@ -2503,14 +2503,6 @@ export class Plane extends CONTEXT {
   end() {
     return this.fit();
   }
-  point(x: number, y: number) {
-    this.and(circle(0.5).at(x, y).fill(this._fill).stroke(this._stroke));
-    return this;
-  }
-  line(start: [number, number], end: [number, number]) {
-    this.and(line(start, end).stroke(this._stroke));
-    return this;
-  }
 }
 export function plane(
   domain: [number, number] = [-10, 10],
@@ -2518,6 +2510,8 @@ export function plane(
 ) {
   return new Plane(domain, range);
 }
+
+
 
 // ============================================================ 2D Function Plot
 
@@ -12032,7 +12026,7 @@ function exp(source: string) {
 }
 
 /** Reduces the given fraction or integer to either a fraction in standard form or an integer.  */
-export function simplifyRationalNumber(u: Fraction | Int): AlgebraicExpression {
+export function simplifyRationalNumber(u: Fraction | Int): Fraction | Int {
   if (isInt(u)) {
     return u;
   } else {

@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
 import { heights } from "./data.heights.js";
 import {
@@ -11,6 +11,7 @@ import {
   forceGraph,
   graph,
   histogram,
+  interpolator,
   leaf,
   Line,
   line,
@@ -25,9 +26,11 @@ import {
   Shape,
   subtree,
   Text,
+  text,
   tree,
 } from "../loom/index.js";
 import katex from "katex";
+import { Slider } from "../ui/index.js";
 type Html = { __html: string };
 const html = (__html: string): Html => ({ __html });
 type TexProps = {
@@ -504,5 +507,37 @@ export const Terminal = (
         <button className={"run-button"} onClick={click}>Run</button>
       </div>
     </div>
+  );
+};
+
+export const M1 = () => {
+  const f = interpolator([0, 100], [-10, 10]);
+  const rf = interpolator([-10, 10], [0, 100]);
+  const [x, setX] = useState(rf(0));
+  const [y, setY] = useState(rf(0));
+  const data = plane([-10, 10], [-10, 10]).and(
+    line([f(x), -10], [f(x), 10]).stroke("lightgrey").dash(6),
+    line([-10, f(y)], [10, f(y)]).stroke("lightgrey").dash(6),
+    circle(0.5).fill("tomato").stroke("white").at(f(x), f(y)),
+    text(
+      `(${f(x).toPrecision(2)}, ${f(y).toPrecision(2)})`,
+    ).at(f(x), f(y)).fontSize(12).anchor("middle").fontColor("white").dy(1),
+  ).end();
+  return (
+    <>
+      <section className={'hstack'}>
+        <label>
+          <Tex d={"x"} />
+        </label>
+        <input type={"range"} onChange={(e) => setX(e.target.valueAsNumber)} />
+      </section>
+      <section className={'hstack'}>
+        <label>
+          <Tex d={"y"} />
+        </label>
+        <input type={"range"} onChange={(e) => setY(e.target.valueAsNumber)} />
+      </section>
+      <Figure of={data} />
+    </>
   );
 };

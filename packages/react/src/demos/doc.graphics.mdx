@@ -1,3 +1,5 @@
+import {M1} from './Screen.tsx';
+
 # Graphics
 This is the documentation page for the various graphics submodules comprising _Loom_.
 
@@ -28,4 +30,6 @@ A third parameter may be passed to the `M` command, corresponding to the ${z}$-c
 const m = M(1,1,1);
 ~~~
 
-Since SVG commands only take two coordinates at most, the ${z}$-coordinate does not appear within the rendered path string. The ${z}$-coordinate is used purely for matrix transformations.
+Since SVG commands only take two coordinates at most, the ${z}$-coordinate does not appear within the rendered path string; the coordinate is used purely for matrix transformations. In the demonstration below, the red point is positioned with a single _MCommand_. Dragging the sliders will adjust the ${x}$ and ${y}$ coordinates respectively.
+
+<M1/>

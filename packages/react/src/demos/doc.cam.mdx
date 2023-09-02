@@ -1,3 +1,4 @@
+
 # Computer Algebra Module
 This is the documentation page for _Loom_’s CAM (Computer Algebra Module) package. CAM implements various algorithms and utility functions related to symbolic and numeric computation.
 
@@ -55,12 +56,16 @@ Returns true if the _AlgebraicExpression_ is __structurally equal__ to the ${oth
 	- If _arg_ is not a _ParenthesizedExpression_, returns false.
 	- Returns true only if the `_innerExpression` property of _ParenthesizedExpression_ is structurally equal to the `innerExpression` of _arg_.
 
+## Utility Functions
+### simplifyRationalNumber(_u_): __Fraction | Int__
+:::tbl
+| Parameters               | Returns           |
+| ------------------------ | ----------------- |
+| ${u:}$ `Fraction \| Int` | `Fraction \| Int` |
+:::
+Given the `Fraction` or `Int` ${u,}$ returns `Fraction` or `Int` in standard form.
 
-
-
-
-
-
-
-
-
+~~~ts
+const x = frac(2,4); // the fraction 2/4
+const y = simplifyRationalNumber(x); // the fraction 1/2
+~~~
