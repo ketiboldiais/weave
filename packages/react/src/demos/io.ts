@@ -3,13 +3,7 @@
 /** Utility method - Logs to the console. */
 const print = console.log;
 
-/**
----
-* A utility method that generates a pseudorandom string.
-* @param length - The max length of the resulting string.
-* @param base - The base from which to draw characters.
----
- */
+/** A utility method that generates a pseudorandom string. @param length - The max length of the resulting string. @param base - The base from which to draw characters. */
 function uid(length: number = 4, base = 36) {
   return Math.random()
     .toString(base)
@@ -6383,11 +6377,6 @@ function relation(left: Expr, op: Token<RelationalOperator>, right: Expr) {
   return new RelationalExpr(left, op, right);
 }
 
-/** Utility method - returns a string wherein the given string or number is surrounded in parentheses. */
-const parend = (s: string | number) => (
-  `(${s})`
-);
-
 /** The `core` enum is an enumeration of constant strings that ensures the core operation symbols are consistent throughought the code base. */
 enum core {
   int = "int",
@@ -6524,9 +6513,6 @@ class Int extends Atom {
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
-    if (other instanceof ParenthesizedExpression) {
-      return this.equals(other.innerExpression);
-    }
     if (!isInt(other)) return false;
     return (other._n === this._n);
   }
@@ -6592,13 +6578,11 @@ class Real extends Atom {
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
-    if (other instanceof ParenthesizedExpression) {
-      return this.equals(other.innerExpression);
-    }
     if (!isReal(other)) {
       return false;
+    } else {
+      return (this._n === other._n);
     }
-    return (this._n === other._n);
   }
   toString(): string {
     return `${this._n}`;
@@ -6639,13 +6623,11 @@ class Sym<X extends string = string> extends Atom {
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
-    if (other instanceof ParenthesizedExpression) {
-      return this.equals(other.innerExpression);
-    }
     if (!isSymbol(other)) {
       return false;
+    } else {
+      return (this._s === other._s);
     }
-    return (this._s === other._s);
   }
   toString(): string {
     return `${this._s}`;
@@ -6682,26 +6664,23 @@ class Constant<
     return true;
   }
   equals(other: AlgebraicExpression): boolean {
-    if (other instanceof ParenthesizedExpression) {
-      return this.equals(other.innerExpression);
-    }
     if (!isConstant(other)) {
       return false;
     } else {
-      return (other.value === this.value);
+      return (other._value === this._value) && (other._c === this._c);
     }
   }
   get _isNegative() {
-    if (this.value === null) {
+    if (this._value === null) {
       return false;
     }
-    return this.value < 0;
+    return this._value < 0;
   }
   get _isPositive() {
-    if (this.value === null) {
+    if (this._value === null) {
       return false;
     }
-    return this.value > 0;
+    return this._value > 0;
   }
   get _isZero() {
     return false;
@@ -6710,22 +6689,22 @@ class Constant<
     return false;
   }
   toString(): string {
-    if (this.value === null) {
+    if (this._value === null) {
       return `Undefined`;
     } else {
-      return `${this.value}`;
+      return `${this._value}`;
     }
   }
   copy() {
-    const out = new Constant(this.c, this.value);
+    const out = new Constant(this._c, this._value);
     return out;
   }
-  c: X;
-  value: P;
+  _c: X;
+  _value: P;
   constructor(c: X, value: P) {
     super(c === core.undefined ? core.undefined : core.constant);
-    this.c = c;
-    this.value = value;
+    this._c = c;
+    this._value = value;
   }
 }
 
@@ -6781,16 +6760,15 @@ abstract class Compound extends AlgebraicExpression {
     return args;
   }
   equals(other: AlgebraicExpression): boolean {
-    if (other instanceof ParenthesizedExpression) {
-      return this.equals(other.innerExpression);
-    }
     if (!(other instanceof Compound)) {
       return false;
     }
     if (this._op !== other._op) {
       return false;
     }
-    if (this._args.length !== other._args.length) return false;
+    if (this._args.length !== other._args.length) {
+      return false;
+    }
     for (let i = 0; i < this._args.length; i++) {
       const a = this._args[i];
       const b = other._args[i];
@@ -6816,10 +6794,10 @@ class ParenthesizedExpression extends Compound {
     return new ParenthesizedExpression(arg);
   }
   equals(other: AlgebraicExpression): boolean {
-    if (other instanceof ParenthesizedExpression) {
-      return this.innerExpression.equals(other.innerExpression);
+    if (!isParend(other)) {
+      return false;
     } else {
-      return this.innerExpression.equals(other);
+      return this.innerExpression.equals(other.innerExpression);
     }
   }
   get innerExpression() {
@@ -6843,6 +6821,12 @@ class ParenthesizedExpression extends Compound {
   isAlgebraic(): boolean {
     return this.innerExpression.isAlgebraic();
   }
+}
+
+function isParend(
+  u: AlgebraicExpression,
+): u is ParenthesizedExpression {
+  return u instanceof ParenthesizedExpression;
 }
 
 /** Returns a new parenthesized algebraic expression. */
@@ -9812,7 +9796,7 @@ class Latexer implements Mapper<string> {
     }
   }
   constant(node: Constant<number | null, string>): string {
-    return `${node.c}`;
+    return `${node._c}`;
   }
   sum(node: Sum): string {
     let expressions = node._args.map((a) => this.reduce(a)).join("+");
