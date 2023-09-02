@@ -1,15 +1,18 @@
 import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router-dom";
-import MainDoc from "./demos/main.doc.mdx";
-import TWINE from "./demos/twine.doc.mdx";
-import VECTOR from "./demos/vector.doc.mdx";
 import BG from "./demos/appendix/index.mdx";
+
 import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
-import MATRIX from "./demos/matrix.doc.mdx";
-import CAM from "./demos/cam.doc.mdx";
-import GRAPHICS from "./demos/graphics.doc.mdx";
-import ELEMENTARY_GEOMETRY from "./demos/appendix/elementary-geometry.mdx";
-import ELEMENTARY_NUMBER_THEORY from "./demos/appendix/elementary-number-theory.mdx";
+import GEOMETRY from "./demos/appendix/elementary-geometry.mdx";
+import NUMBER_THEORY from "./demos/appendix/elementary-number-theory.mdx";
+
+import INDEX from "./demos/doc.main.mdx";
+import TWINE from "./demos/doc.twine.mdx";
+import VECTOR from "./demos/doc.vector.mdx";
+import MATRIX from "./demos/doc.matrix.mdx";
+import CAM from "./demos/doc.cam.mdx";
+import GRAPHICS from "./demos/doc.graphics.mdx";
+
 import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
@@ -17,7 +20,7 @@ import { ReactNode } from "react";
 
 const MAIN = () => (
   <MainPage>
-    <MainDoc />
+    <INDEX />
   </MainPage>
 );
 const DOC = ({ children }: { children: ReactNode }) => {
@@ -49,13 +52,13 @@ export const docLinks: LinkEntry[] = [
     title: "Number Theory",
     path: "/elementary-number-theory",
     visible: false,
-    page: <ELEMENTARY_NUMBER_THEORY />,
+    page: <NUMBER_THEORY />,
   },
   {
     title: "Elementary Geometry",
     path: "/elementary-geometry",
     visible: false,
-    page: <ELEMENTARY_GEOMETRY />,
+    page: <GEOMETRY />,
   },
   {
     title: "Set Theory",
