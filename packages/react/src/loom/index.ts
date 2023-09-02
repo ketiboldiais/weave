@@ -7175,49 +7175,49 @@ class Fraction extends AlgebraicOp<core.fraction> {
     return this.gt(other) || this.equals(other);
   }
   leq(other: Fraction) {
-    const F1 = Fraction.simp(
+    const F1 = Fraction.simple(
       this._n,
       this._d,
     );
-    const F2 = Fraction.simp(
+    const F2 = Fraction.simple(
       other._n,
       other._d,
     );
     return F1._n * F2._d <= F2._n * F1._d;
   }
   sub(x: Fraction) {
-    return Fraction.simp(
+    return Fraction.simple(
       this._n * x._d - x._n * this._d,
       this._d * x._d,
     );
   }
   add(x: Fraction) {
-    return Fraction.simp(
+    return Fraction.simple(
       this._n * x._d + x._n * this._d,
       this._d * x._d,
     );
   }
   div(x: Fraction) {
-    return Fraction.simp(
+    return Fraction.simple(
       this._n * x._d,
       this._d * x._n,
     );
   }
   times(x: Fraction) {
-    return Fraction.simp(
+    return Fraction.simple(
       x._n * this._n,
       x._d * this._d,
     );
   }
   equals(other: Fraction) {
-    const a = Fraction.simp(this._n, this._d);
-    const b = Fraction.simp(other._n, other._d);
+    const a = Fraction.simple(this._n, this._d);
+    const b = Fraction.simple(other._n, other._d);
     return (
       a._n === b._n &&
       a._d === b._d
     );
   }
-  static simp(n: number, d: number) {
+  static simple(n: number, d: number) {
     const sgn = sign(n) * sign(d);
     const N = abs(n);
     const D = abs(d);
@@ -7226,21 +7226,24 @@ class Fraction extends AlgebraicOp<core.fraction> {
   }
   constructor(numerator: number, denominator: number) {
     const N = int(numerator);
-    const D = int(abs(denominator));
+    const D = int(denominator);
     super(core.fraction, [N, D]);
     this._args = [N, D];
   }
   get _isZero() {
-    return this.numerator._n === 0;
+    return (this._rawFloat === 0) || (this._n === 0);
   }
   get _isOne() {
-    return this.numerator._n === this.denominator._n;
+    return this._rawFloat === 1;
   }
   get _isPositive() {
-    return this.numerator._n > 0;
+    return this._rawFloat > 0;
   }
   get _isNegative() {
-    return this.numerator._n < 0;
+    return this._rawFloat < 0;
+  }
+  get _rawFloat() {
+    return this._n / this._d;
   }
   /**
    * @property The numerator of this fraction (an {@link Int|integer}).
@@ -12044,7 +12047,7 @@ export function simplifyRationalNumber(u: Fraction | Int): AlgebraicExpression {
       } else if (d < 0) {
         return frac(quot(-n, g), quot(-d, g));
       } else {
-        return int(0);
+        return u;
       }
     }
   }
