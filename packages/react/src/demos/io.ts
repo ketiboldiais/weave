@@ -6555,7 +6555,7 @@ function isInt(u: AlgebraicExpression): u is Int {
 }
 
 /** Returns a new `Int`. */
-function int(n: number) {
+export function int(n: number) {
   return (new Int(n));
 }
 
@@ -6600,7 +6600,7 @@ function isReal(u: AlgebraicExpression): u is Real {
 }
 
 /** Returns a new Real. */
-function real(r: number) {
+export function real(r: number) {
   return (new Real(r));
 }
 
@@ -6638,6 +6638,11 @@ class Sym<X extends string = string> extends Atom {
     super(type);
     this._s = s;
   }
+}
+
+/** Returns a new symbol. */
+export function sym(s: string) {
+  return new Sym(s);
 }
 
 /** Type predicate. Claims and returns true if the given expression `u` is a Sym. False otherwise. Note that this will return true if `u` is `Undefined`, since `Undefined` is a symbol by definition. */
@@ -6713,10 +6718,8 @@ function isConstant(u: AlgebraicExpression): u is Constant<number> {
   return !$isNothing(u) && (u._op === core.constant);
 }
 
-/**
- * Returns a new Undefined.
- */
-function Undefined(): UNDEFINED {
+/** Returns a new Undefined. */
+export function Undefined(): UNDEFINED {
   return new Constant(core.undefined, null);
 }
 
@@ -6729,20 +6732,12 @@ function isUndefined(
   return !$isNothing(u) && (u._op === core.undefined);
 }
 
-/**
- * Returns a new numeric constant.
- */
+/** Returns a new numeric constant. */
 function constant(c: string, value: number) {
   return new Constant(c, value);
 }
 
-/**
- * Returns a new symbol.
- */
-function sym(s: string) {
-  return new Sym(s);
-}
-
+/** An AlgebraicExpression node corresponding to a compound expression. Compound expressions are AlgebraicExpressions with an operator (via its `_op` property) and operands (via its non-empty array property `_args`).  */
 abstract class Compound extends AlgebraicExpression {
   _op: string;
   _args: AlgebraicExpression[];
@@ -6944,7 +6939,7 @@ class Sum extends AlgebraicOp<core.sum> {
 }
 
 /** Returns a new algebraic sum. */
-function sum(args: AlgebraicExpression[]) {
+export function sum(args: AlgebraicExpression[]) {
   return new Sum(args);
 }
 
@@ -7006,7 +7001,7 @@ class Product extends AlgebraicOp<core.product> {
 }
 
 /** Returns a new product expression. */
-function product(args: AlgebraicExpression[]) {
+export function product(args: AlgebraicExpression[]) {
   return new Product(args);
 }
 
@@ -7077,7 +7072,10 @@ class Quotient extends AlgebraicOp<core.quotient> {
 }
 
 /** Returns a new Quotient. */
-function quotient(dividend: AlgebraicExpression, divisor: AlgebraicExpression) {
+export function quotient(
+  dividend: AlgebraicExpression,
+  divisor: AlgebraicExpression,
+) {
   return new Quotient(dividend, divisor);
 }
 
@@ -7279,7 +7277,7 @@ function isFrac(u: AlgebraicExpression): u is Fraction {
 }
 
 /** Returns a new Fraction. */
-function frac(numerator: number, denominator: number) {
+export function frac(numerator: number, denominator: number) {
   return new Fraction(numerator, denominator);
 }
 
@@ -7342,7 +7340,10 @@ class Power extends AlgebraicOp<core.power> {
 }
 
 /** Returns a new power expression. @param base - The power expression’s base, which may be any algebraic expression. @param exponent - The power expression’s exponent, which may be any algebraic expression. */
-function power(base: AlgebraicExpression, exponent: AlgebraicExpression) {
+export function power(
+  base: AlgebraicExpression,
+  exponent: AlgebraicExpression,
+) {
   return new Power(base, exponent);
 }
 
@@ -7412,7 +7413,7 @@ class Difference extends AlgebraicOp<core.difference> {
 }
 
 /** Returns an expression corresponding to the difference. */
-function difference(a: AlgebraicExpression, b: AlgebraicExpression) {
+export function difference(a: AlgebraicExpression, b: AlgebraicExpression) {
   return new Difference(a, b);
 }
 
@@ -7422,7 +7423,7 @@ function isDifference(u: AlgebraicExpression): u is Difference {
 }
 
 /** Returns the provided algebraic expression `u`, negated. */
-function negate(u: AlgebraicExpression) {
+export function negate(u: AlgebraicExpression) {
   return product([int(-1), u]);
 }
 
@@ -7467,7 +7468,7 @@ class Factorial extends AlgebraicOp<core.factorial> {
 }
 
 /** Returns a new factorial expression. */
-function factorial(of: AlgebraicExpression) {
+export function factorial(of: AlgebraicExpression) {
   return new Factorial(of);
 }
 
@@ -7523,7 +7524,7 @@ function setof<T>(...args: T[]) {
 }
 
 /** Returns a new algebraic function. */
-function fn(name: string, args: AlgebraicExpression[]) {
+export function fn(name: string, args: AlgebraicExpression[]) {
   return new AlgebraicFn(name, args);
 }
 
@@ -12026,6 +12027,28 @@ function exp(source: string) {
       return out;
     },
   };
+}
+
+/** Reduces the given fraction or integer to either a fraction in standard form or an integer.  */
+function simplifyRationalNumber(u: Fraction | Int): AlgebraicExpression {
+  if (isInt(u)) {
+    return u;
+  } else {
+    const n = u._n;
+    const d = u._d;
+    if (rem(n, d) === 0) {
+      return int(quot(n, d));
+    } else {
+      const g = gcd(n, d);
+      if (d > 0) {
+        return frac(quot(n, g), quot(d, g));
+      } else if (d < 0) {
+        return frac(quot(-n, g), quot(-d, g));
+      } else {
+        return int(0);
+      }
+    }
+  }
 }
 
 export function engine(source: string) {
