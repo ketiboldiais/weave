@@ -3,8 +3,9 @@ import {M1} from './Screen.tsx';
 # Graphics
 This is the documentation page for the various graphics submodules comprising _Loom_.
 
-## PathCommand
-Loom operates by applying matrix transformations to SVG path commands. These commands are represented by the abstract data type _PathCommand_, the atomic data type for all graphics entities. There are eight subtypes of _PathCommand_:
+## Renderable
+Data objects in _Loom_ all reduce to the data type _Renderable_. Internally, this is an object with a `_commands` property comprised of [PathCommands](#pathcommand). Each `PathCommand` corresponds to an SVG path command. To “draw” objects, _Loom_’s algorithms apply various matrix transformations to this array. The `PathCommand` subtypes are as follows:
+
 
 | Type       | Maps to SVG Command            |
 | ---------- | ------------------------------ |
@@ -17,19 +18,16 @@ Loom operates by applying matrix transformations to SVG path commands. These com
 | _ACommand_ | A (arc-to).                    |
 | _ZCommand_ | Z (close-path).                |
 
-## MCommand
-An `MCommand` corresponds to the SVG _move-to_ command. That is, “move the cursor to a given position.” To instantiate an `MCommand`, use the `M` function:
 
-```ts
-const m = M(1,1); // 'M1,1'
-```
-
-A third parameter may be passed to the `M` command, corresponding to the ${z}$-coordinate.
+## _Renderable_.at(_x_, _y_) __this__
+The `at` method on a renderable positions a renderable at the given ${x}$ and ${y}$ coordinates. For example, to position a `Circle` at the coordinate ${(1,1),}$ we write:
 
 ~~~ts
-const m = M(1,1,1);
+const p = circle().at(1,1)
 ~~~
 
-Since SVG commands only take two coordinates at most, the ${z}$-coordinate does not appear within the rendered path string; the coordinate is used purely for matrix transformations. In the demonstration below, the red point is positioned with a single _MCommand_. Dragging the sliders will adjust the ${x}$ and ${y}$ coordinates respectively.
+
+To allow method chaining, the `at` method returns `this` (the callee’s reference – all the usual rules of the `this` keyword in JavaScript apply). Below, the red point is positioned via a call to its `at` method. Dragging the sliders will adjust the ${x}$ and ${y}$ arguments respectively.
 
 <M1/>
+

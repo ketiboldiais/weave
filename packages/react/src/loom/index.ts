@@ -1763,8 +1763,8 @@ class ACommand extends PathCommand {
 const A = (x: number, y: number, z: number = 1) => (new ACommand(x, y, z));
 
 interface Renderable {
-  commands: PathCommand[];
-  origin: Vector;
+  _commands: PathCommand[];
+  _origin: Vector;
   toString(): string;
   at(x: number, y: number, z?: number): this;
   tfm(op: (v: Vector) => Vector): this;
@@ -1796,28 +1796,28 @@ type And<DataClass, Extender> = DataClass & Klass<Extender>;
 
 function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
   return class extends klass {
-    commands: PathCommand[] = [];
-    origin: Vector = v3D(0, 0, 1);
+    _commands: PathCommand[] = [];
+    _origin: Vector = v3D(0, 0, 1);
     end() {
       return this;
     }
     get length() {
-      return this.commands.length;
+      return this._commands.length;
     }
     get firstCommand() {
-      const out = this.commands[0];
+      const out = this._commands[0];
       if (out === undefined) {
-        return M(this.origin._x, this.origin._y, this.origin._z);
+        return M(this._origin._x, this._origin._y, this._origin._z);
       } else return out;
     }
     get lastCommand() {
-      const out = this.commands[this.length - 1];
+      const out = this._commands[this.length - 1];
       if (out === undefined) {
-        return M(this.origin._x, this.origin._y, this.origin._z);
+        return M(this._origin._x, this._origin._y, this._origin._z);
       } else return out;
     }
     at(x: number, y: number, z: number = 1) {
-      this.origin = v3D(x, y, z);
+      this._origin = v3D(x, y, z);
       return this;
     }
     interpolate(
@@ -1827,7 +1827,7 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
     ) {
       const X = interpolator(domain, [0, dimensions[0]]);
       const Y = interpolator(range, [dimensions[1], 0]);
-      this.commands = this.commands.map((p) => {
+      this._commands = this._commands.map((p) => {
         const E = p._end;
         const [x, y, z] = [X(E._x), Y(E._y), 1];
         switch (p._type) {
@@ -1864,7 +1864,7 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
       return this;
     }
     tfm(op: (v: Vector) => Vector) {
-      this.commands = this.commands.map((p) => {
+      this._commands = this._commands.map((p) => {
         const E = op(p._end);
         switch (p._type) {
           case pc.M:
@@ -2008,7 +2008,7 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
       );
     }
     toString() {
-      return this.commands.map((x) => x.toString()).join("");
+      return this._commands.map((x) => x.toString()).join("");
     }
   };
 }
@@ -2062,7 +2062,7 @@ const SHAPE = renderable(colorable(BASE));
 /** A node corresponding to an SVG path. */
 export class Path extends SHAPE {
   /** The SVG commands comprising this path. */
-  commands: PathCommand[] = [];
+  _commands: PathCommand[] = [];
 
   end() {
     return this;
@@ -2070,38 +2070,38 @@ export class Path extends SHAPE {
 
   constructor(x: number, y: number, z: number = 1) {
     super();
-    this.origin = vector([0, 0, 0]);
+    this._origin = vector([0, 0, 0]);
     this.cursor = vector([x, y, z]);
-    this.commands = [M(x, y, z)];
+    this._commands = [M(x, y, z)];
   }
 
   /** The current endpoint of this path. */
   cursor: Vector;
 
   /** The origin of this path. */
-  origin: Vector;
+  _origin: Vector;
 
   /** Appends the provided list of commands to this Path’s command list. */
   with(commands: PathCommand[]) {
-    commands.forEach((c) => this.commands.push(c));
+    commands.forEach((c) => this._commands.push(c));
     return this;
   }
 
   /** Sets the origin of this path. */
   at(x: number, y: number, z: number = 1) {
-    this.origin = vector([x, y, z]);
+    this._origin = vector([x, y, z]);
     return this;
   }
 
   /** Returns the `d` attribute value resulting from this path. */
   toString(): string {
-    const origin = M(this.origin._x, this.origin._y).toString();
-    const out = this.commands.map((command) => command.toString());
+    const origin = M(this._origin._x, this._origin._y).toString();
+    const out = this._commands.map((command) => command.toString());
     return origin + out.join("");
   }
 
   push(command: PathCommand) {
-    this.commands.push(command);
+    this._commands.push(command);
     this.cursor = command._end;
     return this;
   }
@@ -2156,10 +2156,9 @@ export function path(originX: number, originY: number, originZ: number = 1) {
 
 /** A node corresponding to a line. */
 export class Line extends SHAPE {
-  commands: PathCommand[] = [];
   constructor(start: Vector, end: Vector) {
     super();
-    this.commands.push(
+    this._commands.push(
       M(start._x, start._y, start._z),
       L(end._x, end._y, end._z),
     );
@@ -2181,10 +2180,10 @@ export class Circle extends SHAPE {
   constructor(radius: number) {
     super();
     this.radius = radius;
-    this.commands.push(
-      M(this.origin._x, this.origin._y + radius / 2, this.origin._z),
-      A(this.origin._x, this.origin._y - radius / 2, this.origin._z),
-      A(this.origin._x, this.origin._y + radius / 2, this.origin._z),
+    this._commands.push(
+      M(this._origin._x, this._origin._y + radius / 2, this._origin._z),
+      A(this._origin._x, this._origin._y - radius / 2, this._origin._z),
+      A(this._origin._x, this._origin._y + radius / 2, this._origin._z),
     );
   }
   r(x: number) {
@@ -2193,7 +2192,7 @@ export class Circle extends SHAPE {
   // @ts-ignore
   at(x: number, y: number, z: number = 1): Circle {
     const radius = this.radius;
-    this.commands = [
+    this._commands = [
       M(x, y + radius / 2, z),
       A(x, y - radius / 2),
       A(x, y + radius / 2),
@@ -2203,7 +2202,7 @@ export class Circle extends SHAPE {
 }
 
 /** Returns a new circle. @param r - The circle’s radius. */
-export function circle(r: number) {
+export function circle(r: number=1) {
   return new Circle(r);
 }
 
@@ -2217,21 +2216,21 @@ export class Quad extends SHAPE {
     this._height = height;
   }
   end() {
-    const o = this.origin;
+    const o = this._origin;
     const x = o._x;
     const y = o._y;
     const w = this._width;
     const h = this._height;
-    this.commands.push(M(x, y));
-    this.commands.push(L(x + w, y));
-    this.commands.push(L(x + w, y - h));
-    this.commands.push(L(x, y - h));
-    this.commands.push(L(x, y));
-    this.commands.push(Z());
+    this._commands.push(M(x, y));
+    this._commands.push(L(x + w, y));
+    this._commands.push(L(x + w, y - h));
+    this._commands.push(L(x, y - h));
+    this._commands.push(L(x, y));
+    this._commands.push(Z());
     return this;
   }
   toString() {
-    return this.commands.map((c) => c.toString()).join("");
+    return this._commands.map((c) => c.toString()).join("");
   }
 }
 
@@ -2274,16 +2273,16 @@ export class Text extends TEXT {
   constructor(text: string | number) {
     super();
     this._text = text;
-    this.commands.push(M(0, 0));
+    this._commands.push(M(0, 0));
   }
   dy(y: number) {
-    return this.at(this.commands[0]._end._x, this.commands[0]._end._y + y);
+    return this.at(this._commands[0]._end._x, this._commands[0]._end._y + y);
   }
   dx(x: number) {
-    return this.at(this.commands[0]._end._x + x, this.commands[0]._end._y);
+    return this.at(this._commands[0]._end._x + x, this._commands[0]._end._y);
   }
   at(x: number, y: number) {
-    this.commands[0] = M(x, y);
+    this._commands[0] = M(x, y);
     return this;
   }
 }
@@ -2348,14 +2347,14 @@ export class Area2D extends SHAPE {
     this._opacity = 0.5;
   }
   moveTo(x: number, y: number, z: number = 1) {
-    this.origin = v3D(x, y, z);
+    this._origin = v3D(x, y, z);
   }
   push(command: PathCommand) {
-    this.commands.push(command);
+    this._commands.push(command);
     return this;
   }
   close() {
-    this.commands.push(Z());
+    this._commands.push(Z());
     return this;
   }
 }
@@ -2446,7 +2445,7 @@ export class PolarPlot2D extends CONTEXT {
       .stroke(this._stroke)
       .strokeWidth(this._strokeWidth);
     for (let i = 1; i < out.length; i++) {
-      p.commands.push(out[i]);
+      p._commands.push(out[i]);
     }
     const lineLabels: Text[] = [];
     for (let i = 1; i < this._domain[1] * this._tickCount; i++) {
@@ -2696,7 +2695,7 @@ export class Plot2D extends CONTEXT {
       .stroke(this._stroke)
       .strokeWidth(this._strokeWidth);
     for (let i = 1; i < out.length; i++) {
-      p.commands.push(out[i]);
+      p._commands.push(out[i]);
     }
     this._children.push(p);
     return this;
@@ -3867,28 +3866,28 @@ class TNode extends TNODE {
   _dy: number = 0;
   _id: string | number = uid(5);
   get _x() {
-    return this.commands[0]._end._x;
+    return this._commands[0]._end._x;
   }
   get _y() {
-    return this.commands[0]._end._y;
+    return this._commands[0]._end._y;
   }
   get _z() {
-    return this.commands[0]._end._z;
+    return this._commands[0]._end._z;
   }
   set _x(x: number) {
-    this.commands = [M(x, this._y, this._z)];
+    this._commands = [M(x, this._y, this._z)];
   }
   set _y(y: number) {
-    this.commands = [M(this._x, y, this._z)];
+    this._commands = [M(this._x, y, this._z)];
   }
   set _z(z: number) {
-    this.commands = [M(this._x, this._y, z)];
+    this._commands = [M(this._x, this._y, z)];
   }
   constructor(name: string | number, parent?: Fork) {
     super();
     this._name = name;
     this._parent = parent ? (parent) : null;
-    this.commands = [M(0, 0, 1)];
+    this._commands = [M(0, 0, 1)];
   }
   sketch(depth: number = 0) {
     this._x = -1;

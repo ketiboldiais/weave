@@ -411,8 +411,8 @@ export const Figure = ({ of }: { of: Parent }) => {
   const TEXT = ({ of }: { of: Text }) => {
     return (
       <text
-        dx={of.commands[0]._end._x}
-        dy={of.commands[0]._end._y}
+        dx={of._commands[0]._end._x}
+        dy={of._commands[0]._end._y}
         textAnchor={of._textAnchor}
         fill={of._fontColor}
         fontFamily={of._fontFamily}
