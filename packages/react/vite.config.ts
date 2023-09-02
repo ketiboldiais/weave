@@ -1,8 +1,5 @@
 /// <reference types="vitest" />
-
 import react from "@vitejs/plugin-react";
-import path from "path";
-import dts from "vite-plugin-dts";
 import { defineConfig } from "vite";
 import mdx from "@mdx-js/rollup";
 import remarkSectionize from 'remark-sectionize';
