@@ -12029,7 +12029,7 @@ function exp(source: string) {
 }
 
 /** Reduces the given fraction or integer to either a fraction in standard form or an integer.  */
-function simplifyRationalNumber(u: Fraction | Int): AlgebraicExpression {
+export function simplifyRationalNumber(u: Fraction | Int): AlgebraicExpression {
   if (isInt(u)) {
     return u;
   } else {
