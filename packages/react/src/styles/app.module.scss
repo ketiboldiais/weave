@@ -123,20 +123,10 @@
 		max-width: 70%;
 		font-style: normal;
 		margin: 1em auto;
-
-		h1,
-		h2,
-		h3,
-		h4,
-		h5,
-		h6 {
-			font-size: 0.9rem;
-
-			width: 100%;
-			margin: 5px 0;
-			padding: 0.2em 0;
-			border-bottom: solid thin $black;
-			border-top: solid thin $black;
+		del {
+			font-style: normal;
+			text-decoration: underline;
+			font-variant: small-caps;
 		}
 
 		padding: 0 0.9em;

@@ -1,5 +1,5 @@
 # Computer Algebra Module
-This is the documentation page for _Loom_’s CAM (Computer Algebra Module) package. CAM implements various algorithms related to symbolic computation.
+This is the documentation page for _Loom_’s CAM (Computer Algebra Module) package. CAM implements various algorithms and utility functions related to symbolic and numeric computation.
 
 ## Types
 All abstract data types in CAM are instances of the abstract class _AlgebraicExpression_.
@@ -59,4 +59,13 @@ Returns true if the _AlgebraicExpression_ is __structurally equal__ to the ${oth
 5. ${ParenthesizedExpression.\texttt{equals}(arg)}$
 	- Returns true only if _callee_’s inner expression is equal to _arg_. If _arg_ is a _ParenthesizedExpression_, returns true only if _callee_’s inner expression is equal to _arg_’s inner expression. Otherwise, returns false.
 	- _ParenthesizedExpressions_ deviate slightly from the other rules. This is because parentheses are superfluous from a symbolic computation perspective – they serve purely to aid the reader/writer, much like comments in code.
+
+
+
+
+
+
+
+
+
 

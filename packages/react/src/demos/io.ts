@@ -4628,7 +4628,7 @@ class BigRat {
     this.N = N;
     this.D = D;
   }
-  get isZero() {
+  get _isZero() {
     return this.N !== 0n;
   }
   toString() {
@@ -6287,6 +6287,7 @@ function setExpr(object: Expr, name: Token, value: Expr, loc: Location) {
   return new SetExpr(object, name, value, loc);
 }
 
+/** A node corresponding to a `super` expression. */
 class SuperExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.superExpr(this);
@@ -6310,10 +6311,7 @@ class SuperExpr extends Expr {
   }
 }
 
-function superExpr(method: Token, loc: Location) {
-  return new SuperExpr(method, loc);
-}
-
+/** A `this` expression AST node. */
 class ThisExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.thisExpr(this);
@@ -6335,10 +6333,12 @@ class ThisExpr extends Expr {
   }
 }
 
+/** Returns a new AST node corresponding to a `this` expression. */
 function thisExpr(keyword: Token) {
   return new ThisExpr(keyword);
 }
 
+/** An AST node corresponding to a relational expression. */
 class RelationalExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
     return visitor.relationalExpr(this);
@@ -6366,7 +6366,7 @@ class RelationalExpr extends Expr {
   }
 }
 
-/** Returns a new relational expression. See also {@link RelationExpr}. */
+/** Returns a new AST node for a relational expression. */
 function relation(left: Expr, op: Token<RelationalOperator>, right: Expr) {
   return new RelationalExpr(left, op, right);
 }
@@ -6410,6 +6410,9 @@ interface ExpressionVisitor<T> {
   parenthesizedExpression(node: ParenthesizedExpression): T;
 }
 
+// =================================================================== CAM nodes
+
+/** A node corresponding to an algebraic expression. */
 abstract class AlgebraicExpression {
   abstract accept<T>(visitor: ExpressionVisitor<T>): T;
   abstract trust<T>(mapper: Mapper<T>): T;
@@ -6455,42 +6458,9 @@ abstract class AlgebraicExpression {
   }
 }
 
-/** Returns true if `u` is an atomic expression. Else, false. */
-function isAtom(u: AlgebraicExpression): u is Atom {
-  return u instanceof Atom;
-}
-
 /** Returns true if `u` is a Compound. Else, false. */
 function isCompound(u: AlgebraicExpression): u is Compound {
   return u instanceof Compound;
-}
-
-/** Returns true if the given expression `u` is an Int. Else, false. */
-function isInt(u: AlgebraicExpression): u is Int {
-  return !$isNothing(u) && (u._op === core.int);
-}
-
-/** Returns true if the given expression `u` is a Real. Else, false. */
-function isReal(u: AlgebraicExpression): u is Real {
-  return !$isNothing(u) && (u._op === core.real);
-}
-
-/** Type predicate. Claims and returns true if the given expression `u` is a Sym. False otherwise. Note that this will return true if `u` is `Undefined`, since `Undefined` is a symbol by definition. */
-function isSymbol(u: AlgebraicExpression): u is Sym {
-  return !$isNothing(u) && ((u._op === core.symbol) ||
-    (u._op === core.undefined));
-}
-
-/** Claims and returns true if the given expression `u` is the global symbol Undefined (an instance of `Sym`, not the JavaScript `undefined`). False otherwise. Note that constant `Undefined` maps to the literal null. */
-function isUndefined(
-  u: AlgebraicExpression,
-): u is Constant<null, core.undefined> {
-  return !$isNothing(u) && (u._op === core.undefined);
-}
-
-/** Returns true if the given expression is a constant, false otherwise.*/
-function isConstant(u: AlgebraicExpression): u is Constant<number> {
-  return !$isNothing(u) && (u._op === core.constant);
 }
 
 /** An atom is any expression that cannot be reduced further. This includes integers, reals, and symbols. */
@@ -6515,6 +6485,11 @@ abstract class Atom extends AlgebraicExpression {
   }
 }
 
+/** Returns true if `u` is an atomic expression. Else, false. */
+function isAtom(u: AlgebraicExpression): u is Atom {
+  return u instanceof Atom;
+}
+
 /** An atomic value corresponding to an integer. */
 class Int extends Atom {
   isRNE(): boolean {
@@ -6524,7 +6499,7 @@ class Int extends Atom {
     return true;
   }
   toFrac() {
-    return frac(this.n, this.d);
+    return frac(this._n, this._d);
   }
   trust<T>(mapper: Mapper<T>): T {
     return mapper.int(this);
@@ -6533,7 +6508,7 @@ class Int extends Atom {
     return visitor.int(this);
   }
   copy(): Int {
-    const out = int(this.n);
+    const out = int(this._n);
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
@@ -6541,39 +6516,44 @@ class Int extends Atom {
       return this.equals(other.innerExpression);
     }
     if (!isInt(other)) return false;
-    return (other.n === this.n);
+    return (other._n === this._n);
   }
   toString(): string {
-    return `${this.n}`;
+    return `${this._n}`;
   }
-  n: number;
-  get d() {
+  _n: number;
+  get _d() {
     return 1;
   }
   constructor(n: number) {
     super(core.int);
-    this.n = n;
+    this._n = n;
   }
-  get isNegative() {
-    return this.n < 0;
+  get _isNegative() {
+    return this._n < 0;
   }
-  get isPositive() {
-    return this.n > 0;
+  get _isPositive() {
+    return this._n > 0;
   }
   /**
    * Returns true if this integer is 1.
    * False otherwise.
    */
-  get isOne() {
-    return this.n === 1;
+  get _isOne() {
+    return this._n === 1;
   }
   /**
    * Returns true if this integer is 0.
    * False otherwise.
    */
-  get isZero() {
-    return this.n === 0;
+  get _isZero() {
+    return this._n === 0;
   }
+}
+
+/** Returns true if the given expression `u` is an Int. Else, false. */
+function isInt(u: AlgebraicExpression): u is Int {
+  return !$isNothing(u) && (u._op === core.int);
 }
 
 /** Returns a new `Int`. */
@@ -6596,7 +6576,7 @@ class Real extends Atom {
     return true;
   }
   copy(): Real {
-    const out = real(this.n);
+    const out = real(this._n);
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
@@ -6606,16 +6586,21 @@ class Real extends Atom {
     if (!isReal(other)) {
       return false;
     }
-    return (this.n === other.n);
+    return (this._n === other._n);
   }
   toString(): string {
-    return `${this.n}`;
+    return `${this._n}`;
   }
-  n: number;
+  _n: number;
   constructor(n: number) {
     super(core.real);
-    this.n = n;
+    this._n = n;
   }
+}
+
+/** Returns true if the given expression `u` is a Real. Else, false. */
+function isReal(u: AlgebraicExpression): u is Real {
+  return !$isNothing(u) && (u._op === core.real);
 }
 
 /** Returns a new Real. */
@@ -6638,7 +6623,7 @@ class Sym<X extends string = string> extends Atom {
     return true;
   }
   copy(): Sym {
-    const out = sym(this.s);
+    const out = sym(this._s);
     return out;
   }
   equals(other: AlgebraicExpression): boolean {
@@ -6648,17 +6633,23 @@ class Sym<X extends string = string> extends Atom {
     if (!isSymbol(other)) {
       return false;
     }
-    return (this.s === other.s);
+    return (this._s === other._s);
   }
   toString(): string {
-    return `${this.s}`;
+    return `${this._s}`;
   }
-  s: X;
+  _s: X;
   constructor(s: X) {
     const type = (s === core.undefined) ? core.undefined : core.symbol;
     super(type);
-    this.s = s;
+    this._s = s;
   }
+}
+
+/** Type predicate. Claims and returns true if the given expression `u` is a Sym. False otherwise. Note that this will return true if `u` is `Undefined`, since `Undefined` is a symbol by definition. */
+function isSymbol(u: AlgebraicExpression): u is Sym {
+  return !$isNothing(u) && ((u._op === core.symbol) ||
+    (u._op === core.undefined));
 }
 
 /** A node corresponding a numeric constant. */
@@ -6688,22 +6679,22 @@ class Constant<
       return (other.value === this.value);
     }
   }
-  get isNegative() {
+  get _isNegative() {
     if (this.value === null) {
       return false;
     }
     return this.value < 0;
   }
-  get isPositive() {
+  get _isPositive() {
     if (this.value === null) {
       return false;
     }
     return this.value > 0;
   }
-  get isZero() {
+  get _isZero() {
     return false;
   }
-  get isOne() {
+  get _isOne() {
     return false;
   }
   toString(): string {
@@ -6726,6 +6717,11 @@ class Constant<
   }
 }
 
+/** Returns true if the given expression is a constant, false otherwise.*/
+function isConstant(u: AlgebraicExpression): u is Constant<number> {
+  return !$isNothing(u) && (u._op === core.constant);
+}
+
 /**
  * Returns a new Undefined.
  */
@@ -6734,6 +6730,13 @@ function Undefined(): UNDEFINED {
 }
 
 type UNDEFINED = Constant<null, core.undefined>;
+
+/** Claims and returns true if the given expression `u` is the global symbol Undefined (an instance of `Sym`, not the JavaScript `undefined`). False otherwise. Note that constant `Undefined` maps to the literal null. */
+function isUndefined(
+  u: AlgebraicExpression,
+): u is Constant<null, core.undefined> {
+  return !$isNothing(u) && (u._op === core.undefined);
+}
 
 /**
  * Returns a new numeric constant.
@@ -6829,24 +6832,35 @@ class ParenthesizedExpression extends Compound {
     return this.innerExpression.isAlgebraic();
   }
 }
+
+/** Returns a new parenthesized algebraic expression. */
 function parenthesized(expression: AlgebraicExpression) {
   return new ParenthesizedExpression(expression);
 }
 
 // deno-fmt-ignore
-type AlgOP = | core.sum | core.difference | core.product | core.quotient | core.power | core.factorial | core.fraction;
+type AlgOP =
+| core.sum
+| core.difference
+| core.product
+| core.quotient
+| core.power
+| core.factorial
+| core.fraction;
 
 /**
- * A node corresponding to an algebraic operation.
- * Algebraic operations comprise of:
- *
- * 1. `+`
- * 2. `-`
- * 3. `*`
- * 4. `^`
- * 5. `!`
- * 6. `fraction`
- */
+---
+* A node corresponding to an algebraic operation.
+* Algebraic operations comprise of:
+*
+* 1. `+`
+* 2. `-`
+* 3. `*`
+* 4. `^`
+* 5. `!`
+* 6. `fraction`
+---
+*/
 abstract class AlgebraicOp<OP extends AlgOP = AlgOP> extends Compound {
   _op: OP;
   _args: AlgebraicExpression[];
@@ -6903,12 +6917,7 @@ abstract class AlgebraicOp<OP extends AlgOP = AlgOP> extends Compound {
   }
 }
 
-/**
- * An algebrac expression corresponding to an n-ary sum.
- *
- * @example
- * const x = sum([sym('a'), int(2), sym('b')]) // x => a + 2 + b
- */
+/** An algebrac expression corresponding to an n-ary sum. */
 class Sum extends AlgebraicOp<core.sum> {
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.sum(this);
@@ -6938,18 +6947,12 @@ class Sum extends AlgebraicOp<core.sum> {
   }
 }
 
-/**
- * Returns a new {@link Sum|sum expression}.
- */
+/** Returns a new algebraic sum. */
 function sum(args: AlgebraicExpression[]) {
   return new Sum(args);
 }
 
-/**
- * Type predicate. Returns true if `u` is a
- * {@link Sum|sum expression}, false otherwise.
- * If true, claims that `u` is a {@link Sum|sum expression}.
- */
+/** Type predicate. Returns true if `u` is a, false otherwise. */
 function isSum(u: AlgebraicExpression): u is Sum {
   return !$isNothing(u) && (u._op === core.sum);
 }
@@ -6983,7 +6986,7 @@ class Product extends AlgebraicOp<core.product> {
     const args = this._args;
     if (args.length === 2) {
       const [a, b] = args;
-      if (isInt(a) && a.n === -1) {
+      if (isInt(a) && a._n === -1) {
         return `-${b.toString()}`;
       }
       if (
@@ -7107,16 +7110,16 @@ class Fraction extends AlgebraicOp<core.fraction> {
     return mapper.fraction(this);
   }
   asFloat() {
-    return (this.n / this.d);
+    return (this._n / this._d);
   }
-  get n() {
-    return this.numerator.n;
+  get _n() {
+    return this.numerator._n;
   }
-  get d() {
-    return this.denominator.n;
+  get _d() {
+    return this.denominator._n;
   }
   asInt() {
-    return floor(this.n / this.d);
+    return floor(this._n / this._d);
   }
   static from(numberValue: number | Fraction) {
     if (!$isNumber(numberValue)) {
@@ -7148,14 +7151,14 @@ class Fraction extends AlgebraicOp<core.fraction> {
   }
 
   toString(): string {
-    const n = this.numerator.n;
-    const d = this.denominator.n;
+    const n = this.numerator._n;
+    const d = this.denominator._n;
     return `${n}|${d}`;
   }
   _args: [Int, Int];
   copy(): Fraction {
-    const n = this._args[0].n;
-    const d = this._args[1].n;
+    const n = this._args[0]._n;
+    const d = this._args[1]._n;
     const out = frac(n, d);
     return out;
   }
@@ -7163,13 +7166,13 @@ class Fraction extends AlgebraicOp<core.fraction> {
     return this.leq(other) && !this.equals(other);
   }
   pos() {
-    const n = +this.n;
-    const d = this.d;
+    const n = +this._n;
+    const d = this._d;
     return new Fraction(n, d);
   }
   neg() {
-    const n = -this.n;
-    const d = this.d;
+    const n = -this._n;
+    const d = this._d;
     return new Fraction(n, d);
   }
   gt(other: Fraction) {
@@ -7180,45 +7183,45 @@ class Fraction extends AlgebraicOp<core.fraction> {
   }
   leq(other: Fraction) {
     const F1 = Fraction.simp(
-      this.n,
-      this.d,
+      this._n,
+      this._d,
     );
     const F2 = Fraction.simp(
-      other.n,
-      other.d,
+      other._n,
+      other._d,
     );
-    return F1.n * F2.d <= F2.n * F1.d;
+    return F1._n * F2._d <= F2._n * F1._d;
   }
   sub(x: Fraction) {
     return Fraction.simp(
-      this.n * x.d - x.n * this.d,
-      this.d * x.d,
+      this._n * x._d - x._n * this._d,
+      this._d * x._d,
     );
   }
   add(x: Fraction) {
     return Fraction.simp(
-      this.n * x.d + x.n * this.d,
-      this.d * x.d,
+      this._n * x._d + x._n * this._d,
+      this._d * x._d,
     );
   }
   div(x: Fraction) {
     return Fraction.simp(
-      this.n * x.d,
-      this.d * x.n,
+      this._n * x._d,
+      this._d * x._n,
     );
   }
   times(x: Fraction) {
     return Fraction.simp(
-      x.n * this.n,
-      x.d * this.d,
+      x._n * this._n,
+      x._d * this._d,
     );
   }
   equals(other: Fraction) {
-    const a = Fraction.simp(this.n, this.d);
-    const b = Fraction.simp(other.n, other.d);
+    const a = Fraction.simp(this._n, this._d);
+    const b = Fraction.simp(other._n, other._d);
     return (
-      a.n === b.n &&
-      a.d === b.d
+      a._n === b._n &&
+      a._d === b._d
     );
   }
   static simp(n: number, d: number) {
@@ -7234,17 +7237,17 @@ class Fraction extends AlgebraicOp<core.fraction> {
     super(core.fraction, [N, D]);
     this._args = [N, D];
   }
-  get isZero() {
-    return this.numerator.n === 0;
+  get _isZero() {
+    return this.numerator._n === 0;
   }
-  get isOne() {
-    return this.numerator.n === this.denominator.n;
+  get _isOne() {
+    return this.numerator._n === this.denominator._n;
   }
-  get isPositive() {
-    return this.numerator.n > 0;
+  get _isPositive() {
+    return this.numerator._n > 0;
   }
-  get isNegative() {
-    return this.numerator.n < 0;
+  get _isNegative() {
+    return this.numerator._n < 0;
   }
   /**
    * @property The numerator of this fraction (an {@link Int|integer}).
@@ -7270,7 +7273,7 @@ class Fraction extends AlgebraicOp<core.fraction> {
    * const b = a.pair // [1,2]
    */
   get pair() {
-    return tuple(this.numerator.n, this.denominator.n);
+    return tuple(this.numerator._n, this.denominator._n);
   }
 }
 
@@ -7282,215 +7285,6 @@ function isFrac(u: AlgebraicExpression): u is Fraction {
 /** Returns a new Fraction. */
 function frac(numerator: number, denominator: number) {
   return new Fraction(numerator, denominator);
-}
-
-/** Simplifies the given Fraction or Int. */
-function simplyRational(expression: Fraction | Int) {
-  const f = (u: Fraction | Int) => {
-    if (isInt(u)) {
-      return u;
-    } else {
-      const n = u.numerator;
-      const d = u.denominator;
-      if (rem(n.n, d.n) === 0) {
-        return int(quot(n.n, d.n));
-      } else {
-        const g = gcd(n.n, d.n);
-        if (d.n > 0) {
-          return frac(quot(n.n, g), quot(d.n, g));
-        } else {
-          return frac(quot(-n.n, g), quot(-d.n, g));
-        }
-      }
-    }
-  };
-  return f(expression);
-}
-
-/** Returns the numerator of the given Fraction or Integer. If an Integer is passed, returns a copy of the Integer. */
-function numeratorOf(u: Fraction | Int): number {
-  if (isInt(u)) {
-    return u.n;
-  } else {
-    return u.numerator.n;
-  }
-}
-
-/** Returns the denominator of the given Fraction or Integer. If an integer is passed, returns `int(1)`.*/
-function denominatorOf(u: Fraction | Int): number {
-  if (isInt(u)) {
-    return 1;
-  } else {
-    return u.denominator.n;
-  }
-}
-
-/** Evaluates a sum. @param a - The left summand. @param b - The right summand. */
-function evalSum(a: Int | Fraction, b: Int | Fraction) {
-  if (isInt(a) && isInt(b)) {
-    return int(a.n + b.n);
-  } else {
-    const n1 = numeratorOf(a);
-    const d1 = denominatorOf(a);
-    const n2 = numeratorOf(b);
-    const d2 = denominatorOf(b);
-    return simplyRational(frac(
-      (n1 * d2) + (n2 * d1),
-      d1 * d2,
-    ));
-  }
-}
-
-/** Evaluates a difference. @param a - The left minuend. @param b - The right minuend. */
-function evalDiff(a: Int | Fraction, b: Int | Fraction) {
-  if (isInt(a) && isInt(b)) {
-    return int(a.n - b.n);
-  } else {
-    const n1 = numeratorOf(a);
-    const d1 = denominatorOf(a);
-    const n2 = numeratorOf(b);
-    const d2 = denominatorOf(b);
-    return simplyRational(frac(
-      n1 * d2 - n2 * d1,
-      d1 * d2,
-    ));
-  }
-}
-
-/** Returns the reciprocal of the given integer or fraction. */
-function reciprocal(a: Int | Fraction) {
-  if (isInt(a)) {
-    return frac(1, a.n);
-  } else {
-    return frac(
-      a.denominator.n,
-      a.numerator.n,
-    );
-  }
-}
-
-/** Evaluates a quotient. @param a - The dividend. @param b - The divisor. */
-function evalQuot(a: Int | Fraction, b: Int | Fraction) {
-  if (isInt(a) && isInt(b)) {
-    if (b.isZero) {
-      return Undefined();
-    }
-    return frac(a.n, b.n);
-  } else {
-    return evalProduct(a, reciprocal(b));
-  }
-}
-
-/** Evalutes a power. */
-function evalPower(base: Int | Fraction, exponent: Int) {
-  const f = (v: Int | Fraction, n: Int): Fraction | Int | UNDEFINED => {
-    if (numeratorOf(v) !== 0) {
-      if (n.n > 0) {
-        const s = f(v, int(n.n - 1));
-        if (isUndefined(s)) {
-          return s;
-        }
-        return evalProduct(s, v);
-      } else if (n.n === 0) {
-        return int(1);
-      } else if (n.n === -1) {
-        return simplyRational(reciprocal(v));
-      } else if (n.n < -1) { // x^(-2) => 1/(x^2)
-        const s = evalQuot(reciprocal(v), int(1));
-        if (isUndefined(s)) return s;
-        return f(s, int(-n.n));
-      } else {
-        return Undefined();
-      }
-    } else {
-      if (n.n >= 1) {
-        return int(0);
-      } else if (n.n <= 0) {
-        return Undefined();
-      } else {
-        return Undefined();
-      }
-    }
-  };
-  return f(base, exponent);
-}
-
-/** Evaluates a product. */
-function evalProduct(a: Int | Fraction, b: Int | Fraction) {
-  if (isInt(a) && isInt(b)) {
-    return int(a.n * b.n);
-  } else {
-    const n1 = numeratorOf(a);
-    const d1 = denominatorOf(a);
-    const n2 = numeratorOf(b);
-    const d2 = denominatorOf(b);
-    return simplyRational(frac(
-      n1 * n2,
-      d1 * d2,
-    ));
-  }
-}
-
-function isIntOrFrac(u: AlgebraicExpression): u is Int | Fraction {
-  return (isInt(u) || isFrac(u));
-}
-
-/** Simplifies a rational number expression. */
-function simplify_RNE(expression: AlgebraicExpression) {
-  const f = (u: AlgebraicExpression): Int | Fraction | UNDEFINED => {
-    if (isInt(u)) {
-      return u;
-    } else if (isFrac(u)) {
-      if (u.denominator.isZero) {
-        return Undefined();
-      } else {
-        return u;
-      }
-    } else if (u._arity === 1) {
-      const v = f(u.operand(1));
-      if (isUndefined(v)) {
-        return Undefined();
-      } else if (isSum(u)) {
-        return v;
-      } else if (isDifference(u)) {
-        return evalProduct(int(-1), v);
-      }
-    } else if (u._arity === 2) {
-      if (isSum(u) || isProduct(u) || isDifference(u) || isQuotient(u)) {
-        const v = f(u.operand(1));
-        if (isUndefined(v)) {
-          return Undefined();
-        }
-        const w = f(u.operand(2));
-        if (isUndefined(w)) {
-          return Undefined();
-        }
-        if (isSum(u)) {
-          return evalSum(v, w);
-        } else if (isDifference(u)) {
-          return evalDiff(v, w);
-        } else if (isProduct(u)) {
-          return evalProduct(v, w);
-        } else if (isQuotient(u)) {
-          return evalQuot(v, w);
-        }
-      } else if (isPower(u)) {
-        const v = f(u.operand(1));
-        if (isUndefined(v)) {
-          return Undefined();
-        } else {
-          // @ts-ignore
-          return evalPower(v, u.operand(2));
-        }
-      }
-    }
-    return Undefined();
-  };
-  const v = f(expression);
-  if (isUndefined(v)) {
-    return v;
-  }
-  return simplyRational(v);
 }
 
 /** An algebraic expression mapping to a power. */
@@ -7681,11 +7475,6 @@ function factorial(of: AlgebraicExpression) {
   return new Factorial(of);
 }
 
-/** Returns true if the expression `u` is a factorial, false otherwise. */
-function isFactorial(u: AlgebraicExpression): u is Factorial {
-  return !$isNothing(u) && (u._op === core.factorial);
-}
-
 /** A node corresponding to any function that takes arguments of type algebraic expression. */
 class AlgebraicFn extends Compound {
   isRNE(): boolean {
@@ -7773,51 +7562,6 @@ function subex(expression: AlgebraicExpression) {
   return out;
 }
 
-/** Returns true if the given `expression` does not contain the given `variable`. */
-function freeof(expression: AlgebraicExpression, variable: Sym | string) {
-  const t = typeof variable === "string" ? sym(variable) : variable;
-  const f = (u: AlgebraicExpression): boolean => {
-    if (u.equals(t)) {
-      return false;
-    } else if (isAtom(u)) {
-      return true;
-    } else {
-      let i = 1;
-      while (i <= u._arity) {
-        const x = f(u.operand(i));
-        if (!x) {
-          return false;
-        }
-        i += 1;
-      }
-      return true;
-    }
-  };
-  return f(expression);
-}
-
-/** Returns the term of this expression. */
-function termOf(u: AlgebraicExpression) {
-  if (
-    isSymbol(u) || isSum(u) || isPower(u) || isFactorial(u) || isAlgebraicFn(u)
-  ) {
-    return u;
-  } else if (isProduct(u)) {
-    if (isConst(u._args[0])) {
-      const out = product(u.tail());
-      if (out._args.length === 1) {
-        return out._args[0];
-      } else {
-        return out;
-      }
-    } else {
-      return u;
-    }
-  } else {
-    return Undefined();
-  }
-}
-
 /** Returns true if the given expression is a constant. */
 function isConst(
   u: AlgebraicExpression,
@@ -7830,338 +7574,6 @@ function isConst(
       !isUndefined(u)
     )
   );
-}
-
-/** Returns the constant of the given expression `u`. */
-function constantOf(u: AlgebraicExpression) {
-  if (
-    isSymbol(u) || isSum(u) || isPower(u) || isFactorial(u) || isAlgebraicFn(u)
-  ) {
-    return int(1);
-  } else if (isProduct(u)) {
-    const head = u.head();
-    if (isConst(head)) {
-      return head;
-    } else {
-      return int(1);
-    }
-  } else {
-    return Undefined();
-  }
-}
-
-/** Returns the base of the given expression `u`. */
-function baseOf(u: AlgebraicExpression) {
-  if (
-    isSymbol(u) || isProduct(u) || isSum(u) || isFactorial(u) ||
-    isAlgebraicFn(u)
-  ) {
-    return u;
-  } else if (isPower(u)) {
-    return u.base;
-  } else {
-    return Undefined();
-  }
-}
-
-/** Returns the exponent of the given expression `u`. */
-function exponentOf(u: AlgebraicExpression) {
-  if (
-    isSymbol(u) || isProduct(u) || isSum(u) || isFactorial(u) ||
-    isAlgebraicFn(u)
-  ) {
-    return int(1);
-  } else if (isPower(u)) {
-    return u.exponent;
-  } else {
-    return Undefined();
-  }
-}
-
-/** Returns true if `u` is equal to `v`, false otherwise. */
-function equals(u: Fraction | Int, v: Fraction | Int) {
-  if (isInt(u) && isInt(v)) {
-    return u.n === v.n;
-  } else {
-    const A = simplyRational(u);
-    const B = simplyRational(v);
-    const n1 = numeratorOf(A);
-    const d1 = denominatorOf(A);
-    const n2 = numeratorOf(B);
-    const d2 = denominatorOf(B);
-    return (
-      (n1 === n2) &&
-      (d1 === d2)
-    );
-  }
-}
-
-/** Returns true if `u` is less than `v`, false otherwise. */
-function lt(u: Fraction | Int, v: Fraction | Int) {
-  return lte(u, v) && !equals(u, v);
-}
-
-/** Returns true if `u` is greater than `v`, false otherwise. */
-function gt(u: Fraction | Int, v: Fraction | Int) {
-  return !lte(u, v);
-}
-
-/** Returns true if `u` is greater than or equal to `v`, false otherwise. */
-function gte(u: Fraction | Int, v: Fraction | Int) {
-  return gt(u, v) || equals(u, v);
-}
-
-/** Returns true if `u` is less than or equal to `v`, false otherwise. */
-function lte(u: Fraction | Int, v: Fraction | Int): boolean {
-  if (isInt(u) && isInt(v)) {
-    return u.n <= v.n;
-  } else {
-    const A = simplyRational(u);
-    const B = simplyRational(v);
-    const n1 = numeratorOf(A);
-    const d1 = denominatorOf(A);
-    const n2 = numeratorOf(B);
-    const d2 = denominatorOf(B);
-    return (
-      (n1 * d2) <= (n2 * d1)
-    );
-  }
-}
-
-/** Returns true if `u` is a Sum or Product, false otherwise. */
-function isSumlike(u: AlgebraicExpression): u is Sum | Product {
-  return (isSum(u)) || isProduct(u);
-}
-
-/** Returns true if `u` is an integer or fraction, false otherwise. */
-function isNumeric(u: AlgebraicExpression): u is Int | Fraction {
-  return isInt(u) || isFrac(u);
-}
-
-/** Returns true if `expression1` precedes `expression2`, false otherwise. */
-function precedes(
-  expression1: AlgebraicExpression,
-  expression2: AlgebraicExpression,
-) {
-  /**
-   * Numeric ordering.
-   */
-  const O1 = (u: Fraction | Int, v: Fraction | Int) => (lt(u, v));
-
-  /**
-   * Lexicographic ordering.
-   */
-  const O2 = (u: Sym, v: Sym) => (u.s < v.s);
-
-  /**
-   * Summand ordering.
-   */
-  const O3 = (u: Sum | Product, v: Sum | Product): boolean => {
-    if (!(u.last().equals(v.last()))) {
-      return order(u.last(), v.last());
-    }
-    const m = u._arity;
-    const n = v._arity;
-    const k = min(n, m) - 1;
-    if (1 <= k) {
-      for (let j = 0; j <= k; j++) {
-        const o1 = u.operand(m - j);
-        const o2 = v.operand(n - j);
-        if (!o1.equals(o2)) {
-          return order(o1, o2);
-        }
-      }
-    }
-    return m < n;
-  };
-
-  /**
-   * Power ordering.
-   */
-  const O4 = (u: Power, v: Power): boolean => {
-    const uBase = baseOf(u);
-    const vBase = baseOf(v);
-    if (!uBase.equals(vBase)) {
-      return order(uBase, vBase);
-    } else {
-      const uExponent = exponentOf(u);
-      const vExponent = exponentOf(v);
-      return order(uExponent, vExponent);
-    }
-  };
-
-  /**
-   * Factorial ordering.
-   */
-  const O5 = (u: Factorial, v: Factorial): boolean => {
-    const uArg = u.arg;
-    const vArg = v.arg;
-    return order(uArg, vArg);
-  };
-
-  /**
-   * Function ordering.
-   */
-  const O6 = (u: AlgebraicFn, v: AlgebraicFn): boolean => {
-    if (u._op !== v._op) {
-      return u._op < v._op; // lexicographic
-    } else {
-      const uOp1 = u.operand(1);
-      const uOp2 = u.operand(1);
-      if (!uOp1.equals(uOp2)) {
-        return order(uOp1, uOp2);
-      }
-    }
-    const m = u._arity;
-    const n = v._arity;
-    const k = min(n, m) - 1;
-    if (1 <= k) {
-      for (let j = 0; j <= k - 1; j++) {
-        const o1 = u.operand(m - j);
-        const o2 = u.operand(n - j);
-        if (!o1.equals(o2)) {
-          return order(o1, o2);
-        }
-      }
-    }
-    return m < n;
-  };
-  // O7 omitted - if u is a numeric, it shall always be precedent.
-
-  const O8 = (u: Product, v: Power | Sum | Factorial | AlgebraicFn | Sym) => {
-    if (!u.equals(v)) {
-      return order(u.last(), v);
-    } else {
-      return true;
-    }
-  };
-  const O9 = (u: Power, v: Sum | Factorial | AlgebraicFn | Sym) => {
-    return order(u, power(v, int(1)));
-  };
-  const O10 = (u: Sum, v: Factorial | AlgebraicFn | Sym) => {
-    if (!u.equals(v)) {
-      return order(u, sum([int(0), v]));
-    } else {
-      return true;
-    }
-  };
-  const O11 = (u: Factorial, v: AlgebraicFn | Sym) => {
-    const o1 = u.operand(1);
-    if (o1.equals(v)) {
-      return false;
-    } else {
-      return order(u, factorial(v));
-    }
-  };
-  const O12 = (u: AlgebraicFn, v: Sym) => {
-    return order(sym(u._op), v);
-  };
-  // deno-fmt-ignore
-  const order = (u: AlgebraicExpression, v: AlgebraicExpression): boolean => {
-    if (isNumeric(u) && isNumeric(v)) return O1(u, v);
-    if (isSymbol(u) && isSymbol(v)) return O2(u, v);
-    if (isSumlike(u) && isSumlike(v)) return O3(u, v);
-    if (isPower(u) && isPower(v)) return O4(u, v);
-    if (isFactorial(u) && isFactorial(v)) return O5(u, v);
-    if (isAlgebraicFn(u) && isAlgebraicFn(v)) return O6(u, v);
-    if (isNumeric(u)) return true; // rule O7 -- numerics are always precedent.
-    if (isProduct(u) && (isPower(v) || isSum(v) || isFactorial(v) || isAlgebraicFn(v) || isSymbol(v))) return O8(u, v);
-    if (isPower(u) && (isSum(v) || isFactorial(v) || isAlgebraicFn(v) || isSymbol(v))) return O9(u, v);
-    if (isSum(u) && ( isFactorial(v) || isAlgebraicFn(v) || isSymbol(v))) return O10(u, v);
-    if (isFactorial(u) && ( isAlgebraicFn(v) || isSymbol(v))) return O11(u, v);
-    if (isAlgebraicFn(u) && isSymbol(v)) return O12(u, v);
-    return false;
-  };
-  return order(expression1, expression2);
-}
-
-/** Sorts the given list of algebraic expressions. */
-function sortex(expressions: AlgebraicExpression[]) {
-  const out: AlgebraicExpression[] = [];
-  if (expressions.length === 0) {
-    return out;
-  }
-  if (expressions.length === 1) {
-    return [expressions[0]];
-  }
-  for (let i = 0; i < expressions.length; i++) {
-    out.push(expressions[i]);
-  }
-  return out.sort((a, b) => precedes(a, b) ? -1 : 1);
-}
-
-/** Returns true if the given list of algebraic expressions contains the symbol `Undefined`.*/
-function hasUndefined(args: AlgebraicExpression[]) {
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (isUndefined(arg)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/** Returns true if the given list of algebraic expressions contains the integer `0`.*/
-function hasZero(args: AlgebraicExpression[]) {
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (isConst(arg) && arg.isZero) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
----
-* Applies the given function `f` to the given `expression`,
-* which is either an AlgebraicOp.
-* or an AlgebraicFn.
-*
-* @example
-* ~~~
-* // the function 'f'
-* const square = (
-*   expr: AlgebraicExpression
-* ) => power(expr, int(2));
-*
-* // the expression
-* const s = sum([sym("a"), sym("b"), sym("c")]);
-*
-* console.log(s.toString()) // a + b + c
-*
-* const x = argMap(square, s);
-*
-* console.log(x.toString()); // a^2 + b^2 + c^2
-* ~~~
----
- */
-function argMap(
-  F: (x: AlgebraicExpression) => AlgebraicExpression,
-  expression: AlgebraicExpression,
-) {
-  const out = expression._args.map(F);
-  const op = expression.copy();
-  op._args = out;
-  return op;
-}
-
-/** Returns a new list with `expression` placed at the beginning of `list`. */
-function adjoin(expression: AlgebraicExpression, list: AlgebraicExpression[]) {
-  const out: AlgebraicExpression[] = [expression];
-  for (let i = 0; i < list.length; i++) {
-    out.push(list[i]);
-  }
-  return out;
-}
-
-/** Returns the given expression list without the first member. */
-function rest(expressions: AlgebraicExpression[]): AlgebraicExpression[] {
-  const out: AlgebraicExpression[] = [];
-  for (let i = 1; i < expressions.length; i++) {
-    out.push(expressions[i]);
-  }
-  return out;
 }
 
 /** Returns the factorial of the given number. */
@@ -8177,551 +7589,25 @@ function factorialize(num: number) {
 
 /** Returns the derivative of a given algebraic expression. */
 function derivative(expression: AlgebraicExpression, variable: string | Sym) {
-  const x = $isString(variable) ? sym(variable) : variable;
   return expression;
 }
 
 /** Simplifies the given expression. */
 function simplify(expression: AlgebraicExpression) {
-  const simplify_function = (expr: AlgebraicFn): AlgebraicExpression => {
-    return expr;
-  };
-  const simplify_factorial = (expr: Factorial): AlgebraicExpression => {
-    const arg = expr.arg;
-    if (isUndefined(arg)) {
-      return arg;
-    }
-    const newarg = automatic_simplify(arg);
-    if (isInt(newarg)) {
-      const out = factorialize(newarg.n);
-      return int(out);
-    }
-    return factorial(newarg);
-  };
-
-  const simplify_difference = (expr: Difference): AlgebraicExpression => {
-    const lhs = expr.left;
-    const right = expr.right;
-    const pargs = precedes(int(-1), right)
-      ? [int(-1), right]
-      : [right, int(-1)];
-    const rhs = simplify_product(product(pargs));
-    return simplify_sum(sum([lhs, rhs]));
-  };
-
-  const simplify_quotient = (expr: Quotient): AlgebraicExpression => {
-    const u = expr.dividend;
-    const v = expr.divisor;
-    const rhs = simplify_power(power(v, int(-1)));
-    return simplify_product(product([u, rhs]));
-  };
-
-  const simplify_sum = (expr: Sum): AlgebraicExpression => {
-    const merge_sums = (
-      a: AlgebraicExpression[],
-      b: AlgebraicExpression[],
-    ): AlgebraicExpression[] => {
-      const p = sortex(a);
-      const q = sortex(b);
-      if (q.length === 0) {
-        return p;
-      } else if (p.length === 0) {
-        return q;
-      }
-      const p1 = p[0];
-      const q1 = q[0];
-      const h = simplify_sum_rec([p1, q1]);
-      if (h.length === 0) {
-        return merge_sums(rest(p), rest(q));
-      } else if (h.length === 1) {
-        return adjoin(h[0], merge_sums(rest(p), rest(q)));
-      } else if (h.length === 2 && (h[0].equals(p1) && h[1].equals(q1))) {
-        return adjoin(p1, merge_sums(rest(p), q));
-      } else {
-        return adjoin(q1, merge_sums(p, rest(q)));
-      }
-    };
-    // deno-fmt-ignore
-    const simplify_sum_rec = (
-      L: AlgebraicExpression[]
-    ): AlgebraicExpression[] => {
-      if (L.length === 2 && (!isSum(L[0])) && (!isSum(L[1]))) {
-        const u1 = L[0];
-        const u2 = L[1];
-
-        /**
-         * __SPSMREC-1.1__
-         */
-        if (isConst(u1) && isConst(u2)) {
-          const P = simplify_RNE(sum([u1, u2]));
-          if (P.isZero) {
-            return [];
-          } else {
-            return [P];
-          }
-        }
-
-        /**
-         * __SPSMREC-1.2(a)__
-         */
-        if (isConst(u1) && u1.isZero) {
-          return [u2];
-        }
-
-        /**
-         * __SPSMREC-1.2(b)__
-         */
-        if (isConst(u2) && u2.isZero) {
-          return [u1];
-        }
-
-        /**
-         * __SPSMREC-1.3__ Collect integer and fraction
-         * coefficient of like terms in a sum.
-         */
-        const u1Term = termOf(u1);
-        const u2Term = termOf(u2);
-        if (u1Term.equals(u2Term)) {
-          const S = simplify_sum(sum([constantOf(u1), constantOf(u2)]));
-          const P = simplify_product(product([u1Term, S]))
-          if (isConst(P) && P.isZero) {
-            return [];
-          } else {
-            return [P];
-          }
-        }
-
-        /**
-         * __SPSMREC-1.4__ Order the arguments.
-         */
-        if (precedes(u2, u1)) {
-          return [u2, u1];
-        }
-
-        /**
-         * __SPSMREC-1.5__
-         */
-        return L;
-      }
-      if (L.length === 2 && (isSum(L[0]) || isSum(L[1]))) {
-        const u1 = L[0];
-        const u2 = L[1];
-        if (isSum(u1) && isSum(u2)) {
-          return merge_sums(u1._args, u2._args);
-        }
-        else if (isSum(u1) && !isSum(u2)) {
-          return merge_sums(u1._args, [u2]);
-        }
-        else {
-          return merge_sums([u1], u2._args);
-        }
-      }
-      else {
-        const w = simplify_sum_rec(rest(L));
-        const u1 = L[0];
-        if (isSum(u1)) {
-          return merge_sums(u1._args, w);
-        } else {
-          return merge_sums([u1], w);
-        }
-      }
-    };
-    const spsm = (u: Sum): AlgebraicExpression => {
-      const L = u._args;
-      /**
-       * __SPSM-1__.
-       */
-      if (hasUndefined(L)) {
-        return Undefined();
-      }
-
-      // sum has no analogue for SPRD-2
-
-      /**
-       * __SPSM-3__.
-       */
-      if (L.length === 1) {
-        return L[0];
-      }
-
-      /**
-       * __SPSM_4__. The first first 2 rules do not apply.
-       */
-      const v = simplify_sum_rec(L);
-      if (v.length === 1) {
-        return v[0];
-      }
-      if (v.length >= 2) {
-        return sum(v);
-      }
-      return int(0);
-    };
-    return spsm(expr);
-  };
-
-  const simplify_product = (expr: Product): AlgebraicExpression => {
-    /**
-     * Where `p` and `q` are two ordered lists of factors,
-     * merges the two lists.
-     */
-    // deno-fmt-ignore
-    const merge_products = (a: AlgebraicExpression[], b: AlgebraicExpression[]): AlgebraicExpression[] => {
-      const p = sortex(a);
-      const q = sortex(b);
-
-      /**
-       * __MPRD-1__.
-       */
-      if (q.length === 0) {
-        return p;
-      }
-      else if (p.length === 0) {
-        return q;
-      }
-      const p1 = p[0];
-      const q1 = q[0];
-      const h = simplify_product_rec([p1, q1]);
-      if (h.length === 0) {
-        return merge_products(rest(p), rest(q));
-      }
-      else if (h.length === 1) {
-        return adjoin(h[0], merge_products(rest(p),rest(q)));
-      }
-      else if (h.length===2 && h[0].equals(p1) && h[1].equals(q1)) {
-        return adjoin(p1, merge_products(rest(p),q));
-      }
-      else {
-        return adjoin(q1, merge_products(p,rest(q)));
-      }
-    };
-
-    /**
-     * Simplifies a product’s argument list recursively.
-     */
-    // deno-fmt-ignore
-    const simplify_product_rec = (L: AlgebraicExpression[]): AlgebraicExpression[] => {
-      /**
-       * __SPRDREC-1__. Case: There are two arguments, neither of which is a product.
-       */
-      if (L.length === 2 && !isProduct(L[0]) && !isProduct(L[1])) {
-        const u1 = L[0];
-        const u2 = L[1];
-        /**
-         * __SPRDREC-1.1__.
-         */
-        if (isConst(u1) && isConst(u2)) {
-          const P = simplify_RNE(product([u1, u2]));
-          if (P.isOne) {
-            return [];
-          } else {
-            return [P];
-          }
-        }
-        /**
-         * __SPRDREC-1.2(a)__
-         */
-        if (isConst(u1) && u1.isOne) {
-          return [u2];
-        }
-        /**
-         * __SPRDREC-1.2(b)__
-         */
-        if (isConst(u2) && u2.isOne) {
-          return [u1];
-        }
-        /**
-         * __SPRDREC-1.3__.
-         */
-        const u1_base = baseOf(u1);
-
-        const u2_base = baseOf(u2);
-
-        if (u1_base.equals(u2_base)) {
-          const S = simplify_sum(sum([exponentOf(u1), exponentOf(u2)]));
-          const P = simplify_power(power(u1_base, S));
-          if (isConst(P) && P.isOne) {
-            return [];
-          } else {
-            return [P];
-          }
-        }
-
-        /**
-         * __SPRDREC-1.4__.
-         */
-        if (precedes(u2, u1)) {
-          return [u2, u1];
-        }
-        /**
-         * __SPRDREC-1.5__. Case: None of the first four laws apply.
-         */
-        return L;
-      }
-
-      /**
-       * __SPRDREC-2__. Case: There are two arguments, one of which is a product.
-       */
-      if (L.length === 2 && (isProduct(L[0]) || isProduct(L[1]))) {
-        const u1 = L[0];
-        const u2 = L[1];
-
-        /**
-         * __SPRDREC-2.1__. `u1` is a product and `u2` is a product.
-         */
-        if (isProduct(u1) && isProduct(u2)) {
-          return merge_products(u1._args, u2._args);
-        } /**
-         * __SPRDREC-2.2__. `u1` is a product and `u2` is not a product.
-         */
-        else if (isProduct(u1) && !isProduct(u2)) {
-          return merge_products(u1._args, [u2]);
-        } /**
-         * __SPRDREC-2.3__. `u2` is a product and `u1` is not a product
-         */
-        else {
-          return merge_products([u1], u2._args);
-        }
-      }
-
-      // SPRDREC-3 Case: There are more than two arguments.
-      else {
-        const w = simplify_product_rec(rest(L));
-        const u1 = L[0];
-        if (isProduct(u1)) {
-          return merge_products(u1._args, w);
-        } else {
-          return merge_products([u1], w);
-        }
-      }
-    };
-
-    const sprd = (u: Product) => {
-      const L = u._args;
-
-      // SPRD-1 `u`’s arguments contain the symbol `Undefined`.
-      if (hasUndefined(L)) {
-        return Undefined();
-      }
-
-      // SPRD-2 `u`’s arguments contain a zero.
-      if (hasZero(L)) {
-        return int(0);
-      }
-
-      // SPRD-3 `u`’s arguments are of length 1.
-      if (L.length === 1) {
-        return L[0];
-      }
-
-      // SPRD-4 None of the first three rules apply.
-      const v = simplify_product_rec(L);
-
-      // SPRD-4.1 Case: L reduced to a single operand.
-      if (v.length === 1) {
-        return v[0];
-      }
-
-      // SPRD-4.2 Case: L reduced to at least two operands.
-      if (v.length >= 2) {
-        return product(v);
-      }
-
-      // SPRD-4.3 Case: L reduced to zero operands.
-      return int(1);
-    };
-
-    return sprd(expr);
-  };
-
-  /**
-   * Simpifies a power expression.
-   */
-  const simplify_power = (u: Power): AlgebraicExpression => {
-    // deno-fmt-ignore
-    const simplify_integer_power = (v: AlgebraicExpression, n: Int): AlgebraicExpression => {
-      /**
-       * __SINTPOW-1__. We handle the simple case where it’s a number (or fraction)
-       * raised to an integer.
-       */
-      if (isNumeric(v)) {
-        return simplify_RNE(power(v, n));
-      }
-
-      /**
-       * __SINTPOW-2__. Next, the case where `n = 0`. In that case, we return `1`,
-       * per the familiar rule `k^0 = 1`, where `k` is some number.
-       */
-      if (n.isZero) {
-        return int(1);
-      }
-
-      /**
-       * __SINTPOW-3__. Now the case where `n = 1`. Once more, we apply a basic
-       * rule: `k^1 = k`, where `k` is some expression.
-       */
-      if (n.isOne) {
-        return v;
-      }
-
-      /**
-       * __SINTPOW-4__. We handle the case `(r^s)^n = r^(s * n)`.
-       */
-      if (isPower(v)) {
-        const r = v.base;
-        const s = v.exponent;
-        const p = simplify_product(product([s, n]));
-        if (isInt(p)) {
-          return simplify_integer_power(r, p);
-        } else {
-          return power(r, p);
-        }
-      }
-
-      /**
-       * __SINTPOW 5__. This handles the case:
-       * `v^n = (v_1, * ... * v_m)^n = v_1^n * ... * v_m^n`
-       */
-      if (isProduct(v)) {
-        const args: AlgebraicExpression[] = [];
-
-        for (let i = 0; i < v._arity; i++) {
-          const r_i = simplify_integer_power(v._args[i], n);
-          args.push(r_i);
-        }
-
-        const r = product(args);
-
-        return simplify_product(r);
-      }
-
-      /**
-       * __SINTPOW-6__. None of the rules apply.
-       */
-      return power(v, n);
-    };
-    /**
-     * We start by supposing `u = v^w`. Therefore, `v` is the base,
-     * and `w` is the exponent.
-     */
-    const spow = (v: AlgebraicExpression, w: AlgebraicExpression) => {
-      /**
-       * We handle the simplest case:
-       *
-       * __SPOW-1__. If v is undefined and w is undefined, return undefined.
-       */
-      if (isUndefined(v) || isUndefined(w)) {
-        return Undefined();
-      }
-
-      /**
-       * Next, the case where `0^w`. This should return 0. But, mathematically,
-       * `0^0` is undefined. Likewise, `0^-n`, where `n` is a positive integer,
-       * is always undefined (since this would yield 1/0^n = 1/0).
-       *
-       * __SPOW-2__. If `v = 0`, then:
-       * 1. If `w > 0` return `0`.
-       * 2. Else, return `Undefined`.
-       */
-      if (isConst(v) && v.isZero) {
-        if (isConst(w) && w.isPositive) {
-          return int(0);
-        } else {
-          return Undefined();
-        }
-      }
-
-      /**
-       * Now we handle another simple case: `1^w.`
-       *
-       * __SPOW-3__. If `v = 1`, then return `1`.
-       */
-      if (isConst(v) && v.isOne) {
-        return int(1);
-      }
-
-      /**
-       * Now we handle the case where `w` is some integer.
-       * E.g., (a + b)^2.
-       *
-       * __SPOW-4__.
-       */
-      if (isInt(w)) {
-        return simplify_integer_power(v, w);
-      }
-
-      /**
-       * None of the 4 previous rules apply, so we return `u`.
-       */
-      return u;
-    };
-
-    return spow(u.base, u.exponent);
-  };
-
-  /**
-   * Simplifies the given algebraic expression `u`. This is the main
-   * simplification algorithm.
-   */
-  const automatic_simplify = (u: AlgebraicExpression): AlgebraicExpression => {
-    if (u instanceof Atom) {
-      return u;
-    } else if (isFrac(u)) {
-      return simplyRational(u);
-    } else {
-      const v = argMap(automatic_simplify, u);
-      if (isPower(v)) {
-        return simplify_power(v);
-      } else if (isProduct(v)) {
-        return simplify_product(v);
-      } else if (isSum(v)) {
-        return simplify_sum(v);
-      } else if (isQuotient(v)) {
-        return simplify_quotient(v);
-      } else if (isDifference(v)) {
-        return simplify_difference(v);
-      } else if (isFactorial(v)) {
-        return simplify_factorial(v);
-      } else if (isAlgebraicFn(v)) {
-        return simplify_function(v);
-      } else {
-        return Undefined();
-      }
-    }
-  };
-  return automatic_simplify(expression);
+  return expression;
 }
 
-/** Returns true if the given `expression` is a single-variable monomial with respect to the given `variable`. */
-function isMonomial1(expression: AlgebraicExpression, variable: string | Sym) {
-  const x: Sym = $isString(variable) ? sym(variable) : variable;
-  const monomial_sv = (u: AlgebraicExpression): boolean => {
-    if (isInt(u) || isFrac(u)) {
-      return true;
-    } else if (u.equals(x)) {
-      return true;
-    } else if (isPower(u)) {
-      const base = u.base;
-      const exponent = u.exponent;
-      if (base.equals(x) && isInt(exponent) && exponent.n > 1) {
-        return true;
-      }
-    } else if (isProduct(u)) {
-      const has_two_operands = u._arity === 2;
-      const operand1_is_monomial = monomial_sv(u.operand(1));
-      const operand2_is_monomial = monomial_sv(u.operand(2));
-      return (
-        has_two_operands &&
-        operand1_is_monomial &&
-        operand2_is_monomial
-      );
-    }
-    return false;
-  };
-  const exp = simplify(expression);
-  return monomial_sv(exp);
-}
+// ----------------------------------------------------------------- Twine Nodes
+/**
+---
+* The following nodes correspond to nodes used by Twine.
+* These are treated as separate nodes from the algebraic expressions,
+* since their semantics and error-handling needs substantially differ
+* from the algebraic expression nodes.
+---
+*/
 
-/** Token types. */
+/** A token type output by Twine’s lexers. */
 enum tt {
   // Utility tokens - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -9204,6 +8090,7 @@ function isGreekLetterName(c: string) {
     .test(c.toLowerCase());
 }
 
+/** The binding power of a given operator. Values of type `bp` are used the parsers to determinate operator precedence (both the Twine and CAM parsers use Pratt parsing for expressions). */
 enum bp {
   nil,
   lowest,
@@ -9229,12 +8116,16 @@ enum bp {
   call,
 }
 
+/** @internal A Pratt parsing function. */
 type Parslet<T> = (current: Token, lastNode: T) => Either<Err, T>;
 
+/** @internal An entry within parser’s BP table. The first element is a prefix parslet, the second element is an infix parslet, and the last element is the binding power of the operator. */
 type ParsletEntry<T> = [Parslet<T>, Parslet<T>, bp];
 
-type BPTable<T> = Record<tt, ParsletEntry<T>>;
+/** @internal A record of parslet entries, where each key is a token type (`tt`). */
+type BPTable<T> = Record<tt, ParsletEntry<T>>
 
+// ============================================================= Runtime Objects
 class RETURN {
   value: Primitive;
   constructor(value: Primitive) {
@@ -9828,7 +8719,7 @@ function truthy(x: Primitive) {
   if ($isBoolean(x)) return x;
   if ($isArray(x) || $isString(x)) return x.length !== 0;
   if (x === null || x === undefined) return false;
-  if (x instanceof BigRat || x instanceof Fraction) return !x.isZero;
+  if (x instanceof BigRat || x instanceof Fraction) return !x._isZero;
   if (x instanceof Vector) return x.length !== 0;
   if (x instanceof Matrix) return x._R !== 0 && x._C !== 0;
   return (
@@ -9893,7 +8784,7 @@ class Simplifier implements Visitor<AlgebraicExpression> {
     throw this.unsupportedError(`Big numbers`);
   }
   fractionExpr(node: FractionExpr): AlgebraicExpression {
-    return frac(node.value.n, node.value.d);
+    return frac(node.value._n, node.value._d);
   }
   bigRational(node: RationalExpr): AlgebraicExpression {
     throw this.unsupportedError(`Big rationals`);
@@ -9969,7 +8860,7 @@ class Simplifier implements Visitor<AlgebraicExpression> {
       }
       case tt.minus: {
         if (isInt(arg) || isReal(arg)) {
-          return int(-arg.n);
+          return int(-arg._n);
         } else {
           return product([int(-1), arg]);
         }
@@ -10661,8 +9552,8 @@ class Latexer implements Mapper<string> {
     return `${node.value}`;
   }
   fractionExpr(node: FractionExpr): string {
-    const n = node.value.n;
-    const d = node.value.d;
+    const n = node.value._n;
+    const d = node.value._d;
     return latex.frac(n, d);
   }
   bigRational(node: RationalExpr): string {
@@ -10895,13 +9786,13 @@ class Latexer implements Mapper<string> {
     return latex.txt("void");
   }
   int(node: Int): string {
-    return `${node.n}`;
+    return `${node._n}`;
   }
   real(node: Real): string {
-    return `${node.n}`;
+    return `${node._n}`;
   }
   sym(node: Sym<string>): string {
-    const name = node.s;
+    const name = node._s;
     if (isGreekLetterName(name)) {
       return latex.esc(name);
     } else {
@@ -10942,7 +9833,7 @@ class Latexer implements Mapper<string> {
     }
   }
   fraction(node: Fraction): string {
-    return latex.frac(node.n, node.d);
+    return latex.frac(node._n, node._d);
   }
   power(node: Power): string {
     const base = this.reduce(node.base);
@@ -10982,7 +9873,7 @@ export function latexify(x: ASTNode | AlgebraicExpression | Primitive): string {
   } else if ($isNothing(x)) {
     return latex.esc("varnothing");
   } else if ($isFraction(x)) {
-    return latex.frac(x.n, x.d);
+    return latex.frac(x._n, x._d);
   } else if ($isBoolean(x)) {
     return latex.txt(x ? "true" : "false");
   } else if ($isString(x)) {

@@ -8,7 +8,8 @@ import EXPOSITION from "./demos/appendix/exposition.mdx";
 import MATRIX from "./demos/matrix.doc.mdx";
 import CAM from "./demos/cam.doc.mdx";
 import GRAPHICS from "./demos/graphics.doc.mdx";
-import ELEMENTARY_GEOMETRY from './demos/appendix/elementary-geometry.mdx';
+import ELEMENTARY_GEOMETRY from "./demos/appendix/elementary-geometry.mdx";
+import ELEMENTARY_NUMBER_THEORY from "./demos/appendix/elementary-number-theory.mdx";
 import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
@@ -44,6 +45,12 @@ export const docLinks: LinkEntry[] = [
   { title: "Vector", path: "/vector", visible: true, page: <VECTOR /> },
   { title: "Twine", path: "/twine", visible: true, page: <TWINE /> },
   { title: "Appendix", path: "/appendix", visible: true, page: <BG /> },
+  {
+    title: "Number Theory",
+    path: "/elementary-number-theory",
+    visible: false,
+    page: <ELEMENTARY_NUMBER_THEORY />,
+  },
   {
     title: "Elementary Geometry",
     path: "/elementary-geometry",
