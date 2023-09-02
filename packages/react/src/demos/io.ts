@@ -1,3 +1,5 @@
+// ============================================================= Utility Methods
+
 /** Utility method - Logs to the console. */
 const print = console.log;
 
@@ -8,20 +10,21 @@ const print = console.log;
 * @param base - The base from which to draw characters.
 ---
  */
-const uid = (length: number = 4, base = 36) =>
-  Math.random()
+function uid(length: number = 4, base = 36) {
+  return Math.random()
     .toString(base)
     .replace(/[^a-z]+/g, "")
     .substring(0, length + 1);
+}
 
 /** Given an array of type `T[]`, splits the array in two and returns the two halves as a pair. */
-const arraySplit = <T>(array: T[]) => {
+function arraySplit<T>(array: T[]) {
   const L = array.length;
   const half = Math.ceil(L / 2);
   const left = array.slice(0, half);
   const right = array.slice(half);
   return [left, right] as [T[], T[]];
-};
+}
 
 class None {
   _tag: "None" = "None";
@@ -443,6 +446,9 @@ const latex = {
   to: () => `~{=}~`,
 };
 
+// ============================================================ global constants
+/** These are constants and functions heavily used throughout the code base. */
+
 const {
   floor,
   abs,
@@ -466,18 +472,13 @@ const {
   ceil,
   sqrt,
 } = Math;
+
 const HALF_PI = PI / 2;
 
 /** Global maximum integer. */
 const MAX_INT = Number.MAX_SAFE_INTEGER;
 
-/*
-┌─────────────────────────────────────────────────────────────────────────┐
-│ GEOMETRY FUNCTIONS                                                      │
-│ These are functions related to common computations in Euclidean         │
-│ geometry.                                                               │
-└─────────────────────────────────────────────────────────────────────────┘
-*/
+// ========================================================== geometry functions
 
 /** Converts the provided number (assumed to be radians) to degrees. */
 function toDegrees(radians: number) {
@@ -2062,10 +2063,10 @@ function colorable<CLASS extends Klass>(klass: CLASS): And<CLASS, Colorable> {
 }
 
 class BASE {}
+const SHAPE = renderable(colorable(BASE));
 
-const PATH = renderable(colorable(BASE));
-
-export class Path extends PATH {
+/** A node corresponding to an SVG path. */
+export class Path extends SHAPE {
   /** The SVG commands comprising this path. */
   commands: PathCommand[] = [];
 
@@ -2159,9 +2160,8 @@ export function path(originX: number, originY: number, originZ: number = 1) {
   );
 }
 
-const LINE = renderable(colorable(BASE));
-
-export class Line extends LINE {
+/** A node corresponding to a line. */
+export class Line extends SHAPE {
   commands: PathCommand[] = [];
   constructor(start: Vector, end: Vector) {
     super();
@@ -2181,9 +2181,8 @@ export function line(start: Vector | number[], end: Vector | number[]) {
   return new Line(start, end);
 }
 
-const CIRCLE = renderable(colorable(BASE));
-
-export class Circle extends CIRCLE {
+/** A node corresponding to a circle. */
+export class Circle extends SHAPE {
   radius: number;
   constructor(radius: number) {
     super();
@@ -2215,8 +2214,8 @@ export function circle(r: number) {
   return new Circle(r);
 }
 
-const QUAD = renderable(colorable(BASE));
-export class Quad extends QUAD {
+/** A node corresponding to a quadrilateral. */
+export class Quad extends SHAPE {
   _width: number;
   _height: number;
   constructor(width: number, height: number) {
@@ -2242,12 +2241,14 @@ export class Quad extends QUAD {
     return this.commands.map((c) => c.toString()).join("");
   }
 }
+
 export function quad(width: number, height: number) {
   return new Quad(width, height);
 }
 
 const TEXT = renderable(BASE);
 
+/** A node corresponding to an SVG text element. */
 export class Text extends TEXT {
   end() {
     return this;
@@ -2298,9 +2299,16 @@ export function text(content: string | number) {
   return (new Text(content));
 }
 
-// ========================================================= TICK LINE GENERATOR
+// ========================================================= tick line generator
 
-type Tick = { tick: Line; txt: Text };
+/** An object corresponding to a tickline for axes. */
+type Tick = {
+  /** The line comprising the tick. */
+  tick: Line;
+
+  /** The tick’s label. */
+  txt: Text;
+};
 
 function tickLines(
   length: number,
@@ -2336,9 +2344,11 @@ function tickLines(
   }
   return out;
 }
-// ======================================================================== Area
-const AREA2D = renderable(colorable(BASE));
-export class Area2D extends AREA2D {
+
+// ======================================================================== area
+
+/** A node corresponding to a closed, fillable path. */
+export class Area2D extends SHAPE {
   constructor() {
     super();
     this._fill = "initial";
@@ -2356,6 +2366,8 @@ export class Area2D extends AREA2D {
     return this;
   }
 }
+
+/** Returns a new Area2D. */
 function area2D() {
   return new Area2D();
 }
@@ -8123,7 +8135,7 @@ type Parslet<T> = (current: Token, lastNode: T) => Either<Err, T>;
 type ParsletEntry<T> = [Parslet<T>, Parslet<T>, bp];
 
 /** @internal A record of parslet entries, where each key is a token type (`tt`). */
-type BPTable<T> = Record<tt, ParsletEntry<T>>
+type BPTable<T> = Record<tt, ParsletEntry<T>>;
 
 // ============================================================= Runtime Objects
 class RETURN {
