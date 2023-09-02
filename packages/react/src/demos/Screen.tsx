@@ -1,6 +1,6 @@
 import { CSSProperties, useEffect, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
-import { heights } from "./test-data.js";
+import { heights } from "./data.heights.js";
 import {
   Area2D,
   barPlot,
