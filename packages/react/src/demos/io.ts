@@ -1544,11 +1544,11 @@ const $isMatrix = (value: any): value is Matrix => (value instanceof Matrix);
 enum pc { M, L, H, V, Q, C, A, Z}
 
 abstract class PathCommand {
-  readonly type: pc;
-  end: Vector;
+  readonly _type: pc;
+  _end: Vector;
   constructor(type: pc, end: Vector) {
-    this.type = type;
-    this.end = end;
+    this._type = type;
+    this._end = end;
   }
 
   /** Sets the endpoint for this command. */
@@ -1559,16 +1559,16 @@ abstract class PathCommand {
 }
 
 class MCommand extends PathCommand {
-  readonly type: pc.M;
+  readonly _type: pc.M;
   constructor(x: number, y: number, z: number) {
     super(pc.M, vector([x, y, z]));
-    this.type = pc.M;
+    this._type = pc.M;
   }
   endPoint(x: number, y: number, z: number = 1): MCommand {
     return new MCommand(x, y, z);
   }
   toString() {
-    return `M${this.end._x},${this.end._y}`;
+    return `M${this._end._x},${this._end._y}`;
   }
 }
 
@@ -1576,26 +1576,26 @@ class MCommand extends PathCommand {
 const M = (x: number, y: number, z: number = 1) => (new MCommand(x, y, z));
 
 class LCommand extends PathCommand {
-  readonly type: pc.L;
+  readonly _type: pc.L;
   constructor(x: number, y: number, z: number) {
     super(pc.L, vector([x, y, z]));
-    this.type = pc.L;
+    this._type = pc.L;
   }
   endPoint(x: number, y: number, z: number = 1): LCommand {
     return new LCommand(x, y, z);
   }
   toString() {
-    return `L${this.end._x},${this.end._y}`;
+    return `L${this._end._x},${this._end._y}`;
   }
 }
 /** Returns a new {@link LCommand|L-command}. */
 const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
 
 class ZCommand extends PathCommand {
-  readonly type: pc.Z;
+  readonly _type: pc.Z;
   constructor() {
     super(pc.Z, vector([0, 0, 0]));
-    this.type = pc.Z;
+    this._type = pc.Z;
   }
   endPoint(x: number, y: number, z: number = 1): ZCommand {
     return this;
@@ -1607,32 +1607,32 @@ class ZCommand extends PathCommand {
 const Z = (): ZCommand => new ZCommand();
 
 class VCommand extends PathCommand {
-  readonly type: pc.V;
+  readonly _type: pc.V;
   constructor(x: number, y: number, z: number) {
     super(pc.V, vector([x, y, z]));
-    this.type = pc.V;
+    this._type = pc.V;
   }
   endPoint(x: number, y: number, z: number = 1): VCommand {
     return new VCommand(x, y, z);
   }
   toString() {
-    return `V${this.end._x},${this.end._y}`;
+    return `V${this._end._x},${this._end._y}`;
   }
 }
 /** Returns a new {@link VCommand|V-command}. */
 const V = (x: number, y: number, z: number = 1) => (new VCommand(x, y, z));
 
 class HCommand extends PathCommand {
-  readonly type: pc.H;
+  readonly _type: pc.H;
   constructor(x: number, y: number, z: number) {
     super(pc.H, vector([x, y, z]));
-    this.type = pc.H;
+    this._type = pc.H;
   }
   endPoint(x: number, y: number, z: number = 1): HCommand {
     return new HCommand(x, y, z);
   }
   toString() {
-    return `H${this.end._x},${this.end._y}`;
+    return `H${this._end._x},${this._end._y}`;
   }
 }
 
@@ -1640,22 +1640,22 @@ class HCommand extends PathCommand {
 const H = (x: number, y: number, z: number = 1) => (new HCommand(x, y, z));
 
 class QCommand extends PathCommand {
-  readonly type: pc.Q = pc.Q;
-  ctrl1: Vector;
+  readonly _type: pc.Q = pc.Q;
+  _ctrl1: Vector;
   constructor(x: number, y: number, z: number) {
     super(pc.Q, vector([x, y, z]));
-    this.ctrl1 = vector([x, y, z]);
+    this._ctrl1 = vector([x, y, z]);
   }
   ctrlPoint(x: number, y: number, z: number = 1): QCommand {
-    const out = new QCommand(this.end._x, this.end._y, this.end._z);
-    out.ctrl1 = vector([x, y, z]);
+    const out = new QCommand(this._end._x, this._end._y, this._end._z);
+    out._ctrl1 = vector([x, y, z]);
     return out;
   }
   endPoint(x: number, y: number, z: number = 1): QCommand {
     return new QCommand(x, y, z);
   }
   toString() {
-    return `Q${this.ctrl1._x},${this.ctrl1._y},${this.end._x},${this.end._y}`;
+    return `Q${this._ctrl1._x},${this._ctrl1._y},${this._end._x},${this._end._y}`;
   }
 }
 
@@ -1664,35 +1664,35 @@ const Q = (x: number, y: number, z: number = 1) => (new QCommand(x, y, z));
 
 /** A type corresponding to the SVG cubic-bezier-curve command. */
 class CCommand extends PathCommand {
-  type: pc.C = pc.C;
-  ctrl1: Vector = vector([0, 0, 1]);
-  ctrl2: Vector = vector([0, 0, 1]);
+  _type: pc.C = pc.C;
+  _ctrl1: Vector = vector([0, 0, 1]);
+  _ctrl2: Vector = vector([0, 0, 1]);
   constructor(x: number, y: number, z: number = 1) {
     super(pc.C, vector([x, y, z]));
   }
   copy() {
-    const out = new CCommand(this.end._x, this.end._y, this.end._z);
-    out.ctrl1 = this.ctrl1.copy();
-    out.ctrl2 = this.ctrl2.copy();
+    const out = new CCommand(this._end._x, this._end._y, this._end._z);
+    out._ctrl1 = this._ctrl1.copy();
+    out._ctrl2 = this._ctrl2.copy();
     return out;
   }
   /** Sets the second control point for this cubic bezier curve. */
   ctrlPoint2(x: number, y: number, z: number = 1) {
-    const out = new CCommand(this.end._x, this.end._y, this.end._z);
-    out.ctrl2 = vector([x, y, z]);
+    const out = new CCommand(this._end._x, this._end._y, this._end._z);
+    out._ctrl2 = vector([x, y, z]);
     return out;
   }
   /** Sets the first control point for this cubic bezier curve. */
   ctrlPoint1(x: number, y: number, z: number = 1) {
-    const out = new CCommand(this.end._x, this.end._y, this.end._z);
-    out.ctrl1 = vector([x, y, z]);
+    const out = new CCommand(this._end._x, this._end._y, this._end._z);
+    out._ctrl1 = vector([x, y, z]);
     return out;
   }
   endPoint(x: number, y: number, z: number = 1): CCommand {
     return new CCommand(x, y, z);
   }
   toString() {
-    return `C${this.ctrl1._x},${this.ctrl1._y},${this.ctrl2._x},${this.ctrl2._y},${this.end._x},${this.end._y}`;
+    return `C${this._ctrl1._x},${this._ctrl1._y},${this._ctrl2._x},${this._ctrl2._y},${this._end._x},${this._end._y}`;
   }
 }
 
@@ -1701,59 +1701,59 @@ const C = (x: number, y: number, z: number = 1) => (new CCommand(x, y, z));
 
 /** An ADT corresponding to the SVG arc-to command. */
 class ACommand extends PathCommand {
-  type: pc.A = pc.A;
+  _type: pc.A = pc.A;
   /** The x-radius of this arc-to command. */
-  rx: number = 1;
+  _rx: number = 1;
   /** The r-radius of this arc-to command. */
-  ry: number = 1;
-  rotation: number = 0;
-  largeArc: 0 | 1 = 0;
-  sweep: 0 | 1 = 0;
+  _ry: number = 1;
+  _rotation: number = 0;
+  _largeArc: 0 | 1 = 0;
+  _sweep: 0 | 1 = 0;
   constructor(x: number, y: number, z: number = 1) {
     super(pc.A, vector([x, y, z]));
   }
   rotate(value: number) {
-    this.rotation = value;
+    this._rotation = value;
     return this;
   }
-  yRadius(value: number) {
-    this.ry = value;
+  ry(value: number) {
+    this._ry = value;
     return this;
   }
-  xRadius(value: number) {
-    this.rx = value;
+  rx(value: number) {
+    this._rx = value;
     return this;
   }
-  swept(value: 0 | 1) {
-    this.sweep = value;
+  sweep(value: 0 | 1) {
+    this._sweep = value;
     return this;
   }
   arc(value: 1 | 0) {
-    this.largeArc = value;
+    this._largeArc = value;
     return this;
   }
   copy(): ACommand {
-    const out = new ACommand(this.end._x, this.end._y, this.end._z);
-    out.rx = this.rx;
-    out.ry = this.ry;
-    out.rotation = this.rotation;
-    out.largeArc = this.largeArc;
-    out.sweep = this.sweep;
+    const out = new ACommand(this._end._x, this._end._y, this._end._z);
+    out._rx = this._rx;
+    out._ry = this._ry;
+    out._rotation = this._rotation;
+    out._largeArc = this._largeArc;
+    out._sweep = this._sweep;
     return out;
   }
   endPoint(x: number, y: number, z: number = 1): ACommand {
-    this.end = vector([x, y, z]);
+    this._end = vector([x, y, z]);
     return this;
   }
   toString() {
     const out = [
-      this.rx,
-      this.ry,
-      this.rotation,
-      this.largeArc,
-      this.sweep,
-      this.end._x,
-      this.end._y,
+      this._rx,
+      this._ry,
+      this._rotation,
+      this._largeArc,
+      this._sweep,
+      this._end._x,
+      this._end._y,
     ].join(",");
     return "A" + out;
   }
@@ -1828,9 +1828,9 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
       const X = interpolator(domain, [0, dimensions[0]]);
       const Y = interpolator(range, [dimensions[1], 0]);
       this.commands = this.commands.map((p) => {
-        const E = p.end;
+        const E = p._end;
         const [x, y, z] = [X(E._x), Y(E._y), 1];
-        switch (p.type) {
+        switch (p._type) {
           case pc.M:
             return M(x, y, z);
           case pc.H:
@@ -1838,12 +1838,12 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
           case pc.V:
             return L(x, y, z);
           case pc.Q: {
-            const c = (p as QCommand).ctrl1;
+            const c = (p as QCommand)._ctrl1;
             return Q(x, y, z).ctrlPoint(x, y, z);
           }
           case pc.C: {
-            const c1 = (p as CCommand).ctrl1;
-            const c2 = (p as CCommand).ctrl2;
+            const c1 = (p as CCommand)._ctrl1;
+            const c2 = (p as CCommand)._ctrl2;
             return C(x, y, z)
               .ctrlPoint1(X(c1._x), Y(c1._y), c1._z)
               .ctrlPoint2(X(c2._x), Y(c2._y), c2._z);
@@ -1851,11 +1851,11 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
           case pc.A: {
             const j = p as ACommand;
             return A(x, y, z)
-              .xRadius(j.rx)
-              .yRadius(j.ry)
-              .rotate(j.rotation)
-              .arc(j.largeArc)
-              .swept(j.sweep);
+              .rx(j._rx)
+              .ry(j._ry)
+              .rotate(j._rotation)
+              .arc(j._largeArc)
+              .sweep(j._sweep);
           }
           default:
             return p;
@@ -1865,8 +1865,8 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
     }
     tfm(op: (v: Vector) => Vector) {
       this.commands = this.commands.map((p) => {
-        const E = op(p.end);
-        switch (p.type) {
+        const E = op(p._end);
+        switch (p._type) {
           case pc.M:
             return M(E._x, E._y, E._z);
           case pc.H:
@@ -1874,12 +1874,12 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
           case pc.V:
             return L(E._x, E._y, E._z);
           case pc.Q: {
-            const c = op((p as QCommand).ctrl1);
+            const c = op((p as QCommand)._ctrl1);
             return Q(E._x, E._y, E._z).ctrlPoint(c._x, c._y, c._z);
           }
           case pc.C: {
-            const c1 = op((p as CCommand).ctrl1);
-            const c2 = op((p as CCommand).ctrl2);
+            const c1 = op((p as CCommand)._ctrl1);
+            const c2 = op((p as CCommand)._ctrl2);
             return C(E._x, E._y, E._z)
               .ctrlPoint1(c1._x, c1._y, c1._z)
               .ctrlPoint2(c2._x, c2._y, c2._z);
@@ -2102,7 +2102,7 @@ export class Path extends SHAPE {
 
   push(command: PathCommand) {
     this.commands.push(command);
-    this.cursor = command.end;
+    this.cursor = command._end;
     return this;
   }
 
@@ -2115,11 +2115,11 @@ export class Path extends SHAPE {
     sweep: 1 | 0,
   ) {
     const a = A(end[0], end[1], 1)
-      .xRadius(dimensions[0])
-      .yRadius(dimensions[1])
+      .rx(dimensions[0])
+      .ry(dimensions[1])
       .rotate(rotation)
       .arc(arc)
-      .swept(sweep);
+      .sweep(sweep);
     return this.push(a);
   }
 
@@ -2278,10 +2278,10 @@ export class Text extends TEXT {
     this.commands.push(M(0, 0));
   }
   dy(y: number) {
-    return this.at(this.commands[0].end._x, this.commands[0].end._y + y);
+    return this.at(this.commands[0]._end._x, this.commands[0]._end._y + y);
   }
   dx(x: number) {
-    return this.at(this.commands[0].end._x + x, this.commands[0].end._y);
+    return this.at(this.commands[0]._end._x + x, this.commands[0]._end._y);
   }
   at(x: number, y: number) {
     this.commands[0] = M(x, y);
@@ -2319,8 +2319,8 @@ function tickLines(
     ns.forEach((n) => {
       const tick = line([n, -length], [n, length]);
       const txt = label(n, i).at(
-        tick.firstCommand.end._x,
-        tick.firstCommand.end._y,
+        tick.firstCommand._end._x,
+        tick.firstCommand._end._y,
       );
       out.push({ tick, txt });
       i++;
@@ -2329,8 +2329,8 @@ function tickLines(
     ns.forEach((n) => {
       const tick = line([-length, n], [length, n]);
       const txt = label(n, i).at(
-        tick.firstCommand.end._x,
-        tick.firstCommand.end._y,
+        tick.firstCommand._end._x,
+        tick.firstCommand._end._y,
       );
       out.push({ tick, txt });
       i++;
@@ -2443,7 +2443,7 @@ export class PolarPlot2D extends CONTEXT {
         }
       }
     }
-    const p = path(out[0].end._x, out[0].end._y, out[0].end._z)
+    const p = path(out[0]._end._x, out[0]._end._y, out[0]._end._z)
       .stroke(this._stroke)
       .strokeWidth(this._strokeWidth);
     for (let i = 1; i < out.length; i++) {
@@ -2698,7 +2698,7 @@ export class Plot2D extends CONTEXT {
         }
       }
     }
-    const p = path(out[0].end._x, out[0].end._y, out[0].end._z)
+    const p = path(out[0]._end._x, out[0]._end._y, out[0]._end._z)
       .stroke(this._stroke)
       .strokeWidth(this._strokeWidth);
     for (let i = 1; i < out.length; i++) {
@@ -3873,13 +3873,13 @@ class TNode extends TNODE {
   _dy: number = 0;
   _id: string | number = uid(5);
   get _x() {
-    return this.commands[0].end._x;
+    return this.commands[0]._end._x;
   }
   get _y() {
-    return this.commands[0].end._y;
+    return this.commands[0]._end._y;
   }
   get _z() {
-    return this.commands[0].end._z;
+    return this.commands[0]._end._z;
   }
   set _x(x: number) {
     this.commands = [M(x, this._y, this._z)];
