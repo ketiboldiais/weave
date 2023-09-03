@@ -1,22 +1,15 @@
 import { MDXProvider } from "@mdx-js/react";
-import {
-  Children,
-  ComponentProps,
-  CSSProperties,
-  HTMLAttributes,
-  ReactNode,
-} from "react";
+import { Children, ComponentProps, CSSProperties, ReactNode } from "react";
 import base from "./styles/base.module.scss";
 type Children = { children: ReactNode };
 import { Link } from "react-router-dom";
 
-// const isInternalLink =  href && (href.startsWith('/') || href.startsWith('#'));
 type ATAG = ComponentProps<"a">;
 
 const L = (props: ATAG) => {
   const href = props.href ?? "";
   console.log(href);
-  if (href.startsWith("./") || href.startsWith('/') || href.startsWith("#")) {
+  if (href.startsWith("./") || href.startsWith("/") || href.startsWith("#")) {
     return <Link to={href}>{props.children}</Link>;
   } else {
     return <a target={"_blank"} {...props}>{props.children}</a>;

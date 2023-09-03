@@ -3,8 +3,8 @@ import BG from "./demos/appendix/index.mdx";
 
 import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
-import GEOMETRY from "./demos/appendix/elementary-geometry.mdx";
-import NUMBER_THEORY from "./demos/appendix/elementary-number-theory.mdx";
+import GEOMETRY from "./demos/appendix/geometry-1.mdx";
+import NUMBER_THEORY from "./demos/appendix/number-theory-1.mdx";
 
 import INDEX from "./demos/doc.main.mdx";
 import TWINE from "./demos/doc.twine.mdx";
