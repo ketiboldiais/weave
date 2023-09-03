@@ -365,7 +365,8 @@ export const Figure = ({ of }: { of: Parent }) => {
           strokeWidth={of._strokeWidth}
           strokeDasharray={of._dash}
           opacity={of._opacity}
-          markerEnd={`url(#${of._id})`}
+          markerEnd={of._arrowEnd ? `url(#${of._id}-end)` : ""}
+          markerStart={of._arrowEnd ? `url(#${of._id}-start)` : ""}
         />
       </>
     );
@@ -472,15 +473,17 @@ export const Figure = ({ of }: { of: Parent }) => {
         {of.map((x) => (
           <marker
             key={`${x._id}`}
-            id={`${x._id}`}
+            id={`${x._id}-${x._type}`}
             markerWidth={x._markerWidth}
             markerHeight={x._markerHeight}
             refX={x._refX}
             refY={x._refY}
             orient={x._orient}
+            markerUnits={'strokeWidth'}
+            viewBox={'0 -5 10 10'}
           >
-            <polygon
-              points={"0 0, 10 3.5, 0 7"}
+            <path
+              d={x._d}
               fill={x._fill}
               stroke={x._stroke}
             />
@@ -663,7 +666,9 @@ export const Circle1 = () => {
 
 export const ArrowLeft1 = () => {
   const rays = range(0, 1, 0.02).map((n) => {
-    const l = line([0, 0], [randInt(-5,5)*n, randInt(-5,5)]).stroke("#16FF00")
+    const l = line([0, 0], [randInt(-5, 5) * n, randInt(-5, 5)]).stroke(
+      "#16FF00",
+    )
       .arrowEnd();
     return l;
   });

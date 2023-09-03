@@ -2163,6 +2163,11 @@ export function path(originX: number, originY: number, originZ: number = 1) {
 const FILLABLE = colorable(BASE);
 class ArrowHead extends FILLABLE {
   _id: string | number;
+  _type: "start" | "end" = "end";
+  type(of: "start" | "end") {
+    this._type = of;
+    return this;
+  }
   _refX: number = 0;
   id(value: string | number) {
     this._id = value;
@@ -2172,10 +2177,17 @@ class ArrowHead extends FILLABLE {
     this._refY = y;
     return this;
   }
-  _refY: number = 3.5;
+  _refY: number = 0;
   refX(x: number) {
     this._refX = x;
     return this;
+  }
+  get _d() {
+    if (this._type === "end") {
+      return `M0,-5L10,0L0,5`;
+    } else {
+      return `M0,0L10,-5L10,5Z`;
+    }
   }
   _orient: "auto" | "auto-start-reverse" = "auto";
   _markerWidth: number = 10;
@@ -2211,6 +2223,17 @@ export class Line extends SHAPE {
       M(start._x, start._y, start._z),
       L(end._x, end._y, end._z),
     );
+  }
+  arrowStart(arrowHead?: ArrowHead) {
+    if (arrowHead) {
+      this._arrowStart = arrowHead;
+    } else {
+      this._arrowStart = arrow(this._id)
+        .type('start')
+        .fill(this._stroke)
+        .stroke("none");
+    }
+    return this;
   }
   arrowEnd(arrowHead?: ArrowHead) {
     if (arrowHead) {
@@ -3298,7 +3321,7 @@ interface Contextual {
   _range: [number, number];
   range(x: number, y: number): this;
   _margins: [number, number, number, number];
-  margins(top: number, right: number, bottom?: number, left?: number): this;
+  margins(top: number, right?: number, bottom?: number, left?: number): this;
   _width: number;
   width(w: number): this;
   _height: number;
@@ -3341,6 +3364,10 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
             const arrow = child._arrowEnd;
             this._markers.push(arrow);
           }
+          if (child._arrowStart) {
+            const arrow = child._arrowStart;
+            this._markers.push(arrow);
+          }
         }
       });
       return this;
@@ -3353,7 +3380,7 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
     _margins: [number, number, number, number] = [50, 50, 50, 50];
     margins(
       top: number,
-      right: number,
+      right: number = top,
       bottom: number = top,
       left: number = right,
     ) {
