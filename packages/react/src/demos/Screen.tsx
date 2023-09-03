@@ -28,6 +28,7 @@ import {
   subtree,
   Text,
   text,
+  toRadians,
   tree,
 } from "../loom/index.js";
 import katex from "katex";
@@ -414,7 +415,7 @@ export const Figure = ({ of }: { of: Parent }) => {
     const y = of._y;
     if (of._mode === "LaTeX") {
       return (
-        <foreignObject x={x} y={y} width={'100%'} height={'100%'}>
+        <foreignObject x={x} y={y} width={"100%"} height={"100%"}>
           <Tex d={of._text} />
         </foreignObject>
       );
@@ -575,16 +576,22 @@ export const M1 = () => {
 
 export const Circle1 = () => {
   const f = interpolator([0, 100], [0, 20]);
-  const R = (x:number) => f(x)/2;
+  const a = interpolator([0, 100], [0, 2 * PI]);
+  const R = (x: number) => f(x) / 2;
   const rf = interpolator([0, 2.5], [0, 100]);
-  const [r, setR] = useState(rf(1)/2);
+  const [r, setR] = useState(rf(1) / 2);
+  const [theta, setTheta] = useState(0);
+  const updateRadius = (x: number) => {
+    setR(x);
+    setTheta(x);
+  };
   const data = plane([-10, 10], [-10, 10])
     .axisColor("#9DB2BF")
     .axis("x")
     .axis("y")
     .and(
-      line([0, 0], [0, R(r)]).stroke("tomato").rotateZ(PI / 4),
-      text(`𝑟 = ${R(r).toPrecision(2)}`)
+      line([0, 0], [0, R(r)]).stroke("tomato").rotateZ(a(theta)),
+      text(`𝑟 = ${R(r).toPrecision(3)}`)
         .at(0, R(r))
         .rotateZ(PI / 4)
         .fontColor("tomato")
@@ -594,6 +601,11 @@ export const Circle1 = () => {
         .stroke("white")
         .fill("none")
         .at(0, 0),
+      circle(0.4)
+        .stroke("white")
+        .fill("tomato")
+        .at(0, R(r))
+        .rotateZ(a(theta)),
     ).end();
   return (
     <>
@@ -604,7 +616,7 @@ export const Circle1 = () => {
         <input
           value={r}
           type={"range"}
-          onChange={(e) => setR(e.target.valueAsNumber)}
+          onChange={(e) => updateRadius(e.target.valueAsNumber)}
         />
       </section>
       <Figure of={data} />

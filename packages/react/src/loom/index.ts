@@ -475,12 +475,12 @@ const MAX_INT = Number.MAX_SAFE_INTEGER;
 // ========================================================== geometry functions
 
 /** Converts the provided number (assumed to be radians) to degrees. */
-function toDegrees(radians: number) {
+export function toDegrees(radians: number) {
   return radians * (180 / Math.PI);
 }
 
 /** Converts the provided number (assumed to be degrees) to radians. */
-function toRadians(degrees: number) {
+export function toRadians(degrees: number) {
   return degrees * (Math.PI / 180);
 }
 
@@ -5056,7 +5056,6 @@ interface Mapper<T> {
   difference(node: Difference): T;
   factorial(node: Factorial): T;
   algebraicFn(node: AlgebraicFn): T;
-  parenthesizedExpression(node: ParenthesizedExpression): T;
 }
 
 interface Visitor<T> {
@@ -6419,7 +6418,6 @@ interface ExpressionVisitor<T> {
   difference(node: Difference): T;
   factorial(node: Factorial): T;
   algebraicFn(node: AlgebraicFn): T;
-  parenthesizedExpression(node: ParenthesizedExpression): T;
 }
 
 // =================================================================== CAM nodes
@@ -6467,6 +6465,11 @@ abstract class AlgebraicExpression {
   readonly _op: string;
   constructor(op: string) {
     this._op = op;
+  }
+  _parenLevel: number = 0;
+  parend() {
+    this._parenLevel++;
+    return this;
   }
 }
 
@@ -6783,60 +6786,6 @@ abstract class Compound extends AlgebraicExpression {
       return true;
     }
   }
-}
-
-class ParenthesizedExpression extends Compound {
-  constructor(expression: AlgebraicExpression) {
-    super(core.paren, [expression]);
-  }
-  isRNE(): boolean {
-    return this.innerExpression.isRNE();
-  }
-  argmap(
-    callback: (x: AlgebraicExpression) => AlgebraicExpression,
-  ): AlgebraicExpression {
-    const arg = callback(this.innerExpression);
-    return new ParenthesizedExpression(arg);
-  }
-  equals(other: AlgebraicExpression): boolean {
-    if (!isParend(other)) {
-      return false;
-    } else {
-      return this.innerExpression.equals(other.innerExpression);
-    }
-  }
-  get innerExpression() {
-    return this._args[0];
-  }
-  accept<T>(visitor: ExpressionVisitor<T>): T {
-    return visitor.parenthesizedExpression(this);
-  }
-  trust<T>(mapper: Mapper<T>): T {
-    return mapper.parenthesizedExpression(this);
-  }
-  toString(): string {
-    return `(${this.innerExpression.toString()})`;
-  }
-  copy(): AlgebraicExpression {
-    return new ParenthesizedExpression(this.innerExpression.copy());
-  }
-  operand(i: number): AlgebraicExpression {
-    return this.innerExpression.operand(i);
-  }
-  isAlgebraic(): boolean {
-    return this.innerExpression.isAlgebraic();
-  }
-}
-
-function isParend(
-  u: AlgebraicExpression,
-): u is ParenthesizedExpression {
-  return u instanceof ParenthesizedExpression;
-}
-
-/** Returns a new parenthesized algebraic expression. */
-function parenthesized(expression: AlgebraicExpression) {
-  return new ParenthesizedExpression(expression);
 }
 
 // deno-fmt-ignore
@@ -7420,7 +7369,7 @@ class Difference extends AlgebraicOp<core.difference> {
    */
   toSum() {
     const left = this.left;
-    const right = parenthesized(product([int(-1), this.right]));
+    const right = product([int(-1), this.right]);
     return sum([left, right]);
   }
 }
@@ -9868,10 +9817,6 @@ class Latexer implements Mapper<string> {
     const args = node._args.map((x) => this.reduce(x)).join(",~");
     return latex.tie(name, latex.surround(args, "(", ")"));
   }
-  parenthesizedExpression(node: ParenthesizedExpression): string {
-    const out = this.reduce(node.innerExpression);
-    return latex.surround(out, "(", ")");
-  }
 }
 
 export function latexify(x: ASTNode | AlgebraicExpression | Primitive): string {
@@ -11823,7 +11768,7 @@ function exp(source: string) {
         `parsing an algebraic expression`,
       );
     }
-    const out = node(parenthesized(innerExpr.unwrap()));
+    const out = node(innerExpr.unwrap().parend());
     return out;
   };
 
@@ -11933,7 +11878,7 @@ function exp(source: string) {
     [tt.END]: [___, ___, ___o],
     [tt.ERROR]: [___, ___, ___o],
     [tt.EMPTY]: [___, ___, ___o],
-    [tt.lparen]: [PRIMARY, ___, bp.call],
+    [tt.lparen]: [___, ___, bp.call],
     [tt.rparen]: [___, ___, ___o],
     [tt.lbrace]: [___, ___, ___o],
     [tt.rbrace]: [___, ___, ___o],
@@ -12062,6 +12007,70 @@ export function simplifyRationalNumber(u: Fraction | Int): Fraction | Int {
       }
     }
   }
+}
+function numeratorOf(u: Int_OR_Frac) {
+  return u._n;
+}
+function denominatorOf(u: Int_OR_Frac) {
+  return u._d;
+}
+
+type Int_OR_Frac = Int | Fraction;
+
+function isIntorFrac(u: AlgebraicExpression): u is Int_OR_Frac {
+  return (isInt(u) || isFrac(u));
+}
+
+/** Evaluates an integer or fraction quotient. */
+export function evaluateQuotient(v: Int_OR_Frac, w: Int_OR_Frac) {
+  if (numeratorOf(w) === 0) {
+    return Undefined();
+  } else {
+    const N = numeratorOf(v) * denominatorOf(w);
+    const D = numeratorOf(w) * denominatorOf(v);
+    return frac(N, D);
+  }
+}
+
+export function evaluateProduct(v: Int_OR_Frac, w: Int_OR_Frac) {
+  if (numeratorOf(w) === 0) {
+    return Undefined();
+  } else {
+    const N = numeratorOf(v) * numeratorOf(w);
+    const D = denominatorOf(v) * denominatorOf(w);
+    return frac(N, D);
+  }
+}
+
+export function evaluateSum(v: Int_OR_Frac, w: Int_OR_Frac) {
+  if (numeratorOf(w) === 0) {
+    return Undefined();
+  } else {
+    const v_n = numeratorOf(v);
+    const v_d = denominatorOf(v);
+    const w_n = numeratorOf(w);
+    const w_d = denominatorOf(w);
+    const N = v_n * w_d + w_n * v_d;
+    const D = v_d * w_d;
+    return frac(N, D);
+  }
+}
+
+export function evaluateDiff(v: Int_OR_Frac, w: Int_OR_Frac) {
+  if (numeratorOf(w) === 0) {
+    return Undefined();
+  } else {
+    const v_n = numeratorOf(v);
+    const v_d = denominatorOf(v);
+    const w_n = numeratorOf(w);
+    const w_d = denominatorOf(w);
+    const N = v_n * w_d - w_n * v_d;
+    const D = v_d * w_d;
+    return frac(N, D);
+  }
+}
+
+export function evaluatePower(v: Int_OR_Frac, n: Int) {
 }
 
 export function engine(source: string) {
