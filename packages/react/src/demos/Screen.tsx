@@ -1,3 +1,4 @@
+const { cos, sin, PI } = Math;
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
 import { heights } from "./data.heights.js";
@@ -34,7 +35,7 @@ import { Slider } from "../ui/index.js";
 type Html = { __html: string };
 const html = (__html: string): Html => ({ __html });
 type TexProps = {
-  d: string;
+  d: string | number;
   block?: boolean;
   style?: CSSProperties;
 };
@@ -409,10 +410,19 @@ export const Figure = ({ of }: { of: Parent }) => {
   };
 
   const TEXT = ({ of }: { of: Text }) => {
+    const x = of._x;
+    const y = of._y;
+    if (of._mode === "LaTeX") {
+      return (
+        <foreignObject x={x} y={y} width={'100%'} height={'100%'}>
+          <Tex d={of._text} />
+        </foreignObject>
+      );
+    }
     return (
       <text
-        dx={of._commands[0]._end._x}
-        dy={of._commands[0]._end._y}
+        dx={x}
+        dy={y}
         textAnchor={of._textAnchor}
         fill={of._fontColor}
         fontFamily={of._fontFamily}
@@ -556,6 +566,45 @@ export const M1 = () => {
           value={y}
           type={"range"}
           onChange={(e) => setY(e.target.valueAsNumber)}
+        />
+      </section>
+      <Figure of={data} />
+    </>
+  );
+};
+
+export const Circle1 = () => {
+  const f = interpolator([0, 100], [0, 20]);
+  const R = (x:number) => f(x)/2;
+  const rf = interpolator([0, 2.5], [0, 100]);
+  const [r, setR] = useState(rf(1)/2);
+  const data = plane([-10, 10], [-10, 10])
+    .axisColor("#9DB2BF")
+    .axis("x")
+    .axis("y")
+    .and(
+      line([0, 0], [0, R(r)]).stroke("tomato").rotateZ(PI / 4),
+      text(`𝑟 = ${R(r).toPrecision(2)}`)
+        .at(0, R(r))
+        .rotateZ(PI / 4)
+        .fontColor("tomato")
+        .fontSize(15)
+        .dy(0.5),
+      circle(f(r))
+        .stroke("white")
+        .fill("none")
+        .at(0, 0),
+    ).end();
+  return (
+    <>
+      <section className={"hstack"}>
+        <label>
+          <Tex d={"r"} />
+        </label>
+        <input
+          value={r}
+          type={"range"}
+          onChange={(e) => setR(e.target.valueAsNumber)}
         />
       </section>
       <Figure of={data} />

@@ -2245,6 +2245,17 @@ export class Text extends TEXT {
   end() {
     return this;
   }
+  get _y() {
+    return this._commands[0]._end._y;
+  }
+  get _x() {
+    return this._commands[0]._end._x;
+  }
+  _mode: "LaTeX" | "plain" = "plain";
+  mode(as: "LaTeX" | "plain") {
+    this._mode = as;
+    return this;
+  }
   _text: string | number;
   _fontFamily?: string;
   fontFamily(family: string) {
@@ -2707,8 +2718,8 @@ export class Plot2D extends Plane {
   }
 
   end() {
-    this.axis('x');
-    this.axis('y');
+    this.axis("x");
+    this.axis("y");
     this.cartesian(this.f);
     return this.fit();
   }

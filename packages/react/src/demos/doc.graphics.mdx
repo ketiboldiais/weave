@@ -1,4 +1,4 @@
-import {M1} from './Screen.tsx';
+import {M1,Circle1} from './Screen.tsx';
 
 # Graphics
 This is the documentation page for the various graphics submodules comprising _Loom_.
@@ -31,3 +31,13 @@ To allow method chaining, the `at` method returns `this` (the callee’s referen
 
 <M1/>
 
+## Circle
+To render a `Circle`, we use the `circle` function.
+
+~~~ts
+const c = circle(5);
+~~~
+
+The `circle` function takes one argument, `r`, corresponding to the circle’s radius. Dragging the slider below will change circle’s radius argument accordingly.
+
+<Circle1/>
