@@ -16,6 +16,7 @@ import {
   leaf,
   Line,
   line,
+  Markers,
   Parent,
   Path,
   pieChart2D,
@@ -23,6 +24,8 @@ import {
   plot2D,
   polar2D,
   Quad,
+  randInt,
+  range,
   scatterPlot,
   Shape,
   subtree,
@@ -32,7 +35,6 @@ import {
   tree,
 } from "../loom/index.js";
 import katex from "katex";
-import { Slider } from "../ui/index.js";
 type Html = { __html: string };
 const html = (__html: string): Html => ({ __html });
 type TexProps = {
@@ -363,6 +365,7 @@ export const Figure = ({ of }: { of: Parent }) => {
           strokeWidth={of._strokeWidth}
           strokeDasharray={of._dash}
           opacity={of._opacity}
+          markerEnd={`url(#${of._id})`}
         />
       </>
     );
@@ -463,9 +466,34 @@ export const Figure = ({ of }: { of: Parent }) => {
     );
   };
 
+  const DEFS = ({ of }: { of: Markers[] }) => {
+    return (
+      <defs>
+        {of.map((x) => (
+          <marker
+            key={`${x._id}`}
+            id={`${x._id}`}
+            markerWidth={x._markerWidth}
+            markerHeight={x._markerHeight}
+            refX={x._refX}
+            refY={x._refY}
+            orient={x._orient}
+          >
+            <polygon
+              points={"0 0, 10 3.5, 0 7"}
+              fill={x._fill}
+              stroke={x._stroke}
+            />
+          </marker>
+        ))}
+      </defs>
+    );
+  };
+
   return (
     <div style={boxcss}>
       <svg viewBox={viewbox} preserveAspectRatio={par} style={svgcss}>
+        <DEFS of={of._markers} />
         <g transform={shift(of._mx / 2, of._my / 2)}>
           <SHAPES of={of._children} />
         </g>
@@ -631,4 +659,20 @@ export const Circle1 = () => {
       <Figure of={data} />
     </>
   );
+};
+
+export const ArrowLeft1 = () => {
+  const rays = range(0, 1, 0.02).map((n) => {
+    const l = line([0, 0], [randInt(-5,5)*n, randInt(-5,5)]).stroke("#16FF00")
+      .arrowEnd();
+    return l;
+  });
+  const d = plane()
+    .width(400).height(400).margins(10, 10)
+    .domain(-5, 5)
+    .range(-5, 5)
+    .axisColor("white").axis("x").axis("y").and(
+      ...rays,
+    ).end();
+  return <Figure of={d} />;
 };

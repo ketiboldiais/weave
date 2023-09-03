@@ -624,14 +624,14 @@ function relativeFrequencyTable(
 }
 
 /** Returns a random integer between the provided minimum and maximum (not including the maximum). */
-function randInt(min: number, max: number) {
+export function randInt(min: number, max: number) {
   return (
     floor(Math.random() * (max - min + 1)) + min
   );
 }
 
 /** Returns a random floating point number between the provided minimum and maximum (not including the maximum). */
-function randFloat(min: number, max: number) {
+export function randFloat(min: number, max: number) {
   return (
     Math.random() * (max - min) + min
   );
@@ -679,7 +679,7 @@ function mod(a: number, b: number) {
 }
 
 /** Returns an array of numbers running from start (inclusive) to stop (inclusive) */
-function range(start: number, stop: number, step = 1): number[] {
+export function range(start: number, stop: number, step = 1): number[] {
   const out = [];
   for (let i = start; i < stop; i += step) {
     out.push(i);
@@ -1787,6 +1787,8 @@ interface Renderable {
   get length(): number;
   get lastCommand(): PathCommand;
   get firstCommand(): PathCommand;
+  _id: string | number;
+  id(value: string | number): this;
   end(): this;
 }
 
@@ -1798,6 +1800,11 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
   return class extends klass {
     _commands: PathCommand[] = [];
     _origin: Vector = v3D(0, 0, 1);
+    _id: string | number = uid(5);
+    id(id: string | number) {
+      this._id = id;
+      return this;
+    }
     end() {
       return this;
     }
@@ -2153,15 +2160,67 @@ export function path(originX: number, originY: number, originZ: number = 1) {
     new Path(originX, originY, originZ)
   );
 }
+const FILLABLE = colorable(BASE);
+class ArrowHead extends FILLABLE {
+  _id: string | number;
+  _refX: number = 0;
+  id(value: string | number) {
+    this._id = value;
+    return this;
+  }
+  refY(y: number) {
+    this._refY = y;
+    return this;
+  }
+  _refY: number = 3.5;
+  refX(x: number) {
+    this._refX = x;
+    return this;
+  }
+  _orient: "auto" | "auto-start-reverse" = "auto";
+  _markerWidth: number = 10;
+  markerWidth(w: number) {
+    this._markerWidth = w;
+    return this;
+  }
+  _markerHeight: number = 7;
+  markerHeight(h: number) {
+    this._markerHeight = h;
+    return this;
+  }
+  orient(value: "auto" | "auto-start-reverse") {
+    this._orient = value;
+    return this;
+  }
+  constructor(id: string | number) {
+    super();
+    this._id = id;
+  }
+}
+function arrow(id: string | number) {
+  return new ArrowHead(id);
+}
 
 /** A node corresponding to a line. */
 export class Line extends SHAPE {
+  _arrowEnd: null | ArrowHead = null;
+  _arrowStart: null | ArrowHead = null;
   constructor(start: Vector, end: Vector) {
     super();
     this._commands.push(
       M(start._x, start._y, start._z),
       L(end._x, end._y, end._z),
     );
+  }
+  arrowEnd(arrowHead?: ArrowHead) {
+    if (arrowHead) {
+      this._arrowEnd = arrowHead;
+    } else {
+      this._arrowEnd = arrow(this._id)
+        .fill(this._stroke)
+        .stroke("none");
+    }
+    return this;
   }
 }
 
@@ -2359,6 +2418,7 @@ export class Area2D extends SHAPE {
   }
   moveTo(x: number, y: number, z: number = 1) {
     this._origin = v3D(x, y, z);
+    return this;
   }
   push(command: PathCommand) {
     this._commands.push(command);
@@ -3253,11 +3313,13 @@ interface Contextual {
   get _ymax(): number;
   and(...shape: Shape[]): this;
   fit(): this;
+  _markers: Markers[];
 }
 
 function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
   return class extends klass {
     _children: Shape[] = [];
+    _markers: Markers[] = [];
     _domain: [number, number] = [-10, 10];
     domain(x: number, y: number) {
       if (x < y) this._domain = [x, y];
@@ -3272,6 +3334,14 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
           [this._vw, this._vh],
         );
         return out;
+      });
+      this._children.forEach((child) => {
+        if (child instanceof Line) {
+          if (child._arrowEnd) {
+            const arrow = child._arrowEnd;
+            this._markers.push(arrow);
+          }
+        }
       });
       return this;
     }
@@ -4635,6 +4705,7 @@ export type Parent =
   | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;
+export type Markers = ArrowHead;
 
 // ========================================================= end graphics module
 
