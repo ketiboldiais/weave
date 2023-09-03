@@ -527,7 +527,7 @@ export const M1 = () => {
   const [x, setX] = useState(rf(-5));
   const [y, setY] = useState(rf(7));
   const data = plane([-10, 10], [-10, 10])
-    .axisColor("#9DB2BF")
+    .axisColor("#7D7463")
     .axis("x")
     .axis("y")
     .and(
@@ -579,14 +579,14 @@ export const Circle1 = () => {
   const a = interpolator([0, 100], [0, 2 * PI]);
   const R = (x: number) => f(x) / 2;
   const rf = interpolator([0, 2.5], [0, 100]);
-  const [r, setR] = useState(rf(1) / 2);
-  const [theta, setTheta] = useState(0);
+  const [r, setR] = useState(rf(3) / 2);
+  const [theta, setTheta] = useState(r);
   const updateRadius = (x: number) => {
     setR(x);
     setTheta(x);
   };
   const data = plane([-10, 10], [-10, 10])
-    .axisColor("#9DB2BF")
+    .axisColor("#7D7463")
     .axis("x")
     .axis("y")
     .and(
@@ -601,6 +601,15 @@ export const Circle1 = () => {
         .stroke("white")
         .fill("none")
         .at(0, 0),
+      line([R(r) * sin(a(theta)), R(r) * cos(a(theta))], [
+        0,
+        R(r) * cos(a(theta)),
+      ]).stroke("lightgrey").dash(3).opacity(0.8),
+      line([R(r) * sin(a(theta)), 0], [
+        R(r) * sin(a(theta)),
+        R(r) * cos(a(theta)),
+      ])
+        .stroke("lightgrey").dash(3).opacity(0.8),
       circle(0.4)
         .stroke("white")
         .fill("tomato")
