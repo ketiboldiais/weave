@@ -513,29 +513,50 @@ export const Terminal = (
 export const M1 = () => {
   const f = interpolator([0, 100], [-10, 10]);
   const rf = interpolator([-10, 10], [0, 100]);
-  const [x, setX] = useState(rf(0));
-  const [y, setY] = useState(rf(0));
-  const data = plane([-10, 10], [-10, 10]).and(
-    line([f(x), -10], [f(x), 10]).stroke("lightgrey").dash(6),
-    line([-10, f(y)], [10, f(y)]).stroke("lightgrey").dash(6),
-    circle(0.5).fill("tomato").stroke("white").at(f(x), f(y)),
-    text(
-      `(${f(x).toPrecision(2)}, ${f(y).toPrecision(2)})`,
-    ).at(f(x), f(y)).fontSize(12).anchor("middle").fontColor("white").dy(1),
-  ).end();
+  const [x, setX] = useState(rf(-5));
+  const [y, setY] = useState(rf(7));
+  const data = plane([-10, 10], [-10, 10])
+    .axisColor("#9DB2BF")
+    .axis("x")
+    .axis("y")
+    .and(
+      line([f(x), -10], [f(x), 10])
+        .stroke("lightgrey")
+        .dash(6),
+      line([-10, f(y)], [10, f(y)])
+        .stroke("lightgrey")
+        .dash(6),
+      circle(0.5)
+        .fill("tomato")
+        .stroke("white")
+        .at(f(x), f(y)),
+      text(`(${f(x).toPrecision(2)}, ${f(y).toPrecision(2)})`).at(f(x), f(y))
+        .fontSize(12)
+        .anchor("middle")
+        .fontColor("white")
+        .dy(1),
+    ).end();
   return (
     <>
-      <section className={'hstack'}>
+      <section className={"hstack"}>
         <label>
           <Tex d={"x"} />
         </label>
-        <input type={"range"} onChange={(e) => setX(e.target.valueAsNumber)} />
+        <input
+          value={x}
+          type={"range"}
+          onChange={(e) => setX(e.target.valueAsNumber)}
+        />
       </section>
-      <section className={'hstack'}>
+      <section className={"hstack"}>
         <label>
           <Tex d={"y"} />
         </label>
-        <input type={"range"} onChange={(e) => setY(e.target.valueAsNumber)} />
+        <input
+          value={y}
+          type={"range"}
+          onChange={(e) => setY(e.target.valueAsNumber)}
+        />
       </section>
       <Figure of={data} />
     </>

@@ -4,7 +4,7 @@ import {M1} from './Screen.tsx';
 This is the documentation page for the various graphics submodules comprising _Loom_.
 
 ## Renderable
-Data objects in _Loom_ all reduce to the data type _Renderable_. Internally, this is an object with a `_commands` property comprised of [PathCommands](#pathcommand). Each `PathCommand` corresponds to an SVG path command. To “draw” objects, _Loom_’s algorithms apply various matrix transformations to this array. The `PathCommand` subtypes are as follows:
+Data objects in _Loom_ all reduce to the data type _Renderable_. Internally, this is an object with a `_commands` property comprised of `PathCommands`. Each `PathCommand` corresponds to an SVG path command. To “draw” objects, _Loom_’s algorithms apply various matrix transformations to this array. The `PathCommand` subtypes are as follows:
 
 
 | Type       | Maps to SVG Command            |

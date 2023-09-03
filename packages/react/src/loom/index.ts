@@ -2202,7 +2202,7 @@ export class Circle extends SHAPE {
 }
 
 /** Returns a new circle. @param r - The circle’s radius. */
-export function circle(r: number=1) {
+export function circle(r: number = 1) {
   return new Circle(r);
 }
 
@@ -2494,56 +2494,13 @@ export function polar2D(f: string) {
 
 // ===================================================================== Plane2D
 export class Plane extends CONTEXT {
-  constructor(domain: [number, number], range: [number, number]) {
+  constructor(
+    domain: [number, number] = [-10, 10],
+    range: [number, number] = [-10, 10],
+  ) {
     super();
     this._domain = domain;
     this._range = range;
-  }
-  end() {
-    return this.fit();
-  }
-}
-export function plane(
-  domain: [number, number] = [-10, 10],
-  range: [number, number] = [-10, 10],
-) {
-  return new Plane(domain, range);
-}
-
-
-
-// ============================================================ 2D Function Plot
-
-export class Plot2D extends CONTEXT {
-  f: string;
-  _samples: number = 200;
-  samples(value: number) {
-    this._samples = value;
-    return this;
-  }
-  _integrate?: [number, number];
-  _integralFill?: string;
-  _integralOpacity?: number;
-  integrate(data: {
-    bounds: [number, number];
-    fill?: string;
-    opacity?: number;
-  }) {
-    this._integrate = data.bounds;
-    this._integralFill = data.fill;
-    this._integralOpacity = data.opacity;
-    return this;
-  }
-  constructor(f: string) {
-    super();
-    this.f = "fn " + f + ";";
-    this._domain = [-10, 10];
-    this._range = [-10, 10];
-    const d = 400;
-    this._width = d;
-    this._height = d;
-    const m = 10;
-    this._margins = [m, m, m, m];
   }
   _xTickLength: number = 0.1;
   xTickLength(n: number) {
@@ -2575,56 +2532,104 @@ export class Plot2D extends CONTEXT {
     this._axisColor = color;
     return this;
   }
-  private generateAxes() {
-    const xmin = this._domain[0];
-    const xmax = this._domain[1];
-    const ymin = this._range[0];
-    const ymax = this._range[1];
-    // x-axis
-    const xLine = line([xmin, 0], [xmax, 0])
-      .stroke(this._axisColor);
-    this._children.push(xLine);
-    // y-axis
-    const yLine = line([0, ymin], [0, ymax])
-      .stroke(this._axisColor);
-    this._children.push(yLine);
-    const xTickFormat = (n: number) =>
-      text(n)
-        .fontColor(this._axisColor)
-        .anchor("middle");
-    const yTickFormat = (n: number) =>
-      text(n)
-        .fontColor(this._axisColor)
-        .anchor("end");
-    const xticks = tickLines(
-      this._xTickLength,
-      xmin,
-      xmax + this._xTickSep,
-      this._xTickSep,
-      "x",
-      xTickFormat,
-    );
-    xticks.forEach((tick) => {
-      this._children.push(
-        tick.tick.stroke(this._axisColor),
-        tick.txt.translate(0, -0.8).fontSize(this._tickFontSize),
+  axis(on: "x" | "y") {
+    if (on === "x") {
+      const xmin = this._domain[0];
+      const xmax = this._domain[1];
+      const xTickFormat = (n: number) =>
+        text(n)
+          .fontColor(this._axisColor)
+          .anchor("middle");
+      const xLine = line([xmin, 0], [xmax, 0])
+        .stroke(this._axisColor);
+      this._children.push(xLine);
+      const xticks = tickLines(
+        this._xTickLength,
+        xmin,
+        xmax + this._xTickSep,
+        this._xTickSep,
+        "x",
+        xTickFormat,
       );
-    });
-    const yticks = tickLines(
-      this._yTickLength,
-      ymin,
-      ymax + this._yTickSep,
-      this._yTickSep,
-      "y",
-      yTickFormat,
-    );
-    yticks.forEach((tick) => {
-      this._children.push(
-        tick.tick.stroke(this._axisColor),
-        tick.txt.translate(-0.2, -0.2).fontSize(this._tickFontSize),
+      xticks.forEach((tick) => {
+        this._children.push(
+          tick.tick.stroke(this._axisColor),
+          tick.txt.translate(0, -0.8).fontSize(this._tickFontSize),
+        );
+      });
+    }
+    if (on === "y") {
+      const ymin = this._range[0];
+      const ymax = this._range[1];
+      const yLine = line([0, ymin], [0, ymax])
+        .stroke(this._axisColor);
+      this._children.push(yLine);
+      const yTickFormat = (n: number) =>
+        text(n)
+          .fontColor(this._axisColor)
+          .anchor("end");
+      const yticks = tickLines(
+        this._yTickLength,
+        ymin,
+        ymax + this._yTickSep,
+        this._yTickSep,
+        "y",
+        yTickFormat,
       );
-    });
+      yticks.forEach((tick) => {
+        this._children.push(
+          tick.tick.stroke(this._axisColor),
+          tick.txt.translate(-0.2, -0.2).fontSize(this._tickFontSize),
+        );
+      });
+    }
+    return this;
   }
+  end() {
+    return this.fit();
+  }
+}
+export function plane(
+  domain: [number, number] = [-10, 10],
+  range: [number, number] = [-10, 10],
+) {
+  return new Plane(domain, range);
+}
+
+// ============================================================ 2D Function Plot
+
+export class Plot2D extends Plane {
+  f: string;
+  _samples: number = 200;
+  samples(value: number) {
+    this._samples = value;
+    return this;
+  }
+  _integrate?: [number, number];
+  _integralFill?: string;
+  _integralOpacity?: number;
+  integrate(data: {
+    bounds: [number, number];
+    fill?: string;
+    opacity?: number;
+  }) {
+    this._integrate = data.bounds;
+    this._integralFill = data.fill;
+    this._integralOpacity = data.opacity;
+    return this;
+  }
+  constructor(f: string) {
+    super();
+    this.f = "fn " + f + ";";
+    this._domain = [-10, 10];
+    this._range = [-10, 10];
+    const d = 400;
+    this._width = d;
+    this._height = d;
+    const m = 10;
+    this._margins = [m, m, m, m];
+  }
+
   private cartesian(f: string) {
     const out: PathCommand[] = [];
     const xmin = this._domain[0];
@@ -2700,8 +2705,10 @@ export class Plot2D extends CONTEXT {
     this._children.push(p);
     return this;
   }
+
   end() {
-    this.generateAxes();
+    this.axis('x');
+    this.axis('y');
     this.cartesian(this.f);
     return this.fit();
   }
