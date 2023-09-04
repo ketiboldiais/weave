@@ -54,7 +54,7 @@ Returns true if the _AlgebraicExpression_ is __structurally equal__ to the ${oth
 		every operand of _arg_.
 5. ${ParenthesizedExpression.\texttt{equals}(arg)}$
 	- If _arg_ is not a _ParenthesizedExpression_, returns false.
-	- Returns true only if the `_innerExpression` property of _ParenthesizedExpression_ is structurally equal to the `innerExpression` of _arg_.
+	- Returns true only if the `_innerExpression` property of _ParenthesizedExpression_ is structurally equal to the `_innerExpression` property of _arg_.
 
 ## Utility Functions
 ### simplifyRationalNumber(_u_): __Fraction | Int__
@@ -77,3 +77,13 @@ const y = simplifyRationalNumber(x); // the fraction 1/2
 | ${u:}$ `AlgebraicExpression` | `Fraction \| Int \| UNDEFINED` |
 :::
 Given the `AlgebraicExpression` ${u,}$ simplifies ${u}$ into either `Fraction` in standard form, an `Int`, or constant `Undefined`.
+
+### order(_u_, _v_): __boolean__
+:::tbl
+| Parameters                   | Returns   |
+| ---------------------------- | --------- |
+| ${u:}$ `AlgebraicExpression` | `boolean` |
+| ${v:}$ `AlgebraicExpression` |           |
+:::
+
+Given the `AlgebraicExpressions` ${u}$ and ${v,}$ returns true if ${u}$ precedes ${v,}$ false otherwise. This function defines the order relation for all algebraic expressions in CAM (thereby allowing algebraic expressions to be _sorted_).

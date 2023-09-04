@@ -7540,6 +7540,10 @@ export function factorial(of: AlgebraicExpression) {
   return new Factorial(of);
 }
 
+function isFactorial(u: AlgebraicExpression): u is Factorial {
+  return u instanceof Factorial;
+}
+
 /** A node corresponding to any function that takes arguments of type algebraic expression. */
 class AlgebraicFn extends Compound {
   isRNE(): boolean {
@@ -12311,6 +12315,46 @@ export function simplifyRNE(
 }
 
 export function order(e1: AlgebraicExpression, e2: AlgebraicExpression) {
+  const filter8 = (
+    u: AlgebraicExpression,
+  ): u is Sym | Power | Sum | Factorial | AlgebraicFn => {
+    return (
+      isSymbol(u) ||
+      isPower(u) ||
+      isSum(u) ||
+      isFactorial(u) ||
+      isAlgebraicFn(u)
+    );
+  };
+
+  const filter9 = (
+    u: AlgebraicExpression,
+  ): u is Sum | Factorial | AlgebraicFn | Sym => {
+    return (
+      isSum(u) ||
+      isFactorial(u) ||
+      isAlgebraicFn(u) ||
+      isSymbol(u)
+    );
+  };
+
+  const filter10 = (
+    u: AlgebraicExpression,
+  ): u is Factorial | AlgebraicFn | Sym => {
+    return (
+      isFactorial(u) ||
+      isAlgebraicFn(u) ||
+      isSymbol(u)
+    );
+  };
+
+  const filter11 = (u: AlgebraicExpression): u is AlgebraicFn | Sym => {
+    return (
+      isAlgebraicFn(u) ||
+      isSymbol(u)
+    );
+  };
+
   const order1 = (u: Int_OR_Frac, v: Int_OR_Frac) => {
     const A = u.toFrac();
     const B = v.toFrac();
@@ -12328,7 +12372,7 @@ export function order(e1: AlgebraicExpression, e2: AlgebraicExpression) {
       return false;
     }
     if (!(u.last().equals(v.last()))) {
-      return order(u.last(), v.last());
+      return ORDER(u.last(), v.last());
     }
     const m = u._args.length;
     const n = v._args.length;
@@ -12338,11 +12382,87 @@ export function order(e1: AlgebraicExpression, e2: AlgebraicExpression) {
         const o1 = u.operand(m - j);
         const o2 = v.operand(n - j);
         if (!o1.equals(o2)) {
-          return order(o1, o2);
+          return ORDER(o1, o2);
         }
       }
     }
     return m < n;
+  };
+
+  const order4 = (u: Power, v: Power): boolean => {
+    if (!u.base.equals(v.base)) {
+      return ORDER(u.base, v.base);
+    } else {
+      return ORDER(u.exponent, v.exponent);
+    }
+  };
+
+  const order5 = (u: Factorial, v: Factorial): boolean => {
+    return ORDER(u.arg, v.arg);
+  };
+
+  const order6 = (u: AlgebraicFn, v: AlgebraicFn): boolean => {
+    if (u._op !== v._op) {
+      return u._op < v._op;
+    } else {
+      const uOp1 = u.operand(1);
+      const uOp2 = u.operand(1);
+      if (!uOp1.equals(uOp2)) {
+        return ORDER(uOp1, uOp2);
+      }
+      const m = u._args.length;
+      const n = v._args.length;
+      const k = min(n, m) - 1;
+      if (1 <= k) {
+        for (let j = 0; j <= k - 1; j++) {
+          const o1 = u.operand(m - j);
+          const o2 = u.operand(n - j);
+          if (!o1.equals(o2)) {
+            return ORDER(o1, o2);
+          }
+        }
+      }
+      return m < n;
+    }
+  };
+
+  const order8 = (
+    u: Product,
+    v: Power | Sum | Factorial | AlgebraicFn | Sym,
+  ) => {
+    if (!u.equals(v)) {
+      return ORDER(u.last(), v);
+    } else {
+      return true;
+    }
+  };
+
+  const order9 = (u: Power, v: Sum | Factorial | AlgebraicFn | Sym) => {
+    return ORDER(u, power(v, int(1)));
+  };
+
+  const order10 = (u: Sum, v: Factorial | AlgebraicFn | Sym) => {
+    if (!u.equals(v)) {
+      return ORDER(u, sum([v]));
+    } else {
+      return true;
+    }
+  };
+
+  const order11 = (u: Factorial, v: AlgebraicFn | Sym) => {
+    if (u.operand(1).equals(v)) {
+      return false;
+    } else {
+      return ORDER(u, factorial(v));
+    }
+  };
+
+  const order12 = (u: AlgebraicFn, v: Sym) => {
+    if (u._op === v._s) {
+      return false;
+    } else {
+      return ORDER(sym(u._op), v);
+    }
   };
 
   const ORDER = (u: AlgebraicExpression, v: AlgebraicExpression): boolean => {
@@ -12352,11 +12472,28 @@ export function order(e1: AlgebraicExpression, e2: AlgebraicExpression) {
       return order2(u, v);
     } else if (isProductOrSum(u) && isProductOrSum(v)) {
       return order3(u, v);
+    } else if (isPower(u) && isPower(v)) {
+      return order4(u, v);
+    } else if (isFactorial(u) && isFactorial(v)) {
+      return order5(u, v);
+    } else if (isAlgebraicFn(u) && isAlgebraicFn(v)) {
+      return order6(u, v);
+    } else if (isIntorFrac(u)) {
+      return true;
+    } else if (isProduct(u) && filter8(v)) {
+      return order8(u, v);
+    } else if (isPower(u) && filter9(v)) {
+      return order9(u, v);
+    } else if (isSum(u) && filter10(v)) {
+      return order10(u, v);
+    } else if (isFactorial(u) && filter11(v)) {
+      return order11(u, v);
+    } else if (isAlgebraicFn(u) && isSymbol(v)) {
+      return order12(u, v);
     } else {
       return false;
     }
   };
-
   return ORDER(e1, e2);
 }
 
