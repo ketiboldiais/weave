@@ -73,19 +73,17 @@
 		border-collapse: collapse;
 		color: $bluegrey;
 		font-family: 'Fira Code';
+		font-size: 0.9rem !important;
 
 		td {
-			padding: 0.5em !important;
 			border: solid thin $bluegrey2;
+			white-space: pre;
 		}
 
 		th {
 			border: solid thin $bluegrey2;
 		}
 
-		td code {
-			font-size: 1rem !important;
-		}
 	}
 
 

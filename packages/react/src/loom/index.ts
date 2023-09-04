@@ -2229,7 +2229,7 @@ export class Line extends SHAPE {
       this._arrowStart = arrowHead;
     } else {
       this._arrowStart = arrow(this._id)
-        .type('start')
+        .type("start")
         .fill(this._stroke)
         .stroke("none");
     }
@@ -6594,7 +6594,7 @@ abstract class Atom extends AlgebraicExpression {
     return 0;
   }
   operand(i: number): UNDEFINED {
-    return Undefined();
+    return Undefined(`Asked for the operand ${i}, but atoms have no operands.`);
   }
 }
 
@@ -6816,6 +6816,11 @@ class Constant<
     const out = new Constant(this._c, this._value);
     return out;
   }
+  _note: string = "";
+  note(note: string) {
+    this._note = note;
+    return this;
+  }
   _c: X;
   _value: P;
   constructor(c: X, value: P) {
@@ -6831,8 +6836,8 @@ function isConstant(u: AlgebraicExpression): u is Constant<number> {
 }
 
 /** Returns a new Undefined. */
-export function Undefined(): UNDEFINED {
-  return new Constant(core.undefined, null);
+export function Undefined(message: string): UNDEFINED {
+  return new Constant(core.undefined, null).note(message);
 }
 
 type UNDEFINED = Constant<null, core.undefined>;
@@ -6841,7 +6846,7 @@ type UNDEFINED = Constant<null, core.undefined>;
 function isUndefined(
   u: AlgebraicExpression,
 ): u is Constant<null, core.undefined> {
-  return !$isNothing(u) && (u._op === core.undefined);
+  return (u instanceof Constant) && (u._value === null);
 }
 
 /** Returns a new numeric constant. */
@@ -6926,7 +6931,7 @@ abstract class AlgebraicOp<OP extends AlgOP = AlgOP> extends Compound {
    */
   last(): AlgebraicExpression {
     const out = this._args[this._args.length - 1];
-    if (out === undefined) return Undefined();
+    if (out === undefined) return Undefined("No last argument exists.");
     return out;
   }
   /**
@@ -6934,7 +6939,7 @@ abstract class AlgebraicOp<OP extends AlgOP = AlgOP> extends Compound {
    */
   head(): AlgebraicExpression {
     const out = this._args[0];
-    if (out === undefined) return Undefined();
+    if (out === undefined) return Undefined("No first argument exists.");
     return out;
   }
   /**
@@ -6951,7 +6956,10 @@ abstract class AlgebraicOp<OP extends AlgOP = AlgOP> extends Compound {
   operand(i: number): AlgebraicExpression {
     const out = this._args[i - 1];
     if (out === undefined) {
-      return Undefined();
+      const L = this._args.length;
+      return Undefined(
+        `Expression comprises ${L} operands, but index ${i} was passed. This is out of bounds.`,
+      );
     } else {
       return out;
     }
@@ -7002,7 +7010,7 @@ export function sum(args: AlgebraicExpression[]) {
 
 /** Type predicate. Returns true if `u` is a, false otherwise. */
 function isSum(u: AlgebraicExpression): u is Sum {
-  return !$isNothing(u) && (u._op === core.sum);
+  return u instanceof Sum;
 }
 
 /** An algebraic expression corresponding to an n-ary product. */
@@ -7561,7 +7569,10 @@ class AlgebraicFn extends Compound {
   operand(i: number): AlgebraicExpression {
     const out = this._args[i - 1];
     if (out === undefined) {
-      return Undefined();
+      const L = this._args.length;
+      return Undefined(
+        `Expression comprises ${L} operands, but index ${i} was passed. This is out of bounds.`,
+      );
     } else {
       return out;
     }
@@ -8874,7 +8885,7 @@ class Simplifier implements Visitor<AlgebraicExpression> {
     throw this.error(`Algebraic strings cannot be used within themselves`);
   }
   nil(node: Nil): AlgebraicExpression {
-    return Undefined();
+    return Undefined("null");
   }
   variable(node: Variable): AlgebraicExpression {
     return sym(node.name.lexeme);
@@ -11790,7 +11801,7 @@ function exp(source: string) {
   let $peek = Token.empty;
   let $current = Token.empty;
   let $error: null | Err = null;
-  let $lastExpression: AlgebraicExpression = Undefined();
+  let $lastExpression: AlgebraicExpression = Undefined("null");
   let $cursor = 0;
   const error = (message: string, phase: string, token: Token = $current) => {
     const e = syntaxError(message, phase, token);
@@ -12056,7 +12067,7 @@ function exp(source: string) {
   ): Either<Err, AlgebraicExpression> => {
     let token = next();
     const pre = prefixRule(token.type);
-    let lhs = pre(token, Undefined());
+    let lhs = pre(token, Undefined("null"));
     if (lhs.isLeft()) {
       return lhs;
     }
@@ -12086,7 +12097,14 @@ function exp(source: string) {
 }
 
 /** Reduces the given fraction or integer to either a fraction in standard form or an integer.  */
-export function simplifyRationalNumber(u: Fraction | Int): Fraction | Int {
+export function simplifyRationalNumber(
+  u: AlgebraicExpression,
+): Fraction | Int | UNDEFINED {
+  if (!isInt(u) && !isFrac(u)) {
+    return Undefined(
+      `In call to simplifyRationalNumber, the argument ${u} is neither an Int nor a Fraction.`,
+    );
+  }
   if (isInt(u)) {
     return u;
   } else {
@@ -12122,7 +12140,9 @@ function isIntorFrac(u: AlgebraicExpression): u is Int_OR_Frac {
 /** Evaluates an integer or fraction quotient. */
 export function evaluateQuotient(v: Int_OR_Frac, w: Int_OR_Frac) {
   if (numeratorOf(w) === 0) {
-    return Undefined();
+    return Undefined(
+      `In call to evaluateQuotient, the numerator of argument “w” is 0.`,
+    );
   } else {
     const N = numeratorOf(v) * denominatorOf(w);
     const D = numeratorOf(w) * denominatorOf(v);
@@ -12132,7 +12152,9 @@ export function evaluateQuotient(v: Int_OR_Frac, w: Int_OR_Frac) {
 
 export function evaluateProduct(v: Int_OR_Frac, w: Int_OR_Frac) {
   if (numeratorOf(w) === 0) {
-    return Undefined();
+    return Undefined(
+      `In call to evaluateProduct, the numerator of argument “w” is 0.`,
+    );
   } else {
     const N = numeratorOf(v) * numeratorOf(w);
     const D = denominatorOf(v) * denominatorOf(w);
@@ -12142,13 +12164,15 @@ export function evaluateProduct(v: Int_OR_Frac, w: Int_OR_Frac) {
 
 export function evaluateSum(v: Int_OR_Frac, w: Int_OR_Frac) {
   if (numeratorOf(w) === 0) {
-    return Undefined();
+    return Undefined(
+      `In call to evaluateSum, the numerator of argument “w” is 0.`,
+    );
   } else {
     const v_n = numeratorOf(v);
     const v_d = denominatorOf(v);
     const w_n = numeratorOf(w);
     const w_d = denominatorOf(w);
-    const N = v_n * w_d + w_n * v_d;
+    const N = (v_n * w_d) + (w_n * v_d);
     const D = v_d * w_d;
     return frac(N, D);
   }
@@ -12156,19 +12180,128 @@ export function evaluateSum(v: Int_OR_Frac, w: Int_OR_Frac) {
 
 export function evaluateDiff(v: Int_OR_Frac, w: Int_OR_Frac) {
   if (numeratorOf(w) === 0) {
-    return Undefined();
+    return Undefined(
+      `In call to evaluateDiff, the numerator of argument “w” is 0.`,
+    );
   } else {
     const v_n = numeratorOf(v);
     const v_d = denominatorOf(v);
     const w_n = numeratorOf(w);
     const w_d = denominatorOf(w);
-    const N = v_n * w_d - w_n * v_d;
+    const N = (v_n * w_d) - (w_n * v_d);
     const D = v_d * w_d;
     return frac(N, D);
   }
 }
 
 export function evaluatePower(v: Int_OR_Frac, n: Int) {
+  const v_n = numeratorOf(v);
+  if (v_n !== 0) {
+    if (n._n > 0) {
+      const N = numeratorOf(v);
+      const D = denominatorOf(v);
+      const P = n._n;
+      return frac(N ** P, D ** P);
+    } else if (n._n === 0) {
+      return int(1);
+    } else if (n._n === -1) {
+      const N = numeratorOf(v);
+      const D = denominatorOf(v);
+      return frac(D, N);
+    } else {
+      const N = numeratorOf(v) ** -n._n;
+      const D = denominatorOf(v) ** -n._n;
+      return frac(D, N);
+    }
+  } else {
+    if (n._n >= 1) {
+      return int(0);
+    } else {
+      return Undefined(
+        `In call to evaluatePower, the exponent is not an integer. Exponents must be integers when evaluating rational expressions.`,
+      );
+    }
+  }
+}
+
+export function simplifyRNE(u: AlgebraicExpression): Int | Fraction | UNDEFINED {
+  if (!u.isRNE()) {
+    return Undefined(
+      `In call to simplifyRNE, argument “u” is not an RNE (rational number expression).`,
+    );
+  }
+  // @ts-ignore
+  const f = (u: AlgebraicExpression): Int | Fraction | UNDEFINED => {
+    if (isInt(u)) {
+      return u;
+    } else if (isFrac(u)) {
+      const N = numeratorOf(u);
+      if (N === 0) {
+        return Undefined(
+          `In call to simplifyRNE’s recursive simplifier, the numerator of argument “u” is zero.`,
+        );
+      } else {
+        return u;
+      }
+    } else if (u._args.length === 1) {
+      const v = f(u.operand(1));
+      if (isUndefined(v) || isSum(v)) {
+        return v;
+      }
+      if (isDifference(u)) {
+        return evaluateProduct(int(-1), v);
+      }
+    } else if (u._args.length === 2) {
+      if (isSum(u) || isProduct(u) || isDifference(u) || isQuotient(u)) {
+        const v = f(u.operand(1));
+        const w = f(u.operand(2));
+        if (isUndefined(v) || isUndefined(w)) {
+          const notes = ["\n"];
+          if (isUndefined(v)) notes.push(v._note);
+          if (isUndefined(w)) notes.push(w._note);
+          const msgs = notes.join("\n");
+          return Undefined(
+            `In call to simplifyRNE’s recursive simplifier, the numerator of arguments “v” and “w” are undefined. Tracing:` +
+              msgs,
+          );
+        } else if (isSum(u)) {
+          return evaluateSum(v, w);
+        } else if (isDifference(u)) {
+          return evaluateDiff(v, w);
+        } else if (isProduct(u)) {
+          return evaluateProduct(v, w);
+        } else if (isQuotient(u)) {
+          return evaluateQuotient(v, w);
+        }
+      } else if (isPower(u)) {
+        const v = f(u.base);
+        if (isUndefined(v)) {
+          return v;
+        } else if (isInt(u.exponent)) {
+          return evaluatePower(v, u.exponent);
+        } else if (isFrac(u.exponent)) {
+          return Undefined(
+            `In call to simplifyRNE’s recursive simplifier, the exponent ${u.exponent.toString()} is not an integer. Rational power expressions must have integer exponents.`,
+          );
+        } else {
+          return Undefined(
+            `In call to simplifyRNE’s recursive simplifier, unrecognized operator “${u._op}”`,
+          );
+        }
+      }
+    } else {
+      return Undefined(
+        `In call to simplifyRNE’s recursive simplifier, argument “u” is not an RNE (rational number expression.)`,
+      );
+    }
+  };
+  const v = f(u);
+  if (isUndefined(v)) {
+    const msg = v._note;
+    return Undefined(`In simplifyRNE: ${msg}`);
+  } else {
+    return simplifyRationalNumber(v);
+  }
 }
 
 export function engine(source: string) {

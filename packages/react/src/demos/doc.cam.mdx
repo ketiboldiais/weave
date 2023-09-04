@@ -69,3 +69,11 @@ Given the `Fraction` or `Int` ${u,}$ returns `Fraction` or `Int` in standard for
 const x = frac(2,4); // the fraction 2/4
 const y = simplifyRationalNumber(x); // the fraction 1/2
 ~~~
+
+### simplifyRNE(_u_): __Int | Fraction | UNDEFINED__
+:::tbl
+| Parameters                   | Returns                        |
+| ---------------------------- | ------------------------------ |
+| ${u:}$ `AlgebraicExpression` | `Fraction \| Int \| UNDEFINED` |
+:::
+Given the `AlgebraicExpression` ${u,}$ simplifies ${u}$ into either `Fraction` in standard form, an `Int`, or constant `Undefined`.
