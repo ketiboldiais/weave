@@ -3,7 +3,7 @@
 Just as reading and analyzing fiction takes practice, so, too, does reading mathematics. In the exposition that follows, we survey the fundamentals of mathematical notation and literacy.
 
 ## Logic
-A _statement_ or _proposition_, is a sentence that reduces to true or false, but not both. Statements can be _atomic_ or _compound_. For example, “Lazarus is alive” is a _atomic statement_, since Lazarus can only be either alive or dead (excluding the “undead”). Likewise, these are all atomic statements, some of which are true, others false:
+A _proposition_ is a sentence that reduces to true or false, but not both. Propositions can be _atomic_ or _compound_. For example, “Lazarus is alive” is an _atomic proposition_, since Lazarus can only be either alive or dead (excluding the “undead”). Likewise, these are all atomic propositions, some of which are true, others false:
 
 1. 7 is prime.
 2. ${1 \gt 0.}$
@@ -11,10 +11,93 @@ A _statement_ or _proposition_, is a sentence that reduces to true or false, but
 4. ${2 + 5 = 25.}$
 6. ${3/9 = 1/3.}$
 
-Compound statements are statements formed with _logical connectives_ (the most common of which are _and_, _or_, _not_, _if ... then_, and _if and only if_). For example:
+Compound propropositions are sentences formed with _logical connectives_ (the most common of which are _and_, _or_, _not_, _if ... then_, and _if and only if_). For example:
 
 1. 5 divides 25 and 5 divides 30.
 2. ${1 \lt 2 \lt 3.}$
+3. If ${x = 2,}$ then ${x}$ is even.
+
+These connectives are defined as follows:
+
+:::definition
+__Negation.__ Let ${p}$ be a proposition. The notation ${\neg p,}$ read “not ${p,}$” denotes the _negation_ of ${p,}$ defined as follows:
+
+| ${p}$ | ${\neg p}$ |
+| ----- | ---------- |
+| true  | false      |
+| false | true       |
+:::
+
+:::definition
+__Conjunction.__ Let ${p}$ and ${q}$ be propositions. The notation ${p \land q,}$ read “${p}$ and ${q,}$” denotes the _conjunction_ of ${p}$ and ${q,}$ defined as follows:
+
+| ${p}$ | ${q}$ | ${p \land q}$ |
+| ----- | ----- | ------------- |
+| true  | true  | true          |
+| true  | false | false         |
+| false | true  | false         |
+| false | false | false         |
+:::
+
+
+
+:::definition
+__Disjunction.__ Let ${p}$ and ${q}$ be propositions. The notation ${p \lor q,}$ read “${p}$ or ${q,}$” denotes the _disjunction_ of ${p}$ and ${q,}$ defined as follows:
+
+| ${p}$ | ${q}$ | ${p \lor q}$ |
+| ----- | ----- | ------------ |
+| true  | true  | true         |
+| true  | false | true         |
+| false | true  | true         |
+| false | false | false        |
+:::
+
+
+:::definition
+__Mutual Exclusion.__ Let ${p}$ and ${q}$ be propositions. The notation ${p \oplus q,}$ read “either ${p}$ or ${q,}$” denotes the _mutual exclusion_ of ${p}$ and ${q,}$ defined as follows:
+
+| ${p}$ | ${q}$ | ${p \oplus q}$ |
+| ----- | ----- | -------------- |
+| true  | true  | false          |
+| true  | false | true           |
+| false | true  | true           |
+| false | false | false          |
+:::
+
+
+:::definition
+__Implication.__ Let ${p}$ and ${q}$ be propositions. The notation ${p \implies q,}$ read “if ${p}$ then ${q,}$” denotes the _implication_ of ${q}$ by ${p,}$ defined as follows:
+
+| ${p}$ | ${q}$ | ${p \implies q}$ |
+| ----- | ----- | ---------------- |
+| true  | true  | true             |
+| true  | false | false            |
+| false | true  | true             |
+| false | false | true             |
+
+Given ${p \implies q,}$ we call ${p}$ the _sufficient condition_ and ${q}$ the _necessary condition_.
+:::
+
+We have many options for expressing ${p \implies q}$ in prose:
+
+|                                          |                                           |
+| ---------------------------------------- | ----------------------------------------- |
+| if ${p,}$ then ${q}$                     | ${p}$ implies ${q}$                       |
+| if ${p,}$ ${q}$                          | ${p}$ only if ${q}$                       |
+| ${p}$ is sufficient for ${q}$            | a sufficient condition for ${q}$ is ${p}$ |
+| ${q}$ if ${p}$                           | ${q}$ whenever ${p}$                      |
+| ${q}$ when ${p}$                         | ${q}$ is necessary for ${p}$              |
+| a necessary condition for ${p}$ is ${q}$ | ${q}$ follows from ${p}$                  |
+| ${q}$ unless ${\neg p}$                  | ${p}$ but for ${\neg q}$                  |
+
+In mathematics, we’ll often read/hear the phrases “inversely,” “conversely,” or “by the contrapositive.” These terms relate to manipulations of logical implications. We define them as follows:
+
+:::definition
+__Converse.__ Let ${p}$ and ${q}$ be propositions. The _converse_ of the implication ${p \implies q}$ is the compound proposition ${q \implies p.}$
+:::
+
+In other words, the converse of an implication is the implication with its necessary and sufficient conditions swapped. For example, the converse of “If John is present, then Amy is absent” is “If Amy is absent, then John is present.”
+
 
 
 ## Definitions & Axioms

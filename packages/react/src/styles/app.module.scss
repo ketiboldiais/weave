@@ -4,6 +4,9 @@
 	:global .hstack {
 		display: flex;
 	}
+	strong {
+		color: $bold;
+	}
 	p code, li code {
 		font-size: 0.9rem;
 	}
