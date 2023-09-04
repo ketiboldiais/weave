@@ -22,7 +22,7 @@ it('should simplify an undefined quotient', () => {
 	const a = frac(-1,2);
 	const b = frac(0,2);
 	const r = evaluateQuotient(a,b);
-	const e = Undefined(); // -1/2 * 2/1 = -2/2
+	const e = Undefined(''); // -1/2 * 2/1 = -2/2
 	expect(r).toEqual(e);
 })
 

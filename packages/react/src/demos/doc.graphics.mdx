@@ -1,5 +1,3 @@
-import {M1,Circle1} from './Screen.tsx';
-
 # Graphics
 This is the documentation page for the various graphics submodules comprising _Loom_.
 
@@ -29,6 +27,8 @@ const p = circle().at(1,1)
 
 To allow method chaining, the `at` method returns `this` (the callee’s reference – all the usual rules of the `this` keyword in JavaScript apply). Below, the red point is positioned via a call to its `at` method. Dragging the sliders will adjust the ${x}$ and ${y}$ arguments respectively.
 
+import {M1} from './Screen.tsx';
+
 <M1/>
 
 ## Circle
@@ -40,4 +40,25 @@ const c = circle(5);
 
 The `circle` function takes one argument, `r`, corresponding to the circle’s radius. In the demonstration below, dragging the slider will change the circle’s radius argument accordingly.
 
+import {Circle1} from './Screen.tsx';
+
 <Circle1/>
+
+## Line
+Lines are instantiated with the `line` function. Below, the line `ℓ` runs from the coordinate ${(0,0)}$ to ${(3,5).}$
+
+~~~ts
+const ℓ = line([0,0], [3,5]);
+~~~
+
+The `line` function has the signature:
+
+$$
+	\texttt{line}([x_1, y_1], [x_2, y_2]) \to \texttt{this}
+$$
+
+where ${[x_1, y_1]}$ is an array of two elements (a pair) corresponding to the `Line`’s starting point, and ${[x_2, y_2]}$ is also a pair, corresponding to the `Line`’s ending point. To allow method chaining, the `Line` function returns its callee reference, `this`.
+
+import {Line1} from './Screen.tsx';
+
+<Line1/>

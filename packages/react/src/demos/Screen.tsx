@@ -1,4 +1,5 @@
 const { cos, sin, PI } = Math;
+const brown = "#7D7463";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { IDE } from "./ScreenAUX.js";
 import { heights } from "./data.heights.js";
@@ -35,6 +36,7 @@ import {
   tree,
 } from "../loom/index.js";
 import katex from "katex";
+const P = (x: number) => x.toPrecision(2);
 type Html = { __html: string };
 const html = (__html: string): Html => ({ __html });
 type TexProps = {
@@ -300,6 +302,24 @@ export const Histogram1 = () => {
   return <Figure of={h} />;
 };
 
+export const ArrowLeft1 = () => {
+  const rays = range(0, 1, 0.02).map((n) => {
+    const l = line([0, 0], [randInt(-5, 5) * n, randInt(-5, 5)]).stroke(
+      "#16FF00",
+    )
+      .arrowEnd();
+    return l;
+  });
+  const d = plane()
+    .width(400).height(400).margins(10, 10)
+    .domain(-5, 5)
+    .range(-5, 5)
+    .axisColor("white").axis("x").axis("y").and(
+      ...rays,
+    ).end();
+  return <Figure of={d} />;
+};
+
 export const Scatter1 = () => {
   const data = scatterPlot(
     (d: [number, number]) => d[0],
@@ -479,8 +499,8 @@ export const Figure = ({ of }: { of: Parent }) => {
             refX={x._refX}
             refY={x._refY}
             orient={x._orient}
-            markerUnits={'strokeWidth'}
-            viewBox={'0 -5 10 10'}
+            markerUnits={"strokeWidth"}
+            viewBox={"0 -5 10 10"}
           >
             <path
               d={x._d}
@@ -558,7 +578,7 @@ export const M1 = () => {
   const [x, setX] = useState(rf(-5));
   const [y, setY] = useState(rf(7));
   const data = plane([-10, 10], [-10, 10])
-    .axisColor("#7D7463")
+    .axisColor(brown)
     .axis("x")
     .axis("y")
     .and(
@@ -605,6 +625,47 @@ export const M1 = () => {
   );
 };
 
+export const Line1 = () => {
+  const f = interpolator([0, 100], [-5, 5]);
+  const g = interpolator([-5, 5], [0, 100]);
+
+  const [x1, setX1] = useState(-3);
+  const [y1, setY1] = useState(-5);
+
+  const [x2, setX2] = useState(3);
+  const [y2, setY2] = useState(5);
+
+  const d = plane([-5, 5], [-5, 5])
+    .axisColor(brown)
+    .axis("x")
+    .axis("y")
+    .and(
+      line([x1, y1], [x2, y2]).stroke("tomato"),
+      text(`(${P(x1)}, ${P(y1)})`)
+        .at(x1, y1)
+        .fontColor("white")
+        .fontSize(10)
+        .dx(x1-(x1/1.05))
+        .dy(y1-(y1/1.05)),
+      text(`(${P(x2)}, ${P(y2)})`)
+        .at(x2, y2)
+        .fontColor("white")
+        .fontSize(10)
+        .dx(x2-(x2/1.03))
+        .dy(y2-(y2/1.01)),
+    )
+    .end();
+  return (
+    <div>
+      <RangeInput t={<Tex d={"x_1"} />} val={g(x1)} f={(x) => setX1(f(x))} />
+      <RangeInput t={<Tex d={"y_1"} />} val={g(y1)} f={(x) => setY1(f(x))} />
+      <RangeInput t={<Tex d={"x_2"} />} val={g(x2)} f={(x) => setX2(f(x))} />
+      <RangeInput t={<Tex d={"y_2"} />} val={g(y2)} f={(x) => setY2(f(x))} />
+      <Figure of={d} />
+    </div>
+  );
+};
+
 export const Circle1 = () => {
   const f = interpolator([0, 100], [0, 20]);
   const a = interpolator([0, 100], [0, 2 * PI]);
@@ -617,7 +678,7 @@ export const Circle1 = () => {
     setTheta(x);
   };
   const data = plane([-10, 10], [-10, 10])
-    .axisColor("#7D7463")
+    .axisColor(brown)
     .axis("x")
     .axis("y")
     .and(
@@ -664,20 +725,21 @@ export const Circle1 = () => {
   );
 };
 
-export const ArrowLeft1 = () => {
-  const rays = range(0, 1, 0.02).map((n) => {
-    const l = line([0, 0], [randInt(-5, 5) * n, randInt(-5, 5)]).stroke(
-      "#16FF00",
-    )
-      .arrowEnd();
-    return l;
-  });
-  const d = plane()
-    .width(400).height(400).margins(10, 10)
-    .domain(-5, 5)
-    .range(-5, 5)
-    .axisColor("white").axis("x").axis("y").and(
-      ...rays,
-    ).end();
-  return <Figure of={d} />;
+type RangeInputProps = {
+  t: ReactNode;
+  val: number;
+  f: (x: number) => void;
+};
+
+const RangeInput = ({ t, val, f }: RangeInputProps) => {
+  return (
+    <section className={"hstack"}>
+      <label>{t}</label>
+      <input
+        value={val}
+        type={"range"}
+        onChange={(e) => f(e.target.valueAsNumber)}
+      />
+    </section>
+  );
 };
