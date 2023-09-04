@@ -12132,9 +12132,13 @@ function denominatorOf(u: Int_OR_Frac) {
 }
 
 type Int_OR_Frac = Int | Fraction;
+type Product_OR_Sum = Product | Sum;
 
 function isIntorFrac(u: AlgebraicExpression): u is Int_OR_Frac {
   return (isInt(u) || isFrac(u));
+}
+function isProductOrSum(u: AlgebraicExpression): u is Product_OR_Sum {
+  return (isProduct(u) || isSum(u));
 }
 
 /** Evaluates an integer or fraction quotient. */
@@ -12224,7 +12228,9 @@ export function evaluatePower(v: Int_OR_Frac, n: Int) {
   }
 }
 
-export function simplifyRNE(u: AlgebraicExpression): Int | Fraction | UNDEFINED {
+export function simplifyRNE(
+  u: AlgebraicExpression,
+): Int | Fraction | UNDEFINED {
   if (!u.isRNE()) {
     return Undefined(
       `In call to simplifyRNE, argument “u” is not an RNE (rational number expression).`,
@@ -12302,6 +12308,56 @@ export function simplifyRNE(u: AlgebraicExpression): Int | Fraction | UNDEFINED 
   } else {
     return simplifyRationalNumber(v);
   }
+}
+
+export function order(e1: AlgebraicExpression, e2: AlgebraicExpression) {
+  const order1 = (u: Int_OR_Frac, v: Int_OR_Frac) => {
+    const A = u.toFrac();
+    const B = v.toFrac();
+    return A.lt(B);
+  };
+
+  const order2 = (u: Sym, v: Sym) => {
+    const A = u._s;
+    const B = v._s;
+    return A < B;
+  };
+
+  const order3 = (u: Product_OR_Sum, v: Product_OR_Sum) => {
+    if (u._op !== v._op) {
+      return false;
+    }
+    if (!(u.last().equals(v.last()))) {
+      return order(u.last(), v.last());
+    }
+    const m = u._args.length;
+    const n = v._args.length;
+    const k = min(n, m) - 1;
+    if (1 <= k) {
+      for (let j = 0; j <= k; j++) {
+        const o1 = u.operand(m - j);
+        const o2 = v.operand(n - j);
+        if (!o1.equals(o2)) {
+          return order(o1, o2);
+        }
+      }
+    }
+    return m < n;
+  };
+
+  const ORDER = (u: AlgebraicExpression, v: AlgebraicExpression): boolean => {
+    if (isIntorFrac(u) && isIntorFrac(v)) {
+      return order1(u, v);
+    } else if (isSymbol(u) && isSymbol(v)) {
+      return order2(u, v);
+    } else if (isProductOrSum(u) && isProductOrSum(v)) {
+      return order3(u, v);
+    } else {
+      return false;
+    }
+  };
+
+  return ORDER(e1, e2);
 }
 
 export function engine(source: string) {
