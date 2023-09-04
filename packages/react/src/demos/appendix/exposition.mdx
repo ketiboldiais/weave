@@ -90,6 +90,21 @@ We have many options for expressing ${p \implies q}$ in prose:
 | a necessary condition for ${p}$ is ${q}$ | ${q}$ follows from ${p}$                  |
 | ${q}$ unless ${\neg p}$                  | ${p}$ but for ${\neg q}$                  |
 
+Another connective often used in mathematics is the _biconditional_, almost always expressed with the connector “if and only if.” Note, however, that mathematicians are not logicians – they tend to play fast and loose with the biconditional and simply use “if” or “only if.” As always, context is key when reading mathematics.
+
+:::definition
+__Biconditional.__ Let ${p}$ and ${q}$ be propositions. The notation ${p \iff q,}$ read “${p}$ if and only if ${q,}$” denotes the _biconditional_ of ${p}$ and ${q,}$ defined as follows:
+
+| ${p}$ | ${q}$ | ${p \iff q}$ |
+| ----- | ----- | ------------ |
+| true  | true  | true         |
+| true  | false | false        |
+| false | true  | false        |
+| false | false | true         |
+
+Given ${p \implies q,}$ we call ${p}$ the _sufficient condition_ and ${q}$ the _necessary condition_.
+:::
+
 In mathematics, we’ll often read/hear the phrases “inversely,” “conversely,” or “by the contrapositive.” These terms relate to manipulations of logical implications. We define them as follows:
 
 :::definition
@@ -98,6 +113,17 @@ __Converse.__ Let ${p}$ and ${q}$ be propositions. The _converse_ of the implica
 
 In other words, the converse of an implication is the implication with its necessary and sufficient conditions swapped. For example, the converse of “If John is present, then Amy is absent” is “If Amy is absent, then John is present.”
 
+:::definition
+__Inverse.__ Given propositions ${p}$ and ${q,}$ the _inverse_ of the implication ${p \implies q}$ is the compound proposition ${\neg p \implies \neg q.}$
+:::
+
+That is, the inverse of an implication is the implication with the necessary and sufficient conditions negated. E.g., the converse of “If it’s sunny outside, then it isn’t cloudy” is “If it isn’t sunny outside, then it’s cloudy.”
+
+:::definition
+__Contrapositive.__ For propositions ${p}$ and ${q,}$ the _contrapositive_ of the implication ${p \implies q}$ is the compound proposition ${\neg q \implies \neg p.}$
+:::
+
+Put differently: The contrapositive of an implication is the inverse of its converse (swap the conditions and negate each). E.g., the proposition “If Milky is a cow, then Milky is mammal,” contrapositively, is “If Milky is not a mammal, then Milky is not a cow.”
 
 
 ## Definitions & Axioms
