@@ -12509,7 +12509,6 @@ function $e(source: string, message: string) {
 /** Simplifies a power expression. */
 // deno-fmt-ignore
 function $power(u: Power): AlgebraicExpression {
-  
   const v = u.base;
   const w = u.exponent;
 
@@ -12545,9 +12544,134 @@ function $power(u: Power): AlgebraicExpression {
   }
 }
 
+function baseOf(u: AlgebraicExpression) {
+  if (
+    isSum(u) ||
+    isSymbol(u) ||
+    isProduct(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return u;
+  } else if (isPower(u)) {
+    return u.base;
+  } else {
+    return Undefined(`${u.toString()} has no base`);
+  }
+}
+
+function exponentOf(u: AlgebraicExpression) {
+  if (
+    isSum(u) ||
+    isSymbol(u) ||
+    isProduct(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return int(1);
+  } else if (isPower(u)) {
+    return u.exponent;
+  } else {
+    return Undefined(`${u.toString()} has no exponent`);
+  }
+}
+function isC(u: AlgebraicExpression): u is Int | Fraction | Real | Constant {
+  return (
+    isIntorFrac(u) ||
+    isReal(u) ||
+    isConstant(u)
+  );
+}
+
+function termOf(u: AlgebraicExpression) {
+  if (
+    isSum(u) ||
+    isPower(u) ||
+    isSymbol(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return u;
+  } else if (isProduct(u)) {
+    if (isC(u._args[0])) {
+      const newOperands: AlgebraicExpression[] = [];
+      for (let i = 1; i < u._args.length; i++) {
+        newOperands.push(u._args[i]);
+      }
+      return product(newOperands);
+    } else {
+      return u;
+    }
+  } else {
+    return Undefined($e("termOf", `${u.toString()} has no term`));
+  }
+}
+
+function constOf(u: AlgebraicExpression) {
+  if (
+    isSymbol(u) ||
+    isSum(u) ||
+    isPower(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return int(1);
+  } else if (isProduct(u)) {
+    if (isC(u._args[0])) {
+      return u._args[0];
+    } else {
+      return int(1);
+    }
+  } else {
+    return Undefined($e("constOf", `${u.toString()} has no constant.`));
+  }
+}
+
 /** Simplifies the operands of a product recursively. */
+// deno-fmt-ignore
 function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
-  throw new Error("method unimplemented");
+  if (L.length === 2) {
+    const [u1, u2] = L;
+
+    /** SPRDREC-1 */
+    if (isIntorFrac(u1) && isIntorFrac(u2)) {
+      const P = simplifyRNE(product([u1, u2]));
+      if (isIntorFrac(P) && P._isOne) {
+        return [];
+      } else {
+        return [P];
+      }
+    }
+    
+    /** SPRDREC-2a */
+    else if (isIntorFrac(u1) && u1._isOne) {
+      return [u2];
+    }
+    
+    /** SPRDREC-2b */
+    else if (isIntorFrac(u2) && u2._isOne) {
+      return [u1];
+    }
+
+    /** SPRDREC-3 */
+    else if (baseOf(u1).equals(baseOf(u2))) {
+      const S = $sum(sum([exponentOf(u1), exponentOf(u2)]));
+      const P = $power(power(baseOf(u1), S));
+      if (isIntorFrac(P) && P._isOne) {
+        return [];
+      } else {
+        return [P];
+      }
+    }
+    
+    /** SPRDREC-4 */
+    else {
+      return (order(u2,u1)) ? [u2, u1] : [u1, u2];
+    }
+  } 
+  else {
+    return L;
+  }
 }
 
 function $product(u: Product): AlgebraicExpression {
