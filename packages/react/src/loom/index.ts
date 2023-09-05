@@ -12502,19 +12502,20 @@ function $integerPower(v: AlgebraicExpression, n: Int): AlgebraicExpression {
     return power(v,n);
   }
 }
+function $e(source: string, message: string) {
+  return `In call to [${source}], ${message}.`;
+}
 
 /** Simplifies a power expression. */
 // deno-fmt-ignore
 function $power(u: Power): AlgebraicExpression {
-  const e = (message: string) => `In call to $power, ${message}.`;
-
+  
   const v = u.base;
-
   const w = u.exponent;
 
   /** SPOW-1 */
   if (isUndefined(v) || isUndefined(w)) {
-    return Undefined(e(`a base or exponent is undefined.`));
+    return Undefined($e('$power', 'a base or exponent is undefined.'));
   }
   
   /** SPOW-2 */
@@ -12523,7 +12524,7 @@ function $power(u: Power): AlgebraicExpression {
       return int(0);
     } else {
       return Undefined(
-        e("the base is zero, but the exponent is either (1) neither an integer nor a fraction, or (2) the exponent is non-positive"),
+        $e('$power', 'the base is zero, but the exponent is either (1) neither an integer nor a fraction, or (2) the exponent is non-positive'),
       );
     }
   }
@@ -12544,8 +12545,42 @@ function $power(u: Power): AlgebraicExpression {
   }
 }
 
-function $product(u: Product): AlgebraicExpression {
+/** Simplifies the operands of a product recursively. */
+function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
   throw new Error("method unimplemented");
+}
+
+function $product(u: Product): AlgebraicExpression {
+  const L = u._args;
+
+  for (let i = 0; i < L.length; i++) {
+    const arg = L[i];
+
+    /** SPRD-1 */
+    if (isUndefined(arg)) {
+      return Undefined($e("$product", "Undefined operand encountered"));
+    }
+
+    /** SPRD-2 */
+    if ((isIntorFrac(arg) && arg._isZero)) {
+      return int(0);
+    }
+
+    /** SPRD-3 */
+    if (L.length === 1) {
+      return arg;
+    }
+  }
+
+  /** SPRD-4 */
+  const v = $productREC(L);
+  if (v.length === 1) {
+    return v[0];
+  } else if (v.length >= 2) {
+    return product(v);
+  } else {
+    return int(1);
+  }
 }
 
 function $sum(u: Sum): AlgebraicExpression {
