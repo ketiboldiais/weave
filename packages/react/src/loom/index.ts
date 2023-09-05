@@ -12471,7 +12471,36 @@ function $integerPower(v: AlgebraicExpression, n: Int): AlgebraicExpression {
   else if (n._isOne) {
     return v;
   }
-  throw new Error("method unimplemented");
+  
+  /** SINTPOW-4 */
+  else if (isPower(v)) {
+    const r = v.base;
+    const s = v.exponent;
+    const p = $product(product([s,n]));
+    if (isInt(p)) {
+      return $integerPower(r,p);
+    } else {
+      return power(r,p);
+    }
+  }
+
+  /** SINTPOW-5 */
+  else if (isProduct(v)) {
+    const args:AlgebraicExpression[] = [];
+    const v_args = v._args;
+    for (let i = 0; i < v_args.length; i++) {
+      const v = v_args[i];
+      const r = $integerPower(v, n);
+      args.push(r);
+    }
+    const p = product(args);
+    return $product(p);
+  }
+  
+  /** SINTPOW-6 */
+  else {
+    return power(v,n);
+  }
 }
 
 /** Simplifies a power expression. */
@@ -12542,7 +12571,7 @@ function $function(u: AlgebraicFn): AlgebraicExpression {
 /** Simplifies the given expression. */
 function simplify(expression: AlgebraicExpression) {
   const $ = (u: AlgebraicExpression): AlgebraicExpression => {
-    if (isInt(u) || isSymbol(u) || isConst(u)) {
+    if (isInt(u) || isSymbol(u) || isConst(u) || isReal(u)) {
       return u;
     } else if (isFrac(u)) {
       return simplifyRationalNumber(u);
@@ -12565,7 +12594,7 @@ function simplify(expression: AlgebraicExpression) {
       }
     }
   };
-  return expression;
+  return $(expression);
 }
 
 export function engine(source: string) {
