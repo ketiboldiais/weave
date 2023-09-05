@@ -2460,24 +2460,26 @@ function area2D() {
 
 const CONTEXT = contextual(colorable(BASE));
 
-// ================================================================== Radar Plot
-export class RadarPlot extends CONTEXT {
-  _data: Map<string | number, number> = new Map();
-  constructor(
-    _data: Record<(string | number), number>,
-  ) {
+// =================================================================== line plot
+export class LinePlot extends CONTEXT {
+  _data: Record<string | number, number> = {};
+  constructor(data: Record<string | number, number>) {
     super();
-    const entries = Object.entries(_data);
-    entries.forEach(([key, value]) => {
-      this._data.set(key, value);
+    let _min = Infinity;
+    let _max = -Infinity;
+    Object.entries(data).forEach(([key, value]) => {
+      this._data[key] = value;
+      (value < _min) && (_min = value);
+      (value > _max) && (_max = value);
     });
   }
 }
-export function radarPlot(data: Record<(string | number), number>) {
-  return new RadarPlot(data);
+
+export function linePlot(data: Record<string | number, number>) {
+  return new LinePlot(data);
 }
 
-// ================================================================== Polar Plot
+// ================================================================== polar plot
 export class PolarPlot2D extends CONTEXT {
   _f: string;
   constructor(f: string) {
@@ -2582,11 +2584,12 @@ export class PolarPlot2D extends CONTEXT {
     return this;
   }
 }
+
 export function polar2D(f: string) {
   return new PolarPlot2D(f);
 }
 
-// ===================================================================== Plane2D
+// ===================================================================== plane2d
 export class Plane extends CONTEXT {
   constructor(
     domain: [number, number] = [-10, 10],
@@ -2683,6 +2686,7 @@ export class Plane extends CONTEXT {
     return this.fit();
   }
 }
+
 export function plane(
   domain: [number, number] = [-10, 10],
   range: [number, number] = [-10, 10],
@@ -2690,7 +2694,7 @@ export function plane(
   return new Plane(domain, range);
 }
 
-// ============================================================ 2D Function Plot
+// ============================================================ 2d function plot
 
 export class Plot2D extends Plane {
   f: string;
@@ -3114,39 +3118,6 @@ class Histogram extends CONTEXT {
 }
 export function histogram(dataset: number[]) {
   return new Histogram(dataset);
-}
-
-class PieChart2D extends CONTEXT {
-  _data: Map<(string | number), number> = new Map();
-  constructor(data: Record<string | number, number>) {
-    super();
-    Object.entries(data).forEach(([key, value]) => {
-      this._data.set(key, value);
-    });
-  }
-  _radius: number = 20;
-  radius(r: number) {
-    this._radius = r;
-    return this;
-  }
-  end() {
-    const circ = circle(this._radius).stroke(this._stroke);
-    this.and(circ);
-    const a = polarize2D(this._radius, toRadians(-45));
-    const p = path(0, 0)
-      .L(0, 10)
-      .A([a._x, a._y], [1, 1], 1, 1, 0);
-    this.and(p.stroke("tomato"));
-    return this.fit();
-  }
-}
-
-function polarize2D(radius: number, angle: number) {
-  return new Vector([radius * cos(angle), radius * sin(angle), 1]);
-}
-
-export function pieChart2D(data: Record<(string | number), number>) {
-  return new PieChart2D(data);
 }
 
 // ================================================================ SCATTER PLOT
@@ -4086,6 +4057,7 @@ class Leaf extends TNode {
     return this;
   }
 }
+
 export function leaf(name: string | number) {
   return new Leaf(name);
 }
@@ -4182,12 +4154,12 @@ class Fork extends TNode {
     this._ancestor = this;
   }
 }
+
 type TreeChild = Leaf | Fork;
+
+/** Returns true if the given argument is a `Leaf`. Else, false. */
 function isLeaf(x: any): x is Leaf {
   return x instanceof Leaf;
-}
-function isFork(x: any): x is Fork {
-  return x instanceof Fork;
 }
 
 export function subtree(name: string | number) {
@@ -4727,8 +4699,8 @@ export type Parent =
   | Tree
   | BarPlot
   | PolarPlot2D
-  | PieChart2D
   | Plane
+  | LinePlot
   | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;
@@ -5550,10 +5522,7 @@ function algebraicString(expression: Expr, op: Token) {
   return new AlgebraicString(expression, op);
 }
 
-/**
- * __Typeguard__. Returns true if the given `node` is an expression,
- * false otherwise.
- */
+/** Returns true if `node` is an ASTNode of subtype expression. Else, false. */
 function isExpr(node: ASTNode): node is Expr {
   return node instanceof Expr;
 }
@@ -5604,17 +5573,12 @@ class VectorExpr extends Expr {
   }
 }
 
-/**
- * Returns a new {@link VectorExpr|vector expression}.
- */
+/** Returns a new ASTNode of subtype VectorExpr (a vector expression). */
 function vectorExpr(elements: Expr[], op: Token) {
   return new VectorExpr(elements, op);
 }
 
-/**
- * __Typeguarde__. Returns true if the given `node`
- * is a {@link VectorExpr|vector expression}, false otherwise.
- */
+/** Returns true if `node` is a VectorExpr (an ASTNode). Else, false. */
 function isVectorExpr(node: ASTNode): node is VectorExpr {
   return node.kind === nodekind.vector_expression;
 }
@@ -5737,6 +5701,11 @@ class AssignExpr extends Expr {
   }
 }
 
+/** Returns a new ASTNode corresponding to an assignment expression. */
+function assign(name: Variable, value: Expr) {
+  return new AssignExpr(name, value);
+}
+
 // deno-fmt-ignore
 type NativeUnary =
 | "ceil"
@@ -5795,9 +5764,7 @@ class NativeCall extends Expr {
   }
 }
 
-/**
- * Returns a new {@link NativeCall|native call function}.
- */
+/** Returns a new ASTNode corresponding to a native function call. */
 function nativeCall(
   name: Token<tt.native, string, NativeFn>,
   args: Expr[],
@@ -5805,17 +5772,11 @@ function nativeCall(
   return new NativeCall(name, args);
 }
 
-/**
- * Returns a new {@link AssignExpr|assignment expression}.
- */
-function assign(name: Variable, value: Expr) {
-  return new AssignExpr(name, value);
-}
-
+// deno-fmt-ignore
 type AlgebraicUnaryOperator =
-  | tt.plus
-  | tt.minus
-  | tt.bang;
+| tt.plus
+| tt.minus
+| tt.bang;
 
 class AlgebraicUnaryExpr extends Expr {
   accept<T>(visitor: Visitor<T>): T {
@@ -5840,9 +5801,7 @@ class AlgebraicUnaryExpr extends Expr {
   }
 }
 
-/**
- * Returns a new algebraic unary expression.
- */
+/** Returns a new algebraic unary expression. */
 function algebraicUnary(op: Token<AlgebraicUnaryOperator>, arg: Expr) {
   return new AlgebraicUnaryExpr(op, arg);
 }
@@ -5872,9 +5831,7 @@ class LogicalUnaryExpr extends Expr {
   }
 }
 
-/**
- * Returns a new {@link LogicalUnaryExpr|logical unary expression}.
- */
+/** Returns a new ASTNode corresponding to a logical unary expression. */
 function logicalUnary(op: Token<LogicalUnaryOperator>, arg: Expr) {
   return new LogicalUnaryExpr(op, arg);
 }
@@ -6569,11 +6526,6 @@ abstract class AlgebraicExpression {
     this._parenLevel++;
     return this;
   }
-}
-
-/** Returns true if `u` is a Compound. Else, false. */
-function isCompound(u: AlgebraicExpression): u is Compound {
-  return u instanceof Compound;
 }
 
 /** An atom is any expression that cannot be reduced further. This includes integers, reals, and symbols. */
@@ -7608,32 +7560,6 @@ function isAlgebraicFn(u: AlgebraicExpression): u is AlgebraicFn {
   return u instanceof AlgebraicFn;
 }
 
-/** Returns all complete subexpressions of the given expression. */
-function subex(expression: AlgebraicExpression) {
-  const out: AlgebraicExpression[] = [];
-  const set = setof<string>();
-  const f = (u: AlgebraicExpression) => {
-    if (isAtom(u)) {
-      const s = u.toString();
-      if (!set.has(s)) {
-        out.push(u);
-        set.add(s);
-      }
-      return null;
-    } else {
-      const s = u.toString();
-      if (!set.has(s)) {
-        out.push(u);
-        u._args.forEach((x) => f(x));
-        set.add(s);
-      }
-      return null;
-    }
-  };
-  f(expression);
-  return out;
-}
-
 /** Returns true if the given expression is a constant. */
 function isConst(
   u: AlgebraicExpression,
@@ -7646,27 +7572,6 @@ function isConst(
       !isUndefined(u)
     )
   );
-}
-
-/** Returns the factorial of the given number. */
-function factorialize(num: number) {
-  if (num === 0 || num === 1) {
-    return 1;
-  }
-  for (var i = num - 1; i >= 1; i--) {
-    num *= i;
-  }
-  return num;
-}
-
-/** Returns the derivative of a given algebraic expression. */
-function derivative(expression: AlgebraicExpression, variable: string | Sym) {
-  return expression;
-}
-
-/** Simplifies the given expression. */
-function simplify(expression: AlgebraicExpression) {
-  return expression;
 }
 
 // ----------------------------------------------------------------- Twine Nodes
@@ -8205,10 +8110,12 @@ class RETURN {
   }
 }
 
+/** Returns a new `RETURN`. */
 function returnValue(value: Primitive) {
   return new RETURN(value);
 }
 
+/** An object representing a function in Twine.  */
 class Fn {
   private declaration: FnStmt;
   private closure: Environment<Primitive>;
@@ -8260,6 +8167,7 @@ class Fn {
   }
 }
 
+/** Returns a new `Fn` object. */
 function callable(
   declaration: FnStmt,
   closure: Environment<Primitive>,
@@ -8268,10 +8176,12 @@ function callable(
   return new Fn(declaration, closure, isInitializer);
 }
 
+/** Returns true if `x` is an `Fn` oobject, false otherwise. */
 function $isFn(x: any): x is Fn {
   return x instanceof Fn;
 }
 
+/** An object representing a class instance in Twine. */
 class Obj {
   private klass: Class;
   private fields: Map<string, Primitive>;
@@ -12158,6 +12068,7 @@ export function evaluateQuotient(v: Int_OR_Frac, w: Int_OR_Frac) {
   }
 }
 
+/** Evaluates an integer or fraction product. */
 export function evaluateProduct(v: Int_OR_Frac, w: Int_OR_Frac) {
   if (numeratorOf(w) === 0) {
     return Undefined(
@@ -12170,6 +12081,7 @@ export function evaluateProduct(v: Int_OR_Frac, w: Int_OR_Frac) {
   }
 }
 
+/** Evaluates an integer or fraction sum. */
 export function evaluateSum(v: Int_OR_Frac, w: Int_OR_Frac) {
   if (numeratorOf(w) === 0) {
     return Undefined(
@@ -12186,6 +12098,7 @@ export function evaluateSum(v: Int_OR_Frac, w: Int_OR_Frac) {
   }
 }
 
+/** Evaluates an integer or fraction difference. */
 export function evaluateDiff(v: Int_OR_Frac, w: Int_OR_Frac) {
   if (numeratorOf(w) === 0) {
     return Undefined(
@@ -12202,6 +12115,7 @@ export function evaluateDiff(v: Int_OR_Frac, w: Int_OR_Frac) {
   }
 }
 
+/** Evaluates an integer or fraction power. */
 export function evaluatePower(v: Int_OR_Frac, n: Int) {
   const v_n = numeratorOf(v);
   if (v_n !== 0) {
@@ -12232,6 +12146,7 @@ export function evaluatePower(v: Int_OR_Frac, n: Int) {
   }
 }
 
+/** Simplifies a rational number expression. */
 export function simplifyRNE(
   u: AlgebraicExpression,
 ): Int | Fraction | UNDEFINED {
@@ -12314,6 +12229,7 @@ export function simplifyRNE(
   }
 }
 
+/** Returns true if the expression `e1` precedes `e2`, false otherwise. */
 export function order(e1: AlgebraicExpression, e2: AlgebraicExpression) {
   const filter8 = (
     u: AlgebraicExpression,
@@ -12495,6 +12411,161 @@ export function order(e1: AlgebraicExpression, e2: AlgebraicExpression) {
     }
   };
   return ORDER(e1, e2);
+}
+
+/** Returns all complete subexpressions of the given expression. */
+function subex(expression: AlgebraicExpression) {
+  const out: AlgebraicExpression[] = [];
+  const set = setof<string>();
+  const f = (u: AlgebraicExpression) => {
+    if (isAtom(u)) {
+      const s = u.toString();
+      if (!set.has(s)) {
+        out.push(u);
+        set.add(s);
+      }
+      return null;
+    } else {
+      const s = u.toString();
+      if (!set.has(s)) {
+        out.push(u);
+        u._args.forEach((x) => f(x));
+        set.add(s);
+      }
+      return null;
+    }
+  };
+  f(expression);
+  return out;
+}
+
+/** Returns the factorial of the given number. */
+function factorialize(num: number) {
+  if (num === 0 || num === 1) {
+    return 1;
+  }
+  for (var i = num - 1; i >= 1; i--) {
+    num *= i;
+  }
+  return num;
+}
+
+/** Returns the derivative of a given algebraic expression. */
+function derivative(expression: AlgebraicExpression, variable: string | Sym) {
+  return expression;
+}
+
+// deno-fmt-ignore
+function $integerPower(v: AlgebraicExpression, n: Int): AlgebraicExpression {
+  /** SINTPOW-1 */
+  if (isIntorFrac(v)) {
+    return simplifyRNE(power(v, n));
+  }
+  
+  /** SINTPOW-2 */
+  else if (n._isZero) {
+    return int(1);
+  }
+  
+  /** SINTPOW-3 */
+  else if (n._isOne) {
+    return v;
+  }
+  throw new Error("method unimplemented");
+}
+
+/** Simplifies a power expression. */
+// deno-fmt-ignore
+function $power(u: Power): AlgebraicExpression {
+  const e = (message: string) => `In call to $power, ${message}.`;
+
+  const v = u.base;
+
+  const w = u.exponent;
+
+  /** SPOW-1 */
+  if (isUndefined(v) || isUndefined(w)) {
+    return Undefined(e(`a base or exponent is undefined.`));
+  }
+  
+  /** SPOW-2 */
+  else if (isIntorFrac(v) && v._isZero) {
+    if (isIntorFrac(w) && w._isPositive) {
+      return int(0);
+    } else {
+      return Undefined(
+        e("the base is zero, but the exponent is either (1) neither an integer nor a fraction, or (2) the exponent is non-positive"),
+      );
+    }
+  }
+  
+  /** SPOW-3 */
+  else if (isIntorFrac(v) && v._isOne) {
+    return int(1);
+  }
+  
+  /** SPOW-4 */
+  else if (isInt(w)) {
+    return $integerPower(v, w);
+  }
+  
+  /** SPOW-5 */
+  else {
+    return u;
+  }
+}
+
+function $product(u: Product): AlgebraicExpression {
+  throw new Error("method unimplemented");
+}
+
+function $sum(u: Sum): AlgebraicExpression {
+  throw new Error("method unimplemented");
+}
+
+function $quotient(u: Quotient): AlgebraicExpression {
+  throw new Error("method unimplemented");
+}
+
+function $difference(u: Difference): AlgebraicExpression {
+  throw new Error("method unimplemented");
+}
+
+function $factorial(u: Factorial): AlgebraicExpression {
+  throw new Error("method unimplemented");
+}
+
+function $function(u: AlgebraicFn): AlgebraicExpression {
+  throw new Error("method unimplemented");
+}
+
+/** Simplifies the given expression. */
+function simplify(expression: AlgebraicExpression) {
+  const $ = (u: AlgebraicExpression): AlgebraicExpression => {
+    if (isInt(u) || isSymbol(u) || isConst(u)) {
+      return u;
+    } else if (isFrac(u)) {
+      return simplifyRationalNumber(u);
+    } else {
+      const v = u.argmap($);
+      if (isPower(v)) {
+        return $power(v);
+      } else if (isProduct(v)) {
+        return $product(v);
+      } else if (isSum(v)) {
+        return $sum(v);
+      } else if (isQuotient(v)) {
+        return $quotient(v);
+      } else if (isDifference(v)) {
+        return $difference(v);
+      } else if (isFactorial(v)) {
+        return $factorial(v);
+      } else {
+        return $function(v);
+      }
+    }
+  };
+  return expression;
 }
 
 export function engine(source: string) {

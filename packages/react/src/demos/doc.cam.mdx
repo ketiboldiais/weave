@@ -86,4 +86,11 @@ Given the `AlgebraicExpression` ${u,}$ simplifies ${u}$ into either `Fraction` i
 | ${v:}$ `AlgebraicExpression` |           |
 :::
 
-Given the `AlgebraicExpressions` ${u}$ and ${v,}$ returns true if ${u}$ precedes ${v,}$ false otherwise. This function defines the order relation for all algebraic expressions in CAM (thereby allowing algebraic expressions to be _sorted_).
+Given the `AlgebraicExpressions` ${u}$ and ${v,}$ returns true if ${u}$ precedes ${v,}$ false otherwise. This function defines the order relation for all algebraic expressions in CAM (thereby allowing algebraic expressions to be _sorted_). Because this function relies on fairly heavy-handed recursion, expressions should be simplified as much as possible before calls to `order`. Below is the order relation’s definition:
+
+:::dfn
+__Definition.__ Let ${u}$ and ${v}$ be `AlgebraicExpressions`. CAM’s order relation (denoted ${\prec}$) is defined as follows:
+
+1. If ${u}$ and ${v}$ are `Ints` or `Fractions`, then ${u \prec v}$ only if ${u \lt v.}$
+:::
+

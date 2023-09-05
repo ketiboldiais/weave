@@ -1,8 +1,13 @@
 const { cos, sin, PI } = Math;
+
 const brown = "#7D7463";
-import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
+
+import { CSSProperties, ReactNode, useEffect, useState } from "react";
+
 import { IDE } from "./ScreenAUX.js";
+
 import { heights } from "./data.heights.js";
+
 import {
   Area2D,
   barPlot,
@@ -20,7 +25,6 @@ import {
   Markers,
   Parent,
   Path,
-  pieChart2D,
   plane,
   plot2D,
   polar2D,
@@ -32,18 +36,23 @@ import {
   subtree,
   Text,
   text,
-  toRadians,
   tree,
 } from "../loom/index.js";
+
 import katex from "katex";
+
 const P = (x: number) => x.toPrecision(2);
+
 type Html = { __html: string };
+
 const html = (__html: string): Html => ({ __html });
+
 type TexProps = {
   d: string | number;
   block?: boolean;
   style?: CSSProperties;
 };
+
 export const Tex = ({ d, style, block }: TexProps) => {
   const content = d;
   const mode = block;
@@ -73,17 +82,6 @@ export const Tex = ({ d, style, block }: TexProps) => {
       dangerouslySetInnerHTML={state}
     />
   );
-};
-
-export const PieChart1 = () => {
-  const data = pieChart2D({
-    compliance: 10,
-    marketing: 12,
-    accounting: 3,
-    sales: 50,
-    engineering: 25,
-  }).stroke("white").end();
-  return <Figure of={data} />;
 };
 
 export const ForceGraph1 = () => {
@@ -645,14 +643,14 @@ export const Line1 = () => {
         .at(x1, y1)
         .fontColor("white")
         .fontSize(10)
-        .dx(x1-(x1/1.05))
-        .dy(y1-(y1/1.05)),
+        .dx(x1 - (x1 / 1.05))
+        .dy(y1 - (y1 / 1.05)),
       text(`(${P(x2)}, ${P(y2)})`)
         .at(x2, y2)
         .fontColor("white")
         .fontSize(10)
-        .dx(x2-(x2/1.03))
-        .dy(y2-(y2/1.01)),
+        .dx(x2 - (x2 / 1.03))
+        .dy(y2 - (y2 / 1.01)),
     )
     .end();
   return (
