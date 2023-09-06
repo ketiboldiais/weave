@@ -132,7 +132,9 @@
 		display: block;
 		font-style: normal;
 		margin: 1em auto;
-
+		strong {
+			color: rgb(251, 136, 113);
+		}
 		del {
 			font-style: normal;
 			text-decoration: underline;

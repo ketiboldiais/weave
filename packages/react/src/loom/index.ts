@@ -2155,7 +2155,11 @@ export class Path extends SHAPE {
 }
 
 /** Returns a new path. */
-export function path(originX: number, originY: number, originZ: number = 1) {
+export function path(
+  originX: number = 0,
+  originY: number = 0,
+  originZ: number = 1,
+) {
   return (
     new Path(originX, originY, originZ)
   );
@@ -2460,24 +2464,8 @@ function area2D() {
 
 const CONTEXT = contextual(colorable(BASE));
 
-// =================================================================== line plot
-export class LinePlot extends CONTEXT {
-  _data: Record<string | number, number> = {};
-  constructor(data: Record<string | number, number>) {
-    super();
-    let _min = Infinity;
-    let _max = -Infinity;
-    Object.entries(data).forEach(([key, value]) => {
-      this._data[key] = value;
-      (value < _min) && (_min = value);
-      (value > _max) && (_max = value);
-    });
-  }
-}
 
-export function linePlot(data: Record<string | number, number>) {
-  return new LinePlot(data);
-}
+
 
 // ================================================================== polar plot
 export class PolarPlot2D extends CONTEXT {
@@ -4700,7 +4688,6 @@ export type Parent =
   | BarPlot
   | PolarPlot2D
   | Plane
-  | LinePlot
   | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;
@@ -12838,12 +12825,93 @@ function mergeSums(
   throw new Error(`$mergeSums unimplemented`);
 }
 
+// deno-fmt-ignore
 function $sumREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
-  throw new Error(`$sumREC unimplemented`);
+  if (L.length === 2 && !isSum(L[0]) && !isSum(L[1])) {
+    const [u1,u2]=L;
+    
+    if (isIntorFrac(u1) && isIntorFrac(u2)) {
+      const P = simplifyRNE(sum([u1,u2]));
+      if (isIntorFrac(P) && P._isZero) {
+        return [];
+      } else {
+        return [P];
+      }
+    }
+
+    else if (isIntorFrac(u1) && u1._isZero) {
+      return [u2];
+    }
+    
+    else if (isIntorFrac(u2) && u2._isZero) {
+      return [u1];
+    }
+
+    else if (termOf(u1).equals(termOf(u2))) {
+      const S = $sum(sum([u1, u2]));
+      if (isIntorFrac(S) && S._isZero) {
+        return [];
+      } else {
+        return [S];
+      }
+    }
+    
+    else if (order(u2,u1)) {
+      return [u2,u1];
+    }
+
+    else {
+      return L;
+    }
+  }
+  
+  else if (L.length===2 && (isSum(L[0]) || isSum(L[1]))) {
+    const [u1,u2]=L;
+    if (isSum(u1) && isSum(u2)) {
+      return mergeSums(u1._args, u2._args);
+    }
+    else if (isSum(u1) && !isSum(u2)) {
+      return mergeSums(u1._args, [u2]);
+    }
+    else {
+      return mergeSums([u1], u2._args);
+    }
+  }
+  
+  else if (L.length >= 2) {
+    const w = $sumREC(rest(L));
+    if (isSum(w[0])) {
+      return mergeSums(w[0]._args, w);
+    }
+    else {
+      return mergeSums([w[0]], w);
+    }
+  }
+
+  else {
+    return L;
+  }
 }
 
 function $sum(u: Sum): AlgebraicExpression {
-  throw new Error("method unimplemented");
+  const L = u._args;
+  for (let i = 0; i < L.length; i++) {
+    const arg = L[i];
+    if (isUndefined(arg)) {
+      return Undefined($e("$sum", "Undefined operator encountered"));
+    }
+    if (L.length === 1) {
+      return arg;
+    }
+  }
+  const v = $sumREC(L);
+  if (v.length === 1) {
+    return v[0];
+  } else if (v.length >= 2) {
+    return sum(v);
+  } else {
+    return int(0);
+  }
 }
 
 function $quotient(u: Quotient): AlgebraicExpression {

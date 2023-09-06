@@ -336,6 +336,7 @@ export const Scatter1 = () => {
   return <Figure of={data} />;
 };
 
+
 export const Figure = ({ of }: { of: Parent }) => {
   const width = of._width;
   const height = of._height;
