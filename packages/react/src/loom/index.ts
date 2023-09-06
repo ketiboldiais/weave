@@ -12627,13 +12627,81 @@ function constOf(u: AlgebraicExpression) {
   }
 }
 
+/** Sorts the given list of expressions. */
+function sortex(expressions: AlgebraicExpression[]) {
+  const out = [];
+  for (let i = 0; i < expressions.length; i++) {
+    out.push(expressions[i].copy());
+  }
+  return out.sort((a, b) => order(a, b) ? 1 : -1);
+}
+
+function adjoin(expr: AlgebraicExpression, exprs2: AlgebraicExpression[]) {
+  const out: AlgebraicExpression[] = [expr];
+  for (let j = 0; j < exprs2.length; j++) {
+    out.push(exprs2[j]);
+  }
+  return out;
+}
+
+// deno-fmt-ignore
+function mergeProducts(
+  p: AlgebraicExpression[],
+  q: AlgebraicExpression[],
+): AlgebraicExpression[] {
+  /** MPRD-1 */
+  if (p.length === 0) {
+    return q;
+  }
+
+  /** MPRD-2 */
+  else if (q.length === 0) {
+    return p;
+  }
+  
+  /** MPRD-3 */
+  else {
+    const p1 = p[0];
+    const q1 = q[0];
+    const h = $productREC([p1, q1]);
+    
+    /** MPRD-3.1 */
+    if (h.length === 0) {
+      return mergeProducts(rest(p), rest(q));
+    }
+    
+    /** MPRD-3.2 */
+    else if (h.length === 1) {
+      return adjoin(h[0], mergeProducts(rest(p), rest(q)));
+    }
+
+    /** MPRD-3.3 */
+    else if (h.length===2 && h[0].equals(p1) && h[1].equals(q1)) {
+      return adjoin(p1, mergeProducts(rest(p), q));
+    }
+    else {
+      return adjoin(q1, mergeProducts(p, rest(q)));
+    }
+  }
+}
+
+function rest(u: AlgebraicExpression[]): AlgebraicExpression[] {
+  const out: AlgebraicExpression[] = [];
+  if (2 <= u.length) {
+    for (let i = 1; i < u.length; i++) {
+      out.push(u[i]);
+    }
+  }
+  return out;
+}
+
 /** Simplifies the operands of a product recursively. */
 // deno-fmt-ignore
 function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
-  if (L.length === 2) {
+  if (L.length === 2 && !isProduct(L[0]) && !isProduct(L[1])) {
     const [u1, u2] = L;
 
-    /** SPRDREC-1 */
+    /** SPRDREC-1(1) */
     if (isIntorFrac(u1) && isIntorFrac(u2)) {
       const P = simplifyRNE(product([u1, u2]));
       if (isIntorFrac(P) && P._isOne) {
@@ -12643,17 +12711,17 @@ function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
       }
     }
     
-    /** SPRDREC-2a */
+    /** SPRDREC-1(2)(a) */
     else if (isIntorFrac(u1) && u1._isOne) {
       return [u2];
     }
     
-    /** SPRDREC-2b */
+    /** SPRDREC-1(2)(b) */
     else if (isIntorFrac(u2) && u2._isOne) {
       return [u1];
     }
 
-    /** SPRDREC-3 */
+    /** SPRDREC-1(3) */
     else if (baseOf(u1).equals(baseOf(u2))) {
       const S = $sum(sum([exponentOf(u1), exponentOf(u2)]));
       const P = $power(power(baseOf(u1), S));
@@ -12664,11 +12732,41 @@ function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
       }
     }
     
-    /** SPRDREC-4 */
+    /** SPRDREC-1(4) */
+    else if (order(u2,u1)) {
+      return [u2, u1];
+    }
+    
+    /** SPRDREC-1(5) */
     else {
-      return (order(u2,u1)) ? [u2, u1] : [u1, u2];
+      return L;
     }
   } 
+  else if (L.length===2 && (isProduct(L[0]) || isProduct(L[1]))) {
+    const [u1,u2]=L;
+    if (isProduct(u1) && isProduct(u2)) {
+      return mergeProducts(u1._args, u2._args);
+    }
+    else if (isProduct(u1) && !isProduct(u2)) {
+      return mergeProducts(u1._args, [u2]);
+    }
+    else {
+      return mergeProducts([u1], u2._args);
+    }
+  }
+  
+  /** SPRDREC-3 */
+  else if (L.length >= 2) {
+    const w = $productREC(rest(L));
+    /** SPRDREC-3.1 */
+    if (isProduct(w[0])) {
+      return mergeProducts(w[0]._args, w);
+    }
+    /** SPRDREC-3.2 */
+    else {
+      return mergeProducts([w[0]], w);
+    }
+  }
   else {
     return L;
   }
