@@ -2,6 +2,58 @@
 
 Just as reading and analyzing fiction takes practice, so, too, does reading mathematics. In the exposition that follows, we survey the fundamentals of mathematical notation and literacy.
 
+## Definitions & Axioms
+Mathematics begins at the definition or axiom. These are statements of absolute facts; we take them as is, without question. For example, that a quadrilateral comprises four sides is taken without more. The realm of questioning axioms and definitions belongs to mathematical logic or linguistics, fields beyond this page’s scope.
+
+### Recursive Definitions
+Mathematics relies extensively on _recursive definitions_ or _recursive algorithms_. These are definitions/algorithms that are defined in terms of a simpler – or an entirely different – version of themselves. The classic example is the definition of a factorial:
+
+$$
+	n! = \begin{cases}
+		1 ~ &\text{if} ~~ n = 0 \\
+		1 \cdot 2 \cdot \ldots \cdot (n - 1) \cdot n ~ &\text{if} ~~ n > 0 \\
+		\text{undefined} &\text{else}.
+	\end{cases}
+$$
+
+The above definition can be rewritten as:
+
+
+$$
+	n! = \begin{cases}
+		1 ~ &\text{if} ~~ n = 0 \\
+		n \cdot (n - 1)! ~ &\text{if} ~~ n > 0 \\
+		\text{undefined} &\text{else}.
+	\end{cases}
+$$
+
+A subtle point: Notice the period at the end of each _else_. Definitions are sentences, but they may be displayed in _block form_, as shown above, or in inline form: ${y = 5.}$ Block or inline, the grammar rule of terminating every sentence with a period applies.
+
+## Expressions
+The simplest unit of syntax in mathematics is the _expression_. The following are all expressions:
+
+$$
+	y ~~~~ 17 ~~~~ \pi ~~~~ 0.3333\ldots \\[1em]
+	1 + 8 ~~~~ e^x~\text{d}x ~~~~ k! \\[1em]
+	f(x) ~~~~ \int_{0}^{2} \frac{x^2}{3\cos x} ~~~~ \sum_{i=1}^{n} n \\[1em]
+	\frac{3}{4} ~~~~ 3i + 1 ~~~~ 9.81
+$$
+
+We define a _mathematical expression_ as follows:
+
+:::definition
+__Mathematical Expression.__ A mathematical expression is either an _atom_ or a _compound_.
+
+1. An _atom_ is an integer, real, variable (e.g., ${x,}$ ${f,}$ etc.), or constant (e.g., ${\pi,}$ ${e,}$ etc.).
+2. A _compound_ is one or more expressions – each called an _operand_ – joined by a symbol called an _operator_. An operator may be:
+	- an _algebraic operator_ (${+,}$ ${-}$, ${/}$, etc.),
+	- a _relational operator_ (${=,}$ ${\lt,}$ ${\gt}$, etc.),
+	- a _logical operator_ (${\land}$, ${\lor}$, etc.),
+	- a _set operator_ (${\cup}$, ${\cap}$, etc.),
+	- a _grouping operator_ (${(~)}$, ${\lbrace\rbrace}$, etc.), or
+	- a _function name_ (${f,}$ ${g,}$ etc.).
+:::
+
 ## Logic
 A _proposition_ is a sentence that reduces to true or false, but not both. Propositions can be _atomic_ or _compound_. For example, “Lazarus is alive” is an _atomic proposition_, since Lazarus can only be either alive or dead (excluding the “undead”). Likewise, these are all atomic propositions, some of which are true, others false:
 
@@ -126,54 +178,3 @@ __Contrapositive.__ For propositions ${p}$ and ${q,}$ the _contrapositive_ of th
 Put differently: The contrapositive of an implication is the inverse of its converse (swap the conditions and negate each). E.g., the proposition “If Milky is a cow, then Milky is mammal,” contrapositively, is “If Milky is not a mammal, then Milky is not a cow.”
 
 
-## Definitions & Axioms
-Mathematics begins at the definition or axiom. These are statements of absolute facts; we take them as is, without question. For example, that a quadrilateral comprises four sides is taken without more. The realm of questioning axioms and definitions belongs to mathematical logic or linguistics, fields beyond this page’s scope.
-
-### Recursive Definitions
-Mathematics relies extensively on _recursive definitions_ or _recursive algorithms_. These are definitions/algorithms that are defined in terms of a simpler – or an entirely different – version of themselves. The classic example is the definition of a factorial:
-
-$$
-	n! = \begin{cases}
-		1 ~ &\text{if} ~~ n = 0 \\
-		1 \cdot 2 \cdot \ldots \cdot (n - 1) \cdot n ~ &\text{if} ~~ n > 0 \\
-		\text{undefined} &\text{else}.
-	\end{cases}
-$$
-
-The above definition can be rewritten as:
-
-
-$$
-	n! = \begin{cases}
-		1 ~ &\text{if} ~~ n = 0 \\
-		n \cdot (n - 1)! ~ &\text{if} ~~ n > 0 \\
-		\text{undefined} &\text{else}.
-	\end{cases}
-$$
-
-A subtle point: Notice the period at the end of each _else_. Definitions are sentences, but they may be displayed in _block form_, as shown above, or in inline form: ${y = 5.}$ Block or inline, the grammar rule of terminating every sentence with a period applies.
-
-## Expressions
-The simplest unit of syntax in mathematics is the _expression_. The following are all expressions:
-
-$$
-	y ~~~~ 17 ~~~~ \pi ~~~~ 0.3333\ldots \\[1em]
-	1 + 8 ~~~~ e^x~\text{d}x ~~~~ k! \\[1em]
-	f(x) ~~~~ \int_{0}^{2} \frac{x^2}{3\cos x} ~~~~ \sum_{i=1}^{n} n \\[1em]
-	\frac{3}{4} ~~~~ 3i + 1 ~~~~ 9.81
-$$
-
-We define a _mathematical expression_ as follows:
-
-:::definition
-__Mathematical Expression.__ A mathematical expression is either an _atom_ or a _compound_.
-
-1. An _atom_ is an integer, real, variable (e.g., ${x,}$ ${f,}$ etc.), or constant (e.g., ${\pi,}$ ${e,}$ etc.).
-2. A _compound_ is one or more expressions – each called an _operand_ – joined by a symbol called an _operator_. An operator may be:
-	- an _algebraic operator_ (${+,}$ ${-}$, ${/}$, etc.),
-	- a _relational operator_ (${=,}$ ${\lt,}$ ${\gt}$, etc.),
-	- a _logical operator_ (${\land}$, ${\lor}$, etc.),
-	- a _set operator_ (${\cup}$, ${\cap}$, etc.),
-	- a _grouping operator_ (${(~)}$, ${\lbrace\rbrace}$, etc.), or
-	- a _function name_ (${f,}$ ${g,}$ etc.).
-:::

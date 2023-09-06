@@ -12742,6 +12742,7 @@ function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
       return L;
     }
   } 
+
   else if (L.length===2 && (isProduct(L[0]) || isProduct(L[1]))) {
     const [u1,u2]=L;
     if (isProduct(u1) && isProduct(u2)) {
@@ -12758,15 +12759,18 @@ function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
   /** SPRDREC-3 */
   else if (L.length >= 2) {
     const w = $productREC(rest(L));
+
     /** SPRDREC-3.1 */
     if (isProduct(w[0])) {
       return mergeProducts(w[0]._args, w);
     }
+
     /** SPRDREC-3.2 */
     else {
       return mergeProducts([w[0]], w);
     }
   }
+
   else {
     return L;
   }

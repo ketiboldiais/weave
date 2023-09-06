@@ -1,6 +1,4 @@
 # Set Theory
-
-## Axioms
 There are two versions of set theory: (1) __naive set theory__, and (2)
 __axiomatic set theory__. We explore aspects of both theories in the
 materials that follow. What are the differences? Naive set theory is the
@@ -18,7 +16,6 @@ and yen. The set of all countries includes Japan, Palau, and Uruguay. The
 set of all integers includes 1 and -117. Sets can be finite (there are only so many countries), or infinite (there are infinitely many of numbers). Each object in a set is called a _member_ of that set.
 
 ### Axiom of Extension
-
 The set $\{ 1, 2, 3 \}$ is the same as the set $\{ 2, 1, 3 \}$, and the same set
 as $\{ 2, 2, 3, 1 \}$. We can draw this conclusion because of the _axiom of
 extension_.
@@ -171,7 +168,7 @@ This follows directly from the definition. The proposition ${\varnothing \subset
 
 The case of ${A \subseteq A}$ straightforward. Given that ${A}$ and ${A}$ are the same sets, every ${x \in A}$ implies that ${x \in A.}$ Because the sufficient condition is true and the necessary condition is true, it follows that ${A \subseteq A}$ by definition.
 
-### Proper Subsets
+## Proper Subsets
 If a subset ${B}$ of ${A}$ is such that ${B \neq A}$ and
 ${B \neq \varnothing,}$ then we say that ${B}$ is called a proper subset of
 ${A.}$ For example, the set of all potatoes is a subset of all root
@@ -256,7 +253,7 @@ $$
 
 Once more, these are two very different things. One is an some object (${\varnothing}$), the other is a box containing a single object (${\{ \varnothing \}}$). The empty set can be thought of as representing an empty folder. If we place an empty folder ${A}$ inside an empty folder ${B,}$ then the folder ${A}$ is no longer empty: It contains a folder. The distinction between elements and subsets is a critical distinction.
 
-### Vacuous Truth
+## Vacuous Truth
 The empty set offers an opportunity to revisit the notion of **vacuous truth**. Here's the question: Suppose we had a set ${A.}$ Is the empty set a subset of ${A?}$ The tempting answer is "It depends. What's in ${A?}$" Unfortunately, the temptation is wrong—it does not depend. Recall the definition of a subset:
 
 $$
@@ -292,3 +289,26 @@ $$
 :::
 
 Why is this true? Well, we know that since ${\varnothing}$ has no members, the sufficient condition for the definition of a subset is always false, so it follows that ${\varnothing \subseteq S}$ is always true. Next, by the law of identity, every statement implies itself. Thus, ${x \in S \rArr x \in S.}$ This implies that every element of ${S}$ is an element of ${S.}$ And since every element of ${S}$ is an element of ${S,}$ it follows that ${S \subseteq S.}$
+
+## Set Operations
+
+### Set Union
+Given two sets ${A}$ and ${B,}$ the _union_ of ${A}$ and ${B,}$ denoted ${A \cup B,}$ is the set of all elements in ${A}$ _or_ ${B}$ or both. In notation:
+
+$$
+	A \cup B = \set{x ~~\vert~~ x \in A \lor x \in B}.
+$$
+
+
+
+
+### Set Intersection
+Suppose ${A}$ and ${B}$ are sets. The _intersection_ of ${A}$ and ${B,}$ denoted ${A \cap B,}$ is the set of all elements simultaneousy in ${A}$ and ${B.}$
+
+$$
+	A \cap B = \set{x ~~\vert~~ x \in A \land x \in B}.
+$$
+
+import {Intersection1} from './set-theory.fig.tsx';
+
+<Intersection1/>
