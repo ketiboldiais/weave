@@ -5,6 +5,8 @@ import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
 import GEOMETRY from "./demos/appendix/geometry-1.mdx";
 import NUMBER_THEORY from "./demos/appendix/number-theory-1.mdx";
+import ALGEBRA from "./demos/appendix/algebra.mdx";
+
 
 import INDEX from "./demos/doc.main.mdx";
 import TWINE from "./demos/doc.twine.mdx";
@@ -71,6 +73,12 @@ export const docLinks: LinkEntry[] = [
     path: "/exposition",
     visible: false,
     page: <EXPOSITION />,
+  },
+  {
+    title: "Algebra",
+    path: "/algebra",
+    visible: false,
+    page: <ALGEBRA />,
   },
 ];
 

@@ -7382,7 +7382,7 @@ class Difference extends AlgebraicOp<core.difference> {
   ): AlgebraicExpression {
     const left = callback(this.left);
     const right = callback(this.right);
-    return new Difference(left, right);
+    return new Difference([left, right]);
   }
   accept<T>(visitor: ExpressionVisitor<T>): T {
     return visitor.difference(this);
@@ -7390,16 +7390,18 @@ class Difference extends AlgebraicOp<core.difference> {
   trust<T>(mapper: Mapper<T>): T {
     return mapper.difference(this);
   }
-  _args: [AlgebraicExpression, AlgebraicExpression];
+  _args: [AlgebraicExpression, AlgebraicExpression] | [AlgebraicExpression];
   copy(): Difference {
     const left = this.left.copy();
     const right = this.right.copy();
-    const out = difference(left, right);
+    const out = difference([left, right]);
     return out;
   }
-  constructor(left: AlgebraicExpression, right: AlgebraicExpression) {
-    super(core.difference, [left, right]);
-    this._args = [left, right];
+  constructor(
+    args: [AlgebraicExpression] | [AlgebraicExpression, AlgebraicExpression],
+  ) {
+    super(core.difference, args);
+    this._args = args;
   }
   /**
    * Returns the left minuend of this difference.
@@ -7407,7 +7409,11 @@ class Difference extends AlgebraicOp<core.difference> {
    * a - b // left is 'a'
    */
   get left() {
-    return this._args[0];
+    if (this._args.length === 1) {
+      return product([int(-1), this._args[0]]);
+    } else {
+      return this._args[0];
+    }
   }
   /**
    * Returns the right minuend of this difference.
@@ -7415,7 +7421,12 @@ class Difference extends AlgebraicOp<core.difference> {
    * a - b // right is 'b'
    */
   get right() {
-    return this._args[1];
+    const out = this._args[1];
+    if (out === undefined) {
+      return product([int(-1), this._args[0]]);
+    } else {
+      return out;
+    }
   }
   /**
    * Returns this difference as a sum. I.e., where L is the lefthand minuend
@@ -7433,8 +7444,10 @@ class Difference extends AlgebraicOp<core.difference> {
 }
 
 /** Returns an expression corresponding to the difference. */
-export function difference(a: AlgebraicExpression, b: AlgebraicExpression) {
-  return new Difference(a, b);
+export function difference(
+  args: [AlgebraicExpression] | [AlgebraicExpression, AlgebraicExpression],
+) {
+  return new Difference(args);
 }
 
 /** Returns true if `u` is difference, false otherwise. */
@@ -8819,7 +8832,7 @@ class Simplifier implements Visitor<AlgebraicExpression> {
         return sum([left, right]);
       }
       case tt.minus: {
-        return difference(left, right);
+        return difference([left, right]);
       }
       case tt.star: {
         return product([left, right]);
@@ -11848,7 +11861,7 @@ function exp(source: string) {
     const RHS = expr(p);
     if (RHS.isLeft()) return RHS;
     const rhs = RHS.unwrap();
-    return node(difference(lhs, rhs));
+    return node(difference([lhs, rhs]));
   };
 
   const QUOTIENT: Parslet<AlgebraicExpression> = (op, lhs) => {
@@ -12455,6 +12468,15 @@ function derivative(expression: AlgebraicExpression, variable: string | Sym) {
   return expression;
 }
 
+/** Sorts the given list of expressions. */
+function sortex(expressions: AlgebraicExpression[]) {
+  const out = [];
+  for (let i = 0; i < expressions.length; i++) {
+    out.push(expressions[i].copy());
+  }
+  return out.sort((a, b) => order(a, b) ? 1 : -1);
+}
+
 // deno-fmt-ignore
 function $integerPower(v: AlgebraicExpression, n: Int): AlgebraicExpression {
   /** SINTPOW-1 */
@@ -12506,6 +12528,115 @@ function $e(source: string, message: string) {
   return `In call to [${source}], ${message}.`;
 }
 
+/** Returns the base of the given AlgebraicExpression. */
+function baseOf(u: AlgebraicExpression) {
+  if (
+    isSum(u) ||
+    isSymbol(u) ||
+    isProduct(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return u;
+  } else if (isPower(u)) {
+    return u.base;
+  } else {
+    return Undefined(`${u.toString()} has no base`);
+  }
+}
+
+/** Returns the exponent of the given AlgebraicExpression. */
+function exponentOf(u: AlgebraicExpression) {
+  if (
+    isSum(u) ||
+    isSymbol(u) ||
+    isProduct(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return int(1);
+  } else if (isPower(u)) {
+    return u.exponent;
+  } else {
+    return Undefined(`${u.toString()} has no exponent`);
+  }
+}
+
+/** Returns true if the AlgebraicExpression `u` is an Int, Fraction, Real, or Constant. This function is primarily used by the automatic simplification algorithm. */
+function isC(u: AlgebraicExpression): u is Int | Fraction | Real | Constant {
+  return (
+    isIntorFrac(u) ||
+    isReal(u) ||
+    isConstant(u)
+  );
+}
+
+/** Returns the term of the given AlgebraicExpression. */
+function termOf(u: AlgebraicExpression) {
+  if (
+    isSum(u) ||
+    isPower(u) ||
+    isSymbol(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return u;
+  } else if (isProduct(u)) {
+    if (isC(u._args[0])) {
+      const newOperands: AlgebraicExpression[] = [];
+      for (let i = 1; i < u._args.length; i++) {
+        newOperands.push(u._args[i]);
+      }
+      return product(newOperands);
+    } else {
+      return u;
+    }
+  } else {
+    return Undefined($e("termOf", `${u.toString()} has no term`));
+  }
+}
+
+/** Returns the constant of the given AlgebraicExpression. */
+function constOf(u: AlgebraicExpression) {
+  if (
+    isSymbol(u) ||
+    isSum(u) ||
+    isPower(u) ||
+    isFactorial(u) ||
+    isAlgebraicFn(u)
+  ) {
+    return int(1);
+  } else if (isProduct(u)) {
+    if (isC(u._args[0])) {
+      return u._args[0];
+    } else {
+      return int(1);
+    }
+  } else {
+    return Undefined($e("constOf", `${u.toString()} has no constant.`));
+  }
+}
+
+/** Given the array of AlgebraicExpressions `exprs2`, returns a new array with the AlgebraicExpression `expr` as the first element, with the elements of `exprs2`’s elements following. */
+function adjoin(expr: AlgebraicExpression, exprs2: AlgebraicExpression[]) {
+  const out: AlgebraicExpression[] = [expr];
+  for (let j = 0; j < exprs2.length; j++) {
+    out.push(exprs2[j]);
+  }
+  return out;
+}
+
+/** Given the array of expressions, returns a new array with all but the first element. */
+function rest(u: AlgebraicExpression[]): AlgebraicExpression[] {
+  const out: AlgebraicExpression[] = [];
+  if (2 <= u.length) {
+    for (let i = 1; i < u.length; i++) {
+      out.push(u[i]);
+    }
+  }
+  return out;
+}
+
 /** Simplifies a power expression. */
 // deno-fmt-ignore
 function $power(u: Power): AlgebraicExpression {
@@ -12542,106 +12673,6 @@ function $power(u: Power): AlgebraicExpression {
   else {
     return u;
   }
-}
-
-function baseOf(u: AlgebraicExpression) {
-  if (
-    isSum(u) ||
-    isSymbol(u) ||
-    isProduct(u) ||
-    isFactorial(u) ||
-    isAlgebraicFn(u)
-  ) {
-    return u;
-  } else if (isPower(u)) {
-    return u.base;
-  } else {
-    return Undefined(`${u.toString()} has no base`);
-  }
-}
-
-function exponentOf(u: AlgebraicExpression) {
-  if (
-    isSum(u) ||
-    isSymbol(u) ||
-    isProduct(u) ||
-    isFactorial(u) ||
-    isAlgebraicFn(u)
-  ) {
-    return int(1);
-  } else if (isPower(u)) {
-    return u.exponent;
-  } else {
-    return Undefined(`${u.toString()} has no exponent`);
-  }
-}
-function isC(u: AlgebraicExpression): u is Int | Fraction | Real | Constant {
-  return (
-    isIntorFrac(u) ||
-    isReal(u) ||
-    isConstant(u)
-  );
-}
-
-function termOf(u: AlgebraicExpression) {
-  if (
-    isSum(u) ||
-    isPower(u) ||
-    isSymbol(u) ||
-    isFactorial(u) ||
-    isAlgebraicFn(u)
-  ) {
-    return u;
-  } else if (isProduct(u)) {
-    if (isC(u._args[0])) {
-      const newOperands: AlgebraicExpression[] = [];
-      for (let i = 1; i < u._args.length; i++) {
-        newOperands.push(u._args[i]);
-      }
-      return product(newOperands);
-    } else {
-      return u;
-    }
-  } else {
-    return Undefined($e("termOf", `${u.toString()} has no term`));
-  }
-}
-
-function constOf(u: AlgebraicExpression) {
-  if (
-    isSymbol(u) ||
-    isSum(u) ||
-    isPower(u) ||
-    isFactorial(u) ||
-    isAlgebraicFn(u)
-  ) {
-    return int(1);
-  } else if (isProduct(u)) {
-    if (isC(u._args[0])) {
-      return u._args[0];
-    } else {
-      return int(1);
-    }
-  } else {
-    return Undefined($e("constOf", `${u.toString()} has no constant.`));
-  }
-}
-
-/** Sorts the given list of expressions. */
-function sortex(expressions: AlgebraicExpression[]) {
-  const out = [];
-  for (let i = 0; i < expressions.length; i++) {
-    out.push(expressions[i].copy());
-  }
-  return out.sort((a, b) => order(a, b) ? 1 : -1);
-}
-
-function adjoin(expr: AlgebraicExpression, exprs2: AlgebraicExpression[]) {
-  const out: AlgebraicExpression[] = [expr];
-  for (let j = 0; j < exprs2.length; j++) {
-    out.push(exprs2[j]);
-  }
-  return out;
 }
 
 // deno-fmt-ignore
@@ -12683,16 +12714,6 @@ function mergeProducts(
       return adjoin(q1, mergeProducts(p, rest(q)));
     }
   }
-}
-
-function rest(u: AlgebraicExpression[]): AlgebraicExpression[] {
-  const out: AlgebraicExpression[] = [];
-  if (2 <= u.length) {
-    for (let i = 1; i < u.length; i++) {
-      out.push(u[i]);
-    }
-  }
-  return out;
 }
 
 /** Simplifies the operands of a product recursively. */
@@ -12776,6 +12797,7 @@ function $productREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
   }
 }
 
+/** Simplifies a product expression. */
 function $product(u: Product): AlgebraicExpression {
   const L = u._args;
 
@@ -12807,6 +12829,17 @@ function $product(u: Product): AlgebraicExpression {
   } else {
     return int(1);
   }
+}
+
+function mergeSums(
+  p: AlgebraicExpression[],
+  q: AlgebraicExpression[],
+): AlgebraicExpression[] {
+  throw new Error(`$mergeSums unimplemented`);
+}
+
+function $sumREC(L: AlgebraicExpression[]): AlgebraicExpression[] {
+  throw new Error(`$sumREC unimplemented`);
 }
 
 function $sum(u: Sum): AlgebraicExpression {

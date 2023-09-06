@@ -1,19 +1,8 @@
 # Set Theory
-There are two versions of set theory: (1) __naive set theory__, and (2)
-__axiomatic set theory__. We explore aspects of both theories in the
-materials that follow. What are the differences? Naive set theory is the
-version of set theory as originally constructed by the German mathematician
-Georg Cantor. Axiomatic set theory is the version of set
-theory constructed in response to several paradoxes, the most famous of
-which is _Russell's Paradox_. In this chapter, we focus only on naive set
-theory.
+In an academic setting, set theory is presented in two forms: (1) __naive set theory__, and (2) __axiomatic set theory__. We explore aspects of both theories in the materials that follow. What are the differences? Naive set theory is the theory as constructed by the German mathematician Georg Cantor. Axiomatic set theory is the beta version – it includes patches for several bugs, most notably _Russell's Paradox_.
 
 ## Foundational Axioms
-In mathematics, a __set__ is a collection of objects. Those objects might
-be dogs, people, trees, numbers, values, variables, or more abstractly,
-propositions. For example, the set of all coins includes nickels, sterling,
-and yen. The set of all countries includes Japan, Palau, and Uruguay. The
-set of all integers includes 1 and -117. Sets can be finite (there are only so many countries), or infinite (there are infinitely many of numbers). Each object in a set is called a _member_ of that set.
+In mathematics, a __set__ is a collection of objects, no more, no less. An object is anything – chairs, people, datum, variables, predicates, sentences, etc. For example, the set of all coins includes nickels, sterling, and yen. The set of all countries includes the United States. The set of all integers includes 1 and -117. Each object in a set is called a _member_ of that set.
 
 ### Axiom of Extension
 The set $\{ 1, 2, 3 \}$ is the same as the set $\{ 2, 1, 3 \}$, and the same set
@@ -31,19 +20,13 @@ by what its elements are—it is irrelevant whether the elements are in order, o
 whether an element is listed more than once.
 
 ### Axiom of Specification
-The axiom of specification, also referred to as _Aussonderungsaxiom_, provides
-the following:
+Set theorists introduced the axiom of specification to get around awkward gaps philosophers noticed in the early 1900s. One such gap is Russell's Paradox, discussed in a separate chapter. In essence, without the axiom of specification, we get the conclusion that _nothing contains everything_.
 
 :::definition
 __Axiom of Specification.__ To every set ${A}$ and to every condition ${S(x),}$
 there exists a set ${B}$ whose elements are exactly the elements ${x}$ of ${A,}$
 for which ${S(x)}$ holds.
 :::
-
-Set theorists introduced the axiom of specification to get around some awkward
-gaps philosophers noticed in the early 1900s. One such gap is Russell's Paradox,
-discussed in a separate chapter. In essence, without the axiom of specification,
-we get the conclusion that _nothing contains everything_.
 
 While we could simply accept this as a kōan, it causes enough discomfort to warrant an axiom. The axiom of specification, in short, establishes that there exists a set we can specify (e.g., tailor) to a set we desire. A set that's “tailored” is said to be _well-defined_. We say that a set is well-defined if, for any given ${x,}$ we can determine whether ${x}$ is a member of the set. For example, the set ${L = \{x \in \reals \mid x > 4\}}$ is a well-defined set. Given any ${x,}$ we can determine whether ${x}$ is a member of ${L}$; ${x}$ must be a real number, and it must be greater than 4.  The set ${G = \{ 1, 4, 3, 9, \pi, \ldots \},}$ however, is not a well-defined set. Is ${3.2}$ a member of ${G?}$ We do not have enough conditions to make a determination.
 
@@ -290,19 +273,7 @@ $$
 
 Why is this true? Well, we know that since ${\varnothing}$ has no members, the sufficient condition for the definition of a subset is always false, so it follows that ${\varnothing \subseteq S}$ is always true. Next, by the law of identity, every statement implies itself. Thus, ${x \in S \rArr x \in S.}$ This implies that every element of ${S}$ is an element of ${S.}$ And since every element of ${S}$ is an element of ${S,}$ it follows that ${S \subseteq S.}$
 
-## Set Operations
-
-### Set Union
-Given two sets ${A}$ and ${B,}$ the _union_ of ${A}$ and ${B,}$ denoted ${A \cup B,}$ is the set of all elements in ${A}$ _or_ ${B}$ or both. In notation:
-
-$$
-	A \cup B = \set{x ~~\vert~~ x \in A \lor x \in B}.
-$$
-
-
-
-
-### Set Intersection
+## Set Intersection
 Suppose ${A}$ and ${B}$ are sets. The _intersection_ of ${A}$ and ${B,}$ denoted ${A \cap B,}$ is the set of all elements simultaneousy in ${A}$ and ${B.}$
 
 $$
@@ -312,3 +283,17 @@ $$
 import {Intersection1} from './set-theory.fig.tsx';
 
 <Intersection1/>
+
+## Set Union
+Given two sets ${A}$ and ${B,}$ the _union_ of ${A}$ and ${B,}$ denoted ${A \cup B,}$ is the set of all elements in ${A}$ _or_ ${B}$ or both. In notation:
+
+$$
+	A \cup B = \set{x ~~\vert~~ x \in A \lor x \in B}.
+$$
+
+import {Union1} from './set-theory.fig.tsx';
+
+<Union1/>
+
+
+

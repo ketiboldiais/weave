@@ -119,7 +119,7 @@ export const Polar1 = () => {
 };
 
 export const Plot1 = () => {
-  const data = plot2D("f(x) = tan(x)")
+  const data = plot2D(`f(x) = tan(x)`)
     .samples(500)
     .strokeWidth(2)
     .axisColor("white")
