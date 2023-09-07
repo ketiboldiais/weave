@@ -776,14 +776,6 @@ export function interpolate(
   );
 }
 
-/*
-┌─────────────────────────────────────────────────────────────────────────┐
-│ TYPEGUARDS                                                              │
-│ These functions verify and claim that                                   │
-│ their given arguments are of a particular type.                         │
-└─────────────────────────────────────────────────────────────────────────┘
-*/
-
 /** Typeguard: Returns true if `x` is any string, false otherwise. */
 function $isString(x: any): x is string {
   return (typeof x === "string");
@@ -1588,6 +1580,7 @@ class LCommand extends PathCommand {
     return `L${this._end._x},${this._end._y}`;
   }
 }
+
 /** Returns a new {@link LCommand|L-command}. */
 const L = (x: number, y: number, z: number = 1) => (new LCommand(x, y, z));
 
@@ -1604,6 +1597,7 @@ class ZCommand extends PathCommand {
     return `Z`;
   }
 }
+
 const Z = (): ZCommand => new ZCommand();
 
 class VCommand extends PathCommand {
@@ -1619,6 +1613,7 @@ class VCommand extends PathCommand {
     return `V${this._end._x},${this._end._y}`;
   }
 }
+
 /** Returns a new {@link VCommand|V-command}. */
 const V = (x: number, y: number, z: number = 1) => (new VCommand(x, y, z));
 
@@ -1790,6 +1785,8 @@ interface Renderable {
   _id: string | number;
   id(value: string | number): this;
   end(): this;
+  _locked: boolean;
+  lock(): this;
 }
 
 type Klass<T = {}> = new (...args: any[]) => T;
@@ -1801,6 +1798,11 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
     _commands: PathCommand[] = [];
     _origin: Vector = v3D(0, 0, 1);
     _id: string | number = uid(5);
+    _locked: boolean = false;
+    lock() {
+      this._locked = true;
+      return this;
+    }
     id(id: string | number) {
       this._id = id;
       return this;
@@ -2464,9 +2466,6 @@ function area2D() {
 
 const CONTEXT = contextual(colorable(BASE));
 
-
-
-
 // ================================================================== polar plot
 export class PolarPlot2D extends CONTEXT {
   _f: string;
@@ -2812,7 +2811,171 @@ function mapKeys<K, V>(x: Map<K, V>) {
   return out;
 }
 
-// ==================================================================== DOT PLOT
+// =================================================================== line plot
+class Metadata {
+  _data: Record<(string | number), number>;
+  _kvMax: [string | number, number];
+  _kvMin: [string | number, number];
+  _keys: (string | number)[] = [];
+  _values: number[] = [];
+  _entryCount: number;
+  _mostPrecise: number;
+  constructor(data: Record<(string | number), number>) {
+    this._data = data;
+    const entries = Object.entries(data);
+    this._entryCount = entries.length;
+    let max = -Infinity;
+    let maxPair: [string | number, number] = ["", max];
+    let min = Infinity;
+    let minPair: [string | number, number] = ["", min];
+    entries.forEach(([key, value]) => {
+      if (max < value) {
+        max = value;
+        maxPair = [key, value];
+      }
+      if (min > value) {
+        min = value;
+        minPair = [key, value];
+      }
+      this._keys.push(key);
+      this._values.push(value);
+    });
+    this._kvMax = maxPair;
+    this._kvMin = minPair;
+    this._mostPrecise = mostPrecise(this._values);
+    print(this._kvMax);
+  }
+  frequencyTable() {
+    const out: Record<(string | number), number> = {};
+    for (let i = 0; i < this._values.length; i++) {
+      const key = this._values[i];
+      if (out[key] !== undefined) {
+        const value = out[key];
+        out[key] = value + 1;
+      } else {
+        out[key] = 1;
+      }
+    }
+    return out;
+  }
+  get _yRange(): [number, number] {
+    return [0, this._entryCount];
+  }
+  get _xRange(): [number, number] {
+    return [0, this._kvMax[1]];
+  }
+  kvPairs() {
+    const out: ([string | number, number])[] = [];
+    for (let i = 0; i < this._entryCount; i++) {
+      const key = this._keys[i];
+      const value = this._values[i];
+      out.push([key, value]);
+    }
+    return out;
+  }
+}
+
+function meta(data: Record<(string | number), number>) {
+  return new Metadata(data);
+}
+
+class LinePlot extends CONTEXT {
+  _data: Metadata;
+  constructor(data: Record<string | number, number>) {
+    super();
+    this._data = meta(data);
+  }
+  _xTickLength: number = 0.2;
+  xTickLength(length: number) {
+    this._xTickLength = length;
+    return this;
+  }
+  _yTickLength: number = 0.2;
+  yTickLength(length: number) {
+    this._yTickLength = length;
+    return this;
+  }
+  _lineColor: string = "black";
+  lineColor(color: string) {
+    this._lineColor = color;
+    return this;
+  }
+  _lineWidth: number = 2;
+  lineWidth(w: number) {
+    this._lineWidth = w;
+    return this;
+  }
+  _fontSize: number = 9;
+  end() {
+    const count = this._data._entryCount-1;
+    this._domain = [0, count];
+    this._range = [0, count];
+    const d = path();
+    d._commands = [];
+    const datapoints = this._data.kvPairs();
+    const keys = this._data._keys;
+    const values = this._data._values;
+    const xmin = this._data._kvMin[1];
+    const xmax = this._data._kvMax[1];
+    const fInterp = interpolator([xmin, xmax], [0, xmax]);
+
+    const xdomain = this._data._xRange;
+    const xrange = this._domain;
+    const xf = interpolator(xdomain, xrange);
+    const xt = this._xTickLength;
+    const yt = this._yTickLength;
+    datapoints.forEach(([_, value], index) => {
+      value = xf(value);
+      if (index === 0) {
+        d._commands.push(M(index, value));
+      } else {
+        d._commands.push(L(index, value));
+      }
+      const xtick = line([index, -xt], [index, xt])
+        .stroke(this._stroke);
+      const xlabel = text(keys[index])
+        .at(index, -xt * 2)
+        .dy(-0.2)
+        .anchor("middle")
+        .fontSize(this._fontSize)
+        .fontColor(this._stroke);
+      this.and(xlabel);
+      this.and(xtick);
+      const ytick = line([-yt, index], [yt, index])
+        .stroke(this._stroke);
+      const t = fInterp(values[index]);
+      let tx = t.toPrecision(4);
+      if (t === 0) {
+        tx = "0";
+      }
+      const ylabel = text(tx)
+        .at(-yt, index)
+        .dx(-0.1)
+        .dy(-0.1)
+        .anchor("end")
+        .fontSize(this._fontSize)
+        .fontColor(this._stroke);
+      this.and(ylabel);
+      this.and(ytick);
+    });
+    this.and(
+      d.stroke(this._lineColor)
+        .strokeWidth(this._lineWidth),
+    );
+    const xline = line([0, 0], [count, 0]).stroke("white");
+    this.and(xline);
+    const yline = line([0, 0], [0, count]).stroke("white");
+    this.and(yline);
+    this.fit();
+    return this;
+  }
+}
+
+export function linePlot(data: Record<string | number, number>) {
+  return new LinePlot(data);
+}
+
+// ==================================================================== dot plot
 class DotPlot<T extends (string | number) = any> extends CONTEXT {
   _data: Map<T, number> = new Map();
   constructor(data: T[]) {
@@ -2892,7 +3055,7 @@ export function dotPlot<T extends string | number>(data: T[]) {
   return new DotPlot(data);
 }
 
-// ==================================================================== BAR PLOT
+// ==================================================================== bar plot
 
 class BarPlot extends CONTEXT {
   _data: Map<string, number> = new Map();
@@ -2987,7 +3150,7 @@ export function barPlot(data: Record<string, number>) {
   return new BarPlot(data);
 }
 
-// =================================================================== HISTOGRAM
+// =================================================================== histogram
 
 class Histogram extends CONTEXT {
   _data: Map<[number, number], number> = new Map();
@@ -3210,6 +3373,11 @@ const GROUP = colorable(BASE);
 
 export class Group extends GROUP {
   children: Shape[];
+  _locked: boolean = false;
+  lock() {
+    this._locked = true;
+    return this;
+  }
   end() {
     this.children = this.children.map((x) => x.end());
     return this;
@@ -3294,7 +3462,7 @@ interface Contextual {
   get _ymin(): number;
   get _ymax(): number;
   and(...shape: Shape[]): this;
-  fit(): this;
+  fit(domain?: [number, number], range?: [number, number]): this;
   _markers: Markers[];
 }
 
@@ -3307,12 +3475,17 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       if (x < y) this._domain = [x, y];
       return this;
     }
-    fit() {
+    fit(domain?: [number, number], range?: [number, number]) {
+      const DOMAIN = domain ? domain : this._domain;
+      const RANGE = range ? range : this._range;
       this._children = this._children.map((x) => x.end());
       this._children = this._children.map((x) => {
+        if (x._locked) {
+          return x;
+        }
         const out = x.interpolate(
-          this._domain,
-          this._range,
+          DOMAIN,
+          RANGE,
           [this._vw, this._vh],
         );
         return out;
@@ -4679,16 +4852,18 @@ export function tree(t: Fork) {
   return new Tree(t);
 }
 
+// deno-fmt-ignore
 export type Parent =
-  | ForceGraph
-  | ScatterPlot
-  | Histogram
-  | Plot2D
-  | Tree
-  | BarPlot
-  | PolarPlot2D
-  | Plane
-  | DotPlot;
+| ForceGraph
+| ScatterPlot
+| Histogram
+| Plot2D
+| Tree
+| BarPlot
+| PolarPlot2D
+| Plane
+| LinePlot
+| DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;
 export type Markers = ArrowHead;
@@ -4979,15 +5154,6 @@ function runtimeError(
   rec: string = "none",
 ) {
   return new Err(message, "runtime-error", phase, token.L, token.C, rec);
-}
-
-/** Returns a new type error. A type error is raised if an error occurred during type-checking. */
-function typeError(
-  message: string,
-  phase: string,
-  token: Token,
-) {
-  return new Err(message, "type-error", phase, token.L, token.C);
 }
 
 /** Returns a new environment error. An environment error is raised if an error occured during an environment lookup. */

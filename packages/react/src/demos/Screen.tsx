@@ -22,6 +22,7 @@ import {
   leaf,
   Line,
   line,
+  linePlot,
   Markers,
   Parent,
   Path,
@@ -336,6 +337,24 @@ export const Scatter1 = () => {
   return <Figure of={data} />;
 };
 
+export const LinePlot1 = () => {
+  const d = linePlot({
+    2001: 1_123,
+    2002: 1_268,
+    2003: 1_407,
+    2004: 1_819,
+    2005: 2_014,
+    2006: 2_102,
+    2007: 2_372,
+    2008: 2_522,
+    2009: 2_683,
+    2010: 2_717,
+    2011: 2_901,
+    2012: 3_001,
+    2013: 3_211,
+  }).margins(40).width(400).height(400).stroke('white').lineColor('cyan').end();
+  return <Figure of={d}/>
+};
 
 export const Figure = ({ of }: { of: Parent }) => {
   const width = of._width;
