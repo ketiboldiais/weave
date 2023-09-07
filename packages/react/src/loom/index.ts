@@ -2843,7 +2843,6 @@ class Metadata {
     this._kvMax = maxPair;
     this._kvMin = minPair;
     this._mostPrecise = mostPrecise(this._values);
-    print(this._kvMax);
   }
   frequencyTable() {
     const out: Record<(string | number), number> = {};
