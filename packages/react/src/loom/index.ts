@@ -1838,7 +1838,7 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
       const Y = interpolator(range, [dimensions[1], 0]);
       this._commands = this._commands.map((p) => {
         const E = p._end;
-        const [x, y, z] = [X(E._x), Y(E._y), 1];
+        const [x, y, z] = [X(E._x), Y(E._y), E._z];
         switch (p._type) {
           case pc.M:
             return M(x, y, z);
@@ -1848,7 +1848,7 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
             return L(x, y, z);
           case pc.Q: {
             const c = (p as QCommand)._ctrl1;
-            return Q(x, y, z).ctrlPoint(x, y, z);
+            return Q(x, y, z).ctrlPoint(c._x, c._y, c._z);
           }
           case pc.C: {
             const c1 = (p as CCommand)._ctrl1;
@@ -1894,8 +1894,13 @@ function renderable<CLASS extends Klass>(klass: CLASS): And<CLASS, Renderable> {
               .ctrlPoint2(c2._x, c2._y, c2._z);
           }
           case pc.A: {
-            p = p as ACommand;
-            return A(E._x, E._y, E._z);
+            const s = p as ACommand;
+            return A(E._x, E._y, E._z)
+              .rx(s._rx)
+              .ry(s._ry)
+              .rotate(s._rotation)
+              .arc(s._largeArc)
+              .sweep(s._sweep);
           }
           default:
             return p;
@@ -2275,15 +2280,15 @@ export class Circle extends SHAPE {
     );
   }
   r(x: number) {
-    return new Circle(x);
+    this.radius = x;
+    return this;
   }
-  // @ts-ignore
-  at(x: number, y: number, z: number = 1): Circle {
+  at(x: number, y: number, z: number = 1) {
     const radius = this.radius;
     this._commands = [
       M(x, y + radius / 2, z),
-      A(x, y - radius / 2),
-      A(x, y + radius / 2),
+      A(x, y - radius / 2, z),
+      A(x, y + radius / 2, z),
     ];
     return this;
   }
@@ -3637,6 +3642,31 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
   };
 }
 
+export class Space3D extends CONTEXT {
+  constructor() {
+    super();
+    this._stroke = "white";
+  }
+  end() {
+    const x_axis = line([this._xmin, 0], [this._xmax, 0]).stroke(this._stroke);
+    const y_axis = line([0, this._ymin], [0, this._ymax]).stroke(this._stroke);
+    const z_axis = line([0, this._ymin], [0, this._ymax])
+      .rotateZ(-3 * PI / 4)
+      .stroke(this._stroke);
+    this.and(x_axis, y_axis, z_axis);
+    const p2 = circle(0.5).at(1, 3, -2).translateZ(1).fill("tomato");
+    const xline = line([1,0], [1,3]).stroke(this._stroke).dash(5);
+    const yline = line([0,3], [1,3]).stroke(this._stroke).dash(5);
+    const zline = line([1,3], [-1,1]).stroke(this._stroke).dash(5);
+    this.and(xline,yline,zline);
+    this.and(p2);
+    return this.fit();
+  }
+}
+export function space3D() {
+  return new Space3D();
+}
+
 type EdgeType = "--" | "->";
 
 class Vertex<T = any> {
@@ -4932,6 +4962,7 @@ export function tree(t: Fork) {
 // deno-fmt-ignore
 export type Parent =
 | ForceGraph
+| Space3D
 | ScatterPlot
 | Histogram
 | Plot2D

@@ -34,6 +34,7 @@ import {
   range,
   scatterPlot,
   Shape,
+  space3D,
   subtree,
   Text,
   text,
@@ -772,3 +773,8 @@ const RangeInput = ({ t, val, f }: RangeInputProps) => {
     </section>
   );
 };
+
+export const Space3D_Demo1 = () => {
+  const d = space3D().margins(0).domain(-7,7).range(-7,7).end();
+  return <Figure of={d}/>
+}
