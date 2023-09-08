@@ -173,7 +173,13 @@ export const DotPlot1 = () => {
   // deno-fmt-ignore
   const data = dotPlot([
     5, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 9, 9, 10,
-  ]).margins(0,10,40,10).height(300).width(300).dotStroke('white').dotFill('#3b4659').stroke('white').end();
+  ]).margins(0,10,40,10)
+    .height(300)
+    .width(300)
+    .dotStroke('white')
+    .dotFill('lightgrey')
+    .stroke('white')
+    .end();
   return <Figure of={data} />;
 };
 
