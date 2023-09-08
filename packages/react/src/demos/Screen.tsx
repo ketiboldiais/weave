@@ -775,6 +775,11 @@ const RangeInput = ({ t, val, f }: RangeInputProps) => {
 };
 
 export const Space3D_Demo1 = () => {
-  const d = space3D().margins(0).domain(-7,7).range(-7,7).end();
+  const d = space3D()
+    .width(500)
+    .margins(0)
+    .domain(-10,10)
+    .range(-10,50)
+    .end();
   return <Figure of={d}/>
 }

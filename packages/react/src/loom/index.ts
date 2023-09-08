@@ -3648,18 +3648,36 @@ export class Space3D extends CONTEXT {
     this._stroke = "white";
   }
   end() {
+    const angle = -3 * PI / 4;
     const x_axis = line([this._xmin, 0], [this._xmax, 0]).stroke(this._stroke);
     const y_axis = line([0, this._ymin], [0, this._ymax]).stroke(this._stroke);
     const z_axis = line([0, this._ymin], [0, this._ymax])
-      .rotateZ(-3 * PI / 4)
+      .rotateZ(angle)
       .stroke(this._stroke);
     this.and(x_axis, y_axis, z_axis);
-    const p2 = circle(0.5).at(1, 3, -2).translateZ(1).fill("tomato");
-    const xline = line([1,0], [1,3]).stroke(this._stroke).dash(5);
-    const yline = line([0,3], [1,3]).stroke(this._stroke).dash(5);
-    const zline = line([1,3], [-1,1]).stroke(this._stroke).dash(5);
-    this.and(xline,yline,zline);
-    this.and(p2);
+    const tick = .3;
+    const f = (x: number, y: number) => (x**2) + (y**2)
+    const p = path();
+    for (let i = this._domain[0]; i < this._domain[1]; i += tick) {
+      for (let j = this._range[0]; j < this._range[1]; j += tick) {
+        let z = f(i, j);
+        if (isNaN(z)) {
+          continue;
+        }
+        if (i===-5) {
+          p._commands[0]=M(i,j,z);
+        } else {
+          p.L(i,j,z)
+        }
+      }
+    }
+    p.translateZ(0);
+    this.and(p.stroke('tomato').opacity(0.8));
+    // const xline = line([1, 0], [1, 3]).stroke(this._stroke).dash(5);
+    // const yline = line([0, 3], [1, 3]).stroke(this._stroke).dash(5);
+    // const zline = line([1, 3], [-1, 1]).stroke(this._stroke).dash(5);
+    // this.and(xline, yline, zline);
+    this._children.forEach(c => c.rotateZ(-PI/4))
     return this.fit();
   }
 }
