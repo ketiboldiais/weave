@@ -1,0 +1,110 @@
+# Precalculus
+
+This section provides a review of basic algebra and trigonometry (what might be called “precalculus” in U.S. curricula).
+
+## Rational Arithmetic
+
+:::definition
+__Addition over ${\mathbb{Q}}$.__ Given the rational number ${a/b}$ and the rational number ${c/d,}$ it follows that:
+
+$$
+	\frac{a}{b} + \frac{c}{d} = \frac{ad}{bd} + \frac{bc}{bd} = \frac{ad + bc}{bd}.
+$$
+:::
+
+_Example._ ${\dfrac{3}{2} + \dfrac{5}{7} = \dfrac{3 \cdot 7}{2 \cdot 7} + \dfrac{5 \cdot 2}{2 \cdot 7} = \dfrac{10}{14}.}$
+
+
+
+:::definition
+__Multiplication over ${\mathbb{Q}}$.__ Given the rational number ${a/b}$ and the rational number ${c/d,}$ it follows that:
+
+$$
+	\frac{a}{b} \cdot \frac{c}{d} = \frac{ac}{bd}.
+$$
+:::
+
+
+Given that subtraction is merely syntactic sugar for addition on the additive inverse of the second operand, we may define subtraction from a combination of the addition and multiplication definitions:
+
+:::definition
+__Subtraction over ${\mathbb{Q}}$.__ Given the rational number ${a/b}$ and the rational number ${c/d,}$ it follows that:
+
+$$
+	\frac{a}{b} - \frac{c}{d} = \frac{ad}{bd} + \left(\frac{-1}{1} \cdot \frac{bc}{bd}\right) = \frac{ad - bc}{bd}.
+$$
+:::
+
+## Real Arithmetic
+The following properties hold for the set of all real numbers, ${\reals.}$
+
+:::definition
+__Properties of ${\mathbb{R}.}$__ Let ${x,}$ ${y,}$ and ${z}$ be real numbers.
+
+- __Closure of Addition.__ The sum ${x + y}$ is always a real number.
+- __Associativity of Addition.__ The grouping of summands is inconsequential: ${(x + y) + z = x + (y + z).}$
+- __Commutativity of Addition.__ The ordering of summands is inconsequential: ${x + y = y + x.}$
+- __Existence of Additive Identity.__ There exists an additive identity, ${0,}$ such that, for all ${x \in \mathbb{R}}$ ${0 + x = x + 0 = x.}$
+- __Existence of Additive Inverse.__ For every ${x \in \reals,}$ there exists a unique real number ${-x,}$ such that ${x + (-x) = (-x) + x = 0,}$ and ${-x}$ is the only element in ${\mathbb{R}}$ with this property.
+- __Closure of Multiplication.__ The product ${x \cdot y}$ is always a real number.
+- __Associativity of Multiplication.__ The grouping of multiplicands is inconsequential: ${(x \cdot y) \cdot z = x \cdot (y \cdot z).}$
+- __Commutativity of Multiplication.__ The ordering of multiplicands is inconsequential:  ${x \cdot y = y \cdot x.}$
+- __Existence of Multiplicative Identity.__ There exists a multiplicative identity, ${1,}$ such that for all ${x \in \reals,}$ ${1 \cdot x = x \cdot 1 = x.}$
+- __Existence of Multiplicative Inverse.__ For each ${x \in \reals}$ with ${x \neq 0,}$ there exists a unique real number ${x^{-1}}$ such that ${x^{-1} \cdot x = 1,}$ and ${x^{-1}}$ is the only element in ${\mathbb{R}}$ relative to ${x}$ with this property.
+- __Distributivity.__ ${x \cdot (y + z) = xy + xz}$ and ${(x + y) \cdot z = xz + yz.}$
+:::
+
+We take subtraction and division as the following definitions:
+
+:::definition
+__Subtraction.__ For all real numbers ${a}$ and ${b,}$ the operation of subtraction is defined as:
+
+$$
+	a - b = a + (-b).
+$$
+:::
+
+:::definition
+__Division.__ For all real numbers ${a}$ and ${b,}$ the operation of division is defined as:
+
+$$
+	a \div b = a \cdot b^{-1}, ~~~~ b \neq 0.
+$$
+:::
+
+The following properties are often useful when manipulating algebraic expressions.
+
+:::definition
+__Properties of Negatives.__ For all real numbers ${a}$ and ${b:}$
+
+$$
+	\begin{aligned}
+		&-(-a) = a~; \\[1em]
+		&-ab = -(ab) = a(-b) = -ab~; \\[1em]
+		&(-a)(-b) = ab~; \\[1em]
+		&-1(a) = (-1)a = -a~; \\[1em]
+		&\dfrac{-a}{b} = -\dfrac{a}{b} = \dfrac{a}{-b}, ~~~ b \neq 0~; \\[1em]
+		&\dfrac{-a}{-b} = -\dfrac{-a}{b} = -\dfrac{a}{-b} = \dfrac{a}{b}, ~~~ b \neq 0. \\[1em]
+	\end{aligned}
+$$
+:::
+
+:::definition
+__Properties of Zero.__ For all real numbers ${a}$ and ${b:}$
+
+$$
+	\begin{aligned}
+		& a \cdot 0 = 0 \cdot a = 0 ~; \\[1em]
+		& ab = 0 \iff (a \neq 0 ~\text{ or }~ b \neq 0).
+	\end{aligned}
+$$
+:::
+
+## Exponents & Radicals
+The exponent is syntactic sugar for repeated multiplication. That is, given ${a \in \mathbb{R},}$
+
+$$
+	a^k = a_1 \cdot a_2 \cdot \ldots \cdot a_{k-1} \cdot a_k,
+$$
+
+where each ${a_i = a.}$ For example, ${a^2 = a \cdot a,}$ ${a^3 = a \cdot a \cdot a,}$ etc.

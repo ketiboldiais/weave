@@ -5,9 +5,14 @@
 	src: url('./styles/fonts/FiraCode-Regular.ttf');
 }
 
+html {
+	font-size: 15px;
+}
+
 code {
 	font-family: 'Fira Code';
 }
+
 .katex .texttt {
 	font-family: 'Fira Code';
 }
@@ -57,9 +62,6 @@ button:hover {
 	cursor: pointer;
 }
 
-html {
-	font-size: 14px;
-}
 
 em strong {
 	font-variant: small-caps;
@@ -227,7 +229,7 @@ pre.terminal {
 }
 
 dfn {
-	width: 70%;
+	width: 80%;
 }
 
 figure.box {
@@ -236,11 +238,12 @@ figure.box {
 	display: block;
 }
 
-@media (max-width: 400px) {
+@media (max-width: 600px) {
 	html {
 		font-size: 12px;
 	}
+
 	dfn {
-		width: 95%;
+		width: 90%;
 	}
 }

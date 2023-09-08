@@ -181,14 +181,19 @@ export const HV1 = () => {
   const data = tree(
     subtree("a").nodes([
       subtree("b").nodes([
-        leaf("f"),
+        subtree("e").nodes([
+          leaf("f"),
+          leaf("g"),
+        ]),
         leaf("q"),
       ]),
       subtree("w").nodes([
         leaf("l"),
-        leaf("o"),
+        subtree("x").nodes([
+          leaf("y"),
+          leaf("z"),
+        ]),
       ]),
-      leaf("s"),
     ]),
   ).layout("hv")
     .textMap((t) => t.fontColor("white").dx(-0.5).fontFamily("KaTeX_Math"))
@@ -352,8 +357,8 @@ export const LinePlot1 = () => {
     2011: 2_901,
     2012: 3_001,
     2013: 3_211,
-  }).margins(40).width(400).height(400).stroke('white').lineColor('cyan').end();
-  return <Figure of={d}/>
+  }).margins(40).width(400).height(400).stroke("white").lineColor("cyan").end();
+  return <Figure of={d} />;
 };
 
 export const Figure = ({ of }: { of: Parent }) => {

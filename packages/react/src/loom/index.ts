@@ -2466,6 +2466,81 @@ function area2D() {
 
 const CONTEXT = contextual(colorable(BASE));
 
+// ================================================================== linearized
+interface Linearized {
+  /** The length of each x-axis tick. */
+  _xTickLength: number;
+
+  /** Specifies the length for each x-axis tick. */
+  xTickLength(length: number): this;
+
+  /** The length of each y-axis tick. */
+  _yTickLength: number;
+
+  /** Specifies the length for each y-axis tick. */
+  yTickLength(length: number): this;
+
+  /** The axes color. */
+  _axisColor: string;
+
+  /** Sets the axis stroke color. */
+  axisColor(color: string): this;
+
+  /** The font size for the x-axis ticks. */
+  _xAxisFontSize?: number;
+  xAxisFontSize(size: number): this;
+
+  /** The font size for the y-axis ticks. */
+  _yAxisFontSize?: number;
+  yAxisFontSize(size: number): this;
+
+  /** The font size for the axis ticks. Specifying an `_xAxisFontSize` or a `_yAxisFontSize` will override this property. */
+  _axisFontSize: number;
+
+  /** Specifies the font size for the axis ticks. This method has no effect on: (1) y-axis ticks if the `_yAxisFontSize` is specified, and (2) x-axis ticks if the `_xAxisFontSize` is specified.  */
+  axisFontSize(size: number): this;
+}
+
+function linearized<CLASS extends Klass>(klass: CLASS): And<CLASS, Linearized> {
+  return class extends klass {
+    _axisFontSize: number = 12;
+    axisFontSize(size: number) {
+      this._axisFontSize = size;
+      return this;
+    }
+
+    _xAxisFontSize?: number;
+    xAxisFontSize(size: number) {
+      this._xAxisFontSize = size;
+      return this;
+    }
+
+    _yAxisFontSize?: number;
+    yAxisFontSize(size: number) {
+      this._yAxisFontSize = size;
+      return this;
+    }
+
+    _axisColor: string = "initial";
+    axisColor(color: string) {
+      this._axisColor = color;
+      return this;
+    }
+
+    _xTickLength: number = 0.5;
+    xTickLength(length: number) {
+      this._xTickLength = length;
+      return this;
+    }
+
+    _yTickLength: number = 0.5;
+    yTickLength(length: number) {
+      this._yTickLength = length;
+      return this;
+    }
+  };
+}
+
 // ================================================================== polar plot
 export class PolarPlot2D extends CONTEXT {
   _f: string;
@@ -2811,7 +2886,7 @@ function mapKeys<K, V>(x: Map<K, V>) {
   return out;
 }
 
-// =================================================================== line plot
+// ==================================================================== metadata
 class Metadata {
   _data: Record<(string | number), number>;
   _kvMax: [string | number, number];
@@ -2878,6 +2953,8 @@ function meta(data: Record<(string | number), number>) {
   return new Metadata(data);
 }
 
+// =================================================================== line plot
+
 class LinePlot extends CONTEXT {
   _data: Metadata;
   constructor(data: Record<string | number, number>) {
@@ -2906,7 +2983,7 @@ class LinePlot extends CONTEXT {
   }
   _fontSize: number = 9;
   end() {
-    const count = this._data._entryCount-1;
+    const count = this._data._entryCount - 1;
     this._domain = [0, count];
     this._range = [0, count];
     const d = path();
@@ -2917,7 +2994,6 @@ class LinePlot extends CONTEXT {
     const xmin = this._data._kvMin[1];
     const xmax = this._data._kvMax[1];
     const fInterp = interpolator([xmin, xmax], [0, xmax]);
-
     const xdomain = this._data._xRange;
     const xrange = this._domain;
     const xf = interpolator(xdomain, xrange);
@@ -4358,6 +4434,7 @@ class Tree extends TREE {
     return this;
   }
   private HV() {
+    const HEIGHT = this._tree.height();
     const largerToRight = (parent: TreeChild) => {
       const left = parent.left();
       const right = parent.right();
@@ -4372,14 +4449,14 @@ class Tree extends TREE {
       } else {
         const L = left._degree;
         const R = right._degree;
-        if (L > R) {
-          left._x = parent._x + 1 + L;
+        if (L >= R) {
+          left._x = parent._x + R + 1;
           left._y = parent._y;
           right._x = parent._x;
-          right._y = parent._y - sh;
+          right._y = parent._y - 2;
           parent._dx += left._x;
         } else if (L < R) {
-          right._x = parent._x + 1 + R;
+          right._x = parent._x + L + 1;
           right._y = parent._y;
           left._x = parent._x;
           left._y = parent._y - sh;
