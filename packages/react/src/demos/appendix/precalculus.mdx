@@ -100,7 +100,7 @@ $$
 $$
 :::
 
-## Exponents & Radicals
+## Exponents
 The exponent is syntactic sugar for repeated multiplication. That is, given ${a \in \mathbb{R},}$
 
 $$
@@ -108,3 +108,72 @@ $$
 $$
 
 where each ${a_i = a.}$ For example, ${a^2 = a \cdot a,}$ ${a^3 = a \cdot a \cdot a,}$ etc.
+
+:::definition
+__Definition.__ Let ${n}$ be a positive integer and ${x}$ a real number. Then the following properties hold:
+
+$$
+	\begin{aligned}
+		& a^n = a_1 \cdot a_2 \cdot \ldots \cdot a_{n-1} \cdot a_n ~, \\[1em]
+		& a^{-n} = \dfrac{1}{a^n} ~, \\[1em]
+		& a^0 = 1 ~, \\[1em]
+		& a^m a^n = a^{m+n} ~, \\[1em]
+		& (a^n)^m = a^{mn} ~, \\[1em]
+		& (ab)^n = a^{n}b^{n} ~, \\[1em]
+		& \left( \dfrac{a}{b} \right)^n = \dfrac{a^n}{b^n}~, \\[1em]
+		& \dfrac{a^m}{a^n} = \begin{cases}
+			a^{m-n} \\[1em]
+			\dfrac{1}{a^{n-m}}
+		\end{cases}, ~~~ a \neq 0.
+	\end{aligned}
+$$
+:::
+
+_Example_. ${(3a^5)(2a^{-3}) = (3 \cdot 6)(a^5a^{-3}) = 6a^2.}$
+
+_Example_. ${\dfrac{6x^{-2}}{8x^{-5}} = \dfrac{3x^{-2}-(-5)}{4} = \dfrac{3x^3}{4}.}$
+
+_Example_. ${-4y^3 - (-4y)^3 = -4y^3 - ((-4)^3 \cdot y^3) = -4y^3 - (-64y^3) = 60y^3.}$
+
+### Scientific Notation
+For computationally intensive problems, we’ll often find ourselves working with colossal or miniscule numbers. Because writing these numbers out is tiresome, we use _scientific notation_ instead.
+
+:::definition
+__Definition.__ For any positive real number ${x,}$ we can express ${x}$ in the form:
+
+$$
+	r = a \times 10^n ~~~~ 1 \leq a \lt 10,~~n \in \mathbb{Z.}
+$$
+:::
+
+_Example._ ${6~430 = 6.43 \times 10^3.}$
+
+_Example._ ${0.00000007 = 7\times 10^{-8}.}$
+
+## Radicals
+
+:::definition
+__Definition.__ Let ${n}$ be a natural number, and let ${a}$ and ${b}$ be real numbers. Then ${a}$ is the _${n^{\text{th}}}$ root_ of ${b}$ if ${a^n = b,}$ and we write:
+
+$$
+	b^{1/n} = \sqrt[n]{b} = a.
+$$
+:::
+
+_Example._ ${27^{1/3} = \sqrt[3]{27} = 3,}$ given that ${3^3 = 3 \cdot 3 \cdot 3 = 27.}$
+
+:::definition
+__Theorem.__ Let ${n}$ be a natural number and let ${b}$ be a real number.
+
+1. Suppose ${b \gt 0.}$ Then:
+	1. if ${n}$ is even, then ${b}$ has two real ${n^{\text{th}}}$ roots, each the negative of the other;
+	2. if ${n}$ is odd, then ${b}$ has one real ${n^{\text{th}}}$ root.
+2. If ${b = 0,}$ then ${b}$ has only one real ${n^{\text{th}}}$ root, ${0.}$
+3. Suppose ${b \lt 0.}$ Then:
+	1. if ${n}$ is even, then ${b}$ has no real ${n^{\text{th}}}$ root.
+	2. if ${n}$ is odd, then ${b}$ has on real ${n^{\text{th}}}$ root.
+:::
+
+_Example._ ${16^{1/4} = \sqrt[4]{16} = (-2, 2),}$ given that ${2^4 = 2 \cdot 2 \cdot 2 \cdot 2 = 16}$ and ${(-2)^4 = -2 \cdot -2 \cdot -2 \cdot -2 = 16.}$
+
+

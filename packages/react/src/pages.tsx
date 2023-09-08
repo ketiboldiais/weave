@@ -19,6 +19,7 @@ import { MainPage } from "./MDXSchema.js";
 import { BaseComponents } from "./MDXSchema.js";
 import app from "./styles/app.module.scss";
 import { ReactNode } from "react";
+import { TopScroll } from "./hooks/TopScroll";
 
 const MAIN = () => (
   <MainPage>
@@ -129,6 +130,7 @@ function Page() {
           </article>
         </BaseComponents>
       </main>
+      <TopScroll />
     </div>
   );
 }
