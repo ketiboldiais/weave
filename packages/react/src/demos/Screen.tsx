@@ -177,7 +177,7 @@ export const DotPlot1 = () => {
     .height(300)
     .width(300)
     .dotStroke('white')
-    .dotFill('lightgrey')
+    .dotFill('none')
     .stroke('white')
     .end();
   return <Figure of={data} />;
