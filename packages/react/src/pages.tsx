@@ -7,6 +7,7 @@ import GEOMETRY from "./demos/appendix/geometry-1.mdx";
 import NUMBER_THEORY from "./demos/appendix/number-theory-1.mdx";
 import ALGEBRA from "./demos/appendix/algebra.mdx";
 import PRECALCULUS from "./demos/appendix/precalculus.mdx";
+import MECHANICS from './demos/appendix/mechanics.mdx';
 
 import INDEX from "./demos/doc.main.mdx";
 import TWINE from "./demos/doc.twine.mdx";
@@ -86,6 +87,12 @@ export const docLinks: LinkEntry[] = [
     path: "/precalculus",
     visible: false,
     page: <PRECALCULUS />,
+  },
+  {
+    title: "Mechanics",
+    path: "/mechanics",
+    visible: false,
+    page: <MECHANICS />,
   },
 ];
 

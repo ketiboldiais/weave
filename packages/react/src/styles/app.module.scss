@@ -1,25 +1,43 @@
 @import './colors.scss';
 
 .app {
+	a {
+		transition: all 0.2s ease-in;
+		&:hover {
+			color: rgb(170, 235, 148);
+		}
+	}
+
 	display: flex;
 	flex-direction: column;
 	font-family: 'KaTeX_Main';
+
 	:global .hstack {
 		display: flex;
 	}
-	ol ol {
+	
+	li {
+		padding: 0.3em 0;
+	}
+
+	ol ol, ol ul {
 		padding: 0 1em;
 	}
+
 	ol ol {
 		list-style: lower-alpha;
 	}
+
 	ol ol ol {
 		list-style: lower-latin;
 	}
+
 	strong {
 		color: $bold;
 	}
-	p code, li code {
+
+	p code,
+	li code {
 		font-size: 0.9rem;
 	}
 
@@ -51,10 +69,9 @@
 			font-weight: 600;
 		}
 	}
-	
-	
+
+
 	main {
-		background-color: rgb(44, 44, 44);
 		margin: 0;
 		padding: 0;
 		width: 100vw;
@@ -67,11 +84,16 @@
 		top: 0;
 		z-index: 10;
 		width: fit-content;
-		margin: 0 auto;
+		height: fit-content;
+		margin: 10px auto;
+
 
 		a {
 			color: inherit;
 			text-decoration: none;
+		}
+		li {
+			padding: 0;
 		}
 
 		ul {
@@ -95,7 +117,7 @@
 		}
 	}
 
-	
+
 
 	color: $text;
 
@@ -128,8 +150,6 @@
 		}
 	}
 
-
-
 	h1 {
 		text-align: center;
 		margin-bottom: 5rem;
@@ -142,10 +162,10 @@
 		display: block;
 		font-style: normal;
 		margin: 2em auto;
-		padding: 0.5em 0.7em;
-		border: solid thin #965042;
+		padding: 0 0.7em;
 		strong {
 			color: #fb8871;
+			font-size: 0.93rem;
 		}
 		del {
 			font-style: normal;
@@ -158,7 +178,7 @@
 	}
 
 	:global .katex {
-		font-size: 1.1rem;
+		font-size: 0.99rem;
 	}
 
 	:global .texttt {
@@ -192,12 +212,29 @@
 		margin-top: 0.3em;
 	}
 
-	h1 { font-size: 1.7rem; }
-	h2 { font-size: 1.4rem; }
-	h3 { font-size: 1.3rem; }
-	h4 { font-size: 1.2rem; }
-	h5 { font-size: 1.1rem; }
-	h6 { font-size: 1rem; }
+	h1 {
+		font-size: 1.7rem;
+	}
+
+	h2 {
+		font-size: 1.4rem;
+	}
+
+	h3 {
+		font-size: 1.3rem;
+	}
+
+	h4 {
+		font-size: 1.2rem;
+	}
+
+	h5 {
+		font-size: 1.1rem;
+	}
+
+	h6 {
+		font-size: 1rem;
+	}
 
 	h2,
 	h3,
@@ -232,8 +269,8 @@
 	.page {
 		max-width: 700px;
 		margin: 0 auto;
-		padding-left: 2em;
-		padding-right: 2em;
+		padding-left: 4em;
+		padding-right: 4em;
 	}
 
 

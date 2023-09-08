@@ -17,7 +17,9 @@ code {
 	font-family: 'Fira Code';
 }
 
-
+pre code {
+	font-size: 0.8rem;
+}
 
 * {
 	box-sizing: border-box;
@@ -29,7 +31,7 @@ body {
 	height: 100%;
 	overscroll-behavior: none;
 	overflow-x: hidden;
-	background-color: rgb(44, 44, 44);
+	background-color: #393939;
 }
 
 ::-webkit-scrollbar {
@@ -70,11 +72,6 @@ em strong {
 	font-weight: normal;
 	font-size: 1.2rem;
 }
-
-pre code {
-	font-size: 0.92rem !important;
-}
-
 
 body {
 	margin: 0;
@@ -187,7 +184,7 @@ textarea {
 	background: rgb(36, 36, 36);
 	width: 100%;
 	resize: vertical;
-	font-size: 0.9rem;
+	font-size: 0.8rem;
 	padding: 1em 0.9em;
 	line-height: 2;
 	font-family: 'Fira Code';
@@ -199,7 +196,6 @@ textarea {
 pre.terminal {
 	background-color: inherit;
 	color: rgb(252, 130, 114);
-	font-size: 0.9rem;
 	box-shadow: 2px 3px 8px 4px rgba(0, 0, 0, 0.249);
 	border-radius: 0.3em;
 	margin-bottom: 5px;
@@ -230,7 +226,8 @@ pre.terminal {
 }
 
 dfn {
-	width: 80%;
+	width: 95%;
+	border-left: solid 5px rgb(92, 92, 92);
 }
 
 figure.box {

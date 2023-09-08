@@ -4417,6 +4417,7 @@ type Traversal =
 
 type LinkFunction = (line: Line, source: TNode, target: TNode) => Line;
 const TREE = contextual(colorable(BASE));
+
 class Tree extends TREE {
   _tree: Fork;
   _layout: TreeLayout = "knuth";
@@ -4434,7 +4435,6 @@ class Tree extends TREE {
     return this;
   }
   private HV() {
-    const HEIGHT = this._tree.height();
     const largerToRight = (parent: TreeChild) => {
       const left = parent.left();
       const right = parent.right();
@@ -4924,6 +4924,7 @@ class Tree extends TREE {
     this._height = 300;
   }
 }
+
 export function tree(t: Fork) {
   return new Tree(t);
 }

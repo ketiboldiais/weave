@@ -176,4 +176,115 @@ __Theorem.__ Let ${n}$ be a natural number and let ${b}$ be a real number.
 
 _Example._ ${16^{1/4} = \sqrt[4]{16} = (-2, 2),}$ given that ${2^4 = 2 \cdot 2 \cdot 2 \cdot 2 = 16}$ and ${(-2)^4 = -2 \cdot -2 \cdot -2 \cdot -2 = 16.}$
 
+When working with radicals, we’re often only concerned with the _principal ${n^{\text{th}}}$ root_, as defined below.
 
+:::definition
+__Definition.__ Where ${n}$ is a natural number and ${b}$ is a real number, the _principal ${n^{\text{th}}}$ root of ${b}$_, denoted ${b^{1/n}}$ or ${\sqrt[n]{b},}$ is:
+
+1. the real ${n^{\text{th}}}$ root of ${b}$ if there is only one real ${n^{\text{th}}}$ root,
+2. the positive ${n^{\text{th}}}$ root of ${b}$ if there are two real ${n^{\text{th}}}$ roots, or
+3. _undefined_ if ${b}$ has no real ${n^{\text{th}}}$ root.
+:::
+
+:::dfn
+__Properties of Radicals.__ Let ${m}$ and ${n}$ be natural numbers and let ${b}$ be any real number. Provided ${b}$ is nonnegative whenever ${n}$ is even:
+
+$$
+	\begin{aligned}
+		& b^{m/n} = (b^{1/n})^m~, \\[1em]
+		& b^{-m/n} = \dfrac{1}{b^{m/n}}~, \\[1em]
+		& \left(b^{1/n}\right)^{m} = \left( b^m \right)^{1/n}~, \\[1em]
+		& \left( \sqrt[n]{b} \right)^m = \sqrt[n]{b^m}~, \\[1em]
+		& \sqrt[n]{x^n} = x~, \\[1em]
+		& \sqrt[n]{xy} = \sqrt[n]{x}\sqrt[n]{y}~, \\[1em]
+		& \sqrt[n]{\dfrac{x}{y}} = \dfrac{\sqrt[n]{x}}{\sqrt[n]{y}}~. \\[1em]
+	\end{aligned}
+$$
+:::
+
+By convention, we say that a radial expression is in _simplified form_ if all of the following conditions are met:
+
+1. No radicand (the expression within the radical sign) contains a factor to a power greater than or equal to the radical’s index.
+	- _Example._ ${\sqrt{x^5}}$ violates this condition, since its index is ${2}$ and its radicand contains a factor raised to ${5.}$
+2. No power of the radicand and the index have a common factor, other than 1. 
+	- _Example._ ${\sqrt[8]{x^4}}$ violates this condition, since the radicand and the index have multiple common factors other than ${1:}$ the integer ${2}$ and ${4.}$
+3. If the expression is a rational expression, then no radical appears in the denominator.
+	- _Example._ ${{1}/{\sqrt{x}}}$ violates this condition.
+4. No rational expression appears within a radical.
+	- _Example._ ${\sqrt{1/3}}$ and ${\sqrt{x/y}}$ both violate this condition.
+	
+## Polynomials
+Algebraic expressions that involve only the operations of addition, subtraction, multiplication, and raising to natural number powers are called _polynomials_. Polynomials are particularly special because they avoid all of the complexities associated with roots, logarithms, and other elaborate operations.
+
+:::definition
+__Definition.__ A polynomial ${p}$ in a single variable ${x}$ is an expression of the form:
+
+$$
+	p = p_nx^n + p_{n-1}x^{n-1} + \ldots + p_1x + p_0,
+$$
+
+where each ${p_i}$ is called a _term_, the _coefficients_ of ${p_i}$ are rational numbers, and ${n}$ is a non-negative integer. If ${p_n \neq 0,}$ then ${p_n}$ is called the _leading coefficient_ of ${p}$ and ${n}$ the _degree_ of ${p.}$ The expression ${p = 0}$ is called the _zero polynomial_ – it has the leading coefficient ${0}$ and, by convenion, has the degree ${-\infty.}$ We denote the leading coefficient of a polynomial ${p}$ with the notation:
+
+$$
+	\text{lc}(p),
+$$
+
+and the the degree of ${p}$ with the notation:
+
+$$
+	\text{deg}(p).
+$$
+:::
+
+Alongside this definition, we special names for certain kinds of polynomials. A _monomial_ is a polynomial with a single term (e.g., ${3x}$ or ${5y^2}$). A _binomial_ is a polynomial with two terms (e.g., ${x^3 - x^2}$ or ${x + 1}$). And a _trinomial_ is a polynomial with three terms (e.g., ${x^5 + \frac{1}{2}x - 2.}$).
+
+Two terms in a polynomial are called _like terms_ if they have the same variables raised to the same powers (although they may have different coefficients). For example, ${3x^3}$ and ${17x^3}$ are like terms. If a polynomial contains two or more like terms, we may combine them into a single term.
+
+$$
+	\begin{aligned}
+		5x^3y - 2xy - x^3y - 2x^3y &= 5x^3y - x^3y - 2x^3y - 2xy \\[1em]
+		&= (5x^3y - x^3y - 2x^3y) - 2xy \\[1em]
+		&= (5 - 1 - 2)x^3y - 2xy \\[1em]
+		&= 2x^3y - 2xy.
+	\end{aligned}
+$$
+
+### Adding & Subtracting Polynomials
+
+Adding and subtracting polynomials amounts to combining like terms.
+
+_Example._
+
+$$
+\begin{aligned}
+	& (x^4 - 3x^3 + x^2) + (-x^3 - 2x^2 + 3x) + (3x^2 - 4x - 5) \\[1em]
+	&= x^4 - 3x^3 + x^2 - x^3 - 2x^2 + 3x + 3x^2 - 4x - 5 \\[1em]
+	&= x^4 - 4x^3 + 2x^2 - x - 5.
+\end{aligned}
+$$
+
+We may also perform the operation with a vertical layout:
+
+$$
+\begin{matrix}
+	  & x^4 & - & 3x^3 & + & x^2  &   &    &   & \\
+	  &     & - &  x^3 & - & 2x^2 & + & 3x &   & \\
+	+ & 		&   &      &   & 3x^2 & - & 4x & - & 5 \\
+	\hline
+	  & x^4 & - & 4x^3 & + & 2x^2 & - &  x & - & 5.
+\end{matrix}
+$$
+
+### Multiplying Polynomials
+Multiplication of polynomials amounts to applying the distributive property.
+
+_Example._
+
+$$
+\begin{aligned}
+	& (2x - 3)(3x^2 - 2x + 3) \\[1em]
+	&= 2x(3x^2 - 2x + 3) - 3(3x^2 - 2x + 3) \\[1em]
+	&= 6x^3 - 4x^2 + 6x - 9x^2 + 6x - 9 \\[1em]
+	&= 6x^3 - 13x^2 + 12x - 9.
+\end{aligned}
+$$
