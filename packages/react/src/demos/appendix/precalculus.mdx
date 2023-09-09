@@ -288,3 +288,80 @@ $$
 	&= 6x^3 - 13x^2 + 12x - 9.
 \end{aligned}
 $$
+
+### Factoring 
+A _factor_ of a number ${n}$ is one of two more numbers that, when multiplied, yields ${n.}$ We extend this to algebraic expressions: A factor of an algebraic expression ${u}$ is one of two or more algebraic expressions that, when multiplied, yields ${u.}$ The act of finding such factors – numeric or expressive – is called _factoring_.
+
+_Example._ ${x^2 - 4 = (x - 2)(x + 2).}$ Here, ${x - 2}$ and ${x + 2}$ are factors of ${x^2 - 4.}$
+
+Factorization is of vital importance in mathematics – it allows us to view expressions in many different ways. For example, the integer ${20}$ can be rewritten as:
+
+$$
+	5 \cdot 4, \\[1em]
+	2 \cdot 2 \cdot 5,  \\[1em]
+	(1/2)(10)(4).
+$$
+
+Similarly, the expression
+
+$$
+	2x^2 - x - 6
+$$
+
+may be viewed as any of the following:
+
+$$
+	(2x + 3)(x - 2), \\[1em]
+	2\left( x^2 - \dfrac{x}{2} - 3 \right), \\[1em]
+	2 \left( x + \dfrac{3}{2} \right)(x - 2).
+$$
+
+Recall that an integer ${n}$ is _prime_ if its only positive integer factors are ${1}$ and itself. For example, ${2}$ is prime, since the only positive integer factors of ${2}$ are ${2}$ and ${1.}$ An integer greater than ${1}$ that is not prime is called a _composite number_. The integer ${1}$ is neither prime nor composite. If a composite number ${k}$ is represented entirely as a product of prime factors, then we say that ${k}$ is _factored completely_. This discussion leads to a particularly important property of the integers.
+
+:::dfn
+__Fundamental Theorem of Arithmetic.__ Every positive integer greater than ${1}$ is either:
+1. prime, or
+2. a unique:sup[*] product of primes.
+
+:sup[*] _Except possibly for the order of the factors._
+:::
+
+_Example._ ${20 = 2 \cdot 2 \cdot 5 = 5 \cdot 2 \cdot 2 = 2 \cdot 5 \cdot 2.}$
+
+:::definition
+__Prime Polynomial.__ Let ${p}$ be a polynomial. We say that ${p}$ is _prime_ if it cannot be expressed in the form ${p = u \cdot v,}$ where ${u}$ and ${v}$ are polynomials, both with a degree of at least ${2.}$
+:::
+
+### Factoring Approaches
+The simplest factoring approach is _factoring out common factors_:
+
+$$
+\begin{aligned}
+	& 2x^3y - 8x^2y^2 - 6xy^3 \\[1em]
+	&= (2xy)x^2 - (2xy)4xy - (2xy)3y^2 \\[1em]
+	&= 2xy(x^2 - 4xy - 3y^2).
+\end{aligned}
+$$
+
+### Factoring by Grouping
+Consider the polynomial ${3x^2 - 6x + 4x - 8.}$ We start by grouping the first two and last two terms:
+
+$$
+	\begin{aligned}
+		& 3x^2 - 6x + 4x - 8 \\[1em]
+		& = (3x^2 - 6x) + (4x - 8) \\[1em]
+		& = 3x(x - 2) + 4(x - 2) \\[1em]
+		& = (3x + 4)(x - 2). 
+	\end{aligned}
+$$
+
+### Factoring Formulas
+Some expression forms are so common that it’s worth remembering the patterns behind their factorings:
+
+| Pattern               | Factoring                               |
+| --------------------- | --------------------------------------- |
+| Perfect Square        | ${u^2 + 2uv + v^2 = (u + v)^2}$         |
+|                       | ${u^2 - 2uv + v^2 = (u - v^2)}$         |
+| Difference of Squares | ${u^2 - v^2 = (u - v)(u + v)}$          |
+| Difference of Cubes   | ${u^3 - v^3 = (u - v)(u^2 + uv + v^2)}$ |
+| Sum of Cubes          | ${u^3 + v^3 = (u + v)(u^2 - uv + v^2)}$ |

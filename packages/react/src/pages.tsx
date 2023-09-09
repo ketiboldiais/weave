@@ -1,13 +1,20 @@
-import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router-dom";
-import BG from "./demos/appendix/index.mdx";
+import {
+  BrowserRouter,
+  Link,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 
+import BG from "./demos/appendix/index.mdx";
 import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
 import GEOMETRY from "./demos/appendix/geometry-1.mdx";
 import NUMBER_THEORY from "./demos/appendix/number-theory-1.mdx";
 import ALGEBRA from "./demos/appendix/algebra.mdx";
 import PRECALCULUS from "./demos/appendix/precalculus.mdx";
-import MECHANICS from './demos/appendix/mechanics.mdx';
+import MECHANICS from "./demos/appendix/mechanics.mdx";
 
 import INDEX from "./demos/doc.main.mdx";
 import TWINE from "./demos/doc.twine.mdx";
@@ -27,6 +34,7 @@ const MAIN = () => (
     <INDEX />
   </MainPage>
 );
+
 const DOC = ({ children }: { children: ReactNode }) => {
   return (
     <div className={app.doc}>
@@ -115,6 +123,39 @@ export const Main = () => {
   );
 };
 
+const pageVariants = {
+  initial: {
+    opacity: 0,
+  },
+  in: {
+    opacity: 1,
+  },
+  out: {
+    opacity: 0,
+  },
+};
+
+const pageTransition = {
+  type: "tween",
+  ease: "linear",
+  duration: 0.5,
+};
+import { motion } from "framer-motion";
+function AnimationLayout({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return (
+    <motion.div
+      key={pathname}
+      initial={"initial"}
+      animate={"in"}
+      variants={pageVariants}
+      transition={pageTransition}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function Page() {
   return (
     <div className={app.app}>
@@ -129,14 +170,16 @@ function Page() {
           ))}
         </ul>
       </nav>
-      <main>
-        <BaseComponents>
-          <article className={app.page}>
-            <Outlet />
-            <footer>Ketib Oldiais | &copy; 2023</footer>
-          </article>
-        </BaseComponents>
-      </main>
+      <AnimationLayout>
+        <main>
+          <BaseComponents>
+            <article className={app.page}>
+              <Outlet />
+              <footer>Ketib Oldiais | &copy; 2023</footer>
+            </article>
+          </BaseComponents>
+        </main>
+      </AnimationLayout>
       <TopScroll />
     </div>
   );

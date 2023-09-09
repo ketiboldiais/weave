@@ -3673,10 +3673,6 @@ export class Space3D extends CONTEXT {
     }
     p.translateZ(0);
     this.and(p.stroke('tomato').opacity(0.8));
-    // const xline = line([1, 0], [1, 3]).stroke(this._stroke).dash(5);
-    // const yline = line([0, 3], [1, 3]).stroke(this._stroke).dash(5);
-    // const zline = line([1, 3], [-1, 1]).stroke(this._stroke).dash(5);
-    // this.and(xline, yline, zline);
     this._children.forEach(c => c.rotateZ(-PI/4))
     return this.fit();
   }
