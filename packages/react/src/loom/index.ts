@@ -443,7 +443,7 @@ const latex = {
 // ============================================================ global constants
 /** These are constants and functions heavily used throughout the code base. */
 
-const {
+export const {
   floor,
   abs,
   min,
@@ -471,6 +471,12 @@ const HALF_PI = PI / 2;
 
 /** Global maximum integer. */
 const MAX_INT = Number.MAX_SAFE_INTEGER;
+
+// ========================================================== pairwise functions
+/** Divides each element of `divisors` by the given dividend. */
+export const aDiv = (divisors: number[], dividend: number) => (
+  divisors.map((n) => n / dividend)
+);
 
 // ========================================================== geometry functions
 
@@ -2235,6 +2241,9 @@ export class Line extends SHAPE {
       L(end._x, end._y, end._z),
     );
   }
+  arrowed() {
+    return this.arrowStart().arrowEnd();
+  }
   arrowStart(arrowHead?: ArrowHead) {
     if (arrowHead) {
       this._arrowStart = arrowHead;
@@ -2279,8 +2288,21 @@ export class Circle extends SHAPE {
       A(this._origin._x, this._origin._y + radius / 2, this._origin._z),
     );
   }
-  r(x: number) {
-    this.radius = x;
+  get _cx() {
+    const o = this._commands[0];
+    return o._end._x;
+  }
+  get _cz() {
+    const o = this._commands[0];
+    return o._end._z;
+  }
+  get _cy() {
+    const o = this._commands[0];
+    const r = this.radius;
+    return o._end._y - r / 2;
+  }
+  r(R: number) {
+    this.radius = R;
     return this;
   }
   at(x: number, y: number, z: number = 1) {
@@ -2394,6 +2416,11 @@ export class Text extends TEXT {
 export function text(content: string | number) {
   return (new Text(content));
 }
+
+export function tex(content: string | number) {
+  return (new Text(content).mode('LaTeX'));
+}
+
 
 // ========================================================= tick line generator
 
@@ -2718,7 +2745,9 @@ export class Plane extends CONTEXT {
       xticks.forEach((tick) => {
         this._children.push(
           tick.tick.stroke(this._axisColor),
-          tick.txt.translate(0, -0.8).fontSize(this._tickFontSize),
+          tick.txt.translate(0, -this._xTickLength * 2).fontSize(
+            this._tickFontSize,
+          ),
         );
       });
     }
@@ -2743,7 +2772,10 @@ export class Plane extends CONTEXT {
       yticks.forEach((tick) => {
         this._children.push(
           tick.tick.stroke(this._axisColor),
-          tick.txt.translate(-0.2, -0.2).fontSize(this._tickFontSize),
+          tick.txt
+            .anchor("end")
+            .translate(-this._yTickLength, -this._yTickLength / 2)
+            .fontSize(this._tickFontSize),
         );
       });
     }
@@ -3452,22 +3484,22 @@ export function scatterPlot<T>(
 const GROUP = colorable(BASE);
 
 export class Group extends GROUP {
-  children: Shape[];
+  _children: Shape[];
   _locked: boolean = false;
   lock() {
     this._locked = true;
     return this;
   }
   end() {
-    this.children = this.children.map((x) => x.end());
+    this._children = this._children.map((x) => x.end());
     return this;
   }
   constructor(children: Shape[]) {
     super();
-    this.children = children;
+    this._children = children;
   }
   private tmap(op: (x: Shape) => Shape): Group {
-    this.children = this.children.map((x) => {
+    this._children = this._children.map((x) => {
       const out = op(x);
       return out;
     });
@@ -3511,7 +3543,7 @@ export class Group extends GROUP {
     return this.tmap((p) => p.interpolate(domain, range, dimensions));
   }
   toString(): string {
-    return this.children.map((s) => s.toString()).join("");
+    return this._children.map((s) => s.toString()).join("");
   }
 }
 
@@ -3542,6 +3574,7 @@ interface Contextual {
   get _ymin(): number;
   get _ymax(): number;
   and(...shape: Shape[]): this;
+  children(shape: Shape[] | (Shape[])[]): this;
   fit(domain?: [number, number], range?: [number, number]): this;
   _markers: Markers[];
 }
@@ -3589,7 +3622,7 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       if (x < y) this._range = [x, y];
       return this;
     }
-    _margins: [number, number, number, number] = [50, 50, 50, 50];
+    _margins: [number, number, number, number] = [50,50,50,50];
     margins(
       top: number,
       right: number = top,
@@ -3597,6 +3630,16 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       left: number = right,
     ) {
       this._margins = [top, right, bottom, left];
+      return this;
+    }
+    children(shapes: Shape[] | (Shape[])[]) {
+      shapes.forEach((shape) => {
+        if ($isArray(shape)) {
+          shape.forEach((s) => this._children.push(s));
+        } else {
+          this._children.push(shape);
+        }
+      });
       return this;
     }
     and(...shapes: Shape[]) {
@@ -3656,7 +3699,7 @@ export class Space3D extends CONTEXT {
       .stroke(this._stroke);
     this.and(x_axis, y_axis, z_axis);
     const tick = .3;
-    const f = (x: number, y: number) => (x**2) + (y**2)
+    const f = (x: number, y: number) => (x ** 2) + (y ** 2);
     const p = path();
     for (let i = this._domain[0]; i < this._domain[1]; i += tick) {
       for (let j = this._range[0]; j < this._range[1]; j += tick) {
@@ -3664,16 +3707,16 @@ export class Space3D extends CONTEXT {
         if (isNaN(z)) {
           continue;
         }
-        if (i===-5) {
-          p._commands[0]=M(i,j,z);
+        if (i === -5) {
+          p._commands[0] = M(i, j, z);
         } else {
-          p.L(i,j,z)
+          p.L(i, j, z);
         }
       }
     }
     p.translateZ(0);
-    this.and(p.stroke('tomato').opacity(0.8));
-    this._children.forEach(c => c.rotateZ(-PI/4))
+    this.and(p.stroke("tomato").opacity(0.8));
+    this._children.forEach((c) => c.rotateZ(-PI / 4));
     return this.fit();
   }
 }
@@ -4029,7 +4072,7 @@ export class ForceGraph extends FORCE_GRAPH {
     this._decay = n;
     return this;
   }
-  children: Shape[] = [];
+  _children: Shape[] = [];
   constructor(graph: Graph) {
     super();
     this._graph = graph;

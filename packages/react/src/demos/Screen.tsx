@@ -520,9 +520,9 @@ export const Figure = ({ of }: { of: Parent }) => {
   const DEFS = ({ of }: { of: Markers[] }) => {
     return (
       <defs>
-        {of.map((x) => (
+        {of.map((x,i) => (
           <marker
-            key={`${x._id}`}
+            key={`${x._id}-${x._type}-${i}`}
             id={`${x._id}-${x._type}`}
             markerWidth={x._markerWidth}
             markerHeight={x._markerHeight}

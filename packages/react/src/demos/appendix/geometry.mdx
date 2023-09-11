@@ -1,0 +1,66 @@
+import {
+	Point1, 
+	Midpoint1, 
+	LineSegment1, 
+	Ray1, 
+	Line1, 
+	Concurrent1,
+	Circle1,
+	CircleNoHit,
+	CircleTangent,
+	CircleSecant,
+} from './geometry.fig.tsx';
+
+# Geometry
+
+
+## Points
+
+The simplest entity in Euclidean geometry is a __point__ – a position. Below are several random points. We draw points with a dot, but this is purely for aesthetic purposes. Points have no physicality; no width, no height, no size, nothing quantifiable.
+
+<Point1/>
+
+## Line Segments
+
+A straight path from one point to another is called a __segment__. By convention, we denote a segment with an line above the two constituent points. For example, the line segment below is denoted ${\overline{AB}.}$
+
+<LineSegment1/>
+
+The point directly between ${A}$ and ${B}$ is called the __midpoint__ of ${\overline{AB}.}$ In this case, we have labeled the point ${M.}$
+
+
+<Midpoint1/>
+
+## Rays
+
+With a single point, we may draw a straight path extending from that point in some direction infinitely. We call this figure a __ray__.
+
+<Ray1/>
+
+## Lines
+
+With two points, we may draw a straight path through both points, extending infinitely in both directions. This we call a __line__. Points that lie along the line are said to be __collinear__.
+
+<Line1/>
+
+Three or more lines that pass through a single point are said to be __concurrent__ with one another.
+
+<Concurrent1/>
+
+## Circles
+The set of all points equidistant from a given point (called the __center__) is called a __circle__. By convention, we denote circles with the notation ${\odot L,}$ where ${L}$ is the circle’s center label. For example, below is a circle ${\odot C.}$
+
+<Circle1/>
+
+Some observations on circles: First, we can always draw a line that does not “hit” (more formally, _intersect_) the circle.
+
+<CircleNoHit/>
+
+Second, we can draw a line that intersects the circle at exactly one point. Such a line is called a __tangent line__.
+
+<CircleTangent/>
+
+Third, a line can intersect _at most_ two points on a circle. Such a line (one that runs through a circle) is called a __secant line__.
+
+
+<CircleSecant/>

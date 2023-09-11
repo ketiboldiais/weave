@@ -10,11 +10,11 @@ import {
 import BG from "./demos/appendix/index.mdx";
 import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
-import GEOMETRY from "./demos/appendix/geometry-1.mdx";
 import NUMBER_THEORY from "./demos/appendix/number-theory-1.mdx";
 import ALGEBRA from "./demos/appendix/algebra.mdx";
 import PRECALCULUS from "./demos/appendix/precalculus.mdx";
 import MECHANICS from "./demos/appendix/mechanics.mdx";
+import GEOMETRY from './demos/appendix/geometry.mdx';
 
 import INDEX from "./demos/doc.main.mdx";
 import TWINE from "./demos/doc.twine.mdx";
@@ -68,7 +68,7 @@ export const docLinks: LinkEntry[] = [
   },
   {
     title: "Elementary Geometry",
-    path: "/elementary-geometry",
+    path: "/geometry",
     visible: false,
     page: <GEOMETRY />,
   },
