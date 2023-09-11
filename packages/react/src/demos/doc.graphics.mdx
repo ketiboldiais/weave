@@ -1,5 +1,177 @@
+import {FG2} from './Screen.tsx'
+
 # Graphics
 This is the documentation page for the various graphics submodules comprising _Loom_.
+
+## Architecture
+Loom’s graphics algorithms only output _objects_. The actual rendering is left to the user’s frontend of choice (e.g., React, Svelte, Angular, some Node-based GUI, etc.). For example, to draw a graph, we might use the `forceGraph` and `graph` functions:
+
+:::grid{cols=2}
+~~~ts
+const d = forceGraph(graph({
+  a: ["b", "c", "d"],
+  b: ["e", "f"],
+})).nodeFontColor("white")
+  .nodeColor("aqua")
+  .nodeRadius(5)
+  .nodeFontFamily("KaTeX_Math")
+  .nodeFontSize(28)
+  .edgeColor("lightblue")
+  .iterations(100)
+  .repulsion(40)
+  .end();
+~~~
+<FG2/>
+:::
+
+To render the graph above with, say, `React`, we must write the relevant React components. First, a component to render lines for the edges:
+
+~~~tsx
+const LINE = ({ of }: { of: Line }) => {
+  return (
+    <path
+      d={of.toString()}
+      fill={of._fill}
+      stroke={of._stroke}
+      strokeWidth={of._strokeWidth}
+      strokeDasharray={of._dash}
+      opacity={of._opacity}
+      markerEnd={of._arrowEnd ? `url(#${of._id}-end)` : ""}
+      markerStart={of._arrowEnd ? `url(#${of._id}-start)` : ""}
+    />
+  );
+};
+~~~
+
+A component to render circles for the nodes:
+
+~~~tsx
+const CIRCLE = ({ of }: { of: Circle }) => {
+  return (
+    <path
+      d={of.toString()}
+      fill={of._fill}
+      stroke={of._stroke}
+      strokeWidth={of._strokeWidth}
+      strokeDasharray={of._dash}
+      opacity={of._opacity}
+    />
+  );
+};
+~~~
+
+And a component to render text for the labels:
+
+~~~tsx
+const TEXT = ({ of }: { of: Text }) => {
+  const x = of._x;
+  const y = of._y;
+  return (
+    <text
+      dx={x}
+      dy={y}
+      textAnchor={of._textAnchor}
+      fill={of._fontColor}
+      fontFamily={of._fontFamily}
+      fontSize={of._fontSize}
+      style={{
+        fontWeight: 100,
+      }}
+    >
+      {of._text}
+    </text>
+  );
+};
+~~~
+
+Because `ForceGraphs` hold their children (in this case, `Line`, `Circle`, and `Text`) in an array, we’ll use one more component to handle each figure separately:
+
+~~~tsx
+const SHAPES = ({ of }: { of: Shape[] }) => {
+  const F = ({ d }: { d: Shape }) => {
+    if (d instanceof Line) {
+      return <LINE of={d} />;
+    } else if (d instanceof Circle) {
+      return <CIRCLE of={d} />;
+    } else if (d instanceof Text) {
+      return <TEXT of={d} />;
+    } else {
+      return null;
+    }
+  };
+  return (
+    <>
+      {of.map((d, i) => <F key={i + "shape"} d={d} />)}
+    </>
+  );
+};
+~~~
+
+Finally, we’ll write one more component to encapuslate all the components with the specified dimensions: 
+
+~~~tsx
+const Figure = ({ of }: { of: Parent }) => {
+  const width = of._width;
+  const height = of._height;
+  const viewbox = `0 0 ${width} ${height}`;
+  const paddingBottom = `${100 * (height / width)}%`;
+
+  const boxcss = {
+    display: "inline-block",
+    position: "relative",
+    width: "100%",
+    paddingBottom,
+    overflow: "hidden",
+  };
+
+  const svgcss = {
+    display: "inline-block",
+    position: "absolute",
+    top: "0",
+    left: "0",
+    right: "0",
+    bottom: "0",
+  };
+
+  return (
+    <div style={boxcss}>
+      <svg 
+        viewBox={viewbox} 
+        preserveAspectRatio={'xMidYMid meet'} 
+        style={svgcss}
+      >
+        <g transform={`translate(${of._mx/2}, ${of._my/2})`}>
+          <SHAPES of={of._children} />
+        </g>
+      </svg>
+    </div>
+  );
+};
+~~~
+
+With all that said and done, the final graph is rendered with the following functional component:
+
+~~~tsx
+export const MyGraph = () => {
+  const d = forceGraph(graph({
+    a: ["b", "c", "d"],
+    b: ["e", "f"],
+  })).nodeFontColor("white")
+     .nodeColor("aqua")
+     .nodeRadius(5)
+     .nodeFontFamily("KaTeX_Math")
+     .nodeFontSize(28)
+     .edgeColor("lightblue")
+     .iterations(100)
+     .repulsion(40)
+     .end();
+
+  return <Figure of={d}/>
+}
+~~~
+
+This architecture is premised on the distinction between physical rendering and numeric computation. How tall or wide a screen is, or whether a camera is near or far, are merely arguments to a drawing algorithm. Accordingly, there is no need for a frontend to be coupled to a drawing algorithm. There may be some performance gains from taking that approach, but in this author’s experience, those gains do not warrant their implementation complexity. Taking this decoupled approach also makes for far easier testing. While many algorithms are best tested by rendering on a screen, the fact that something “looks good” doesn’t mean it’s _correct_.
+
 
 ## Renderable
 Data objects in _Loom_ all reduce to the data type _Renderable_. Internally, this is an object with a `_commands` property comprised of `PathCommands`. Each `PathCommand` corresponds to an SVG path command. To “draw” objects, _Loom_’s algorithms apply various matrix transformations to this array. The `PathCommand` subtypes are as follows:
@@ -54,7 +226,7 @@ const ℓ = line([0,0], [3,5]);
 The `line` function has the signature:
 
 $$
-	\texttt{line}([x_1, y_1], [x_2, y_2]) \to \texttt{this}
+  \texttt{line}([x_1, y_1], [x_2, y_2]) \to \texttt{this}
 $$
 
 where ${[x_1, y_1]}$ is an array of two elements (a pair) corresponding to the `Line`’s starting point, and ${[x_2, y_2]}$ is also a pair, corresponding to the `Line`’s ending point. To allow method chaining, the `Line` function returns its callee reference, `this`.

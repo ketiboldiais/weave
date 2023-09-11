@@ -57,6 +57,8 @@ export const Midpoint1 = () => {
     .height(80)
     .and(
       line(A, B).stroke("tomato"),
+      line([-.5,.5], [-.5,-.5]).stroke('tomato'),
+      line([.5,.5], [.5,-.5]).stroke('tomato'),
       point(0, 0, 1).fill("tomato"),
       point(A[0], A[1], 1).fill("tomato"),
       point(B[0], B[1], 1).fill("tomato"),
@@ -102,7 +104,7 @@ export const Concurrent1 = () => {
   const A = [-3, 0];
   const B = [3, 0];
   const r = .7;
-  const color = 'tomato';
+  const color = "tomato";
   const lines = range(-2, 2, .15).map(
     (n) =>
       line(A, B)
@@ -122,58 +124,66 @@ export const Concurrent1 = () => {
 };
 
 export const Circle1 = () => {
-  const d = plane([-5,5], [-5,5])
+  const d = plane([-5, 5], [-5, 5])
     .margins(10)
     .height(200)
     .width(600)
     .and(
-      circle(10).at(0,0).stroke('cyan'),
-      circle(.5).at(0,0).stroke('none').fill('cyan'),
-      tex('C').at(0,1.5).fontColor('white')
+      circle(10).at(0, 0).stroke("cyan"),
+      circle(.5).at(0, 0).stroke("none").fill("cyan"),
+      tex("C").at(0, 1.5).fontColor("white"),
     ).end();
   return <Figure of={d} />;
 };
 
 export const CircleNoHit = () => {
-  const d = plane([-5,5], [-5,5])
+  const d = plane([-5, 5], [-5, 5])
     .margins(10)
     .height(200)
     .width(600)
     .and(
-      circle(8).at(0,0).stroke('cyan'),
-      circle(.5).at(0,0).stroke('none').fill('cyan'),
-      line([-3,-1],[-1,5]).stroke('white').arrowed(),
-      tex('C').at(0,1.5).fontColor('white')
+      circle(8).at(0, 0).stroke("cyan"),
+      circle(.5).at(0, 0).stroke("none").fill("cyan"),
+      line([-3, -1], [-1, 5]).stroke("white").arrowed(),
+      tex("C").at(0, 1.5).fontColor("white"),
     ).end();
   return <Figure of={d} />;
 };
 
 export const CircleTangent = () => {
-  const d = plane([-5,5], [-5,5])
+  const d = plane([-5, 5], [-5, 5])
     .margins(10)
     .height(200)
     .width(600)
     .and(
-      circle(8).at(0,0).stroke('cyan'),
-      circle(.5).at(0,0).stroke('none').fill('cyan'),
-      line([-3,-1],[.14,5]).stroke('tomato').arrowed(),
-      circle(.5).at(-.6,3.5).stroke('none').fill('tomato'),
-      tex('C').at(0,1.5).fontColor('white')
+      circle(8).at(0, 0).stroke("cyan"),
+      circle(.5).at(0, 0).stroke("none").fill("cyan"),
+      line([-3, -1], [.14, 5]).stroke("tomato").arrowed(),
+      circle(.5).at(-.6, 3.5).stroke("none").fill("tomato"),
+      tex("C").at(0, 1.5).fontColor("white"),
     ).end();
   return <Figure of={d} />;
 };
 
 export const CircleSecant = () => {
-  const d = plane([-5,5], [-5,5])
+  const d = plane([-5, 5], [-5, 5])
     .margins(10)
     .height(200)
     .width(600)
     .and(
-      circle(8).at(0,0).stroke('cyan'),
-      line([-3,0],[3,0]).stroke('tomato').arrowed(),
-      line([-1,5],[2,0.5]).stroke('tomato').arrowed(),
-      tex('C').at(0,1.5).fontColor('white'),
-      circle(.5).at(0,0).stroke('none').fill('cyan'),
+      circle(10).at(0, 0).stroke("cyan"),
+      point(-.69, 4.5, .5).fill("tomato"),
+      point(1.5, 1.25, .5).fill("tomato"),
+      tex("Y").at(1.5, 2.5).fontColor("tomato"),
+      tex("X").at(-.69, 5.7).fontColor("tomato"),
+      line([-3, 0], [3, 0]).stroke("tomato").arrowed(),
+      point(-1.55, 0, .5).fill("tomato"),
+      point(1.55, 0, .5).fill("tomato"),
+      tex("A").at(-1.55, 0).fontColor("tomato"),
+      tex("B").at(1.55, 0).fontColor("tomato"),
+      line([-1, 5], [2, 0.5]).stroke("tomato").arrowed(),
+      tex("C").at(0, 1.5).fontColor("white"),
+      circle(.5).at(0, 0).stroke("none").fill("cyan"),
     ).end();
   return <Figure of={d} />;
 };

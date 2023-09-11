@@ -170,11 +170,13 @@ pre code .token.entity {
 	cursor: help;
 }
 
-pre code .token.tag .token.punctuation,
+
 pre code .token.maybe-class-name,
-pre code .token.class-name {
-	color: rgb(245, 200, 85);
+pre code .token.class-name,
+pre code .token.tag, pre code .token.punctuation {
+	color: #fcd58b;
 }
+
 
 code {
 	white-space: pre;

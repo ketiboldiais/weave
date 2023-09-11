@@ -109,6 +109,23 @@ export const ForceGraph1 = () => {
   return <Figure of={d} />;
 };
 
+export const FG2 = () => {
+  const d = forceGraph(graph({
+    a: ["b", "c", "d"],
+    b: ["e", "f"],
+  })).nodeFontColor("white")
+    .nodeColor("aqua")
+    .nodeRadius(5)
+    .nodeFontFamily("KaTeX_Math")
+    .nodeFontSize(28)
+    .edgeColor("lightblue")
+    .iterations(100)
+    .repulsion(40)
+    .end();
+  console.log(d);
+  return <Figure of={d} />;
+};
+
 export const Polar1 = () => {
   const data = polar2D("f(x) = e^(sin(x)) - 2cos(4x) + (sin((2x - pi)/24))^5")
     .cycles(12 * Math.PI)
@@ -520,7 +537,7 @@ export const Figure = ({ of }: { of: Parent }) => {
   const DEFS = ({ of }: { of: Markers[] }) => {
     return (
       <defs>
-        {of.map((x,i) => (
+        {of.map((x, i) => (
           <marker
             key={`${x._id}-${x._type}-${i}`}
             id={`${x._id}-${x._type}`}
@@ -778,8 +795,8 @@ export const Space3D_Demo1 = () => {
   const d = space3D()
     .width(500)
     .margins(0)
-    .domain(-10,10)
-    .range(-10,50)
+    .domain(-10, 10)
+    .range(-10, 50)
     .end();
-  return <Figure of={d}/>
-}
+  return <Figure of={d} />;
+};
