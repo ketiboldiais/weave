@@ -72,9 +72,7 @@ const TEXT = ({ of }: { of: Text }) => {
       fill={of._fontColor}
       fontFamily={of._fontFamily}
       fontSize={of._fontSize}
-      style={{
-        fontWeight: 100,
-      }}
+      style={{ fontWeight: 100 }}
     >
       {of._text}
     </text>
@@ -175,7 +173,7 @@ export const MyGraph = () => {
 }
 ~~~
 
-This architecture is premised on the distinction between physical rendering and numeric computation. How tall or wide a screen is, or whether a camera is near or far, are merely arguments to a drawing algorithm. Accordingly, there is no need for a frontend to be coupled to a drawing algorithm. There may be some performance gains from taking that approach, but in this author’s experience, those gains do not warrant their implementation complexity. Taking this decoupled approach also makes for far easier testing. While many algorithms are best tested by rendering on a screen, the fact that something “looks good” doesn’t mean it’s _correct_.
+This architecture is premised on the distinction between physical rendering and numeric computation. How tall or wide a screen is, or whether a camera is near or far, is merely an argument to a drawing algorithm. Accordingly, there is no need for a frontend to be coupled to a drawing algorithm. There may be some performance gains from taking that approach, but in this author’s experience, those gains do not warrant their implementation complexity. Taking this decoupled approach also makes for far easier testing. While many algorithms are best tested by rendering on a screen, the fact that something “looks good” doesn’t mean it’s _correct_.
 
 
 ## Renderable
