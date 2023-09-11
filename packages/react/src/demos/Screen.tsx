@@ -113,14 +113,17 @@ export const FG2 = () => {
   const d = forceGraph(graph({
     a: ["b", "c", "d"],
     b: ["e", "f"],
-  })).nodeFontColor("white")
-    .nodeColor("aqua")
-    .nodeRadius(5)
+  }))
+    .height(300)
+    .width(400)
+    .nodeFontColor("white")
+    .nodeColor("violet")
+    .nodeRadius(8)
     .nodeFontFamily("KaTeX_Math")
     .nodeFontSize(28)
-    .edgeColor("lightblue")
-    .iterations(100)
-    .repulsion(40)
+    .edgeColor("violet")
+    .iterations(200)
+    .repulsion(50)
     .end();
   console.log(d);
   return <Figure of={d} />;

@@ -12,11 +12,11 @@ const d = forceGraph(graph({
   a: ["b", "c", "d"],
   b: ["e", "f"],
 })).nodeFontColor("white")
-  .nodeColor("aqua")
+  .nodeColor("violet")
+  .edgeColor("violet")
   .nodeRadius(5)
   .nodeFontFamily("KaTeX_Math")
   .nodeFontSize(28)
-  .edgeColor("lightblue")
   .iterations(100)
   .repulsion(40)
   .end();
@@ -43,7 +43,7 @@ const LINE = ({ of }: { of: Line }) => {
 };
 ~~~
 
-A component to render circles for the nodes:
+Second, a component to render circles for the nodes:
 
 ~~~tsx
 const CIRCLE = ({ of }: { of: Circle }) => {
@@ -60,16 +60,14 @@ const CIRCLE = ({ of }: { of: Circle }) => {
 };
 ~~~
 
-And a component to render text for the labels:
+And third, a component to render text for the labels:
 
 ~~~tsx
 const TEXT = ({ of }: { of: Text }) => {
-  const x = of._x;
-  const y = of._y;
   return (
     <text
-      dx={x}
-      dy={y}
+      dx={of._x}
+      dy={of._y}
       textAnchor={of._textAnchor}
       fill={of._fontColor}
       fontFamily={of._fontFamily}
@@ -107,16 +105,23 @@ const SHAPES = ({ of }: { of: Shape[] }) => {
 };
 ~~~
 
-Finally, we’ll write one more component to encapuslate all the components with the specified dimensions: 
+Finally, we’ll write a single component to encapsulate all the constituent figures with the specified dimensions: 
 
 ~~~tsx
 const Figure = ({ of }: { of: Parent }) => {
+  // The SVG’s width
   const width = of._width;
+
+  // The SVG’s height
   const height = of._height;
+
+  // The SVG’s viewbox
   const viewbox = `0 0 ${width} ${height}`;
+
+  // These are inline styles purely for centering the figure.
   const paddingBottom = `${100 * (height / width)}%`;
 
-  const boxcss = {
+  const boxCSS = {
     display: "inline-block",
     position: "relative",
     width: "100%",
@@ -124,7 +129,7 @@ const Figure = ({ of }: { of: Parent }) => {
     overflow: "hidden",
   };
 
-  const svgcss = {
+  const svgCSS = {
     display: "inline-block",
     position: "absolute",
     top: "0",
@@ -134,11 +139,11 @@ const Figure = ({ of }: { of: Parent }) => {
   };
 
   return (
-    <div style={boxcss}>
+    <div style={boxCSS}>
       <svg 
         viewBox={viewbox} 
         preserveAspectRatio={'xMidYMid meet'} 
-        style={svgcss}
+        style={svgCSS}
       >
         <g transform={`translate(${of._mx/2}, ${of._my/2})`}>
           <SHAPES of={of._children} />
