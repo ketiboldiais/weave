@@ -467,7 +467,8 @@ export const {
   sqrt,
 } = Math;
 
-const HALF_PI = PI / 2;
+export const HALF_PI = PI / 2;
+export const TWO_PI = 2 * PI;
 
 /** Global maximum integer. */
 const MAX_INT = Number.MAX_SAFE_INTEGER;
@@ -2283,9 +2284,9 @@ export class Circle extends SHAPE {
     super();
     this.radius = radius;
     this._commands.push(
-      M(this._origin._x, this._origin._y + radius / 2, this._origin._z),
-      A(this._origin._x, this._origin._y - radius / 2, this._origin._z),
-      A(this._origin._x, this._origin._y + radius / 2, this._origin._z),
+      M(this._origin._x, this._origin._y + radius, this._origin._z),
+      A(this._origin._x, this._origin._y - radius, this._origin._z),
+      A(this._origin._x, this._origin._y + radius, this._origin._z),
     );
   }
   get _cx() {
@@ -2299,7 +2300,7 @@ export class Circle extends SHAPE {
   get _cy() {
     const o = this._commands[0];
     const r = this.radius;
-    return o._end._y - r / 2;
+    return o._end._y - r;
   }
   r(R: number) {
     this.radius = R;
@@ -2307,10 +2308,11 @@ export class Circle extends SHAPE {
   }
   at(x: number, y: number, z: number = 1) {
     const radius = this.radius;
+    const r = radius / 2;
     this._commands = [
-      M(x, y + radius / 2, z),
-      A(x, y - radius / 2, z),
-      A(x, y + radius / 2, z),
+      M(x + r, y + r, z),
+      A(x - r, y - r, z),
+      A(x + r, y + r, z),
     ];
     return this;
   }
@@ -2387,7 +2389,7 @@ export class Text extends TEXT {
     this._fontColor = color;
     return this;
   }
-  _textAnchor?: "start" | "middle" | "end";
+  _textAnchor: "start" | "middle" | "end" = "middle";
   anchor(value: "start" | "middle" | "end") {
     this._textAnchor = value;
     return this;
@@ -2418,9 +2420,8 @@ export function text(content: string | number) {
 }
 
 export function tex(content: string | number) {
-  return (new Text(content).mode('LaTeX'));
+  return (new Text(content).mode("LaTeX"));
 }
-
 
 // ========================================================= tick line generator
 
@@ -2779,6 +2780,14 @@ export class Plane extends CONTEXT {
         );
       });
     }
+    return this;
+  }
+  bordered(color: string) {
+    const top = line([this._xmin, this._ymax], [this._xmax, this._ymax]);
+    const right = line([this._xmax, this._ymax], [this._xmax, this._ymin]);
+    const bottom = line([this._xmax, this._ymin], [this._xmin, this._ymin]);
+    const left = line([this._xmin, this._ymin], [this._xmin, this._ymax]);
+    this.children([top, right, bottom, left].map((b) => b.stroke(color)));
     return this;
   }
   end() {
@@ -3561,6 +3570,10 @@ interface Contextual {
   range(x: number, y: number): this;
   _margins: [number, number, number, number];
   margins(top: number, right?: number, bottom?: number, left?: number): this;
+  marginTop(n: number): this;
+  marginBottom(n: number): this;
+  marginLeft(n: number): this;
+  marginRight(n: number): this;
   _width: number;
   width(w: number): this;
   _height: number;
@@ -3574,7 +3587,7 @@ interface Contextual {
   get _ymin(): number;
   get _ymax(): number;
   and(...shape: Shape[]): this;
-  children(shape: Shape[] | (Shape[])[]): this;
+  children(shape: (Shape | Shape[])[]): this;
   fit(domain?: [number, number], range?: [number, number]): this;
   _markers: Markers[];
 }
@@ -3586,6 +3599,22 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
     _domain: [number, number] = [-10, 10];
     domain(x: number, y: number) {
       if (x < y) this._domain = [x, y];
+      return this;
+    }
+    marginTop(n: number) {
+      this._margins[0] = n;
+      return this;
+    }
+    marginBottom(n: number) {
+      this._margins[2] = n;
+      return this;
+    }
+    marginLeft(n: number) {
+      this._margins[3] = n;
+      return this;
+    }
+    marginRight(n: number) {
+      this._margins[1] = n;
       return this;
     }
     fit(domain?: [number, number], range?: [number, number]) {
@@ -3622,7 +3651,7 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       if (x < y) this._range = [x, y];
       return this;
     }
-    _margins: [number, number, number, number] = [50,50,50,50];
+    _margins: [number, number, number, number] = [50, 50, 50, 50];
     margins(
       top: number,
       right: number = top,
@@ -3632,7 +3661,7 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
       this._margins = [top, right, bottom, left];
       return this;
     }
-    children(shapes: Shape[] | (Shape[])[]) {
+    children(shapes: (Shape | Shape[])[]) {
       shapes.forEach((shape) => {
         if ($isArray(shape)) {
           shape.forEach((s) => this._children.push(s));

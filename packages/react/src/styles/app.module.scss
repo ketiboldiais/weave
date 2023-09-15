@@ -3,33 +3,17 @@
 .app {
 	a {
 		transition: all 0.2s ease-in;
+
 		&:hover {
 			color: rgb(170, 235, 148);
 		}
 	}
 
-	display: flex;
-	flex-direction: column;
+	display: block;
 	font-family: 'KaTeX_Main';
 
 	:global .hstack {
 		display: flex;
-	}
-	
-	li {
-		padding: 0.3em 0;
-	}
-
-	ol ol, ol ul {
-		padding: 0 1em;
-	}
-
-	ol ol {
-		list-style: lower-alpha;
-	}
-
-	ol ol ol {
-		list-style: lower-latin;
 	}
 
 	strong {
@@ -92,6 +76,7 @@
 			color: inherit;
 			text-decoration: none;
 		}
+
 		li {
 			padding: 0;
 		}
@@ -127,7 +112,7 @@
 	h4,
 	h5,
 	h6 {
-		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		font-family: inherit;
 		color: #8fcec5;
 
 		strong {
@@ -163,22 +148,21 @@
 		font-style: normal;
 		margin: 2em auto;
 		padding: 0 0.7em;
+
 		strong {
 			color: #fb8871;
 			font-size: 0.93rem;
 		}
+
 		del {
 			font-style: normal;
 			text-decoration: underline;
 			font-variant: small-caps;
 		}
+
 		section {
 			margin: 0;
 		}
-	}
-
-	:global .katex {
-		font-size: 0.99rem;
 	}
 
 	:global .texttt {
@@ -272,6 +256,13 @@
 		padding-left: 4em;
 		padding-right: 4em;
 	}
+	
+	@media (max-width:600px) {
+		.page {
+			padding-left: 1em;
+			padding-right: 1.4em;
+		}
+	}
 
 
 
@@ -279,5 +270,104 @@
 		border-top: solid thin $blue1;
 		border-bottom: solid thin $blue1;
 		color: rgb(183, 244, 244);
+	}
+	
+	
+	
+	.note {
+		font-size: 0.9rem;
+		display: block;
+		margin-top: 3rem;
+		// padding: 2em;
+		// padding-bottom: 5em;
+		strong {
+			font-size: 0.8rem;
+		}
+		h1,h2,h3,h4,h5,h6 {
+			// color: $blackText;
+			font-size: 0.95rem;
+			margin: 0;
+			margin-top: 10px;
+		}
+		h1 {
+			counter-reset: H2;
+			font-size: 1.3rem;
+			margin: 1em 0;
+			margin-bottom: 5em;
+		}
+		h2 {
+			counter-reset: H3;
+			counter-increment: H2;
+		}
+		h3 {
+			counter-reset: H4;
+			counter-increment: H3;
+		}
+		h4 {
+			counter-reset: H5;
+			counter-increment: H4;
+		}
+		h5 {
+			counter-reset: H6;
+			counter-increment: H5;
+		}
+		h6 {
+			counter-increment: H6;
+		}
+		h2::before { content: counter(H2) ". "; }
+		h3::before { content: counter(H2) "." counter(H3) ". "; }
+		h4::before { content: counter(H2) "." counter(H3) "." counter(H4) ". "; }
+		h5::before { content: counter(H2) "." counter(H3) "." counter(H4) "." counter(H5) ". "; }
+		h6::before { content: counter(H2) "." counter(H3) "." counter(H4) "." counter(H5) "." counter(H6) ". "; }
+
+		li {
+			padding: 2px 0;
+			line-height: 1.1;
+		}
+		li > p {
+			margin: 0;
+		}
+		ul, ol {
+			margin: 0;
+			padding: 0;
+			padding-left: 1.5em;
+		}
+
+		ol ol {
+			list-style: lower-alpha;
+		}
+
+		ol ol ol {
+			list-style: lower-latin;
+		}
+		
+		counter-reset: FIG;
+		
+		figcaption {
+			font-family: inherit;
+			font-size: 0.8rem;
+			counter-increment: FIG;
+			display: block;
+			margin: 0 auto;
+			width: fit-content;
+		}
+		figcaption::before {
+			content: 'Fig. ' counter(FIG) " ";
+			font-style: normal;
+		}
+		p {
+			margin: 5px 0;
+		}
+	}
+	
+	:global .grid2 {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+	:global .grid3 {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 10px;
 	}
 }

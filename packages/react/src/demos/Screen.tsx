@@ -99,7 +99,7 @@ export const ForceGraph1 = () => {
     x: ["s"],
   })).nodeFontColor("white")
     .nodeColor("aqua")
-    .nodeRadius(5)
+    .nodeRadius(2)
     .nodeFontFamily("KaTeX_Math")
     .nodeFontSize(28)
     .edgeColor("lightblue")
@@ -118,7 +118,7 @@ export const FG2 = () => {
     .width(400)
     .nodeFontColor("white")
     .nodeColor("violet")
-    .nodeRadius(8)
+    .nodeRadius(3)
     .nodeFontFamily("KaTeX_Math")
     .nodeFontSize(28)
     .edgeColor("violet")
@@ -184,7 +184,7 @@ export const Knuth1 = () => {
       ]),
     ]),
   ).layout("knuth")
-    .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math"))
+    .textMap((t) => t.fontColor("white").fontFamily("KaTeX_Math").dy(.2))
     .edgeStroke("white")
     .nodeFill("lavender").end();
   return <Figure of={data} />;
@@ -490,7 +490,9 @@ export const Figure = ({ of }: { of: Parent }) => {
     if (of._mode === "LaTeX") {
       return (
         <foreignObject x={x} y={y} width={"100%"} height={"100%"}>
-          <Tex d={of._text} />
+          <Tex d={of._text} style={{
+            fontSize: of._fontSize,
+          }}/>
         </foreignObject>
       );
     }
@@ -719,9 +721,9 @@ export const Line1 = () => {
 export const Circle1 = () => {
   const f = interpolator([0, 100], [0, 20]);
   const a = interpolator([0, 100], [0, 2 * PI]);
-  const R = (x: number) => f(x) / 2;
+  const R = (x: number) => f(x)/2;
   const rf = interpolator([0, 2.5], [0, 100]);
-  const [r, setR] = useState(rf(3) / 2);
+  const [r, setR] = useState(rf(3)/2);
   const [theta, setTheta] = useState(r);
   const updateRadius = (x: number) => {
     setR(x);
@@ -739,7 +741,7 @@ export const Circle1 = () => {
         .fontColor("tomato")
         .fontSize(15)
         .dy(0.5),
-      circle(f(r))
+      circle(f(r)/1.4)
         .stroke("white")
         .fill("none")
         .at(0, 0),

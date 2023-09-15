@@ -114,9 +114,9 @@ const Tbl = ({ children }: Children) => {
   );
 };
 
-const Grid = ({ children }: Children) => {
+const Grid = ({ children, cols }: Children & { cols: number }) => {
   return (
-    <div className={`grid`}>
+    <div className={`grid${cols}`}>
       {children}
     </div>
   );

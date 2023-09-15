@@ -13,8 +13,14 @@ code {
 	font-family: 'Fira Code';
 }
 
-.katex .texttt {
-	font-family: 'Fira Code';
+del {
+	font-variant: small-caps;
+	text-decoration: none;
+	font-size: 0.95rem;
+}
+
+.katex {
+	font-size: inherit;
 }
 
 pre code {
@@ -242,8 +248,12 @@ figure.box {
 	html {
 		font-size: 12px;
 	}
-
 	dfn {
 		width: 90%;
 	}
+}
+
+summary {
+	display: inline-block;
+	cursor: pointer;
 }

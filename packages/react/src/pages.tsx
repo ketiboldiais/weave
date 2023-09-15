@@ -11,10 +11,9 @@ import BG from "./demos/appendix/index.mdx";
 import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
 import NUMBER_THEORY from "./demos/appendix/number-theory-1.mdx";
-import ALGEBRA from "./demos/appendix/algebra.mdx";
 import PRECALCULUS from "./demos/appendix/precalculus.mdx";
 import MECHANICS from "./demos/appendix/mechanics.mdx";
-import GEOMETRY from './demos/appendix/geometry.mdx';
+import GEOMETRY from "./demos/appendix/geometry.mdx";
 
 import INDEX from "./demos/doc.main.mdx";
 import TWINE from "./demos/doc.twine.mdx";
@@ -35,9 +34,9 @@ const MAIN = () => (
   </MainPage>
 );
 
-const DOC = ({ children }: { children: ReactNode }) => {
+const NOTE = ({ children }: { children: ReactNode }) => {
   return (
-    <div className={app.doc}>
+    <div className={app.note}>
       {children}
     </div>
   );
@@ -48,18 +47,11 @@ type LinkEntry = {
   title: string;
   visible: boolean;
   page: JSX.Element;
-  submenu?: LinkEntry[];
-  doc?: boolean;
+  // doc?: boolean;
+  note?: boolean;
 };
 
-export const docLinks: LinkEntry[] = [
-  { title: "Intro", path: "/", visible: true, page: <MAIN /> },
-  { title: "Graphics", path: "/graphics", visible: true, page: <GRAPHICS /> },
-  { title: "Algebra", path: "/cam", visible: true, page: <CAM /> },
-  { title: "Matrix", path: "/matrix", visible: true, page: <MATRIX /> },
-  { title: "Vector", path: "/vector", visible: true, page: <VECTOR /> },
-  { title: "Twine", path: "/twine", visible: true, page: <TWINE /> },
-  { title: "Appendix", path: "/appendix", visible: true, page: <BG /> },
+const noteLinks: LinkEntry[] = [
   {
     title: "Number Theory",
     path: "/elementary-number-theory",
@@ -85,12 +77,6 @@ export const docLinks: LinkEntry[] = [
     page: <EXPOSITION />,
   },
   {
-    title: "Algebra",
-    path: "/algebra",
-    visible: false,
-    page: <ALGEBRA />,
-  },
-  {
     title: "Precalculus",
     path: "/precalculus",
     visible: false,
@@ -102,6 +88,20 @@ export const docLinks: LinkEntry[] = [
     visible: false,
     page: <MECHANICS />,
   },
+].map((note: LinkEntry) => {
+  note.note = true;
+  return note;
+});
+
+export const docLinks: LinkEntry[] = [
+  { title: "Intro", path: "/", visible: true, page: <MAIN /> },
+  { title: "Graphics", path: "/graphics", visible: true, page: <GRAPHICS /> },
+  { title: "Algebra", path: "/cam", visible: true, page: <CAM /> },
+  { title: "Matrix", path: "/matrix", visible: true, page: <MATRIX /> },
+  { title: "Vector", path: "/vector", visible: true, page: <VECTOR /> },
+  { title: "Twine", path: "/twine", visible: true, page: <TWINE /> },
+  { title: "Appendix", path: "/appendix", visible: true, page: <BG /> },
+  ...noteLinks,
 ];
 
 export const Main = () => {
@@ -112,7 +112,7 @@ export const Main = () => {
           {docLinks.map((link) => (
             <Route
               path={link.path}
-              element={link.doc ? <DOC>{link.page}</DOC> : link.page}
+              element={link.note ? <NOTE>{link.page}</NOTE> : link.page}
               key={link.path}
             />
           ))}

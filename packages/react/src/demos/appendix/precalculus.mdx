@@ -1,393 +1,435 @@
-# Precalculus
+import {
+	RealLine,
+	Union1,
+	Intersection1,
+	Subset1,
+} from './precalculus.fig.tsx';
 
-This section provides a review of basic algebra and trigonometry (what might be called “precalculus” in U.S. curricula).
+# Precalculus
+This page provides an overview of the foundational concepts and skills necessary to comprehending the rest of the appendix materials. Much of the materials that follow may be found in the standard “precalculus” course of U.S. curricula.
+
+1. [Precalculus](#precalculus)
+	1. [Sets](#sets)
+		1. [Cardinality](#cardinality)
+		2. [Subsets](#subsets)
+		3. [Set Equality](#set-equality)
+		4. [Power Sets](#power-sets)
+		5. [Union](#union)
+		6. [Intersection](#intersection)
+		7. [Laws of Intersection \& Union](#laws-of-intersection--union)
+		8. [Disjoint Sets](#disjoint-sets)
+		9. [Partitions](#partitions)
+	2. [Numbers](#numbers)
+	3. [Properties of Reals](#properties-of-reals)
+		1. [Properties of Negatives](#properties-of-negatives)
+		2. [Properties of Rationals](#properties-of-rationals)
+	4. [The Real Line](#the-real-line)
+	5. [Intervals](#intervals)
+	6. [Absolute Value](#absolute-value)
+		1. [Properties of Absolute Values](#properties-of-absolute-values)
+	7. [Exponents](#exponents)
+		1. [Integer Exponents](#integer-exponents)
+	8. [Radicals](#radicals)
+		1. [Rational Exponents](#rational-exponents)
+		2. [Rationalizing Denominators](#rationalizing-denominators)
+	9. [Polynomials](#polynomials)
+		1. [Adding \& Subtracting Polynomials](#adding--subtracting-polynomials)
+		2. [Multiplying Polynomials](#multiplying-polynomials)
+		3. [Product Formulas](#product-formulas)
+		4. [Factoring](#factoring)
+			1. [Factoring Common Factors](#factoring-common-factors)
+			2. [Factoring Trinomials](#factoring-trinomials)
+			3. [Common Factoring Patterns](#common-factoring-patterns)
+	
+## Sets
+- A _set_ ${S}$ is a collection of objects, each called an _element_ of ${S.}$
+	- If ${x}$ is an element of ${S,}$ we write ${x \in S.}$
+	- If ${x}$ is not an element of ${S,}$ we write ${x \notin S.}$
+	- A set is said to be _well-defined_ if and only if, given an object ${x,}$ then either ${x \in S}$ or ${x \notin S,}$ and the definition of ${S}$ determines which of these two possibilites holds.
+- A set is called a _finite set_ if it contains a finite number of elements.
+- A set is called an _infinite set_ if it contains an infinite number of elements.
+
+::::grid{cols=2}
+
+### Cardinality
+- The number of elements in a set ${S}$ is called the _cardinality_ or _cardinal number_ of ${S.}$ Given a set ${S,}$ we denote its cardinality with the notation ${\texttt{\#}S.}$
+
+__~examples~.__
+- ${A = \set{a,b,c}.}$
+	- ${\texttt{\#}A = 3.}$
+- ${B =  \set{ x ~|~ x \text{ is a prime number less than 10. }}}$
+	- ${B = \set{2,3,5,7}.}$
+	- ${\texttt{\#}B = 4.}$
+
+- For a set ${S}$ of sufficiently small ${\texttt{\#}S,}$ we may define ${S}$ with braces. For example, if ${S}$ is the set of binary digits, then ${S = \set{0,1}.}$
+- Otherwise, we will define sets with _set-builder notation_:
+	$$
+		S = \set{\theta ~\vert~ \text{$\theta$ is a real number with $0 \leq \theta \leq 2\pi$}}.
+	$$
+- There is exactly one set containing no elements, called the _empty set_. We denote the empty set with the symbol ${\varnothing.}$
+
+### Subsets
+- If every element of a set ${B}$ is also an element of a set ${A,}$ then ${B}$ is a _subset_ of ${A,}$ and we write ${B \subseteq A.}$
+- If every element of a set ${B}$ is also an element of a set ${A}$ and ${B \neq A}$ nor is ${B = \varnothing,}$ then ${B}$ is a _proper subset_ of ${A,}$ and we write ${B \subset A.}$
+
+:::figure
+<Subset1/>
+:figcaption[$B \subset A.$]
+:::
+::::
+
+::::grid{cols=2}
+:::section
+### Set Equality
+- Two sets ${A}$ and ${B}$ are _equal_ if and only if ${A \subseteq B}$ and ${B \subseteq A.}$
+- To prove that two sets are equal, we must prove that:
+	1. For all ${x \in A,}$ ${x \in A \implies x \in B.}$ This proves that ${A \subseteq B.}$
+	2. For all ${x \in B,}$ ${x \in B \implies x \in A.}$ This proves that ${B \subseteq A.}$
+	3. Since ${A \subseteq B}$ and ${B \subseteq A,}$ it follows that ${A \in B.}$
+:::
+:::section
+### Power Sets
+- The set of subsets of a set ${A}$ is called the _power set_, denoted ${P(A),}$ of ${A.}$
+- Let ${S}$ be a set. Then the cardinality of the power set of ${S}$ is given by:
+	$$
+		\texttt{\#}(P(S)) = 2^n.
+	$$
+	- ~proof.~ For every subset of ${S,}$ there are two possibilites for each element ${x \in S.}$ Either ${x}$ is in the subset, or ${x}$ is not in the subset. Thus, for all ${n}$ elements of ${S,}$ there will be ${2^n}$ different choices in constructing a subset of ${S.}$
+- ~example.~ Let ${S = \set{a,b,c}.}$ We know that ${\texttt{\#}S = 3.}$ Thus, we have ${2^3 = 8}$ possible subsets:
+	$$
+		\begin{matrix}
+			& \varnothing & \set{a} & \set{b} & \set{c} \\[.5em]
+			& \set{a,b} & \set{b,c} & \set{a,c} & \set{a,b,c}
+		\end{matrix}
+	$$
+:::
+::::
+
+:::::grid{cols=2}
+::::section
+### Union
+- The set of all elements in sets ${A}$ _or_ ${B}$ _or_ both is called the _union_ of ${A}$ and ${B,}$ denoted ${A \cup B.}$
+	:::::figure
+	<Union1/>
+	:figcaption[${A \cup B.}$]
+	:::::
+::::
+
+::::section
+### Intersection
+- The set of all elements in sets ${A}$ _and_ ${B}$ is called the _intersection_ of ${A}$ and ${B,}$ denoted ${A \cap B.}$
+	:::figure
+	<Intersection1/>
+	:figcaption[${A \cap B.}$]
+	:::
+::::
+:::::
+
+### Laws of Intersection & Union
+::::grid{cols=2}
+:::section
+- ${A \cap B \subseteq A \cup B.}$
+- If ${A \cup B = A \cap B,}$ then ${A = B.}$
+- ${A \cup B = A}$ if and only if ${B \subseteq A.}$
+- ${A \cap B = A}$ if and only if ${A \subseteq B.}$
+:::
+:::section
+- ${A \cap A = A.}$
+- ${A \cup A = A.}$
+- ${A \cap \varnothing = \varnothing.}$
+- ${A \cup \varnothing = A.}$
+:::
+::::
+
+::::grid{cols=2}
+:::section
+### Disjoint Sets
+- Let ${A}$ and ${B}$ be sets. If ${A \cap B = \varnothing}$ (that is, ${A}$ and ${B}$ have no common elements), then we say that ${A}$ and ${B}$ are _disjoint_.
+:::
+:::section
+### Partitions
+- Where ${C = A \cup B,}$ if ${A \cap B = \varnothing}$ (that is, ${A}$ and ${B}$ are disjoint), then we say that ${A}$ and ${B}$ _partition_ ${C.}$
+:::
+::::
 
 ## Numbers
-In mathematics, we classify numbers with the following hierarchy.
+- The set of natural numbers comprises ${\set{0,1,2,\ldots}.}$ We denote this set with the symbol ${\mathbb{N}.}$
+	- Some authors exclude ${0}$ from the natural numbers. We do not.
+- The set of integers comprises ${\set{\ldots,-2,-1,0,1,2,\ldots}.}$ We denote this set with the symbol ${\mathbb{Z}.}$
+- The set of rational numbers comprises numbers of the form
+	$$
+		r = \dfrac{m}{n},
+	$$
+	where ${m}$ and ${n}$ are integers, with ${n \neq 0.}$ We denote the set of rational numbers with the symbol ${\mathbb{Q}.}$
+- The set ${\mathbb{Q}'}$ (the set of numbers _not_ rational) is called the set of _irrational numbers_.
+	- ~example~. ${\sqrt{3},}$ ${\sqrt{5},}$ ${\sqrt[3]{2},}$ ${\pi,}$ ${\dfrac{3}{\pi^2}}$
+	- ~warning~. ${n/0}$ is undefined (e.g., ${0/0}$).
+- The set of naturals, integers, rationals, and irrationals comprise the set of all real numbers, denoted ${\mathbb{R}.}$
 
+## Properties of Reals
+- Where ${a}$ and ${b}$ are real numbers:
+::::grid{cols=2}
+:::section
+- __Commutativity of Addition.__
+	- ${a + b = b + a.}$
+	- That is, when we add two numbers, order is irrelevant (the summands are free to “commute” or “travel”).
+- __Associativity of Addition.__
+	- ${(a + b) + c = a + (b + c).}$
+	- I.e., when we add three numbers, which two numbers we add first is irrelevant (the summands are free to “asssociate” or “gather”).
+:::
+:::section
+- __Commutativity of Multiplication.__
+	- ${a \cdot b = b \cdot a.}$
+- __Associativity of Multiplication.__
+	- ${a \cdot (b \cdot c) = (a \cdot b) \cdot c.}$
+- __Distributivity.__ 
+	- ${a \cdot (b + c) = ab + ac,}$
+	- and ${(b + c) \cdot a = ba + ca.}$
+:::
+::::
 
-## Rational Arithmetic
-:::definition
-__Addition over ${\mathbb{Q}}$.__ Given the rational number ${a/b}$ and the rational number ${c/d,}$ it follows that:
+::::grid{cols=2}
+:::section
+### Properties of Negatives
+- Given a real number ${a,}$
+	- ${(-1)a = -a.}$
+	- ${-(-a) = a.}$
+	- ${(-a)b = a(-b) = -(ab).}$
+	- ${(-a)(-b) = ab.}$
+	- ${-(a + b) = -a - b.}$
+	- ${-(a - b) = b - a.}$
+:::	
+:::section
+### Properties of Rationals
+- Let ${a}$ and ${b}$ be integers. Then:
+	- ${\dfrac{a}{b} \cdot \dfrac{c}{d} = \dfrac{ac}{bd}}$ 
+	- ${{\dfrac{a}{b}}/{\dfrac{c}{d}} = \dfrac{a}{b} \cdot \dfrac{d}{c}}$
+	- ${\dfrac{a}{c} + \dfrac{b}{c} = \dfrac{a + b}{c}}$
+	- ${\dfrac{a}{b} + \dfrac{c}{d} = \dfrac{ab + bc}{cd}}$
+	- ${\dfrac{ac}{bc} = \dfrac{a}{b}}$
+	- If ${\dfrac{a}{b} = \dfrac{c}{d},}$ then ${ad = bc.}$
+:::
+::::
 
-$$
-	\frac{a}{b} + \frac{c}{d} = \frac{ad}{bd} + \frac{bc}{bd} = \frac{ad + bc}{bd}.
-$$
+## The Real Line 
+- The __real line__ is a visual representation of the set ${\reals.}$
+
+:::figure
+<RealLine/>
+:figcaption[The real line.]
 :::
 
-_Example._ ${\dfrac{3}{2} + \dfrac{5}{7} = \dfrac{3 \cdot 7}{2 \cdot 7} + \dfrac{5 \cdot 2}{2 \cdot 7} = \dfrac{10}{14}.}$
+- This representation communicates the fact that the real numbers are _ordered_.
+- Given two numbers ${a}$ and ${b}$ on the real line:
+	1. We say that “${a}$ is less than ${b}$” (denoted ${a \lt b}$) if ${b - a}$ is a positive real number. This is equivalent to saying “${b}$ is greater than ${a}$” (denoted ${b \gt a}$).
+	2. We say that “${a}$ is less than or equal to ${b}$” (denoted ${a \leq b}$) if ${a \lt b}$ or ${a = b.}$ This is equivalent to saying “${b}$ is greater than or equal to ${a}$” (denoted ${b \geq a}$).
 
 
+## Intervals
+- Where ${a \in \mathbb{R}}$ and ${b \in \mathbb{R},}$ with ${a \lt b,}$
+	1. The _open interval_, denoted ${(a,b),}$ is the set ${\set{x \in \reals | a \lt x \lt b}.}$
+	2. The _closed interval_, denoted ${[a,b],}$ is the set ${\set{x \in \reals | a \leq x \leq b}.}$
+	3. The _left-open interval_, denoted ${(a,b],}$ is the set ${\set{x \in \reals | a \lt x \leq b}.}$
+	4. The _right-open interval_, denoted ${[a,b),}$ is the set ${\set{x \in \reals | a \leq x \lt b}.}$
+- The intersection of two intervals ${I_a}$ and ${I_b}$ comprises all real numbers in both ${I_a}$ and ${I_b.}$
+	- ~example~. ${(1,3) \cap [2,7]}$ is the interval ${\set{x | 1 \lt x \lt 3 \text{ and } 2 \leq x \leq 7}.}$
+- The union of two intervals ${I_a}$ and ${I_b}$ comprises all real numbers in ${I_a,}$ ${I_b,}$ or both.
+	- ~example~. ${(1,3) \cup [2,7]}$ is the interval ${\set{x | 1 \lt x \lt 3 \text{ or } 2 \leq x \leq 7}.}$
 
-:::definition
-__Multiplication over ${\mathbb{Q}}$.__ Given the rational number ${a/b}$ and the rational number ${c/d,}$ it follows that:
+## Absolute Value
+- The absolute value of a number ${x,}$ denoted ${\lvert x \rvert,}$ is the distance from ${x}$ to ${0}$ on the real line.
+- More generally: If ${x}$ is a real number, then the __absolute value__ of ${x}$ is
+	$$
+		\lvert x \rvert = \begin{cases}
+			x &\text{ if } a \geq 0 \\
+			-x &\text{ else }
+		\end{cases}.
+	$$
+- The __distance__ between two points ${a}$ and ${b}$ on the real line is defined as:
+	$$
+		\text{distance}(a,b) = \lvert b - a \rvert.
+	$$ 
+	- Given the property that ${ \lvert b - a \rvert = \lvert a - b \rvert,}$ it follows that the distance from ${a}$ to ${b}$ is equal to the distance from ${b}$ to ${a.}$
+	- It thus follows that the ${\text{distance}}$ operator is _commutative_.
 
-$$
-	\frac{a}{b} \cdot \frac{c}{d} = \frac{ac}{bd}.
-$$
-:::
-
-
-Given that subtraction is merely syntactic sugar for addition on the additive inverse of the second operand, we may define subtraction from a combination of the addition and multiplication definitions:
-
-:::definition
-__Subtraction over ${\mathbb{Q}}$.__ Given the rational number ${a/b}$ and the rational number ${c/d,}$ it follows that:
-
-$$
-	\frac{a}{b} - \frac{c}{d} = \frac{ad}{bd} + \left(\frac{-1}{1} \cdot \frac{bc}{bd}\right) = \frac{ad - bc}{bd}.
-$$
-:::
-
-## Real Arithmetic
-The following properties hold for the set of all real numbers, ${\reals.}$
-
-:::definition
-__Properties of ${\mathbb{R}.}$__ Let ${x,}$ ${y,}$ and ${z}$ be real numbers.
-
-- __Closure of Addition.__ The sum ${x + y}$ is always a real number.
-- __Associativity of Addition.__ The grouping of summands is inconsequential: ${(x + y) + z = x + (y + z).}$
-- __Commutativity of Addition.__ The ordering of summands is inconsequential: ${x + y = y + x.}$
-- __Existence of Additive Identity.__ There exists an additive identity, ${0,}$ such that, for all ${x \in \mathbb{R}}$ ${0 + x = x + 0 = x.}$
-- __Existence of Additive Inverse.__ For every ${x \in \reals,}$ there exists a unique real number ${-x,}$ such that ${x + (-x) = (-x) + x = 0,}$ and ${-x}$ is the only element in ${\mathbb{R}}$ with this property.
-- __Closure of Multiplication.__ The product ${x \cdot y}$ is always a real number.
-- __Associativity of Multiplication.__ The grouping of multiplicands is inconsequential: ${(x \cdot y) \cdot z = x \cdot (y \cdot z).}$
-- __Commutativity of Multiplication.__ The ordering of multiplicands is inconsequential:  ${x \cdot y = y \cdot x.}$
-- __Existence of Multiplicative Identity.__ There exists a multiplicative identity, ${1,}$ such that for all ${x \in \reals,}$ ${1 \cdot x = x \cdot 1 = x.}$
-- __Existence of Multiplicative Inverse.__ For each ${x \in \reals}$ with ${x \neq 0,}$ there exists a unique real number ${x^{-1}}$ such that ${x^{-1} \cdot x = 1,}$ and ${x^{-1}}$ is the only element in ${\mathbb{R}}$ relative to ${x}$ with this property.
-- __Distributivity.__ ${x \cdot (y + z) = xy + xz}$ and ${(x + y) \cdot z = xz + yz.}$
-:::
-
-We take subtraction and division as the following definitions:
-
-:::definition
-__Subtraction.__ For all real numbers ${a}$ and ${b,}$ the operation of subtraction is defined as:
-
-$$
-	a - b = a + (-b).
-$$
-:::
-
-:::definition
-__Division.__ For all real numbers ${a}$ and ${b,}$ the operation of division is defined as:
-
-$$
-	a \div b = a \cdot b^{-1}, ~~~~ b \neq 0.
-$$
-:::
-
-The following properties are often useful when manipulating algebraic expressions.
-
-:::definition
-__Properties of Negatives.__ For all real numbers ${a}$ and ${b:}$
-
-$$
-	\begin{aligned}
-		&-(-a) = a~; \\[1em]
-		&-ab = -(ab) = a(-b) = -ab~; \\[1em]
-		&(-a)(-b) = ab~; \\[1em]
-		&-1(a) = (-1)a = -a~; \\[1em]
-		&\dfrac{-a}{b} = -\dfrac{a}{b} = \dfrac{a}{-b}, ~~~ b \neq 0~; \\[1em]
-		&\dfrac{-a}{-b} = -\dfrac{-a}{b} = -\dfrac{a}{-b} = \dfrac{a}{b}, ~~~ b \neq 0. \\[1em]
-	\end{aligned}
-$$
-:::
-
-:::definition
-__Properties of Zero.__ For all real numbers ${a}$ and ${b:}$
-
-$$
-	\begin{aligned}
-		& a \cdot 0 = 0 \cdot a = 0 ~; \\[1em]
-		& ab = 0 \iff (a \neq 0 ~\text{ or }~ b \neq 0).
-	\end{aligned}
-$$
-:::
+### Properties of Absolute Values
+1. The absolute value of a number is always positive or zero: ${\lvert a \rvert \geq 0.}$ 
+2. A number and its additive inverse have the same absolute value: ${\lvert a \rvert = \lvert -a \rvert.}$
+3. The absolute value of a product is the product of the absolute values: ${\lvert ab \rvert = \lvert a \rvert \cdot \lvert b \rvert.}$
+4. The absolute value of a quotient is the quotient of the absoluet values: ${\lvert a/b \rvert = \lvert a \rvert / \lvert b \rvert.}$
+5. __Triangle Inequality.__ ${\lvert a + b \rvert \leq \lvert a \rvert + \lvert b \rvert.}$
 
 ## Exponents
-The exponent is syntactic sugar for repeated multiplication. That is, given ${a \in \mathbb{R},}$
+### Integer Exponents
+- If ${x}$ is any real number and ${n}$ is a positive integer, then the ${n^{\text{th}}}$ power of ${x}$ is
+	$$
+		x^n = \underbrace{x \cdot x \cdot \ldots x \cdot x}_{n~~\text{factors}}.
+	$$
+	The	number ${x}$ is called the __base__, and ${n}$ is called the __exponent__.
+- Where ${x}$ and ${y}$ are real numbers, and ${a}$ and ${b}$ are integers:
+	::::grid{cols=2} 
+	:::section
+	- If ${x \neq 0,}$ then ${x^0 = 1}$ and ${x^{-n} = \dfrac{1}{x^n}.}$
+	- ${x^{a} x^{b} = x^{a + b}.}$
+	- ${\dfrac{x^a}{x^b} = x^{a - b}.}$
+	- ${(x^a)^b = a^{a \cdot b}.}$
+	:::
+	:::section
+	- ${(xy)^a = x^a y^a.}$
+	- ${\left( \dfrac{x}{y} \right)^a = \dfrac{x^a}{y^a}.}$
+	- ${\left( \dfrac{x}{y} \right)^{-a} = \left( \dfrac{y}{x} \right)^n.}$
+	- ${\dfrac{x^{-a}}{y^{-b}} = \dfrac{y^b}{x^a}.}$
+	:::
+	::::
 
-$$
-	a^k = a_1 \cdot a_2 \cdot \ldots \cdot a_{k-1} \cdot a_k,
-$$
-
-where each ${a_i = a.}$ For example, ${a^2 = a \cdot a,}$ ${a^3 = a \cdot a \cdot a,}$ etc.
-
-:::definition
-__Definition.__ Let ${n}$ be a positive integer and ${x}$ a real number. Then the following properties hold:
-
-$$
-	\begin{aligned}
-		& a^n = a_1 \cdot a_2 \cdot \ldots \cdot a_{n-1} \cdot a_n ~, \\[1em]
-		& a^{-n} = \dfrac{1}{a^n} ~, \\[1em]
-		& a^0 = 1 ~, \\[1em]
-		& a^m a^n = a^{m+n} ~, \\[1em]
-		& (a^n)^m = a^{mn} ~, \\[1em]
-		& (ab)^n = a^{n}b^{n} ~, \\[1em]
-		& \left( \dfrac{a}{b} \right)^n = \dfrac{a^n}{b^n}~, \\[1em]
-		& \dfrac{a^m}{a^n} = \begin{cases}
-			a^{m-n} \\[1em]
-			\dfrac{1}{a^{n-m}}
-		\end{cases}, ~~~ a \neq 0.
-	\end{aligned}
-$$
+__Examples.__
+::::grid{cols=2}
+:::section
+- ${x^3 \cdot x^4 = x^3 \cdot x^4 = x^{3 + 4} = x^7}$
+- ${(2y^2)^3 = 2^{1 \cdot 3} y^{2 \cdot 3} = 2^3 \cdot y^6 = 8y^6.}$
+	- Explicitly:
+	$$
+		\begin{aligned}
+			&(2y^2)^3 \\[1em]
+			& = (2y^2) \cdot (2y^2) \cdot (2y^2) \\[1em]
+			& = (2 \cdot y \cdot y) \cdot (2 \cdot y \cdot y) \cdot (2 \cdot y \cdot y) \\[1em]
+			& = 2 \cdot 2 \cdot 2 \cdot y \cdot y \cdot y \cdot y \cdot y \cdot y \\[1em]
+			& = 8y^6
+		\end{aligned}
+	$$
+- ${y^{-2}y^7 = y^{-2 + 7} = y^5.}$
+- ${y^{5}y^2 = y^{5 + 2} = y^7.}$
+- ${(8x)^2 = (8^2 \cdot x^2) = 64x^4.}$
+- ${x^4 x^{-3} = x^{4 + (-3)} = x^{1} = x.}$
 :::
-
-_Example_. ${(3a^5)(2a^{-3}) = (3 \cdot 6)(a^5a^{-3}) = 6a^2.}$
-
-_Example_. ${\dfrac{6x^{-2}}{8x^{-5}} = \dfrac{3x^{-2}-(-5)}{4} = \dfrac{3x^3}{4}.}$
-
-_Example_. ${-4y^3 - (-4y)^3 = -4y^3 - ((-4)^3 \cdot y^3) = -4y^3 - (-64y^3) = 60y^3.}$
-
-### Scientific Notation
-For computationally intensive problems, we’ll often find ourselves working with colossal or miniscule numbers. Because writing these numbers out is tiresome, we use _scientific notation_ instead.
-
-:::definition
-__Definition.__ For any positive real number ${x,}$ we can express ${x}$ in the form:
-
-$$
-	r = a \times 10^n ~~~~ 1 \leq a \lt 10,~~n \in \mathbb{Z.}
-$$
+:::section
+- ${x^{-5} \cdot x^3 = x^{-5 + 3} = x^{-2}.}$
+- ${w^{-2} w^{-4} w^5 = w^{-2 + (-4) + 5} = w^{-1} = \dfrac{1}{w}.}$
+- ${\dfrac{x^{16}}{x^{10}} = x^{16-10} = x^6.}$
+- ${y^2 \cdot y^{-5} = y^{2 + (-5)} = y^{-3}.}$
+- ${z^{5} z^{-3} z^{-4} = z^{5 + (-3) + (-4)} = z^{-2} = \dfrac{1}{z^2}.}$
+- ${\dfrac{y^7 y^0}{y^{10}} = \dfrac{y^7 (1)}{y^{10}} = \dfrac{y^7}{y^{10}} = y^{-3}.}$
+- ${\dfrac{a^9 a^{-2}}{a} = \dfrac{a^{9 + (-2)}}{a} = \dfrac{a^{7}}{a} = a^{7}a^{-1} = a^6.}$
+- ${(a^2 a^4)^3 = (a^{2 + 4})^3 = (a^6)^3 = a^{6 \cdot 3} = a^{18}.}$
+- ${\left( \dfrac{x}{2} \right)^3 \left( 5x^6 \right) = \left( \dfrac{x^3}{2^3} \right)(5x^6) = \dfrac{x^3 \cdot 5x^6}{8} = \dfrac{5x^9}{8}.}$
+- ${\dfrac{z^2 z^4}{z^3 z^{-1}} = \dfrac{z^{2+4}}{z^{3+(-1)}} = \dfrac{z^6}{z^2} = z^{6-2} = z^4.}$
+- ${\left( 2 a^3 a^2 \right)^4 = 2^4 \cdot a^3 \cdot a^2 = 16 \cdot (a^3 a^2) = 16 a^{3 + 2} = 16 a^5.}$
 :::
+::::
 
-_Example._ ${6~430 = 6.43 \times 10^3.}$
-
-_Example._ ${0.00000007 = 7\times 10^{-8}.}$
-
-## Radicals
-
-:::definition
-__Definition.__ Let ${n}$ be a natural number, and let ${a}$ and ${b}$ be real numbers. Then ${a}$ is the _${n^{\text{th}}}$ root_ of ${b}$ if ${a^n = b,}$ and we write:
-
-$$
-	b^{1/n} = \sqrt[n]{b} = a.
-$$
-:::
-
-_Example._ ${27^{1/3} = \sqrt[3]{27} = 3,}$ given that ${3^3 = 3 \cdot 3 \cdot 3 = 27.}$
-
-:::definition
-__Theorem.__ Let ${n}$ be a natural number and let ${b}$ be a real number.
-
-1. Suppose ${b \gt 0.}$ Then:
-	1. if ${n}$ is even, then ${b}$ has two real ${n^{\text{th}}}$ roots, each the negative of the other;
-	2. if ${n}$ is odd, then ${b}$ has one real ${n^{\text{th}}}$ root.
-2. If ${b = 0,}$ then ${b}$ has only one real ${n^{\text{th}}}$ root, ${0.}$
-3. Suppose ${b \lt 0.}$ Then:
-	1. if ${n}$ is even, then ${b}$ has no real ${n^{\text{th}}}$ root.
-	2. if ${n}$ is odd, then ${b}$ has on real ${n^{\text{th}}}$ root.
-:::
-
-_Example._ ${16^{1/4} = \sqrt[4]{16} = (-2, 2),}$ given that ${2^4 = 2 \cdot 2 \cdot 2 \cdot 2 = 16}$ and ${(-2)^4 = -2 \cdot -2 \cdot -2 \cdot -2 = 16.}$
-
-When working with radicals, we’re often only concerned with the _principal ${n^{\text{th}}}$ root_, as defined below.
-
-:::definition
-__Definition.__ Where ${n}$ is a natural number and ${b}$ is a real number, the _principal ${n^{\text{th}}}$ root of ${b}$_, denoted ${b^{1/n}}$ or ${\sqrt[n]{b},}$ is:
-
-1. the real ${n^{\text{th}}}$ root of ${b}$ if there is only one real ${n^{\text{th}}}$ root,
-2. the positive ${n^{\text{th}}}$ root of ${b}$ if there are two real ${n^{\text{th}}}$ roots, or
-3. _undefined_ if ${b}$ has no real ${n^{\text{th}}}$ root.
-:::
-
-:::dfn
-__Properties of Radicals.__ Let ${m}$ and ${n}$ be natural numbers and let ${b}$ be any real number. Provided ${b}$ is nonnegative whenever ${n}$ is even:
-
-$$
-	\begin{aligned}
-		& b^{m/n} = (b^{1/n})^m~, \\[1em]
-		& b^{-m/n} = \dfrac{1}{b^{m/n}}~, \\[1em]
-		& \left(b^{1/n}\right)^{m} = \left( b^m \right)^{1/n}~, \\[1em]
-		& \left( \sqrt[n]{b} \right)^m = \sqrt[n]{b^m}~, \\[1em]
-		& \sqrt[n]{x^n} = x~, \\[1em]
-		& \sqrt[n]{xy} = \sqrt[n]{x}\sqrt[n]{y}~, \\[1em]
-		& \sqrt[n]{\dfrac{x}{y}} = \dfrac{\sqrt[n]{x}}{\sqrt[n]{y}}~. \\[1em]
-	\end{aligned}
-$$
-:::
-
-By convention, we say that a radial expression is in _simplified form_ if all of the following conditions are met:
-
-1. No radicand (the expression within the radical sign) contains a factor to a power greater than or equal to the radical’s index.
-	- _Example._ ${\sqrt{x^5}}$ violates this condition, since its index is ${2}$ and its radicand contains a factor raised to ${5.}$
-2. No power of the radicand and the index have a common factor, other than 1. 
-	- _Example._ ${\sqrt[8]{x^4}}$ violates this condition, since the radicand and the index have multiple common factors other than ${1:}$ the integer ${2}$ and ${4.}$
-3. If the expression is a rational expression, then no radical appears in the denominator.
-	- _Example._ ${{1}/{\sqrt{x}}}$ violates this condition.
-4. No rational expression appears within a radical.
-	- _Example._ ${\sqrt{1/3}}$ and ${\sqrt{x/y}}$ both violate this condition.
 	
-## Polynomials
-Algebraic expressions that involve only the operations of addition, subtraction, multiplication, and raising to natural number powers are called _polynomials_. Polynomials are particularly special because they avoid all of the complexities associated with roots, logarithms, and other elaborate operations.
+## Radicals
+- The notation ${\sqrt{a} = b}$ implies that ${b^2 = a.}$
+- Where ${n}$ is a positive integer, the principal ${n^{\text{th}}}$ root of ${a}$ is defined as
+	$$
+		\sqrt[n]{a} = b.
+	$$ 
+	If ${n}$ is even, then ${a \geq 0}$ and ${b \geq 0.}$
+- Where ${n}$ and ${n}$ are integers and ${a}$ and ${b}$ are real numbers:
+	1. ${\sqrt[n]{ab} = \sqrt[n]{a} \sqrt[n]{b}.}$ 
+	2. ${\sqrt[n]{ \dfrac{a}{b} } = \dfrac{\sqrt[n]{a}}{\sqrt[n]{b}}.}$
+	3. ${\sqrt[m]{\sqrt[n]{a}} = \sqrt[m \cdot n]{a}.}$
+	4. ${\sqrt[n]{a^n} = a}$ if ${n}$ is odd.
+	5. ${\sqrt[n]{a^n} = \lvert a \rvert}$ if ${n}$ is even.
 
-:::definition
-__Definition.__ A polynomial ${p}$ in a single variable ${x}$ is an expression of the form:
+:::grid{cols=2}
+### Rational Exponents 
+- For any rational exponent ${m/n}$ in lowest terms, where ${m}$ and ${n}$ are integers and ${n \gt 0,}$ we define
+	$$
+		a^{m/n} = \left(\sqrt[n]{a}\right)^m,
+	$$ 
+	or, equalivalently:
+	$$
+		a^{m/n} = \sqrt[n]{a^m}.
+	$$
+	If ${n}$ is even, then we require that ${a \geq 0.}$
 
-$$
-	p = p_nx^n + p_{n-1}x^{n-1} + \ldots + p_1x + p_0,
-$$
-
-where each ${p_i}$ is called a _term_, the _coefficients_ of ${p_i}$ are rational numbers, and ${n}$ is a non-negative integer. If ${p_n \neq 0,}$ then ${p_n}$ is called the _leading coefficient_ of ${p}$ and ${n}$ the _degree_ of ${p.}$ The expression ${p = 0}$ is called the _zero polynomial_ – it has the leading coefficient ${0}$ and, by convenion, has the degree ${-\infty.}$ We denote the leading coefficient of a polynomial ${p}$ with the notation:
-
-$$
-	\text{lc}(p),
-$$
-
-and the the degree of ${p}$ with the notation:
-
-$$
-	\text{deg}(p).
-$$
+### Rationalizing Denominators
+- We _rationalize a denominator_ by multiplying both the numerator and the denominator by a common expression.
+	- ~example~. ${ \dfrac{1}{\sqrt{a}} = \dfrac{1}{\sqrt{a}} \cdot 1 = \dfrac{1}{\sqrt{a}} \cdot \dfrac{\sqrt{a}}{\sqrt{a}} = \dfrac{\sqrt{a}}{a} }$
 :::
 
-Alongside this definition, we special names for certain kinds of polynomials. A _monomial_ is a polynomial with a single term (e.g., ${3x}$ or ${5y^2}$). A _binomial_ is a polynomial with two terms (e.g., ${x^3 - x^2}$ or ${x + 1}$). And a _trinomial_ is a polynomial with three terms (e.g., ${x^5 + \frac{1}{2}x - 2.}$).
-
-Two terms in a polynomial are called _like terms_ if they have the same variables raised to the same powers (although they may have different coefficients). For example, ${3x^3}$ and ${17x^3}$ are like terms. If a polynomial contains two or more like terms, we may combine them into a single term.
-
-$$
-	\begin{aligned}
-		5x^3y - 2xy - x^3y - 2x^3y &= 5x^3y - x^3y - 2x^3y - 2xy \\[1em]
-		&= (5x^3y - x^3y - 2x^3y) - 2xy \\[1em]
-		&= (5 - 1 - 2)x^3y - 2xy \\[1em]
-		&= 2x^3y - 2xy.
-	\end{aligned}
-$$
-
-### Adding & Subtracting Polynomials
-
-Adding and subtracting polynomials amounts to combining like terms.
-
-_Example._
-
-$$
-\begin{aligned}
-	& (x^4 - 3x^3 + x^2) + (-x^3 - 2x^2 + 3x) + (3x^2 - 4x - 5) \\[1em]
-	&= x^4 - 3x^3 + x^2 - x^3 - 2x^2 + 3x + 3x^2 - 4x - 5 \\[1em]
-	&= x^4 - 4x^3 + 2x^2 - x - 5.
-\end{aligned}
-$$
-
-We may also perform the operation with a vertical layout:
-
-$$
-\begin{matrix}
-	  & x^4 & - & 3x^3 & + & x^2  &   &    &   & \\
-	  &     & - &  x^3 & - & 2x^2 & + & 3x &   & \\
-	+ & 		&   &      &   & 3x^2 & - & 4x & - & 5 \\
-	\hline
-	  & x^4 & - & 4x^3 & + & 2x^2 & - &  x & - & 5.
-\end{matrix}
-$$
+## Polynomials
+- A _monomial_ is an expression of the form ${ax^k,}$ where ${a}$ is a real number and ${k}$ is a nonnegative integer.
+- A _binomial_ is a sum of two monomials.
+- A _trinomial_ is a sum of three monomials.
+- More generally, a sum of monomials is called a _polynomial_.
+- __Definition.__ A _polynomial in ${x}$_ is an expression of the form:
+	$$
+		a_n x^n + a_{n-1}x^{n-1} + \ldots + a_1 x + a_0
+	$$ 
+	where ${a_0, a_1, \ldots, a_n}$ are real numbers, and ${n}$ is a nonnegative integer. If ${a_n \neq 0,}$ then the polynomial has degree ${n.}$ The monomials ${a_k x^k}$ comprising the polynomial are called the _terms_ of the polynomial.
+	
+### Adding & Subtracting Polynomials	
+- Polynomials may be added and subtracted by applying the [properties of reals](#properties-of-reals) to __like terms__ (terms with the same variables raised to the same powers) using the distributive property.
+	- ~example~. ${5x^2 + 3x^2 = (5 + 3)x^2 = 8x^2.}$
+- When subtracting polynomials, keep in mind that when a minus sign precedes a parenthesized expression, then the sign must be distributed to each term when the parentheses are removed:
+	- ${-(b + c) = -b - c.}$
+	- ${-(-b + c) = b - c.}$
+	- ${-(b - c) = -b + c.}$
+	- ${-(-b - c) = b + c.}$
+	- ${-(-b + (-c)) = -(-b - c) = b + c.}$
 
 ### Multiplying Polynomials
-Multiplication of polynomials amounts to applying the distributive property.
+- The product of polynomials is obtained through a repeated application of the distributive property.
+	$$
+		\begin{aligned}
+			(a + b)(c + d) &= a(c + d) + b(c + d) \\
+			&= ac + ad + bc + bd
+		\end{aligned}
+	$$
 
-_Example._
+### Product Formulas
+_The following formulas are heavily used in manipulating polynomials_.
+- Let ${s}$ and ${t}$ be algebraic expressions. Then:
+	1. ${(s + t)(s - t) = s^2 - t^2.}$
+	2. ${(s + t)^2 = s^2 + 2st + t^2.}$
+	3. ${(s - t)^2 = s^2 - 2st + t^2.}$
+	4. ${(s + t)^3 = s^3 + 3s^2 t + 3st^2 + t^3.}$
+	5. ${(s - t)^3 = s^3 - 3 s^2 t + 3 s t^2 - t^3.}$
+	
+### Factoring
+- The distributive property _expands_ polynomials. To reverse this process, we _factor_ the polynomial.
+	- ~example.~ ${x^2 - 9 = (x - 3)(x + 3).}$
+	- Here, we say that ${x - 3}$ and ${x + 3}$ are _factors_ of ${x^2 - 9.}$
+- There are many ways to factor polynomials.
 
-$$
-\begin{aligned}
-	& (2x - 3)(3x^2 - 2x + 3) \\[1em]
-	&= 2x(3x^2 - 2x + 3) - 3(3x^2 - 2x + 3) \\[1em]
-	&= 6x^3 - 4x^2 + 6x - 9x^2 + 6x - 9 \\[1em]
-	&= 6x^3 - 13x^2 + 12x - 9.
-\end{aligned}
-$$
+#### Factoring Common Factors 
+- The most straightforward approach is to _factor out_ common factors.
+	- ~example~. ${(3x^2) - 6x = 3x(x - 2).}$
+	- ~example~. ${8x^4y^2 + 6x^3 y^3 - 2xy^4.}$
+		$$
+			\begin{aligned}
+				8x^4y^2 + 6x^3 y^3 - 2xy^4 &= (2xy^2)(4x^3) + (2xy^2)(3x^2y) + (2xy^2)(-y^2)  \\
+				&= 2xy^2(4x^3 + 3x^2y - y^2).
+			\end{aligned}
+		$$
 
-### Factoring 
-A _factor_ of a number ${n}$ is one of two more numbers that, when multiplied, yields ${n.}$ We extend this to algebraic expressions: A factor of an algebraic expression ${u}$ is one of two or more algebraic expressions that, when multiplied, yields ${u.}$ The act of finding such factors – numeric or expressive – is called _factoring_.
+#### Factoring Trinomials
+- A common form of polynomials is the trinomial ${x^2 + bx + c.}$
+- We know that ${(x + r)(x + s) = x^2 + (r + s)x + rs.}$
+- Hence, we need numbers ${r}$ and ${s}$ such that ${r + s = b}$ and ${r \cdot s = c.}$
+- To factorize a trinomial of the form ${ax^2 + bx + c}$ with ${a \neq 1,}$ we require factors of the form ${px + r}$ and ${qx + s,}$ such that:
+	$$
+		ax^2 + bx + c = (px + r)(qx + s) = pqx^2 + (ps + qr)x + rs.
+	$$ 
+	- We may do so by brute force; find the numbers ${p,}$ ${q,}$ ${r,}$ and ${s}$ such that:
+		- ${pq = a,}$
+		- ${rs = c,}$ and
+		- ${ps + qr = b.}$
 
-_Example._ ${x^2 - 4 = (x - 2)(x + 2).}$ Here, ${x - 2}$ and ${x + 2}$ are factors of ${x^2 - 4.}$
+__~examples~.__
+- ${6x^2 + 7x - 5 = (3x + 5)(2x - 1).}$
+- ${x^2 - 2x - 3 = (x - 3)(x + 1).}$
+- Remember that expressions can be substituted with variables. When we see large, common expressions, it’s helpful to reduce all of them to a single variable. Consider ${(5a + 1)^2 - 2(5a + 1) - 3.}$
+	- This has the form ${u^2 - 2 u - 3,}$ where ${u = 5a + 1.}$
+	- From the previous example, we know the expression ${u^2 - 2 u - 3}$ can be factored into ${(u - 3)(u + 1).}$ 
+	- Thus, substituting for ${u,}$ we have ${((5a + 1) - 3)((5a + 1) + 1).}$
+	- Which reduces to ${(5a - 2)(5a + 2).}$
 
-Factorization is of vital importance in mathematics – it allows us to view expressions in many different ways. For example, the integer ${20}$ can be rewritten as:
-
-$$
-	5 \cdot 4, \\[1em]
-	2 \cdot 2 \cdot 5,  \\[1em]
-	(1/2)(10)(4).
-$$
-
-Similarly, the expression
-
-$$
-	2x^2 - x - 6
-$$
-
-may be viewed as any of the following:
-
-$$
-	(2x + 3)(x - 2), \\[1em]
-	2\left( x^2 - \dfrac{x}{2} - 3 \right), \\[1em]
-	2 \left( x + \dfrac{3}{2} \right)(x - 2).
-$$
-
-Recall that an integer ${n}$ is _prime_ if its only positive integer factors are ${1}$ and itself. For example, ${2}$ is prime, since the only positive integer factors of ${2}$ are ${2}$ and ${1.}$ An integer greater than ${1}$ that is not prime is called a _composite number_. The integer ${1}$ is neither prime nor composite. If a composite number ${k}$ is represented entirely as a product of prime factors, then we say that ${k}$ is _factored completely_. This discussion leads to a particularly important property of the integers.
-
-:::dfn
-__Fundamental Theorem of Arithmetic.__ Every positive integer greater than ${1}$ is either:
-1. prime, or
-2. a unique:sup[*] product of primes.
-
-:sup[*] _Except possibly for the order of the factors._
-:::
-
-_Example._ ${20 = 2 \cdot 2 \cdot 5 = 5 \cdot 2 \cdot 2 = 2 \cdot 5 \cdot 2.}$
-
-:::definition
-__Prime Polynomial.__ Let ${p}$ be a polynomial. We say that ${p}$ is _prime_ if it cannot be expressed in the form ${p = u \cdot v,}$ where ${u}$ and ${v}$ are polynomials, both with a degree of at least ${2.}$
-:::
-
-### Factoring Approaches
-The simplest factoring approach is _factoring out common factors_:
-
-$$
-\begin{aligned}
-	& 2x^3y - 8x^2y^2 - 6xy^3 \\[1em]
-	&= (2xy)x^2 - (2xy)4xy - (2xy)3y^2 \\[1em]
-	&= 2xy(x^2 - 4xy - 3y^2).
-\end{aligned}
-$$
-
-### Factoring by Grouping
-Consider the polynomial ${3x^2 - 6x + 4x - 8.}$ We start by grouping the first two and last two terms:
-
-$$
-	\begin{aligned}
-		& 3x^2 - 6x + 4x - 8 \\[1em]
-		& = (3x^2 - 6x) + (4x - 8) \\[1em]
-		& = 3x(x - 2) + 4(x - 2) \\[1em]
-		& = (3x + 4)(x - 2). 
-	\end{aligned}
-$$
-
-### Factoring Formulas
-Some expression forms are so common that it’s worth remembering the patterns behind their factorings:
-
-| Pattern               | Factoring                               |
-| --------------------- | --------------------------------------- |
-| Perfect Square        | ${u^2 + 2uv + v^2 = (u + v)^2}$         |
-|                       | ${u^2 - 2uv + v^2 = (u - v^2)}$         |
-| Difference of Squares | ${u^2 - v^2 = (u - v)(u + v)}$          |
-| Difference of Cubes   | ${u^3 - v^3 = (u - v)(u^2 + uv + v^2)}$ |
-| Sum of Cubes          | ${u^3 + v^3 = (u + v)(u^2 - uv + v^2)}$ |
-
-## Rational Expressions
-:::dfn
-__Definition.__ Let ${v}$ and ${w}$ be algebraic expressions. Then an expression of the form ${v/w}$ with ${w \neq 0}$ is called a _fractional expression_. If ${v}$ and ${w}$ are polynomials, then ${v/w}$ is called a _rational expression_.
-:::
-
-_Example._ ${\dfrac{x-2}{2x^2 - 3x + 1}.}$
-
-_Example._ ${3/x.}$
-
-_Example._ ${\dfrac{x^2 + 3x - 5}{1}.}$
-
-_Example._ ${\frac{1}{2} \cdot x^2.}$
-
-:::dfn
-__Fundamental Property of Fractions.__ Let ${a,}$ ${b,}$ and ${k}$ be real numbers with ${b \neq 0}$ and ${k \neq 0.}$ Then
-
-$$
-	\dfrac{ka}{kb} = \dfrac{a}{b}.
-$$
-:::
-
-The same rules for adding, subtracting, multiplying, and dividing rational numbers apply to rational expressions.
+#### Common Factoring Patterns 
+- ${a^2 - b^2 = (a - b)(a + b).}$
+- ${a^2 + 2ab + b^2 = (a + b)^2.}$
+- ${a^2 - 2ab + b^2 = (a - b)^2.}$
+- ${a^3 - b^3 = (a - b)(a^2 + ab + b^2).}$
+- ${a^3 + b^3 = (a + b)(a^2 - ab + b^2).}$
