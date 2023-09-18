@@ -146,7 +146,7 @@
 	dfn {
 		display: block;
 		font-style: normal;
-		margin: 2em auto;
+		margin: 0 auto;
 		padding: 0 0.7em;
 
 		strong {
@@ -281,6 +281,7 @@
 		// padding: 2em;
 		// padding-bottom: 5em;
 		strong {
+			color: #fb8871;
 			font-size: 0.8rem;
 		}
 		h1,h2,h3,h4,h5,h6 {
@@ -369,5 +370,23 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
 		gap: 10px;
+	}
+	
+	:global .example {
+		width: fit-content;
+		margin: 0;
+		gap: 5px;
+		display: flex;
+		align-items: flex-start;
+		:global .katex-display {
+			margin: 0;
+		}
+		:global .example-body {
+			width: fit-content;
+		}
+		:global .example-header {
+			display: block;
+			font-variant: small-caps;
+		}
 	}
 }

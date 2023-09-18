@@ -3391,6 +3391,97 @@ class Histogram extends CONTEXT {
 export function histogram(dataset: number[]) {
   return new Histogram(dataset);
 }
+type KEY = string | number;
+
+class Point2D {
+  _x: number;
+  _y: number;
+  _label: KEY = "";
+  constructor(x: number, y: number) {
+    this._x = x;
+    this._y = y;
+  }
+  label(t: KEY) {
+    this._label = t;
+    return this;
+  }
+  circle(r: number) {
+    return circle(r).at(this._x, this._y);
+  }
+  y(y: number) {
+    this._y = y;
+    return this;
+  }
+  x(x: number) {
+    this._x = x;
+    return this;
+  }
+}
+function p2D(x: number, y: number) {
+  return new Point2D(x, y);
+}
+
+class Mapping extends CONTEXT {
+  _data: Record<KEY, KEY[]>;
+  constructor(_data: Record<KEY, KEY[]>) {
+    super();
+    this._data = _data;
+    this._domain = [-5, 5];
+    this._range = [-5, 5];
+  }
+  _pointRadius: number = .2;
+  _setSep: number = 1;
+  setSep(sep: number) {
+    this._setSep = sep;
+    return this;
+  }
+  pointRadius(r: number) {
+    this._pointRadius = r;
+    return this;
+  }
+  end() {
+    const entries = Object.entries(this._data).reverse();
+    const sep = this._pointRadius * 2;
+    let c = 0;
+    const x0 = this._xmid - this._setSep;
+    const x1 = this._xmid + this._setSep;
+    entries.forEach(([key, values], i) => {
+      const domainValue = p2D(x0, i);
+      const vs = values.reverse();
+      vs.forEach((r) => {
+        const rangeValue = p2D(x1, c);
+        this.and(
+          line([domainValue._x, domainValue._y], [
+            rangeValue._x,
+            rangeValue._y,
+          ]).stroke(this._stroke),
+        );
+        this.and(
+          rangeValue.circle(this._pointRadius).fill(this._fill).stroke(
+            this._stroke,
+          ),
+        );
+        this.and(
+          text(r).fontColor("white").at(x1 + sep, c),
+        );
+        c++;
+      });
+      this.and(
+        domainValue.circle(this._pointRadius).fill(this._fill).stroke(
+          this._stroke,
+        ),
+      );
+      this.and(
+        text(key).fontColor("white").at(x0 - sep, i),
+      );
+    });
+    return this.fit();
+  }
+}
+
+export function mapping(data: Record<KEY, KEY[]>) {
+  return new Mapping(data);
+}
 
 // ================================================================ SCATTER PLOT
 
@@ -3583,6 +3674,8 @@ interface Contextual {
   get _vw(): number;
   get _vh(): number;
   get _xmin(): number;
+  get _xmid(): number;
+  get _ymid(): number;
   get _xmax(): number;
   get _ymin(): number;
   get _ymax(): number;
@@ -3674,6 +3767,12 @@ function contextual<CLASS extends Klass>(klass: CLASS): And<CLASS, Contextual> {
     and(...shapes: Shape[]) {
       this._children.push(...shapes);
       return this;
+    }
+    get _xmid() {
+      return (this._xmin + this._xmax) / 2;
+    }
+    get _ymid() {
+      return (this._ymin + this._ymax) / 2;
     }
     get _xmin() {
       return this._domain[0];
@@ -5057,6 +5156,7 @@ export type Parent =
 | PolarPlot2D
 | Plane
 | LinePlot
+| Mapping
 | DotPlot;
 
 export type Shape = Group | Circle | Line | Path | Text | Quad | Area2D;

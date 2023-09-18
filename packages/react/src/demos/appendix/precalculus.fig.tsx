@@ -1,8 +1,16 @@
-import { circle, line, PI, plane, sqrt, tex, text, TWO_PI } from "../../loom";
+import {
+  circle,
+  line,
+  mapping,
+  PI,
+  plane,
+  quad,
+  sqrt,
+  tex,
+  text,
+  TWO_PI,
+} from "../../loom";
 import { Figure } from "../Screen";
-
-
-
 
 export const RealLine = () => {
   const third = 1 / 3;
@@ -44,14 +52,13 @@ export const RealLine = () => {
   return <Figure of={d} />;
 };
 
-
 export const Subset1 = () => {
   const circles = [
     circle(2).at(-.7, 0).fill("gold"),
     circle(4).at(0, 0).fill("cyan"),
   ].map((c) => c.stroke("none").opacity(.5));
   const labels = [
-    tex("B").at(-1,1),
+    tex("B").at(-1, 1),
     tex("A").at(1, 1.5),
   ];
   const d = plane([-5, 5], [-5, 5])
@@ -62,7 +69,7 @@ export const Subset1 = () => {
     .children([circles, labels])
     .end();
   return (
-    <div style={{width: '100%', margin: '0 auto'}}>
+    <div style={{ width: "100%", margin: "0 auto" }}>
       <Figure of={d} />
     </div>
   );
@@ -86,7 +93,34 @@ export const Union1 = () => {
     .children([circles, labels])
     .end();
   return (
-    <div style={{width: '100%', margin: '0 auto'}}>
+    <div style={{ width: "100%", margin: "0 auto" }}>
+      <Figure of={d} />
+    </div>
+  );
+};
+
+export const Complement1 = () => {
+  const circles = [
+    circle(3).at(0, 0).fill("tomato").opacity(.8),
+  ].map((c) => c.stroke("none"));
+  const labels = [
+    tex("S").at(-.3, 1),
+    tex("S'").at(3, 4),
+    tex("U").at(-4.7, 4.5),
+  ];
+  const d = plane([-5, 5], [-5, 5])
+    .bordered("white")
+    .margins(0, 100, 10, 100)
+    .height(130)
+    .width(400)
+    .children([
+      quad(10, 10).at(-5, 5).fill("white").opacity(.1),
+      circles,
+      labels,
+    ])
+    .end();
+  return (
+    <div style={{ width: "100%", margin: "0 auto" }}>
       <Figure of={d} />
     </div>
   );
@@ -107,10 +141,29 @@ export const Intersection1 = () => {
     .margins(0, 100, 10, 100)
     .height(130)
     .width(400)
-    .children([circles, labels, line([0,3.2],[0,2]).stroke('white').arrowEnd()])
+    .children([
+      circles,
+      labels,
+      line([0, 3.2], [0, 2]).stroke("white").arrowEnd(),
+    ])
     .end();
   return (
-    <div style={{width: '100%', margin: '0 auto'}}>
+    <div style={{ width: "100%", margin: "0 auto" }}>
+      <Figure of={d} />
+    </div>
+  );
+};
+
+export const Reflexive1 = () => {
+  const d = mapping({
+    a: ["a"],
+    b: ["b"],
+    c: ["c"],
+  }).margins(0).width(300).height(100).range(-3, 3).stroke("tomato").fill(
+    "white",
+  ).end();
+  return (
+    <div style={{ width: "70%", margin: "0 auto" }}>
       <Figure of={d} />
     </div>
   );

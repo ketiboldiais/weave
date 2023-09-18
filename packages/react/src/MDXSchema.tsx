@@ -122,7 +122,19 @@ const Grid = ({ children, cols }: Children & { cols: number }) => {
   );
 };
 
+const Example = ({ children }: Children) => {
+  return (
+    <section className={`example`}>
+      <span className={"example-header"}>example.</span>
+      <div className={"example-body"}>
+        {children}
+      </div>
+    </section>
+  );
+};
+
 const components = {
+  example: Example,
   grid: Grid,
   left: Left,
   right: Right,

@@ -3,44 +3,12 @@ import {
 	Union1,
 	Intersection1,
 	Subset1,
+	Complement1,
 } from './precalculus.fig.tsx';
 
-# Precalculus
+# Foundational Mathematics
 This page provides an overview of the foundational concepts and skills necessary to comprehending the rest of the appendix materials. Much of the materials that follow may be found in the standard “precalculus” course of U.S. curricula.
 
-1. [Precalculus](#precalculus)
-	1. [Sets](#sets)
-		1. [Cardinality](#cardinality)
-		2. [Subsets](#subsets)
-		3. [Set Equality](#set-equality)
-		4. [Power Sets](#power-sets)
-		5. [Union](#union)
-		6. [Intersection](#intersection)
-		7. [Laws of Intersection \& Union](#laws-of-intersection--union)
-		8. [Disjoint Sets](#disjoint-sets)
-		9. [Partitions](#partitions)
-	2. [Numbers](#numbers)
-	3. [Properties of Reals](#properties-of-reals)
-		1. [Properties of Negatives](#properties-of-negatives)
-		2. [Properties of Rationals](#properties-of-rationals)
-	4. [The Real Line](#the-real-line)
-	5. [Intervals](#intervals)
-	6. [Absolute Value](#absolute-value)
-		1. [Properties of Absolute Values](#properties-of-absolute-values)
-	7. [Exponents](#exponents)
-		1. [Integer Exponents](#integer-exponents)
-	8. [Radicals](#radicals)
-		1. [Rational Exponents](#rational-exponents)
-		2. [Rationalizing Denominators](#rationalizing-denominators)
-	9. [Polynomials](#polynomials)
-		1. [Adding \& Subtracting Polynomials](#adding--subtracting-polynomials)
-		2. [Multiplying Polynomials](#multiplying-polynomials)
-		3. [Product Formulas](#product-formulas)
-		4. [Factoring](#factoring)
-			1. [Factoring Common Factors](#factoring-common-factors)
-			2. [Factoring Trinomials](#factoring-trinomials)
-			3. [Common Factoring Patterns](#common-factoring-patterns)
-	
 ## Sets
 - A _set_ ${S}$ is a collection of objects, each called an _element_ of ${S.}$
 	- If ${x}$ is an element of ${S,}$ we write ${x \in S.}$
@@ -125,21 +93,6 @@ __~examples~.__
 ::::
 :::::
 
-### Laws of Intersection & Union
-::::grid{cols=2}
-:::section
-- ${A \cap B \subseteq A \cup B.}$
-- If ${A \cup B = A \cap B,}$ then ${A = B.}$
-- ${A \cup B = A}$ if and only if ${B \subseteq A.}$
-- ${A \cap B = A}$ if and only if ${A \subseteq B.}$
-:::
-:::section
-- ${A \cap A = A.}$
-- ${A \cup A = A.}$
-- ${A \cap \varnothing = \varnothing.}$
-- ${A \cup \varnothing = A.}$
-:::
-::::
 
 ::::grid{cols=2}
 :::section
@@ -151,6 +104,119 @@ __~examples~.__
 - Where ${C = A \cup B,}$ if ${A \cap B = \varnothing}$ (that is, ${A}$ and ${B}$ are disjoint), then we say that ${A}$ and ${B}$ _partition_ ${C.}$
 :::
 ::::
+
+### Complement
+- Let ${S \subset U.}$ The complement of ${S,}$ denoted ${S',}$ is the set of all elements in ${U}$ that are not in ${A.}$ 
+::::right
+:::figure
+<Complement1/>
+:figcaption[$S \subset U.$]
+:::
+::::
+- ~example~. Where ${S = \set{a,b,c}}$ and ${U = \set{a,b,c,d,e},}$ then ${S' = \set{d,e}.}$
+
+### Set Difference
+- Where ${A}$ and ${B}$ are sets, the _difference_ between ${A}$ and ${B,}$ denoted ${A \setminus B,}$ is defined as ${A \setminus B = \set{x ~|~ x \in A \text{ and } x \notin B}.}$
+
+### Symmetric Difference
+- The symmetric difference between sets ${A}$ and ${B,}$ denoted ${A \triangle B,}$ is defined as ${A \triangle B = (A \setminus B) \cup (B \setminus A).}$
+
+### Properties of Set Algebra
+::::grid{cols=3}
+:::section
+- ${A \cap B \subseteq A \cup B.}$
+- If ${A \cup B = A \cap B,}$ then ${A = B.}$
+- ${A \cup B = A}$ if and only if ${B \subseteq A.}$
+- ${A \cap B = A}$ if and only if ${A \subseteq B.}$
+- ${(A \cup B) \cup C = A \cup (B \cup C).}$
+- ${(A \cap B) \cap C = A \cap (B \cap C).}$
+- ${(A \cup B)' = A' \cap B'.}$
+:::
+:::section
+- ${A \cap A = A.}$
+- ${A \cup A = A.}$
+- ${A \cap \varnothing = \varnothing.}$
+- ${A \cup \varnothing = A.}$
+- ${A \cup (B \cap C) = (A \cup B) \cap (A \cup C).}$
+- ${A \cap (B \cup C) = (A \cap B) \cup (A \cap C).}$
+- ${(A \cap B)' = A' \cup B'.}$
+:::
+:::section
+- ${A \triangle B = B \triangle A.}$
+- ${A \triangle (B \triangle C) = (A \triangle B) \triangle C.}$
+- ${A \triangle \varnothing = A.}$
+- ${A \triangle A = \varnothing.}$
+- Where ${A \subset U,}$ ${A \triangle A' = U.}$
+:::
+::::
+
+:::::grid{cols=2}
+::::section
+### Ordered Pairs
+:::dfn
+__Kuratowski’s Definition.__ Let ${a}$ and ${b}$ be objects. Then the ordered pair ${(a,b)}$ is the set ${\set{\set{a}, \set{a,b}}.}$ 
+:::
+- ~example.~ The ordered pair ${(x,y)}$ is the set ${\set{\set{x}, \set{x,y}}.}$
+- ~example.~ The ordered pair ${(y,x)}$ is the set ${\set{\set{y}, \set{x,y}}.}$ Note that the set ${\set{x,y}}$ is the same set as ${\set{y,x},}$ since there is no notion of ordering within sets. We could also have written ${(y,x) = \set{\set{y}, \set{y,x}}.}$
+- The name “ordered pair” is a misnomer. There is no such thing as “first” or “second” in ordered pairs. The facts we have so far are insufficent to establishing a notion of “order.”
+- Ordered pairs provide one, and only one, tool: The ability to differentiate between the pairs ${(a,b)}$ and ${(b,a).}$ This is accomplished via the following reasoning:
+	1. We know that the set ${\set{a,b}}$ is the same set as ${\set{b,a}.}$
+	2. Under Kuratowski’s definition:
+		- ${(a,b) = \set{\set{a}, \set{a,b}}.}$
+		- ${(b,a) = \set{\set{b}, \set{a,b}}.}$
+	3. The sets ${\set{\set{a}, \set{a,b}}}$ and ${\set{\set{b}, \set{a,b}}}$ are different sets, since ${\set{a} \neq \set{b}.}$ And because they are different sets, ${(a,b) \neq (b,a).}$
+::::
+
+::::section
+### Cartesian Products	
+- Let ${A}$ and ${B}$ be sets, with ${a \in A}$ and ${b \in B.}$ The set of all ordered pairs ${(a,b)}$ such that ${a \in A}$ and ${b \in B}$ is called the Cartesian product of ${A}$ and ${B,}$ written ${A \times B.}$ That is,
+	$$
+		A \times B = \set{(a,b) ~|~ a \in A, b \in B}.
+	$$
+- ~example~. Let ${A = \set{0,1}}$ and let ${B = \set{a,b,c}.}$ Then:
+	$$
+		A \times B =
+			\begin{Bmatrix}
+				(0,a) & (0,b) & (0,c) \\
+				(1,a) & (1,b) & (1,c)
+			\end{Bmatrix}
+	$$
+:::dfn
+__Cartesian Cardinal.__ Given sets ${A}$ and ${B,}$ the cardinality of ${A \times B}$ is given by the formula:
+$$
+	\texttt{\#}(A \times B) = \texttt{\#}A \times \texttt{\#}B.
+$$
+:::
+::::
+:::::
+
+### Relations
+- A _relation_ is any set of ordered pairs.
+- Given sets ${A}$ and ${B:}$
+	1. Any subset of ${A \times B}$ is a relation.
+	2. If ${R}$ is a relation and ${(x,y) \in R,}$ we write ${x ~\texttt{R}~ y}$ to denote “${x}$ is related to ${y.}$”
+	3. If ${R \subseteq A \times B,}$ then we say that ${R}$ is “a relation from ${A}$ to ${B.}$”
+- Where ${R = X \times Y,}$
+	- ${X}$ is called the _natural domain_ of ${R.}$
+	- ${Y}$ is called the _image_ of ${R.}$
+- If ${R}$ is a relation from ${A}$ to ${B,}$ then the _domain_ of ${R}$ is a subset of ${A,}$ and the _range_ of ${R}$ is a subset of ${B.}$
+- If ${R \subseteq A \times A,}$ we say that “${R}$ is a relation in ${A.}$”
+
+#### Reflexive Relations	
+- A relation ${R}$ in ${S}$ is _reflexive_ iff for all ${x \in S,}$ it follows that ${x ~\texttt{R}~ x.}$
+- ~example~. Suppose ${S = \set{1,2,3,4}.}$ A relation ${R}$ in ${S}$ is reflexive if and only if ${\set{(1,1), (2,2), (3,3), (4,4)} \subseteq R.}$
+
+#### Symmetric Relations
+- A relation ${R}$ in ${S}$ is _symmetric_ iff for all ${x,y \in S,}$ it follows that ${x ~\texttt{R}~ y}$ implies ${y ~\texttt{R}~ x.}$
+
+#### Transitive Relations
+- A relation ${R}$ in ${S}$ is _transitive_ iff for all ${a,b,c \in S,}$ it follows that, if ${a ~\texttt{R}~ c}$ and ${b ~\texttt{R}~ c,}$ then ${a ~\texttt{R}~ c.}$
+
+#### Equivalence Relations
+- A relation ${R}$ in ${S}$ is an equivalence relation if ${R}$ is both reflexive, transitive, and symmetric.
+
+#### Equivalence Classes
+- Suppose ${S}$ is a set and ${R}$ is an [equivalence relation](#equivalence-relations) in ${S.}$ If ${R}$ [partitions](#partitions) ${S,}$ then we call each partition resulting ${R}$ an _equivalence class_.
 
 ## Numbers
 - The set of natural numbers comprises ${\set{0,1,2,\ldots}.}$ We denote this set with the symbol ${\mathbb{N}.}$
@@ -212,7 +278,7 @@ __~examples~.__
 ::::
 
 ## The Real Line 
-- The __real line__ is a visual representation of the set ${\reals.}$
+- The _real line_ is a visual representation of the set ${\reals.}$
 
 :::figure
 <RealLine/>
@@ -238,14 +304,14 @@ __~examples~.__
 
 ## Absolute Value
 - The absolute value of a number ${x,}$ denoted ${\lvert x \rvert,}$ is the distance from ${x}$ to ${0}$ on the real line.
-- More generally: If ${x}$ is a real number, then the __absolute value__ of ${x}$ is
+- More generally: If ${x}$ is a real number, then the _absolute value_ of ${x}$ is
 	$$
 		\lvert x \rvert = \begin{cases}
 			x &\text{ if } a \geq 0 \\
 			-x &\text{ else }
 		\end{cases}.
 	$$
-- The __distance__ between two points ${a}$ and ${b}$ on the real line is defined as:
+- The _distance_ between two points ${a}$ and ${b}$ on the real line is defined as:
 	$$
 		\text{distance}(a,b) = \lvert b - a \rvert.
 	$$ 
@@ -257,7 +323,11 @@ __~examples~.__
 2. A number and its additive inverse have the same absolute value: ${\lvert a \rvert = \lvert -a \rvert.}$
 3. The absolute value of a product is the product of the absolute values: ${\lvert ab \rvert = \lvert a \rvert \cdot \lvert b \rvert.}$
 4. The absolute value of a quotient is the quotient of the absoluet values: ${\lvert a/b \rvert = \lvert a \rvert / \lvert b \rvert.}$
-5. __Triangle Inequality.__ ${\lvert a + b \rvert \leq \lvert a \rvert + \lvert b \rvert.}$
+
+:::dfn
+__Triangle Inequality.__ ${\lvert a + b \rvert \leq \lvert a \rvert + \lvert b \rvert.}$
+:::
+
 
 ## Exponents
 ### Integer Exponents
@@ -265,7 +335,7 @@ __~examples~.__
 	$$
 		x^n = \underbrace{x \cdot x \cdot \ldots x \cdot x}_{n~~\text{factors}}.
 	$$
-	The	number ${x}$ is called the __base__, and ${n}$ is called the __exponent__.
+	The	number ${x}$ is called the _base_, and ${n}$ is called the _exponent_.
 - Where ${x}$ and ${y}$ are real numbers, and ${a}$ and ${b}$ are integers:
 	::::grid{cols=2} 
 	:::section
@@ -282,7 +352,7 @@ __~examples~.__
 	:::
 	::::
 
-__Examples.__
+~examples.~
 ::::grid{cols=2}
 :::section
 - ${x^3 \cdot x^4 = x^3 \cdot x^4 = x^{3 + 4} = x^7}$
@@ -354,14 +424,16 @@ __Examples.__
 - A _binomial_ is a sum of two monomials.
 - A _trinomial_ is a sum of three monomials.
 - More generally, a sum of monomials is called a _polynomial_.
-- __Definition.__ A _polynomial in ${x}$_ is an expression of the form:
-	$$
-		a_n x^n + a_{n-1}x^{n-1} + \ldots + a_1 x + a_0
-	$$ 
-	where ${a_0, a_1, \ldots, a_n}$ are real numbers, and ${n}$ is a nonnegative integer. If ${a_n \neq 0,}$ then the polynomial has degree ${n.}$ The monomials ${a_k x^k}$ comprising the polynomial are called the _terms_ of the polynomial.
+:::dfn
+__Definition.__ A _polynomial in ${x}$_ is an expression of the form:
+$$
+	a_n x^n + a_{n-1}x^{n-1} + \ldots + a_1 x + a_0
+$$ 
+where ${a_0, a_1, \ldots, a_n}$ are real numbers, and ${n}$ is a nonnegative integer. If ${a_n \neq 0,}$ then the polynomial has degree ${n.}$ The monomials ${a_k x^k}$ comprising the polynomial are called the _terms_ of the polynomial.
+:::
 	
 ### Adding & Subtracting Polynomials	
-- Polynomials may be added and subtracted by applying the [properties of reals](#properties-of-reals) to __like terms__ (terms with the same variables raised to the same powers) using the distributive property.
+- Polynomials may be added and subtracted by applying the [properties of reals](#properties-of-reals) to _like terms_ (terms with the same variables raised to the same powers) using the distributive property.
 	- ~example~. ${5x^2 + 3x^2 = (5 + 3)x^2 = 8x^2.}$
 - When subtracting polynomials, keep in mind that when a minus sign precedes a parenthesized expression, then the sign must be distributed to each term when the parentheses are removed:
 	- ${-(b + c) = -b - c.}$
@@ -418,7 +490,7 @@ _The following formulas are heavily used in manipulating polynomials_.
 		- ${rs = c,}$ and
 		- ${ps + qr = b.}$
 
-__~examples~.__
+~examples.~
 - ${6x^2 + 7x - 5 = (3x + 5)(2x - 1).}$
 - ${x^2 - 2x - 3 = (x - 3)(x + 1).}$
 - Remember that expressions can be substituted with variables. When we see large, common expressions, it’s helpful to reduce all of them to a single variable. Consider ${(5a + 1)^2 - 2(5a + 1) - 3.}$
@@ -433,3 +505,69 @@ __~examples~.__
 - ${a^2 - 2ab + b^2 = (a - b)^2.}$
 - ${a^3 - b^3 = (a - b)(a^2 + ab + b^2).}$
 - ${a^3 + b^3 = (a + b)(a^2 - ab + b^2).}$
+
+## Rational Expressions
+- A _rational expression_ is an expression of the form ${A/B,}$ where ${A}$ and ${B}$ are polynomials and ${B \neq 0.}$
+
+::::grid{cols=2}
+:::section
+### Domains of Rational Expressions
+- The definition of a rational expression imposes a necessary condition: ${B \neq 0.}$ That is, the denominator _cannot_ be zero. Thus, whenever we work with rational expressions, the first step is to always look at relevant variables: What values _cannot_ be used to substitute the variables? I.e., we must find the rational expression’s domain.
+:::
+
+:::section
+~examples.~
+1. ${\dfrac{x}{x^2 - 5x + 6}.}$
+	- Equate the denominator to zero and solve for ${x.}$ By factoring: ${(x-2)(x-3)=0.}$ We see that ${x}$ cannot be ${2}$ or ${3,}$ since ${x = 2}$ and ${x=3}$ would result in a zero denominator.
+2. ${\dfrac{\sqrt{x}}{x-5}.}$ 
+	- This is a good example of watching for _all_ the relevant variables. Clearly, ${x}$ cannot be ${5.}$ But ${x}$ must also be greater than or equal to ${0}$ by the definition of a square root. 
+:::
+::::
+	
+### Simplifying Rational Expressions
+- To simplify rational expressions, we factor both the numerator and the denominator with the following property:
+	$$
+		\dfrac{AC}{BC} = \dfrac{A}{B}.
+	$$	
+	- ~example.~ ${\dfrac{x^2-1}{x^2 + x - 2} = \dfrac{(x-1)(x+1)}{(x-1)(x+2)} = \dfrac{x+1}{x+2}.}$
+
+### Multiplying Rational Expressions 
+- When multiplying rational expressions, the following property applies:
+	$$
+		\dfrac{A}{B} \cdot \dfrac{C}{D} = \dfrac{AC}{BD}.
+	$$ 
+
+:::example
+$$
+	\begin{aligned}
+		& \dfrac{x^2 + 2x - 3}{x^2 + 8x + 16} \cdot \dfrac{3x + 12}{x-1} \\
+		&= \dfrac{(x-1)(x+3)}{(x+4)(x+4)} \cdot \dfrac{3(x+4)}{x-1} \\
+		&= \dfrac{3(x-1)(x+3)(x+4)}{(x-1)(x+4)(x+4)} \\
+		&= \dfrac{3(x + 3)}{x+4}
+	\end{aligned}
+$$
+:::
+
+### Dividing Rational Expressions
+- To divide rational expressions, we rely on the following property:
+	$$
+		\dfrac{\dfrac{A}{B}}{\dfrac{C}{D}} = \dfrac{A \cdot D}{B \cdot C} = \dfrac{AD}{BC}.
+	$$
+	
+:::example
+$$
+	\begin{aligned}
+		& \dfrac{ \dfrac{x-4}{x^2 - 4} }{ \dfrac{x^2-3x-4}{x^2+5x+6} } \\
+		&= \dfrac{x-4}{x^2-4} \cdot \dfrac{x^2+5x+6}{x^2-3x-4} \\
+		&= \dfrac{x-4}{(x-2)(x+2)} \cdot \dfrac{(x+2)(x+3)}{(x-4)(x+1)} \\
+		&= \dfrac{(x-4)(x+2)(x+3)}{(x-2)(x+2)(x-4)(x+1)} \\
+		&= \dfrac{x+3}{(x-2)(x+1)}
+	\end{aligned}
+$$
+:::
+
+### Adding Rational Expressions
+- To add or subtract rational expressions, we first find a common denominator, then apply the following property:
+	$$
+		\dfrac{A}{C} + \dfrac{B}{C} = \dfrac{A+B}{C}.
+	$$ 

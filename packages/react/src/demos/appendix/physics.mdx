@@ -1,0 +1,64 @@
+# Physics
+
+## One-Dimensional Motion
+For the following sections: Suppose ${p}$ is a particle at position ${x_i}$ at time ${t_i,}$ and at position ${x_f}$ at time ${t_f.}$
+
+::::grid{cols=2}
+
+### Displacement
+- The _displacement_ of ${p,}$ is defined as:
+$$
+	\Delta x = x_f - x_i.
+$$
+- Notice that if ${x_f = x_i,}$ then ${\Delta x = 0.}$
+- Displacement is a _vector quantity_ – it has both a magnitude and a direction. The direction is determined by the point of origin and indicated by a plus (+) or minus (-) sign.
+
+### Distance
+- The _distance_ traveled by ${p}$ is defined as:
+$$
+	\Delta x = |x_f - x_i|.
+$$
+- Distance is a _scalar quantity_ – it is always a positive number.
+
+### Average Velocity
+- The _average velocity_ of ${p}$ is given by:
+$$
+	v_{x,\text{avg}} = \dfrac{\Delta x}{t_f - t_i}.
+$$
+
+### Instantaneous Velocity
+- The _instantenous velocity_ of ${p}$ is defined as the derivative of ${x}$ with respect to ${t:}$
+	$$
+		v_x = \lim_{\Delta t \to 0} \dfrac{\Delta x}{\Delta t} = \dfrac{dx}{dt}.
+	$$
+::::
+
+~examples~. For each of the following fact patterns, we are asked the following: Is there a point where the instantaneous velocity equals the average velocity?
+1. A ball is throw directly upward to a peak then falls back into the thrower’s hand.
+	- The average velocity in this case is ${0,}$ since ${x_f = x_i}$ (the ball leaves the thrower’s hand and returns to the thrower’s hand).
+	- There is one point where the instantaneous velocity is zero: The peak.
+2. A race car starts from rest and speeds up to ${100 ~ \text{m/s}.}$
+	- The average velocity will lie somewhere between ${0}$ and ${100 ~ \text{m/s}.}$ Because the car will have every velocity between ${0}$ and ${100,}$ there must be at least one point where the instantaneous velocity is the same as the average velocity.
+3. A satellite drifts through space at constant velocity.
+	- Because the instantaneous velocity is constant, its instantaneous velocity at _any_ time and is average velocity over _any_ time interval are the same.
+
+
+
+### Acceleration
+- The _average acceleration_ of ${p}$ is the _change in velocity_ within the time interval ${\Delta t.}$ That is,
+	$$
+		a_{x,\text{avg}} = \dfrac{\Delta v_x}{\Delta t} = \dfrac{v_{x_f} - v_{x_i}}{t_f - t_i}.
+	$$
+
+### Instantaneous Acceleration
+- Where ${v_x}$ is the [instantaneous velociy](#instantaneous-velocity) of ${p,}$ the _instantenous acceleration_ of ${p,}$ denoted ${a_x,}$ is the derivative of ${v_x}$ with respect to time ${t.}$ That is,
+	$$
+		a_x = \lim_{\Delta t \to 0} \dfrac{\Delta v_x}{\Delta t} = \dfrac{dv_x}{dt}.
+	$$
+- More explicitly:
+	$$
+		a_x = \dfrac{dv_x}{dt} = \dfrac{d}{dt}\left( \dfrac{dx}{dt} \right) = \dfrac{d^2 x}{d t^2}.
+	$$
+
+## Velocity & Acceleration
+- For motion along a straight line, if an object’s velocity and acceleration are in the same direction, then the object is “speeding up.” If they are in opposite directions, then the object is “slowing down.”

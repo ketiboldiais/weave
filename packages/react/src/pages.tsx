@@ -12,7 +12,7 @@ import SET_THEORY from "./demos/appendix/set-theory.mdx";
 import EXPOSITION from "./demos/appendix/exposition.mdx";
 import NUMBER_THEORY from "./demos/appendix/number-theory-1.mdx";
 import PRECALCULUS from "./demos/appendix/precalculus.mdx";
-import MECHANICS from "./demos/appendix/mechanics.mdx";
+import PHYSICS from "./demos/appendix/physics.mdx";
 import GEOMETRY from "./demos/appendix/geometry.mdx";
 
 import INDEX from "./demos/doc.main.mdx";
@@ -83,10 +83,10 @@ const noteLinks: LinkEntry[] = [
     page: <PRECALCULUS />,
   },
   {
-    title: "Mechanics",
-    path: "/mechanics",
+    title: "Physics",
+    path: "/physics",
     visible: false,
-    page: <MECHANICS />,
+    page: <PHYSICS />,
   },
 ].map((note: LinkEntry) => {
   note.note = true;
