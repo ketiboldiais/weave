@@ -146,7 +146,7 @@
 	dfn {
 		display: block;
 		font-style: normal;
-		margin: 0 auto;
+		margin: 2px auto;
 		padding: 0 0.7em;
 
 		strong {
@@ -255,6 +255,19 @@
 		margin: 0 auto;
 		padding-left: 4em;
 		padding-right: 4em;
+		dfn {
+			h1,h2,h3,h4,h5,h6 {
+				display: inline;
+				color: #fb8871;
+				font-size: 0.8rem;
+				&::after {
+					content: " ";
+				}
+			}
+			h1+p, h2+p,h3+p,h4+p,h5+p,h6+p {
+				display: inline;
+			}
+		}
 	}
 	
 	@media (max-width:600px) {
@@ -375,6 +388,7 @@
 	:global .example {
 		width: fit-content;
 		margin: 0;
+		margin-top: 1em;
 		gap: 5px;
 		display: flex;
 		align-items: flex-start;

@@ -9,6 +9,67 @@ import {
 # Foundational Mathematics
 This page provides an overview of the foundational concepts and skills necessary to comprehending the rest of the appendix materials. Much of the materials that follow may be found in the standard “precalculus” course of U.S. curricula.
 
+1. [Foundational Mathematics](#foundational-mathematics)
+	1. [Sets](#sets)
+		1. [Cardinality](#cardinality)
+		2. [Subsets](#subsets)
+		3. [Set Equality](#set-equality)
+		4. [Power Sets](#power-sets)
+		5. [Union](#union)
+		6. [Intersection](#intersection)
+		7. [Disjoint Sets](#disjoint-sets)
+		8. [Partitions](#partitions)
+		9. [Complement](#complement)
+		10. [Set Difference](#set-difference)
+		11. [Symmetric Difference](#symmetric-difference)
+		12. [Properties of Set Algebra](#properties-of-set-algebra)
+		13. [Ordered Pairs](#ordered-pairs)
+		14. [Cartesian Products](#cartesian-products)
+		15. [Relations](#relations)
+			 1. [Reflexive Relations](#reflexive-relations)
+			 2. [Symmetric Relations](#symmetric-relations)
+			 3. [Transitive Relations](#transitive-relations)
+			 4. [Equivalence Relations](#equivalence-relations)
+			 5. [Equivalence Classes](#equivalence-classes)
+	2. [Numbers](#numbers)
+	3. [Properties of Reals](#properties-of-reals)
+		1. [Properties of Negatives](#properties-of-negatives)
+		2. [Properties of Rationals](#properties-of-rationals)
+	4. [The Real Line](#the-real-line)
+	5. [Intervals](#intervals)
+	6. [Absolute Value](#absolute-value)
+		1. [Properties of Absolute Values](#properties-of-absolute-values)
+	7. [Exponents](#exponents)
+		1. [Integer Exponents](#integer-exponents)
+	8. [Radicals](#radicals)
+		1. [Rational Exponents](#rational-exponents)
+		2. [Rationalizing Denominators](#rationalizing-denominators)
+	9. [Polynomials](#polynomials)
+		1. [Adding \& Subtracting Polynomials](#adding--subtracting-polynomials)
+		2. [Multiplying Polynomials](#multiplying-polynomials)
+		3. [Product Formulas](#product-formulas)
+		4. [Factoring](#factoring)
+			1. [Factoring Common Factors](#factoring-common-factors)
+			2. [Factoring Trinomials](#factoring-trinomials)
+			3. [Common Factoring Patterns](#common-factoring-patterns)
+	10. [Rational Expressions](#rational-expressions)
+		 1. [Domains of Rational Expressions](#domains-of-rational-expressions)
+		 2. [Simplifying Rational Expressions](#simplifying-rational-expressions)
+		 3. [Multiplying Rational Expressions](#multiplying-rational-expressions)
+		 4. [Dividing Rational Expressions](#dividing-rational-expressions)
+		 5. [Adding Rational Expressions](#adding-rational-expressions)
+		 6. [Compound Fractions](#compound-fractions)
+		 7. [Conjugate Radicals](#conjugate-radicals)
+	11. [Equations](#equations)
+		 1. [Linear Equations](#linear-equations)
+			 1. [Solving Linear Equations](#solving-linear-equations)
+		 2. [Quadratic Equations](#quadratic-equations)
+			 1. [Solving Quadratic Equations](#solving-quadratic-equations)
+				 1. [Perfect Squares](#perfect-squares)
+				 2. [The Quadratic Formula](#the-quadratic-formula)
+	12. [Complex Numbers](#complex-numbers)
+
+
 ## Sets
 - A _set_ ${S}$ is a collection of objects, each called an _element_ of ${S.}$
 	- If ${x}$ is an element of ${S,}$ we write ${x \in S.}$
@@ -523,20 +584,31 @@ _The following formulas are heavily used in manipulating polynomials_.
 	- This is a good example of watching for _all_ the relevant variables. Clearly, ${x}$ cannot be ${5.}$ But ${x}$ must also be greater than or equal to ${0}$ by the definition of a square root. 
 :::
 ::::
-	
+
+::::grid{cols=2}	
+:::section
 ### Simplifying Rational Expressions
 - To simplify rational expressions, we factor both the numerator and the denominator with the following property:
 	$$
 		\dfrac{AC}{BC} = \dfrac{A}{B}.
 	$$	
-	- ~example.~ ${\dfrac{x^2-1}{x^2 + x - 2} = \dfrac{(x-1)(x+1)}{(x-1)(x+2)} = \dfrac{x+1}{x+2}.}$
+:::
 
+:::section
+~example.~ ${\dfrac{x^2-1}{x^2 + x - 2} = \dfrac{(x-1)(x+1)}{(x-1)(x+2)} = \dfrac{x+1}{x+2}.}$
+:::
+::::
+
+:::::grid{cols=2}
+::::section
 ### Multiplying Rational Expressions 
 - When multiplying rational expressions, the following property applies:
 	$$
 		\dfrac{A}{B} \cdot \dfrac{C}{D} = \dfrac{AC}{BD}.
 	$$ 
+::::
 
+::::section
 :::example
 $$
 	\begin{aligned}
@@ -547,13 +619,18 @@ $$
 	\end{aligned}
 $$
 :::
+::::
+:::::
 
+:::::grid{cols=2}
+::::section
 ### Dividing Rational Expressions
 - To divide rational expressions, we rely on the following property:
 	$$
 		\dfrac{\dfrac{A}{B}}{\dfrac{C}{D}} = \dfrac{A \cdot D}{B \cdot C} = \dfrac{AD}{BC}.
 	$$
-	
+::::
+::::section	
 :::example
 $$
 	\begin{aligned}
@@ -565,9 +642,227 @@ $$
 	\end{aligned}
 $$
 :::
+::::
+:::::
 
+:::::grid{cols=2}
+::::section
 ### Adding Rational Expressions
 - To add or subtract rational expressions, we first find a common denominator, then apply the following property:
 	$$
 		\dfrac{A}{C} + \dfrac{B}{C} = \dfrac{A+B}{C}.
 	$$ 
+::::
+
+::::section
+:::example
+$$
+	\begin{aligned}
+		& \dfrac{3}{x-1} + \dfrac{x}{x+2} \\
+		&= \dfrac{3(x+2)}{(x-1)(x + 2)} + \dfrac{x(x-1)}{(x-1)(x+2)} \\
+		&= \dfrac{3x + 6x + x^2 - x}{(x - 1)(x + 2)} \\
+		&= \dfrac{x^2 + 2x + 6}{(x - 1)(x + 2)}
+	\end{aligned}
+$$
+:::
+:::example
+$$
+	\begin{aligned}
+		& \dfrac{1}{x^2 - 1} - \dfrac{2}{(x + 1)^2} \\
+		&= \dfrac{1}{(x-1)(x+1)} - \dfrac{2}{(x+1)(x+1)} \\
+		&= \dfrac{(x+1) - 2(x-1)}{(x-1)(x+1)(x+1)(x+1)} \\
+		&= \dfrac{x+1 - 2x + 2}{(x-1)(x+1)(x+1)} \\
+		&= \dfrac{3 - x}{(x-1)(x+1)^2}
+	\end{aligned}
+$$
+:::
+::::
+:::::
+
+:::::grid{cols=2}
+::::section
+### Compound Fractions
+- A _compound fraction_ is a fraction where the numerator, denominator, or both is a fraction.
+::::
+
+::::section
+:::example
+$$
+	\begin{aligned}
+		\dfrac{ \dfrac{x}{y} + 1 }{1 - \dfrac{y}{x}} &= \dfrac{\dfrac{x}{y} + \dfrac{y}{y}}{\dfrac{x}{x} - \dfrac{y}{x}} \\[2em]
+		&= \dfrac{\dfrac{x + y}{y}}{\dfrac{x-y}{x}} \\[2em]
+		&= \dfrac{x(x+y)}{y(x-y)}
+	\end{aligned}
+$$
+:::
+::::
+:::::
+
+:::::grid{cols=2}
+::::section
+### Conjugate Radicals
+- If a rational expression’s denominator has the form ${A + B \sqrt{C},}$ we can get rid of the denominator by multiplying both the numerator and the denominator by the _conjugate radical_ ${A - B \sqrt{C}.}$
+::::
+
+::::section
+:::example
+Below, the denominator is ${1 + \sqrt{2}.}$ The conjugate radical is therefore ${1 - \sqrt{2}.}$
+$$
+	\begin{aligned}
+		\dfrac{1}{1 + \sqrt{2}} &= \dfrac{1}{1 + \sqrt{2}} \cdot \dfrac{1 - \sqrt{2}}{1 - \sqrt{2}} \\[1em]
+		&= \dfrac{1 - \sqrt{2}}{1^2 - (\sqrt{2})^2} \\[1em]
+		&= \dfrac{1 - \sqrt{2}}{1 - 2} \\[1em]
+		&= \dfrac{1 - \sqrt{2}}{-1} \\[1em]
+		&= \sqrt{2} - 1.
+	\end{aligned}
+$$
+:::
+::::
+:::::
+
+## Equations
+- Given expressions ${A}$ and ${B,}$ an _equation_ is the mathematical statement ${A = B,}$ asserting that ${A}$ and ${B}$ are equal.
+- Some properties of equality:
+	1. ${A = B \iff A + C = B + C.}$
+		- Adding the same expression to both sides of an equation yields an equivalent equation.
+	2. ${A = B \iff C \cdot A = C \cdot B.}$ 
+		- Multiplying both sides of an equation by the same nonzero expression yields an equivalent equation.
+
+### Linear Equations
+- A _linear equation of one variable_ is equation equivalent to an equation of the form:
+	$$
+		ax + b = 0,
+	$$ 
+	where ${a}$ and ${b}$ are real numbers and ${x}$ is a variable.
+- ~examples.~ The following are all linear equations:
+$$
+	\begin{matrix}
+		& 4x - 5 = 3 & 2x = \dfrac{1}{2}x - 7 \\
+		& x - 6 = \dfrac{x}{3} & 12x = 7
+	\end{matrix}
+$$
+
+#### Solving Linear Equations
+- To solve a linear equation in one variable, we move all variable terms to one side and all constant terms to the other:
+
+:::example
+$$
+	\begin{aligned}
+		7x - 4 &= 3x + 8 \\
+		7x - 4 + 4 &= 3x + 8 + 4 \\
+		7x &= 3x + 12 \\
+		7x - 3x &= 3x + 12 - 3x \\
+		4x &= 12 \\
+		(4x)/4 &= (12)/4 \\
+		x &= 3
+	\end{aligned}
+$$
+:::
+
+### Quadratic Equations
+- A _quadratic equation_ is an equation of the form
+	$$
+		ax^2 + bx + c = 0.
+	$$ 
+	where ${a,}$ ${b,}$ and ${c}$ are real numbers with ${a \neq 0.}$
+
+#### Solving Quadratic Equations
+- The following property is often helpful for solving quadratics.
+
+:::dfn
+__Zero-product Property.__ Let ${A}$ and ${B}$ be expressions. Then ${AB = 0}$ if and only if ${A=0}$ or ${B=0.}$
+:::
+
+:::::grid{cols=2}
+:::section
+__Solving Simple Quadratic Equations.__ - The simplest quadratic equation is that of the form ${x^2 = c,}$ where ${c}$ is some expression. These equations have the solution set:
+	$$
+		x \in \set{\sqrt{c}, -\sqrt{c}.}
+	$$ 
+:::
+::::section
+:::example
+$$
+	\begin{aligned}
+		(x-4)^2 &= 5 \\
+		x-4 &= \pm \sqrt{5} \\
+		x &= 4 \pm \sqrt{5}.
+	\end{aligned}
+$$
+:::
+::::
+:::::
+
+:::::grid{cols=2}
+::::section
+__Solving a Quadratic by Factoring.__ With the zero-product property, we can solve quadratics via factoring.
+::::
+
+::::section
+:::example
+	$$
+		\begin{aligned}
+			x^2 + 5x &= 24 \\
+			x^2 + 5x - 24 &= 0 \\
+			(x-3)(x+8) &= 0 \\
+			x &\in \set{3,8}.
+		\end{aligned}
+	$$
+:::
+::::
+:::::
+
+##### Perfect Squares
+- An expression of the form ${(x \mp a)^2}$ is called a _perfect square_ – the square of a linear expression in ${x.}$
+- We can solve a quadratic equation of the form ${(x \pm a)^2 = c}$ by taking the square root of each side.
+:::dfn
+__Completing the Square__. Given the quadratic ${x^2 + bx,}$ adding ${(b/2)^2}$ yields a perfect square:
+
+$$
+	x^2 + bx + \left( \dfrac{b}{2} \right)^2 \equiv \left( x + \dfrac{b}{2} \right)^2.
+$$
+:::
+
+:::example
+$$
+	\begin{aligned}
+		x^2 - 8x + 13 &= 0 \\
+			x^2 - 8x &= -13 \\
+			x^2 - 8x + \left( \dfrac{-8}{2} \right)^2 &= -13 + \left( \dfrac{-8}{2} \right)^2 \\
+			x^2 - 8x + 16 &= 3 \\
+			(x-4)^2 &= 3 \\
+			x-4 &= \pm \sqrt{3} \\
+			x &= 4 \pm \sqrt{3}
+	\end{aligned}
+$$
+:::
+
+##### The Quadratic Formula  
+Let ${Q}$ be the equation ${ax^2 + bx + c = 0}$ with ${a \neq 0.}$
+- The roots of ${Q}$ are given by the formula:
+	$$
+		x = \dfrac{-b \pm \sqrt{b^2 - 4ac}}{2a}.
+	$$
+- The _discriminant_ ${D}$ of ${Q}$ is given by:
+	$$
+		D = b^2 - 4ac.
+	$$
+	1. If ${D \gt 0,}$ then ${Q}$ has two distinct real roots.
+	2. If ${D = 0,}$ then ${Q}$ has exactly one real root.
+	3. If ${D \lt 0,}$ then ${Q}$ has no real root.
+
+## Complex Numbers 
+- Consider ${x^2 + 4 = 0.}$ Solving this equation, we have ${x^2 = -4.}$ Negative numbers, however, have no real roots. If we want the ability to solve _all_ quadratic equations, we must expand our number system. We do so by introducing the following definition:
+	:::dfn
+	__Complex Component.__ The _complex component_ is defined as:
+	$$
+		i = \sqrt{-1}.
+	$$
+	:::
+- We use this complex component to define the set of all complex numbers:
+	:::dfn
+	__Complex Numbers.__ Let ${a}$ and ${b}$ be real numbers. A complex number is an expression of the form ${a + bi,}$ where ${i^2 = -1.}$ We call the _real part_ ${a,}$ and the _imaginary part_ ${b.}$
+	::: 
+	- Relating back to our previous materials, complex numbers are an [ordered pair](#ordered-pairs) ${(a,b) \in \reals \times \reals.}$ As such, the equality relation of complex numbers naturally follows from the equality relation of ordered pairs:
+	
+	

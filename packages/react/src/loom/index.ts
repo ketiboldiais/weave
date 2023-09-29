@@ -7002,6 +7002,19 @@ function isAtom(u: AlgebraicExpression): u is Atom {
   return u instanceof Atom;
 }
 
+class Complex {
+  _r: number;
+  _i: number;
+  constructor(r: number, i: number) {
+    this._r = r;
+    this._i = i;
+  }
+}
+
+function cpx(real: number, imaginary: number) {
+  return new Complex(real, imaginary);
+}
+
 /** An atomic value corresponding to an integer. */
 class Int extends Atom {
   isRNE(): boolean {

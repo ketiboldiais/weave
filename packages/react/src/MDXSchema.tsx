@@ -8,7 +8,6 @@ type ATAG = ComponentProps<"a">;
 
 const L = (props: ATAG) => {
   const href = props.href ?? "";
-  console.log(href);
   if (href.startsWith("./") || href.startsWith("/") || href.startsWith("#")) {
     return <Link to={href}>{props.children}</Link>;
   } else {
